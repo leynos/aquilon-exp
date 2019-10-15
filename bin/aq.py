@@ -360,13 +360,12 @@ if __name__ == "__main__":
 
     # if a client config file is specified on command line
     # that should overide  env or default options.
+    defaultOpts = get_default_opts(globalOptions.get('auth'),
+                                   readonly=is_readonly(command))
     if globalOptions.get('aqconf'):
         globalOptions.update(get_default_opts(globalOptions.get('auth'),
                                               globalOptions.get('aqconf'),
                                               readonly=is_readonly(command)))
-    else:
-        defaultOpts = get_default_opts(globalOptions.get('auth'),
-                                       readonly=is_readonly(command))
 
     # Default for /ms/dist
     if re.match(r"/ms(/.(global|local)/[^/]+)?/dist/", BINDIR):
