@@ -208,22 +208,41 @@ def create_sandbox(pageData, noexec=False):
               sandbox_dir, file=sys.stderr)
         return 1
     os.umask(0o022)
-    cmd = ("git", "clone", "--branch", sandbox_name,
-           template_king_url, sandbox_name)
+    cmd_clone = ("git", "clone", "--branch", sandbox_name,
+                 template_king_url, sandbox_name)
+    cmd_prepare = None
+    if globalOptions.get('prepare_sandbox'):
+        cmd_prepare = (globalOptions.get("prepare_sandbox"), sandbox_dir)
     if noexec:
         print("cd '%s'" % user_base)
-        print(" ".join("'%s'" % c for c in cmd))
+        print(" ".join("'%s'" % c for c in cmd_clone))
+        if cmd_prepare is not None:
+            print(" ".join("'%s'" % c for c in cmd_prepare))
         return 0
     try:
-        p = subprocess.Popen(cmd, cwd=user_base, stdin=None,
-                             stdout=1, stderr=2)
+        p_clone = subprocess.Popen(cmd_clone, cwd=user_base, stdin=None,
+                                   stdout=1, stderr=2)
     except OSError as e:
-        print("Could not execute %s: %s" % (cmd, e), file=sys.stderr)
+        print("Could not execute %s: %s" % (cmd_clone, e), file=sys.stderr)
         return 1
-    exit_status = p.wait()
-    if exit_status == 0:
+    exit_clone = p_clone.wait()
+    if exit_clone == 0:
         print("Created sandbox: %s" % sandbox_dir)
-    return exit_status
+    else:
+        return exit_clone
+    if cmd_prepare is None:
+        return 0
+    try:
+        p_prepare = subprocess.Popen(cmd_prepare, cwd=user_base, stdin=None,
+                                     stdout=1, stderr=2)
+    except OSError as e:
+        print("Could not execute %s: %s" % (cmd_prepare, e), file=sys.stderr)
+        return 1
+    exit_prepare = p_prepare.wait()
+    if exit_prepare == 0:
+        print("Prepared sandbox: %s" % sandbox_dir)
+        return 0
+    return exit_prepare
 
 
 class StatusThread(Thread):
@@ -341,13 +360,12 @@ if __name__ == "__main__":
 
     # if a client config file is specified on command line
     # that should overide  env or default options.
+    defaultOpts = get_default_opts(globalOptions.get('auth'),
+                                   readonly=is_readonly(command))
     if globalOptions.get('aqconf'):
         globalOptions.update(get_default_opts(globalOptions.get('auth'),
                                               globalOptions.get('aqconf'),
                                               readonly=is_readonly(command)))
-    else:
-        defaultOpts = get_default_opts(globalOptions.get('auth'),
-                                       readonly=is_readonly(command))
 
     # Default for /ms/dist
     if re.match(r"/ms(/.(global|local)/[^/]+)?/dist/", BINDIR):
