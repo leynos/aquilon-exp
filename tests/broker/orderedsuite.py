@@ -2,7 +2,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2008-2019  Contributor
+# Copyright (C) 2008-2020  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -68,6 +68,7 @@ from .test_add_hostlink import TestAddHostlink
 from .test_add_interface import TestAddInterface
 from .test_add_interface_address import TestAddInterfaceAddress
 from .test_add_intervention import TestAddIntervention
+from .test_add_issue import TestAddIssue
 from .test_add_machine import TestAddMachine
 from .test_add_manager import TestAddManager
 from .test_add_metacluster import TestAddMetaCluster
@@ -398,6 +399,7 @@ class BrokerTestSuite(unittest.TestSuite):
                  TestPollNetworkDevice,
                  TestUpdateNetworkDeviceMac,
                  TestAddHost,
+                 TestAddIssue,
                  TestAddAuxiliary, TestAddManager, TestAddInterfaceAddress,
                  TestAddServiceAddress,
                  TestRenameNetworkDevice, TestDiscoverNetworkDevice,

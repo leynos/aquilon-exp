@@ -1,7 +1,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2009-2019  Contributor
+# Copyright (C) 2009-2020  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -94,6 +94,7 @@ from aquilon.aqdb.model.operating_system import OperatingSystem
 # HARDWARE
 from aquilon.aqdb.model.vendor import Vendor
 from aquilon.aqdb.model.model import Model
+from aquilon.aqdb.model.issue import Issue
 from aquilon.aqdb.model.hardware_entity import HardwareEntity, DeviceLinkMixin
 from aquilon.aqdb.model.machine import Machine
 from aquilon.aqdb.model.hostlifecycle import HostLifecycle

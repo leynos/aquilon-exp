@@ -1,7 +1,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2008,2009,2010,2011,2012,2013,2014  Contributor
+# Copyright (C) 2008-2014,2020  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,10 +18,22 @@
 
 from datetime import datetime
 
-from sqlalchemy import (Integer, DateTime, Sequence, String, Column, ForeignKey,
-                        UniqueConstraint)
+from sqlalchemy import (
+                        Column,
+                        DateTime,
+                        ForeignKey,
+                        Integer,
+                        Sequence,
+                        String,
+                        UniqueConstraint,
+                        )
 
-from sqlalchemy.orm import relation, object_session, deferred
+from sqlalchemy.orm import (
+                            deferred,
+                            object_session,
+                            relation,
+                            )
+
 
 from aquilon.exceptions_ import AquilonError
 from aquilon.aqdb.model import Base, Vendor
