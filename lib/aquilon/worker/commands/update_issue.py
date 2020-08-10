@@ -16,18 +16,55 @@
 # limitations under the License.
 """Contains the logic for `aq update issue`."""
 
-from aquilon.aqdb.model import Issue
+from aquilon.aqdb.model import (
+    Issue,
+    Model,
+    OperatingSystem,
+)
 from aquilon.worker.broker import BrokerCommand
-
 
 class CommandUpdateIssue(BrokerCommand):
 
-    required_parameters = ["tracker", "new_description"]
+    required_parameters = ["tracker"]
 
-    def render(self, session, logger, tracker, new_description, **_):
+    def render(self, session, logger, tracker, description, state, category,
+               osversion, osname, archetype, model, vendor, new_tracker, **_):
+
+        update_tracker = (new_tracker is not None)
+        update_state = (state is not None)
+        update_category = (category is not None)
+        update_description = (description is not None)
+
+        update_model = (model is not None or
+                        vendor is not None)
+        update_os = (osname is not None or
+                     osversion is not None or
+                     archetype is not None)
 
         issue = Issue.get_unique(session, tracker, compel=True)
-        issue.description = new_description
+
+        if update_tracker:
+            # not possible to add a duplicate tracker
+            Issue.get_unique(session, tracker=new_tracker, preclude=True)
+            issue.tracker = new_tracker
+        if update_state:
+            issue.state = state
+        if update_category:
+            issue.category = category
+        if update_description:
+            issue.description = description
+        if update_model:
+            model = Model.get_unique(session, name=model,
+                                     vendor=vendor, compel=True)
+            issue.models.append(model)
+        if update_os:
+            os = OperatingSystem.get_unique(session, name=osname,
+                                            version=osversion,
+                                            archetype=archetype,
+                                            compel=True)
+            issue.os.append(os)
+
+        session.add(issue)
         session.flush()
 
         return

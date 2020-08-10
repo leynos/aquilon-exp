@@ -1086,63 +1086,6 @@
 
     </command>
 
-    <command name="link_issue_model">
-        Link a Model to an Issue.<p/>
-        A Model is defined by a Vendor and a Name. 
-        Vendor is optional because most of model names are unique.
-        If a Model cannot be found solely by its name, you must also input a Vendor.
-
-        <optgroup mandatory="True" fields="two">
-            <option name="tracker" type="string">Tracker of the issue</option>
-            <option name="model" type="string">Model name</option>
-        </optgroup>
-
-         <optgroup fields="one">
-                <option name="vendor" type="string">Vendor name</option>
-        </optgroup>
-
-        <transport  method="put" path="link_issue_model"/>
-
-    </command>
-
-    <command name="link_issue_os">
-        Link an OS to an Issue.
-
-        <optgroup mandatory="True" fields="four">
-            <option name="tracker" type="string">Tracker of the issue</option>
-            <option name="osversion" type="string">OS version</option>
-            <option name="osname" type="string" >OS name</option>
-            <option name="archetype" type="string">Archetype</option>
-        </optgroup>
-
-        <transport method="put" path="link_issue_os"/>
-
-    </command>
-
-    <command name="close_issue">
-        Change the state of an Issue to "closed".
-
-        <optgroup mandatory="True" fields="all">
-            <optgroup fields="one">
-                <option name="tracker" type="string">Tracker of the issue</option>
-            </optgroup>
-        </optgroup>
-        <transport method="put" path="close_issue"/>
-
-    </command>
-
-    <command name="discard_issue">
-        Change the state of an Issue to "discarded".
-
-        <optgroup mandatory="True" fields="all">
-            <optgroup fields="one">
-                <option name="tracker" type="string">Tracker of the issue</option>
-            </optgroup>
-        </optgroup>
-        <transport method="put" path="discard_issue"/>
-
-    </command>
-
     <command name="show_issue">
         Show all the information of an issue.
 
@@ -1157,16 +1100,29 @@
     </command>
 
     <command name="update_issue">
-        Change the description of an Issue.
+        Update any property of an Issue.
 
         <optgroup mandatory="True" fields="all">
-            <optgroup fields="two">
+            <optgroup fields="one">
                 <option name="tracker" type="string">Tracker of the issue</option>
-                <option name="new_description" type="string">New description of the issue</option>
             </optgroup>
         </optgroup>
-        <transport method="put" path="update_issue"/>
+        <optgroup>
+            <option name="new_tracker" type="string">New tracker of the issue</option>
 
+            <option name="description" type="string">New description of the issue</option>
+            <option name="state" type="string">State: "open", "closed" or "discarded"</option>
+            <option name="category" type="string">Category</option>
+
+            <option name="osversion" type="string">OS version</option>
+            <option name="osname" type="string" >OS name</option>
+            <option name="archetype" type="string">Archetype</option>
+
+            <option name="model" type="string">Model name</option>
+            <option name="vendor" type="string">Vendor name</option>
+        </optgroup>
+
+        <transport method="put" path="update_issue"/>
     </command>
 
     <command name="search_issue">
