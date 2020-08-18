@@ -1066,6 +1066,103 @@
         <transport method="put" trigger="prefix" path="next_host/%(prefix)s"/>
     </command>
 
+    <command name="add_issue">
+        Add a new "Known Issue" to the database. 
+        This allows configuration items in the DB to be linked against known problems or defects catalogued in an external system such as Jira.
+        The Tracker is a unique reference to an external ticketing system, e.g. JIRA-123.
+        The category is a regular string, so be sure to enter the right one.
+        An issue has 3 different states: "open", "closed" and "discarded".<p/>
+        An issue cannot be deleted, but its state can be changed to "discarded".
+
+        <optgroup mandatory="True" fields="all">
+            <optgroup fields="three">
+                <option name="category" type="string">Category of issue</option>
+                <option name="tracker" type="string">Tracker of the issue</option>
+                <option name="description" type="string">Short description of the issue</option>
+            </optgroup>
+        </optgroup>
+
+        <transport method="put" path="add_issue"/>
+
+    </command>
+
+    <command name="show_issue">
+        Show all the information of an issue.
+
+        <optgroup mandatory="True" fields="one">
+                <option name="tracker" type="string">Tracker of the issue</option>
+                <option name="all" type="flag">Show all issues</option>
+        </optgroup>
+
+        <transport method="get" path="show_issue"/>
+        <transport trigger="all" method="get" path="show_issue_all"/>
+
+    </command>
+
+    <command name="update_issue">
+        Update any property of an Issue.
+
+        <optgroup mandatory="True" fields="all">
+            <optgroup fields="one">
+                <option name="tracker" type="string">Tracker of the issue</option>
+            </optgroup>
+        </optgroup>
+        <optgroup>
+            <option name="new_tracker" type="string">New tracker of the issue</option>
+
+            <option name="description" type="string">New description of the issue</option>
+            <option name="state" type="string">State: "open", "closed" or "discarded"</option>
+            <option name="category" type="string">Category</option>
+
+            <option name="osversion" type="string">OS version</option>
+            <option name="osname" type="string" >OS name</option>
+            <option name="archetype" type="string">Archetype</option>
+
+            <option name="model" type="string">Model name</option>
+            <option name="vendor" type="string">Vendor name</option>
+        </optgroup>
+
+        <transport method="put" path="update_issue"/>
+    </command>
+
+    <command name="search_issue">
+
+        Search Issue by hostname.
+        An Issue is linked to a Host if EITHER a Model OR an Os are matched.
+        <p/>
+        --hostname to find all the issues linked to a Host.
+        --list hostnames.txt to find all the issues linked to Hosts in a file. Each hostname in the file should be in a new line.
+
+        <p/>
+        Optional filters work with an AND logic: Issues will be displayed if they correspond to ALL the optional filters.
+        <optgroup mandatory="True" fields="one">
+            <option name="hostname" type="string">Hostname</option>
+            <option name="list" type="list">File of hostnames (1 per line)</option>
+        </optgroup>
+
+        <optgroup>
+            <option name="model" type="string">Model</option>
+            <option name="vendor" type="string">Vendor</option>
+
+            <option name="osname" type="string" >OS name</option>
+            <option name="osversion" type="string">OS version</option>
+            <option name="archetype" type="string">Archetype</option>
+
+            <option name="state" type="string">State</option>
+            <option name="category" type="string">Category</option>
+
+            <option name="fullinfo" type="flag">Display all the attributes of the Issues</option>
+        </optgroup>
+
+        <!-- "list" needs to be POST, because the value may be too big for GET -->
+        <transport trigger="hostname" method="get" path="search_issue_hostname"/>
+        <transport trigger="list" method="post" path="command/search_issue/list"/>
+
+        <format name="proto">
+            <message_class name="IssueList" module="aqdsystems_pb2"/>
+        </format>
+    </command>
+
     <command name="add_windows_host">
         Add a new host to the database with archetype windows.  Requires a
         machine with a bootable interface and a valid IP address.

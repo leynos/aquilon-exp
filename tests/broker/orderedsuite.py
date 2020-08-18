@@ -2,7 +2,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2008-2019  Contributor
+# Copyright (C) 2008-2020  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -68,6 +68,7 @@ from .test_add_hostlink import TestAddHostlink
 from .test_add_interface import TestAddInterface
 from .test_add_interface_address import TestAddInterfaceAddress
 from .test_add_intervention import TestAddIntervention
+from .test_add_issue import TestAddIssue
 from .test_add_machine import TestAddMachine
 from .test_add_manager import TestAddManager
 from .test_add_metacluster import TestAddMetaCluster
@@ -262,6 +263,7 @@ from .test_search_dns import TestSearchDns
 from .test_search_esx_cluster import TestSearchESXCluster
 from .test_search_hardware import TestSearchHardware
 from .test_search_host import TestSearchHost
+from .test_search_issue import TestSearchIssue
 from .test_search_machine import TestSearchMachine
 from .test_search_metacluster import TestSearchMetaCluster
 from .test_search_model import TestSearchModel
@@ -278,6 +280,7 @@ from .test_setup_params import TestSetupParams
 from .test_show_active_commands import TestShowActiveCommands
 from .test_show_campus import TestShowCampus
 from .test_show_fqdn import TestShowFqdn
+from .test_show_issue import TestShowIssue
 from .test_show_machine import TestShowMachine
 from .test_show_netdev import TestShowNetworkDevice
 from .test_show_network import TestShowNetwork
@@ -315,6 +318,7 @@ from .test_update_esx_cluster import TestUpdateESXCluster
 from .test_update_feature import TestUpdateFeature
 from .test_update_filesystem import TestUpdateFilesystem
 from .test_update_interface import TestUpdateInterface
+from .test_update_issue import TestUpdateIssue
 from .test_update_machine import TestUpdateMachine
 from .test_update_metacluster import TestUpdateMetaCluster
 from .test_update_model import TestUpdateModel
@@ -398,6 +402,7 @@ class BrokerTestSuite(unittest.TestSuite):
                  TestPollNetworkDevice,
                  TestUpdateNetworkDeviceMac,
                  TestAddHost,
+                 TestAddIssue, TestShowIssue, TestUpdateIssue, TestSearchIssue,
                  TestAddAuxiliary, TestAddManager, TestAddInterfaceAddress,
                  TestAddServiceAddress,
                  TestRenameNetworkDevice, TestDiscoverNetworkDevice,

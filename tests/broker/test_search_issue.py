@@ -1,0 +1,247 @@
+#!/usr/bin/env python
+# -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
+# ex: set expandtab softtabstop=4 shiftwidth=4:
+#
+# Copyright (C) 2020  Contributor
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Module for testing the search issue command."""
+
+import unittest
+
+if __name__ == "__main__":
+    import utils
+    utils.import_depends()
+
+from brokertest import TestBrokerCommand
+
+
+class TestSearchIssue(TestBrokerCommand):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestSearchIssue, cls).setUpClass()
+
+        cls.proto = cls.protocols['aqdsystems_pb2']
+        desc = cls.proto.Issue.DESCRIPTOR
+        cls.state_type = desc.fields_by_name["state"].enum_type
+
+    # link os and/or model for unittest15.aqd-unittest.ms.com
+    def test_180_link_issues(self):
+        # unixops-100: model
+        self.noouttest(["add_issue", "--tracker", "unixops-100",
+                        "--category", "ctos",
+                        "--description", "Some issue description"])
+        command = ["update_issue", "--tracker", "unixops-100",
+                   "--model", "dl360g9", "--vendor", "hp"]
+        self.noouttest(command)
+
+        # unixops-101: os
+        self.noouttest(["add_issue", "--tracker", "unixops-101",
+                        "--category", "hw",
+                        "--description", "Some issue description"])
+
+        osver = self.config.get("unittest", "linux_version_curr")
+        command = ["update_issue", "--tracker", "unixops-101", "--osname",
+                   "linux", "--archetype", "aquilon", "--osversion", osver]
+        self.noouttest(command)
+
+        # unixops-102: model&os
+        self.noouttest(["add_issue", "--tracker", "unixops-102",
+                        "--category", "hw",
+                        "--description", "Some issue description"])
+        command = ["update_issue", "--tracker", "unixops-102",
+                   "--model", "dl360g9", "--vendor", "hp"]
+        self.noouttest(command)
+        command = ["update_issue", "--tracker", "unixops-102",
+                   "--osname", "linux", "--archetype", "aquilon",
+                   "--osversion", osver]
+        self.noouttest(command)
+
+    # search for previously linked issues
+    def test_190_search_issues(self):
+        command = ["search", "issue", "--hostname",
+                   "unittest15.aqd-unittest.ms.com"]
+        out = self.commandtest(command)
+        self.matchoutput(out, "unixops-100", command)
+        self.matchoutput(out, "unixops-101", command)
+        self.matchoutput(out, "unixops-102", command)
+
+    def test_200_show_issue_all(self):
+        # revert previous tracker change
+        command = ["update", "issue", "--tracker", "unixops-222",
+                   "--new_tracker", "unixops-000"]
+        self.noouttest(command)
+
+        command = "show issue --all"
+        out = self.commandtest(command.split(" "))
+        self.matchoutput(out, "unixops-000", command)
+        self.matchoutput(out, "unixops-001", command)
+        self.matchoutput(out, "unixops-100", command)
+        self.matchoutput(out, "unixops-101", command)
+        self.matchoutput(out, "unixops-102", command)
+
+    # --------------------------------------------------------------------------------
+    # search --list
+    def test_300_host_list_filter_model(self):
+        hosts = ["unittest15.aqd-unittest.ms.com", "unittest02.one-nyp.ms.com"]
+        scratchfile = self.writescratch("search_issue_list", "\n".join(hosts))
+        command = ["search_issue", "--list", scratchfile]
+        out = self.commandtest(command)
+
+        self.matchoutput(out, "unixops-000", command)
+        self.matchoutput(out, "unixops-001", command)
+        self.matchoutput(out, "unixops-100", command)
+        self.matchoutput(out, "unixops-101", command)
+        self.matchoutput(out, "unixops-102", command)
+
+    # filter model
+    def test_400_host_list_filter_model(self):
+        hosts = ["unittest15.aqd-unittest.ms.com", "unittest02.one-nyp.ms.com"]
+        scratchfile = self.writescratch("search_issue_list", "\n".join(hosts))
+        command = ["search_issue", "--list", scratchfile, "--model", "dl360g9"]
+        out = self.commandtest(command)
+
+        self.matchoutput(out, "unixops-100", command)
+        self.matchoutput(out, "unixops-102", command)
+
+    # filter os
+    def test_450_host_list_filter_os(self):
+        hosts = ["unittest15.aqd-unittest.ms.com", "unittest02.one-nyp.ms.com"]
+        scratchfile = self.writescratch("search_issue_list", "\n".join(hosts))
+        osver = self.config.get("unittest", "linux_version_curr")
+        command = ["search_issue", "--list", scratchfile, "--osversion", osver]
+        out = self.commandtest(command)
+
+        self.matchoutput(out, "unixops-101", command)
+        self.matchoutput(out, "unixops-102", command)
+
+    # various filters
+    def test_460_host_list_filter_model_os(self):
+        hosts = ["unittest15.aqd-unittest.ms.com", "unittest02.one-nyp.ms.com"]
+        scratchfile = self.writescratch("search_issue_list", "\n".join(hosts))
+        osver = self.config.get("unittest", "linux_version_curr")
+        command = ["search_issue", "--list", scratchfile, "--osversion",
+                   osver, "--model", "dl360g9"]
+        out = self.commandtest(command)
+
+        self.matchoutput(out, "unixops-102", command)
+
+    def test_470_host_list_filter_category(self):
+        hosts = ["unittest15.aqd-unittest.ms.com", "unittest02.one-nyp.ms.com"]
+        scratchfile = self.writescratch("search_issue_list", "\n".join(hosts))
+        command = ["search_issue", "--list", scratchfile, "--category", "ctos"]
+        out = self.commandtest(command)
+
+        self.matchoutput(out, "unixops-000", command)
+        self.matchoutput(out, "unixops-100", command)
+
+    def test_480_host_list_filter_state(self):
+        hosts = ["unittest15.aqd-unittest.ms.com", "unittest02.one-nyp.ms.com"]
+        scratchfile = self.writescratch("search_issue_list", "\n".join(hosts))
+        command = ["search_issue", "--list", scratchfile,
+                   "--state", "discarded"]
+        out = self.commandtest(command)
+
+        self.matchoutput(out, "unixops-000", command)
+
+    def test_500_host_list_filter_all(self):
+        hosts = ["unittest15.aqd-unittest.ms.com", "unittest02.one-nyp.ms.com"]
+        scratchfile = self.writescratch("search_issue_list", "\n".join(hosts))
+        osver = self.config.get("unittest", "linux_version_curr")
+        command = ["search_issue", "--list", scratchfile, "--osversion", osver,
+                   "--model", "dl360g9", "--category", "hw", "--state", "open"]
+        out = self.commandtest(command)
+
+        self.matchoutput(out, "unixops-102", command)
+
+    def test_500_verify_fullinfo(self):
+        hosts = ["unittest15.aqd-unittest.ms.com", "unittest02.one-nyp.ms.com"]
+        scratchfile = self.writescratch("search_issue_list", "\n".join(hosts))
+
+        command = ["update_issue", "--tracker", "unixops-102",
+                   "--model", "hs21-8853", "--vendor", "ibm"]
+        self.noouttest(command)
+
+        osver_prev = self.config.get("unittest", "linux_version_prev")
+        command = ["update_issue", "--tracker", "unixops-102",
+                   "--osname", "linux",
+                   "--archetype", "aquilon", "--osversion", osver_prev]
+        self.noouttest(command)
+
+        osver_curr = self.config.get("unittest", "linux_version_curr")
+        command = ["search_issue", "--list", scratchfile,
+                   "--osversion", osver_curr, "--model", "dl360g9",
+                   "--category", "hw", "--state", "open", "--fullinfo"]
+        out = self.commandtest(command)
+
+        self.matchoutput(out, "unixops-102", command)
+        self.matchoutput(out, "Category: hw", command)
+        self.matchoutput(out, "State: open", command)
+        self.matchoutput(out, "Description: some issue description", command)
+        self.matchoutput(out, "Model: dl360g9", command)
+        self.matchoutput(out, "Vendor: hp", command)
+        self.matchoutput(out, "Model: hs21-8853", command)
+        self.matchoutput(out, "Vendor: ibm", command)
+        self.matchoutput(out, "Version: 6.1-x86_64", command)
+        self.matchoutput(out, "Lifecycle: early_prod", command)
+        self.matchoutput(out, "Version: 5.1-x86_64", command)
+
+    def test_500_verify_proto(self):
+        hosts = ["unittest15.aqd-unittest.ms.com", "unittest02.one-nyp.ms.com"]
+        scratchfile = self.writescratch("search_issue_list", "\n".join(hosts))
+        osver_prev = self.config.get("unittest", "linux_version_prev")
+        osver_curr = self.config.get("unittest", "linux_version_curr")
+
+        command = ["search_issue", "--format", "proto", "--list", scratchfile,
+                   "--osversion", osver_curr, "--model", "dl360g9",
+                   "--category", "hw", "--state", "open"]
+        issue = self.protobuftest(command, expect=1)[0]
+        self.assertEqual(issue.tracker, "unixops-102")
+        state = "open"
+        val = self.state_type.values_by_name[state.upper()]
+        self.assertEqual(issue.state, val.number)
+        self.assertEqual(issue.category, "hw")
+        self.assertEqual(issue.description, "some issue description")
+        self.assertEqual(issue.models[1].name, "dl360g9")
+        self.assertEqual(issue.models[1].vendor, "hp")
+        self.assertEqual(issue.models[0].name, "hs21-8853")
+        self.assertEqual(issue.models[0].vendor, "ibm")
+        self.assertEqual(issue.os[0].version, osver_curr)
+        self.assertEqual(issue.os[1].version, osver_prev)
+
+    def test_500_host_list_filter_all_fail(self):
+        # no issue correspond to filter --> no output
+        hosts = ["unittest15.aqd-unittest.ms.com", "unittest02.one-nyp.ms.com"]
+        scratchfile = self.writescratch("search_issue_list", "\n".join(hosts))
+        osver = self.config.get("unittest", "linux_version_curr")
+        command = ["search_issue", "--list", scratchfile, "--osversion", osver,
+                   "--model", "dl360g9", "--category", "hw",
+                   "--state", "discarded"]
+        self.noouttest(command)
+
+    def test_501_host_list_filter_os_fail(self):
+        hosts = ["unittest15.aqd-unittest.ms.com", "unittest02.one-nyp.ms.com"]
+        scratchfile = self.writescratch("search_issue_list", "\n".join(hosts))
+        command = ["search_issue", "--list", scratchfile, "--osname", "linux",
+                   "--model", "dl360g9", "--category", "hw",
+                   "--state", "discarded"]
+        err = self.badrequesttest(command)
+        self.matchoutput(err, "Bad Request: "
+                              "Operating System linux is not unique.",
+                         command)
+
+
+if __name__ == '__main__':
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestSearchIssue)
+    unittest.TextTestRunner(verbosity=2).run(suite)

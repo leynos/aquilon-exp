@@ -1,7 +1,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2008,2009,2010,2011,2012,2013,2014,2015,2016  Contributor
+# Copyright (C) 2008-2016,2020  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ class OSFormatter(ObjectFormatter):
         for dbsrv in sorted(os.required_services, key=attrgetter("name")):
             details.append(indent + "  Required Service: %s" % dbsrv.name)
         details.append(indent + "  Lifecycle: %s" % os.lifecycle)
-        if os.comments:
+        if os.comments and indirect_attrs:
             details.append(indent + "  Comments: %s" % os.comments)
 
         return "\n".join(details)

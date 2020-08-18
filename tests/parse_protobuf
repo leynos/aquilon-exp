@@ -2,7 +2,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2011-2019  Contributor
+# Copyright (C) 2011-2020  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -85,6 +85,7 @@ typemap = {
     "host": aqdsystems_pb2.HostList(),
     "machine": aqdsystems_pb2.MachineList(),
     "model": aqdsystems_pb2.ModelList(),
+    "issue": aqdsystems_pb2.IssueList(),
     "cluster": aqdsystems_pb2.ClusterList(),
     "metacluster": aqdsystems_pb2.MetaClusterList(),
     "archetype": aqdsystems_pb2.ArchetypeList(),
