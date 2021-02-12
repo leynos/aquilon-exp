@@ -2,7 +2,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2008,2009,2010,2012,2013,2014,2015,2016  Contributor
+# Copyright (C) 2008-2010,2012-2016,2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ class TestUnbindClient(TestBrokerCommand):
                          "Warning: Host aquilon94.aqd-unittest.ms.com is "
                          "missing the following required services, please run "
                          "'aq reconfigure': afs, aqd, bootserver, dns, lemon, "
-                         "ntp, support-group, syslogng.",
+                         "ntp, reboot, support-group, syslogng.",
                          command)
 
     def test_135_verify_unbind_search_unbuilt(self):

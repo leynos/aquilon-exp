@@ -2,7 +2,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2008-2018  Contributor
+# Copyright (C) 2008-2018,2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -87,6 +87,11 @@ default_maps = {
             "organization": ["ms"],
         },
     },
+    "reboot": {
+        "week1": {
+            "country": ["gb", "us"]
+        }
+    }
 }
 
 
@@ -151,6 +156,17 @@ class TestMapService(TestBrokerCommand):
                          "Service: bootserver Instance: unittest Map: Building cards",
                          command)
         self.matchclean(out, "Building np", command)
+
+    def test_105_verify_reboot(self):
+        command = ["show_map", "--service", "reboot",
+                   "--instance", "week1"]
+        out = self.commandtest(command)
+        self.matchoutput(out,
+                         "Service: reboot Instance: week1 Map: Country gb",
+                         command)
+        self.matchoutput(out,
+                         "Service: reboot Instance: week1 Map: Country us",
+                         command)
 
     def test_110_map_utsi1(self):
         self.noouttest(["map", "service", "--building", "ut",

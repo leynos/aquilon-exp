@@ -1,7 +1,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2013,2015,2016  Contributor
+# Copyright (C) 2013,2015-2016,2018,2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,11 +21,11 @@ default_parameters = {
         "espinfo/function": "development",
         "espinfo/class": "INFRASTRUCTURE",
         "espinfo/users": "IT / TECHNOLOGY",
-        "windows/windows": '[{"duration": 8, "start": "08:00", "day": "Sun"}]',
+        "windows/windows": '[{"duration": 8, "start": "08:00", "day": "Sat"}]',
     },
     'esx_cluster': {
         "espinfo/class": "INFRASTRUCTURE",
-        "windows/windows": '[{"duration": 8, "start": "08:00", "day": "Sun"}]',
+        "windows/windows": '[{"duration": 8, "start": "08:00", "day": "Sat"}]',
     },
     'hacluster': {
         "espinfo/class": "INFRASTRUCTURE",
@@ -34,7 +34,7 @@ default_parameters = {
         "espinfo/function": "development",
         "espinfo/class": "INFRASTRUCTURE",
         "espinfo/users": "IT / TECHNOLOGY",
-        "windows/windows": '[{"duration": 8, "start": "08:00", "day": "Sun"}]',
+        "windows/windows": '[{"duration": 8, "start": "08:00", "day": "Sat"}]',
     },
 }
 

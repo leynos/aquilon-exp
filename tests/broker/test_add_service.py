@@ -2,7 +2,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2008,2009,2010,2011,2012,2013,2014,2015,2016  Contributor
+# Copyright (C) 2008-2016,2018,2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -64,6 +64,7 @@ default_services = {
     "utsvc2": ["utsi1"],
     "vcenter": ["ut"],
     "vmseasoning": ["salt", "pepper"],
+    "reboot": ["scheduled", "week1"]
 }
 
 # Services which need client lists enabled
