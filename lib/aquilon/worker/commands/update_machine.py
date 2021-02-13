@@ -1,7 +1,8 @@
+#!/usr/bin/env python
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2008,2009,2010,2011,2012,2013,2014,2015,2016,2017  Contributor
+# Copyright (C) 2008-2018,2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,13 +19,31 @@
 
 import re
 
+from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.sql import and_
+
 from aquilon.exceptions_ import ArgumentError, ProcessException
-from aquilon.aqdb.model import (Chassis, MachineChassisSlot, Model, Machine,
-                                Resource, BundleResource, Share, Filesystem)
+from aquilon.aqdb.model import (
+    ARecord,
+    BundleResource,
+    Chassis,
+    Filesystem,
+    Machine,
+    MachineChassisSlot,
+    Model,
+    Network,
+    Resource,
+    Share,
+)
 from aquilon.aqdb.types import CpuType
 from aquilon.worker.broker import BrokerCommand
+from aquilon.worker.dbwrappers.dns import update_address
 from aquilon.worker.dbwrappers.hardware_entity import update_primary_ip
-from aquilon.worker.dbwrappers.interface import set_port_group, generate_ip
+from aquilon.worker.dbwrappers.interface import (
+    generate_ip,
+    next_ip,
+    set_port_group,
+)
 from aquilon.worker.dbwrappers.location import get_location
 from aquilon.worker.dbwrappers.resources import (find_resource,
                                                  get_resource_holder)
@@ -181,8 +200,8 @@ class CommandUpdateMachine(BrokerCommand):
     def render(self, session, logger, plenaries, machine, model, vendor, serial, uuid,
                clear_uuid, chassis, slot, clearchassis, multislot, vmhost,
                cluster, metacluster, allow_metacluster_change, cpuname,
-               cpuvendor, cpucount, memory, ip, autoip, uri, remap_disk,
-               comments, user, justification, reason, **arguments):
+               cpuvendor, cpucount, memory, ip, autoip, swap_ip, uri,
+               remap_disk, comments, user, justification, reason, **arguments):
         dbmachine = Machine.get_unique(session, machine, compel=True)
         oldinfo = DSDBRunner.snapshot_hw(dbmachine)
         old_location = dbmachine.location
@@ -321,12 +340,42 @@ class CommandUpdateMachine(BrokerCommand):
         elif remap_disk:
             update_disk_backing_stores(dbmachine, None, None, remap_disk)
 
-        if ip:
+        swap_addr = None
+        old_ip = None
+        if swap_ip:
+            if not dbmachine.primary_name:
+                raise ArgumentError("Cannot swap IP with a machine that "
+                                    "has no primary name.")
+            old_ip = dbmachine.primary_name.ip
+            dbnetwork = dbmachine.primary_name.network
+            q = session.query(ARecord)
+            q = q.filter_by(ip=swap_ip)
+            q = q.outerjoin(Network)
+            q = q.filter(and_(Network.network_environment ==
+                              dbnetwork.network_environment))
+            try:
+                swap_addr = q.one()
+            except NoResultFound:
+                raise ArgumentError(
+                    "IP address {0} is not assigned to a DNS entry. You can "
+                    "only swap IPs with unused DNS records added via "
+                    "add_address".format(swap_ip),
+                )
+            swap_addr.network.lock_row()
+            temp_ip = next_ip(session, swap_addr.network, ipalgorithm=None)
+            update_address(session, swap_addr, temp_ip, swap_addr.network)
+            session.flush()
+
+        if (ip or swap_ip):
+            target_ip = ip if ip else swap_ip
             if dbmachine.host:
                 for srv in dbmachine.host.services_provided:
                     si = srv.service_instance
                     plenaries.add(si, cls=PlenaryServiceInstanceToplevel)
-            update_primary_ip(session, logger, dbmachine, ip)
+            update_primary_ip(session, logger, dbmachine, target_ip)
+
+        if swap_ip:
+            update_address(session, swap_addr, old_ip, swap_addr.network)
 
         if dbmachine.location != old_location and dbmachine.host:
             for vm in dbmachine.host.virtual_machines:
