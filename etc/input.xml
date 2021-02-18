@@ -4227,6 +4227,7 @@
             <optgroup fields="one">
                 <option name="autoip" type="flag" requires="cluster metacluster vmhost">Re-assign IP addresses</option>
                 <option name="ip" type="ip">New primary IP address</option>
+                <option name="swap_ip" type="ip">Swap IP address with an existing DNS record (added via add_address)</option>
             </optgroup>
             <option name="uri" type="string">URI to point to a template describing the virtual appliance</option>
             <option name="remap_disk" type="string">Vitual disk backend remapping definitions</option>

@@ -2,7 +2,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2015,2016,2017  Contributor
+# Copyright (C) 2015-2017,2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -266,7 +266,8 @@ class TestAddParameter(VerifyGrnsMixin, PersonalityTestMixin,
                         "--value", "set"])
         self.noouttest(["add_parameter", "--personality", "utpers-dev",
                         "--archetype", "aquilon", "--path", "windows/windows",
-                        "--value", '[{"duration": 8, "start": "08:00", "day": "Sun"}]'])
+                        "--value",
+                        '[{"duration": 8, "start": "08:00", "day": "Sat"}]'])
 
     def test_155_validate(self):
         command = ["validate_parameter", "--personality", "utpers-dev",

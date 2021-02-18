@@ -2,7 +2,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2011,2012,2013,2014,2015,2016  Contributor
+# Copyright (C) 2011-2016,2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ class TestAddRebootSchedule(TestBrokerCommand):
 
     def test_110_add_schedule(self):
         command = ["add_reboot_schedule",
-                   "--week=all", "--day=Sun", "--time=08:00",
+                   "--week=all", "--day=Sat", "--time=08:00",
                    "--hostname=server1.aqd-unittest.ms.com"]
         self.successtest(command)
 
@@ -51,7 +51,7 @@ class TestAddRebootSchedule(TestBrokerCommand):
         self.matchoutput(out, "Bound to: Host server1.aqd-unittest.ms.com",
                          command)
         self.matchoutput(out, "Week: All", command)
-        self.matchoutput(out, "Day: Sun", command)
+        self.matchoutput(out, "Day: Sat", command)
         self.matchoutput(out, "Time: 08:00", command)
 
     def test_120_cat_resource(self):
@@ -66,7 +66,7 @@ class TestAddRebootSchedule(TestBrokerCommand):
         self.matchoutput(out, "\"name\" = \"reboot_schedule\";", command)
         self.matchoutput(out, "\"time\" = \"08:00\";", command)
         self.matchoutput(out, "\"week\" = \"All\"", command)
-        self.matchoutput(out, "\"day\" = \"Sun\"", command)
+        self.matchoutput(out, "\"day\" = \"Sat\"", command)
 
         command = ["cat", "--reboot_schedule",
                    "--hostname=server1.aqd-unittest.ms.com",
@@ -102,7 +102,7 @@ class TestAddRebootSchedule(TestBrokerCommand):
                resource.type == "reboot_schedule":
                 found = True
                 self.assertEqual(resource.reboot_schedule.week, "All")
-                self.assertEqual(resource.reboot_schedule.day, "Sun")
+                self.assertEqual(resource.reboot_schedule.day, "Sat")
                 self.assertEqual(resource.reboot_schedule.time, "08:00")
         self.assertTrue(found,
                         "Reboot schedule not found in the resources. "
@@ -164,7 +164,7 @@ class TestAddRebootSchedule(TestBrokerCommand):
 
     def test_200_add_existing(self):
         command = ["add_reboot_schedule",
-                   "--week=all", "--day=Sun", "--time=08:00",
+                   "--week=all", "--day=Sat", "--time=08:00",
                    "--hostname=server1.aqd-unittest.ms.com"]
         out = self.badrequesttest(command)
         self.matchoutput(out, "already exists", command)

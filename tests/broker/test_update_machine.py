@@ -2,7 +2,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018  Contributor
+# Copyright (C) 2008-2018,2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -512,6 +512,57 @@ class TestUpdateMachine(EventsTestMixin, TestBrokerCommand):
         command = ["update_machine", "--machine=evm1", "--model=utmedium",
                    "--cpucount=1", "--memory=8192"]
         self.noouttest(command)
+
+    def test_1140_swapip_ut3c5n10(self):
+        self.dsdb_expect_update("unittest02.one-nyp.ms.com", "eth0",
+                                self.net["unknown0"].usable[13])
+        command = ["update_machine", "--machine", "ut3c5n10", "--swap_ip",
+                   self.net["unknown0"].usable[13]]
+        self.noouttest(command)
+        self.dsdb_verify()
+
+    def test_1141_swapip_ut3c5n10_verify(self):
+        command = ["show_machine", "--machine", "ut3c5n10", "--format",
+                   "proto"]
+        machine = self.protobuftest(command, expect=1)[0]
+        self.assertEqual(machine.interfaces[0].ip,
+                         "{}".format(self.net["unknown0"].usable[13]))
+
+    def test_1142_swapip_ut3c5n10_back(self):
+        self.dsdb_expect_update("unittest02.one-nyp.ms.com", "eth0",
+                                self.net["unknown0"].usable[11])
+        command = ["update_machine", "--machine", "ut3c5n10", "--swap_ip",
+                   self.net["unknown0"].usable[11]]
+        self.noouttest(command)
+        self.dsdb_verify()
+
+    def test_1143_swapip_ut3c5n10_verify(self):
+        command = ["show_machine", "--machine", "ut3c5n10", "--format",
+                   "proto"]
+        machine = self.protobuftest(command, expect=1)[0]
+        self.assertEqual(machine.interfaces[0].ip,
+                         "{}".format(self.net["unknown0"].usable[11]))
+
+    def test_1144_swapip_assigned_address(self):
+        command = ["update_machine", "--machine", "ut3c5n10", "--swap_ip",
+                   self.net["unknown0"].usable[2]]
+        out = self.badrequesttest(command)
+        self.matchoutput(out, "DNS Record unittest00.one-nyp.ms.com is a "
+                         "primary name", command)
+
+    def test_1145_swapip_missing_address(self):
+        command = ["update_machine", "--machine", "ut3c5n10", "--swap_ip",
+                   "12.13.14.250"]
+        out = self.badrequesttest(command)
+        self.matchoutput(out, "You can only swap IPs with unused DNS records "
+                         "added via add_address", command)
+
+    def test_1146_swapip_missing_primary_name(self):
+        command = ["update_machine", "--machine", "utnorack", "--swap_ip",
+                   self.net["unknown0"].usable[13]]
+        out = self.badrequesttest(command)
+        self.matchoutput(out, "Cannot swap IP with a machine that has no "
+                         "primary name.", command)
 
     def test_2000_bad_cpu_vendor(self):
         self.notfoundtest(["update", "machine", "--machine", "ut3c1n4",

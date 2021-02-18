@@ -1,8 +1,7 @@
-#!/usr/bin/env python
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2020  Contributor
+# Copyright (C) 2020-2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -213,12 +212,18 @@ class TestSearchIssue(TestBrokerCommand):
         self.assertEqual(issue.state, val.number)
         self.assertEqual(issue.category, "hw")
         self.assertEqual(issue.description, "some issue description")
-        self.assertEqual(issue.models[1].name, "dl360g9")
-        self.assertEqual(issue.models[1].vendor, "hp")
-        self.assertEqual(issue.models[0].name, "hs21-8853")
-        self.assertEqual(issue.models[0].vendor, "ibm")
-        self.assertEqual(issue.os[0].version, osver_curr)
-        self.assertEqual(issue.os[1].version, osver_prev)
+        expected_models = set([("dl360g9", "hp"), ("hs21-8853", "ibm")])
+        actual_models = set()
+        self.assertEqual(len(issue.models), len(expected_models))
+        for model in issue.models:
+            actual_models.add((model.name, model.vendor))
+        self.assertTrue(expected_models == actual_models)
+        expected_osversions = set([osver_curr, osver_prev])
+        actual_osversions = set()
+        self.assertEqual(len(issue.os), len(expected_osversions))
+        for osversion in issue.os:
+            actual_osversions.add(osversion.version)
+        self.assertTrue(expected_osversions == actual_osversions)
 
     def test_500_host_list_filter_all_fail(self):
         # no issue correspond to filter --> no output
