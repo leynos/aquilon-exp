@@ -514,8 +514,13 @@ class TestUpdateMachine(EventsTestMixin, TestBrokerCommand):
         self.noouttest(command)
 
     def test_1140_swapip_ut3c5n10(self):
-        self.dsdb_expect_update("unittest02.one-nyp.ms.com", "eth0",
-                                self.net["unknown0"].usable[13])
+        # This assumes the value returned by next_ip() because it depends on
+        # network changes in other tests.
+        self.dsdb_expect_update("arecord13.aqd-unittest.ms.com", ip="4.2.1.5")
+        self.dsdb_expect_update("unittest02.one-nyp.ms.com", iface="eth0",
+                                ip=self.net["unknown0"].usable[13])
+        self.dsdb_expect_update("arecord13.aqd-unittest.ms.com",
+                                ip=self.net["unknown0"].usable[11])
         command = ["update_machine", "--machine", "ut3c5n10", "--swap_ip",
                    self.net["unknown0"].usable[13]]
         self.noouttest(command)
@@ -529,8 +534,11 @@ class TestUpdateMachine(EventsTestMixin, TestBrokerCommand):
                          "{}".format(self.net["unknown0"].usable[13]))
 
     def test_1142_swapip_ut3c5n10_back(self):
-        self.dsdb_expect_update("unittest02.one-nyp.ms.com", "eth0",
-                                self.net["unknown0"].usable[11])
+        self.dsdb_expect_update("arecord13.aqd-unittest.ms.com", ip="4.2.1.5")
+        self.dsdb_expect_update("unittest02.one-nyp.ms.com", iface="eth0",
+                                ip=self.net["unknown0"].usable[11])
+        self.dsdb_expect_update("arecord13.aqd-unittest.ms.com",
+                                ip=self.net["unknown0"].usable[13])
         command = ["update_machine", "--machine", "ut3c5n10", "--swap_ip",
                    self.net["unknown0"].usable[11]]
         self.noouttest(command)
