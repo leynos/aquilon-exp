@@ -202,6 +202,7 @@ class CommandUpdateMachine(BrokerCommand):
                cluster, metacluster, allow_metacluster_change, cpuname,
                cpuvendor, cpucount, memory, ip, autoip, swap_ip, uri,
                remap_disk, comments, user, justification, reason, **arguments):
+        dsdb_runner = DSDBRunner(logger=logger)
         dbmachine = Machine.get_unique(session, machine, compel=True)
         oldinfo = DSDBRunner.snapshot_hw(dbmachine)
         old_location = dbmachine.location
@@ -342,6 +343,7 @@ class CommandUpdateMachine(BrokerCommand):
 
         swap_addr = None
         old_ip = None
+        temp_ip = None
         if swap_ip:
             if not dbmachine.primary_name:
                 raise ArgumentError("Cannot swap IP with a machine that "
@@ -362,7 +364,11 @@ class CommandUpdateMachine(BrokerCommand):
                     "add_address".format(swap_ip),
                 )
             swap_addr.network.lock_row()
+            dbmachine.primary_name.network.lock_row()
             temp_ip = next_ip(session, swap_addr.network, ipalgorithm=None)
+            dsdb_runner.update_host_details(swap_addr.fqdn,
+                                            old_ip=swap_addr.ip,
+                                            new_ip=temp_ip)
             update_address(session, swap_addr, temp_ip, swap_addr.network)
             session.flush()
 
@@ -401,7 +407,6 @@ class CommandUpdateMachine(BrokerCommand):
         # it is consistent without altering (and forgetting to alter)
         # all the calls to the method.
         with plenaries.transaction():
-            dsdb_runner = DSDBRunner(logger=logger)
             if dbmachine.host and dbmachine.host.archetype.name == 'aurora':
                 try:
                     dsdb_runner.show_host(dbmachine.fqdn)
@@ -410,6 +415,10 @@ class CommandUpdateMachine(BrokerCommand):
                                         "%s" % e)
             else:
                 dsdb_runner.update_host(dbmachine, oldinfo)
+                if swap_ip:
+                    dsdb_runner.update_host_details(swap_addr.fqdn,
+                                                    old_ip=temp_ip,
+                                                    new_ip=old_ip)
                 dsdb_runner.commit_or_rollback("Could not update machine in DSDB")
 
         return
