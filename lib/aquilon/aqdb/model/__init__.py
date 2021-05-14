@@ -1,7 +1,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2009-2020  Contributor
+# Copyright (C) 2009-2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -162,6 +162,7 @@ from aquilon.aqdb.model.resource import (
     ResourceHolder,
 )
 from aquilon.aqdb.model.filesystem import Filesystem
+from aquilon.aqdb.model.subscription import Subscription
 from aquilon.aqdb.model.application import Application
 from aquilon.aqdb.model.intervention import Intervention
 from aquilon.aqdb.model.resourcegroup import ResourceGroup, BundleResource
