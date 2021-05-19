@@ -28,15 +28,13 @@ class SubscriptionFormatter(ResourceFormatter):
     def extra_details(self, subs, indent=""):
         details = []
         details.append(indent + "  Mode: %s" % subs.configmode)
-        details.append(indent + "  Environment: %s" % subs.environment)
         details.append(indent + "  User: %s" % subs.username)
         details.append(indent + "  Subscription: %s" % subs.subscription)
         return details
 
     def csv_fields(self, subs):
         hostname = "{0}".format(subs.holder)
-        yield (hostname, subs.configmode, subs.environment,
-               subs.username, subs.subscription)
+        yield (hostname, subs.configmode, subs.username, subs.subscription)
 
 
 ObjectFormatter.handlers[Subscription] = SubscriptionFormatter()

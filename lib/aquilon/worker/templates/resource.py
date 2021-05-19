@@ -243,7 +243,6 @@ class PlenaryResource(StructurePlenary):
     def body_subscription(self, lines):
         pan_assign(lines, "subscription", self.dbobj.subscription)
         pan_assign(lines, "mode", self.dbobj.configmode)
-        pan_assign(lines, "environment", self.dbobj.environment)
         pan_assign(lines, "user", self.dbobj.username)
 
 

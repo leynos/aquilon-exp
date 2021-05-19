@@ -25,12 +25,10 @@ class CommandSearchSubscription(CommandSearchResource):
 
     resource_class = Subscription
 
-    def filter_by(self, q, mode=None, environment=None, username=None,
+    def filter_by(self, q, mode=None, username=None,
                   subscription=None, **kwargs):
         if mode:
             q = q.filter_by(configmode=mode)
-        if environment:
-            q = q.filter_by(environment=environment)
         if username:
             q = q.filter_by(username=username)
         if subscription:

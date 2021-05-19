@@ -35,7 +35,6 @@ class Subscription(Resource):
                          primary_key=True)
     # "mode" is a reserved keyword in oracle, so use configmode in the DB.
     configmode = Column(String(32), nullable=False)
-    environment = Column(String(32), nullable=False)
     username = Column(String(255), ForeignKey(User.name), nullable=False)
     subscription = Column(String(255), nullable=False)
 

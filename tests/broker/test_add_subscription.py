@@ -35,7 +35,6 @@ class TestAddSubscription(TestBrokerCommand):
                    "--hostname=server1.aqd-unittest.ms.com",
                    "--username={}".format(user_name),
                    "--mode=test",
-                   "--environment=uat",
                    "--subscription=/dev/app/localdisk/data/uat"]
         self.successtest(command)
 
@@ -48,7 +47,6 @@ class TestAddSubscription(TestBrokerCommand):
             Subscription
               Bound to: Host server1.aqd-unittest.ms.com
               Mode: test
-              Environment: uat
               User: {}
               Subscription: /dev/app/localdisk/data/uat
             """.format(user_name), command)
@@ -59,7 +57,6 @@ class TestAddSubscription(TestBrokerCommand):
                    "--hostname=host.ms.com",
                    "--username={}".format(user_name),
                    "--mode=test",
-                   "--environment=uat",
                    "--subscription=/dev/app/localdisk/data/uat"]
         out = self.notfoundtest(command)
         self.matchoutput(out, "Not Found: Host host.ms.com not found.",
@@ -82,7 +79,6 @@ class TestAddSubscription(TestBrokerCommand):
                    "--hostname=server1.aqd-unittest.ms.com",
                    "--username={}".format(user_name),
                    "--mode=test",
-                   "--environment=uat",
                    "--subscription=/dev/app/localdisk/data/uat"]
         out = self.badrequesttest(command)
         self.matchoutput(out, "already exists", command)
@@ -100,8 +96,20 @@ class TestAddSubscription(TestBrokerCommand):
 
     def test_200_search_subscription_user(self):
         user_name = getpass.getuser()
+        command = ["search_subscription", "--username={}".format(user_name)]
+        out = self.commandtest(command)
+        self.matchoutput(out, "Subscription: /dev/app/localdisk/data/uat",
+                         command)
+
+    def test_200_search_subscription_mode(self):
+        command = ["search_subscription", "--mode=test"]
+        out = self.commandtest(command)
+        self.matchoutput(out, "Subscription: /dev/app/localdisk/data/uat",
+                         command)
+
+    def test_200_search_subscription_subscription(self):
         command = ["search_subscription",
-                   "--username={}".format(user_name)]
+                   "--subscription=/dev/app/localdisk/data/uat"]
         out = self.commandtest(command)
         self.matchoutput(out, "Subscription: /dev/app/localdisk/data/uat",
                          command)

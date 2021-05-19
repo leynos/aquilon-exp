@@ -24,13 +24,12 @@ from aquilon.worker.commands.add_resource import CommandAddResource
 
 class CommandAddSubscription(CommandAddResource):
 
-    required_parameters = ["subscription", "mode", "environment", "username"]
+    required_parameters = ["subscription", "mode", "username"]
     resource_class = Subscription
 
     def setup_resource(self, session, logger, dbsubs, reason, mode,
-                       environment, username, subscription, **_):
+                       username, subscription, **_):
 
         dbsubs.configmode = mode
-        dbsubs.environment = environment
         dbsubs.username = username
         dbsubs.subscription = subscription
