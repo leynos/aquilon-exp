@@ -1,7 +1,8 @@
+#!/usr/bin/env python
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018  Contributor
+# Copyright (C) 2008-2018,2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -352,6 +353,7 @@ def set_port_group_vm(session, logger, dbinterface, port_group_name):
     dbmachine = dbinterface.hardware_entity
     allocator = get_vm_pg_allocator(dbmachine)
     dbvi = VlanInfo.get_by_pg(session, port_group=port_group_name, compel=None)
+    logger.info("pg name: {0}".format(port_group_name))
     if dbvi:
         # User requested a specific VLAN, check if it is available
         selected_pg = first_of(allocator.port_groups,
@@ -387,9 +389,15 @@ def set_port_group_vm(session, logger, dbinterface, port_group_name):
         used_pgs = set(iface.port_group for iface in dbmachine.interfaces
                        if iface.port_group)
         usable_pgs = set(allocator.port_groups)
-        usable_pgs -= used_pgs
 
+        logger.info("used_pgs:{0}, usable_pgs:{1}".format(used_pgs,
+                                                          usable_pgs))
         port_group_parsed = PortGroup.parse_name(port_group_name)
+
+        # check for autopg
+        if port_group_parsed[1] is None:
+            usable_pgs -= used_pgs
+
         for pg in sorted(usable_pgs, key=attrgetter('network_tag')):
             if pg.usage != port_group_name and (
                     pg.usage, pg.network_tag) != port_group_parsed:

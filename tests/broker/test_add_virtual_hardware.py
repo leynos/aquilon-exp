@@ -2,7 +2,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2008-2019  Contributor
+# Copyright (C) 2008-2019,2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -692,7 +692,7 @@ class TestAddVirtualHardware(EventsTestMixin, TestBrokerCommand):
         self.noouttest(["add", "machine", "--machine", "evm42",
                         "--cluster", "utecl13", "--model", "utmedium"])
 
-    def test_305_add_utmc8_pg_customtype_only(self):
+    def test_302_add_utmc8_pg_customtype_only(self):
         self.noouttest(["add", "interface", "--machine", "evm40",
                         "--interface", "eth0", "--automac", "--pg",
                         "customtype"])
@@ -705,6 +705,19 @@ class TestAddVirtualHardware(EventsTestMixin, TestBrokerCommand):
                         "customtype-v123"])
         self.noouttest(["del", "interface", "--machine", "evm40",
                         "--interface", "eth0"])
+
+    def test_308_add_utmc8_pg_customtype_full_multi(self):
+        self.noouttest(["add", "interface", "--machine", "evm40",
+                        "--interface", "eth0", "--automac", "--pg",
+                        "customtype-v123"])
+        self.noouttest(["add", "interface", "--machine", "evm40",
+                        "--interface", "eth1", "--automac", "--pg",
+                        "customtype-v123"])
+        self.noouttest(["del", "interface", "--machine", "evm40",
+                        "--interface", "eth0"])
+        self.noouttest(["del", "interface", "--machine", "evm40",
+                        "--interface", "eth1"])
+
 
     # Autopg test
     def test_310_add_utmc8_interfaces(self):
