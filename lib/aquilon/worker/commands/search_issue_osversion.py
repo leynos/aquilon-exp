@@ -14,43 +14,30 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains the logic for `aq search issue hostname`."""
+"""Contains the logic for `aq search issue osversion`."""
 
 from aquilon.aqdb.model import Issue
 from aquilon.worker.broker import BrokerCommand
-from aquilon.worker.dbwrappers.host import hostname_to_host
 from aquilon.worker.formats.list import StringAttributeList
 
 
-class CommandSearchIssueHostname(BrokerCommand):
-    required_parameters = ["hostname"]
+class CommandSearchIssueOSVersion(BrokerCommand):
 
-    def render(self, session, logger, hostname, fullinfo,
-               style, state_all=False, category=None, state=None, **_):
+    required_parameters = ["osversion"]
+
+    def render(self, session, logger, osversion, fullinfo,
+               style, state_all=False, state=None, **_):
 
         issues = session.query(Issue)
-
-        host = hostname_to_host(session, hostname)
-        model_host = host.hardware_entity.model
-        os_host = host.operating_system
-
-        issues_model = issues.filter(Issue.models.contains(model_host))
-        issues_os = issues.filter(Issue.os.contains(os_host))
+        issues_os = issues.filter(Issue.os.any(version=osversion))
 
         if state:
-            issues_model = issues_model.filter_by(state=state)
             issues_os = issues_os.filter_by(state=state)
         elif not state_all:
             # If state filter is not provided then display only open issues.
-            issues_model = issues_model.filter_by(state="open")
             issues_os = issues_os.filter_by(state="open")
-        issues_host = issues_model.union(issues_os)
-
-        if category:
-            # Get issues for category
-            issues_host = issues_host.filter(Issue.category == category)
 
         if fullinfo:
-            return issues_host.all()
+            return issues_os.all()
         else:
-            return StringAttributeList(issues_host, "tracker")
+            return StringAttributeList(issues_os, "tracker")

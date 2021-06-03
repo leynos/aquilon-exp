@@ -62,6 +62,7 @@ class TestSearchIssue(TestBrokerCommand):
         command = ["update_issue", "--tracker", "unixops-102",
                    "--model", "dl360g9", "--vendor", "hp"]
         self.noouttest(command)
+
         command = ["update_issue", "--tracker", "unixops-102",
                    "--osname", "linux", "--archetype", "aquilon",
                    "--osversion", osver]
@@ -75,6 +76,137 @@ class TestSearchIssue(TestBrokerCommand):
         self.matchoutput(out, "unixops-100", command)
         self.matchoutput(out, "unixops-101", command)
         self.matchoutput(out, "unixops-102", command)
+
+    def test_190_search_osissues(self):
+        osver = self.config.get("unittest", "linux_version_curr")
+        command = ["search", "issue", "--osversion", osver]
+        out = self.commandtest(command)
+        self.matchoutput(out, "unixops-101", command)
+        self.matchoutput(out, "unixops-102", command)
+
+    def test_199_search_firmwareissues(self):
+        command = ["search", "issue", "--model", "dl360g9",
+                   "--vendor", "hp"]
+        out = self.commandtest(command)
+        self.matchoutput(out, "unixops-100", command)
+        self.matchoutput(out, "unixops-102", command)
+
+    def test_199_search_issues_os_category(self):
+        command = ["search", "issue", "--hostname",
+                   "unittest15.aqd-unittest.ms.com", "--category", "ctos",
+                   "--state_all"]
+        out = self.commandtest(command)
+        self.matchoutput(out, "unixops-100", command)
+
+    def test_199_search_issues_firmware_category(self):
+        command = ["search", "issue", "--hostname",
+                   "unittest15.aqd-unittest.ms.com", "--category", "hw"]
+        out = self.commandtest(command)
+        self.matchoutput(out, "unixops-101", command)
+        self.matchoutput(out, "unixops-102", command)
+
+    def test_199_search_issue_state(self):
+        command = ["update_issue", "--tracker", "unixops-100",
+                   "--state", "closed"]
+        self.noouttest(command)
+        command = ["search", "issue", "--hostname",
+                   "unittest15.aqd-unittest.ms.com",
+                   "--state", "closed", "--category", "ctos"]
+        out = self.commandtest(command)
+        self.matchoutput(out, "unixops-100", command)
+        command = ["update_issue", "--tracker", "unixops-100",
+                   "--state", "open"]
+        self.noouttest(command)
+
+    def test_199_search_issue_state_all(self):
+        command = ["update_issue", "--tracker", "unixops-101",
+                   "--state", "closed"]
+        self.noouttest(command)
+        command = ["search", "issue", "--hostname",
+                   "unittest15.aqd-unittest.ms.com",
+                   "--state_all", "--category", "hw"]
+        out = self.commandtest(command)
+        self.matchoutput(out, "unixops-101", command)
+        self.matchoutput(out, "unixops-102", command)
+
+        command = ["update_issue", "--tracker", "unixops-101",
+                   "--state", "open"]
+        self.noouttest(command)
+
+    def test_199_search_issue_fullinfo(self):
+        command = ["update_issue", "--tracker", "unixops-100",
+                   "--state", "closed"]
+        self.noouttest(command)
+
+        command = ["search", "issue", "--hostname",
+                   "unittest15.aqd-unittest.ms.com",
+                   "--state", "closed", "--category", "ctos", "--fullinfo"]
+        out = self.commandtest(command)
+        self.matchoutput(out, "unixops-100", command)
+        self.matchoutput(out, "Category: ctos", command)
+        self.matchoutput(out, "State: closed", command)
+        self.matchoutput(out, "Description: some issue description", command)
+        self.matchoutput(out, "Model: dl360g9", command)
+        self.matchoutput(out, "Vendor: hp", command)
+        command = ["update_issue", "--tracker", "unixops-100",
+                   "--state", "open"]
+        self.noouttest(command)
+
+    def test_199_search_issues_os(self):
+        osver = self.config.get("unittest", "linux_version_curr")
+        command = ["search", "issue", "--osversion", osver, "--state_all"]
+        out = self.commandtest(command)
+        self.matchoutput(out, "unixops-101", command)
+        self.matchoutput(out, "unixops-102", command)
+
+    def test_199_search_issues_os_state(self):
+        osver = self.config.get("unittest", "linux_version_curr")
+        command = ["search", "issue", "--osversion", osver,
+                   "--state", "closed"]
+        self.noouttest(command)
+
+    def test_199_search_issues_os_state_fullinfo(self):
+        osver = self.config.get("unittest", "linux_version_curr")
+        command = ["search", "issue", "--osversion", osver,
+                   "--state", "open", "--fullinfo"]
+        out = self.commandtest(command)
+        self.matchoutput(out, "unixops-101", command)
+        self.matchoutput(out, "unixops-102", command)
+        self.matchoutput(out, "Category: hw", command)
+        self.matchoutput(out, "State: open", command)
+        self.matchoutput(out, "Description: some issue description", command)
+        self.matchoutput(out, "Operating System: linux", command)
+        self.matchoutput(out, "Version: 6.1-x86_64", command)
+
+    def test_199_search_issues_model(self):
+        command = ["search", "issue", "--model", "dl360g9", "--state_all"]
+        out = self.commandtest(command)
+        self.matchoutput(out, "unixops-100", command)
+        self.matchoutput(out, "unixops-102", command)
+
+    def test_199_search_issues_model_state(self):
+        command = ["update_issue", "--tracker", "unixops-100",
+                   "--state", "closed"]
+        self.noouttest(command)
+        command = ["search", "issue", "--model", "dl360g9",
+                   "--state", "closed"]
+        out = self.commandtest(command)
+        self.matchoutput(out, "unixops-100", command)
+
+    def test_199_search_issues_model_state_fullinfo(self):
+        command = ["search", "issue", "--model", "dl360g9", "--vendor", "hp",
+                   "--state", "open", "--fullinfo"]
+        out = self.commandtest(command)
+        self.matchoutput(out, "unixops-102", command)
+        self.matchoutput(out, "Category: hw", command)
+        self.matchoutput(out, "State: open", command)
+        self.matchoutput(out, "Description: some issue description", command)
+        self.matchoutput(out, "Vendor: hp", command)
+        self.matchoutput(out, "Model: dl360g9", command)
+        self.matchoutput(out, "Model Type: rackmount", command)
+        self.matchoutput(out, "Operating System: linux", command)
+        self.matchoutput(out, "Version: 6.1-x86_64", command)
+        self.matchoutput(out, "Lifecycle: early_prod", command)
 
     def test_200_show_issue_all(self):
         # revert previous tracker change
@@ -95,7 +227,8 @@ class TestSearchIssue(TestBrokerCommand):
     def test_300_host_list_filter_model(self):
         hosts = ["unittest15.aqd-unittest.ms.com", "unittest02.one-nyp.ms.com"]
         scratchfile = self.writescratch("search_issue_list", "\n".join(hosts))
-        command = ["search_issue", "--list", scratchfile]
+        command = ["search_issue", "--list", scratchfile, "--fullinfo",
+                   "--state_all"]
         out = self.commandtest(command)
 
         self.matchoutput(out, "unixops-000", command)
@@ -105,33 +238,10 @@ class TestSearchIssue(TestBrokerCommand):
         self.matchoutput(out, "unixops-102", command)
 
     # filter model
-    def test_400_host_list_filter_model(self):
+    def test_400_host_list_filter_vendor(self):
         hosts = ["unittest15.aqd-unittest.ms.com", "unittest02.one-nyp.ms.com"]
         scratchfile = self.writescratch("search_issue_list", "\n".join(hosts))
-        command = ["search_issue", "--list", scratchfile, "--model", "dl360g9"]
-        out = self.commandtest(command)
-
-        self.matchoutput(out, "unixops-100", command)
-        self.matchoutput(out, "unixops-102", command)
-
-    # filter os
-    def test_450_host_list_filter_os(self):
-        hosts = ["unittest15.aqd-unittest.ms.com", "unittest02.one-nyp.ms.com"]
-        scratchfile = self.writescratch("search_issue_list", "\n".join(hosts))
-        osver = self.config.get("unittest", "linux_version_curr")
-        command = ["search_issue", "--list", scratchfile, "--osversion", osver]
-        out = self.commandtest(command)
-
-        self.matchoutput(out, "unixops-101", command)
-        self.matchoutput(out, "unixops-102", command)
-
-    # various filters
-    def test_460_host_list_filter_model_os(self):
-        hosts = ["unittest15.aqd-unittest.ms.com", "unittest02.one-nyp.ms.com"]
-        scratchfile = self.writescratch("search_issue_list", "\n".join(hosts))
-        osver = self.config.get("unittest", "linux_version_curr")
-        command = ["search_issue", "--list", scratchfile, "--osversion",
-                   osver, "--model", "dl360g9"]
+        command = ["search_issue", "--list", scratchfile, "--vendor", "hp"]
         out = self.commandtest(command)
 
         self.matchoutput(out, "unixops-102", command)
@@ -139,7 +249,8 @@ class TestSearchIssue(TestBrokerCommand):
     def test_470_host_list_filter_category(self):
         hosts = ["unittest15.aqd-unittest.ms.com", "unittest02.one-nyp.ms.com"]
         scratchfile = self.writescratch("search_issue_list", "\n".join(hosts))
-        command = ["search_issue", "--list", scratchfile, "--category", "ctos"]
+        command = ["search_issue", "--list", scratchfile, "--category", "ctos",
+                   "--state_all"]
         out = self.commandtest(command)
 
         self.matchoutput(out, "unixops-000", command)
@@ -157,11 +268,11 @@ class TestSearchIssue(TestBrokerCommand):
     def test_500_host_list_filter_all(self):
         hosts = ["unittest15.aqd-unittest.ms.com", "unittest02.one-nyp.ms.com"]
         scratchfile = self.writescratch("search_issue_list", "\n".join(hosts))
-        osver = self.config.get("unittest", "linux_version_curr")
-        command = ["search_issue", "--list", scratchfile, "--osversion", osver,
-                   "--model", "dl360g9", "--category", "hw", "--state", "open"]
-        out = self.commandtest(command)
+        # osver = self.config.get("unittest", "linux_version_curr")
+        command = ["search_issue", "--list", scratchfile,
+                   "--category", "hw", "--state", "open"]
 
+        out = self.commandtest(command)
         self.matchoutput(out, "unixops-102", command)
 
     def test_500_verify_fullinfo(self):
@@ -179,8 +290,12 @@ class TestSearchIssue(TestBrokerCommand):
         self.noouttest(command)
 
         osver_curr = self.config.get("unittest", "linux_version_curr")
+        command = ["update_issue", "--tracker", "unixops-102",
+                   "--osname", "linux",
+                   "--archetype", "aquilon", "--osversion", osver_curr]
+        self.noouttest(command)
+
         command = ["search_issue", "--list", scratchfile,
-                   "--osversion", osver_curr, "--model", "dl360g9",
                    "--category", "hw", "--state", "open", "--fullinfo"]
         out = self.commandtest(command)
 
@@ -196,14 +311,29 @@ class TestSearchIssue(TestBrokerCommand):
         self.matchoutput(out, "Lifecycle: early_prod", command)
         self.matchoutput(out, "Version: 5.1-x86_64", command)
 
+    def test_500_host_list_filter_all_test(self):
+        hosts = ["unittest15.aqd-unittest.ms.com", "unittest02.one-nyp.ms.com"]
+        scratchfile = self.writescratch("search_issue_list", "\n".join(hosts))
+        # osver = self.config.get("unittest", "linux_version_curr")
+        command = ["search_issue", "--list", scratchfile,
+                   "--category", "hw", "--state", "open", "--fullinfo"]
+
+        out = self.commandtest(command)
+        self.matchoutput(out, "unixops-101", command)
+
     def test_500_verify_proto(self):
+        command = ["update_issue", "--tracker", "unixops-001",
+                   "--state", "closed"]
+        self.noouttest(command)
+        command = ["update_issue", "--tracker", "unixops-101",
+                   "--state", "closed"]
+        self.noouttest(command)
         hosts = ["unittest15.aqd-unittest.ms.com", "unittest02.one-nyp.ms.com"]
         scratchfile = self.writescratch("search_issue_list", "\n".join(hosts))
         osver_prev = self.config.get("unittest", "linux_version_prev")
         osver_curr = self.config.get("unittest", "linux_version_curr")
 
         command = ["search_issue", "--format", "proto", "--list", scratchfile,
-                   "--osversion", osver_curr, "--model", "dl360g9",
                    "--category", "hw", "--state", "open"]
         issue = self.protobuftest(command, expect=1)[0]
         self.assertEqual(issue.tracker, "unixops-102")
@@ -230,22 +360,16 @@ class TestSearchIssue(TestBrokerCommand):
         hosts = ["unittest15.aqd-unittest.ms.com", "unittest02.one-nyp.ms.com"]
         scratchfile = self.writescratch("search_issue_list", "\n".join(hosts))
         osver = self.config.get("unittest", "linux_version_curr")
-        command = ["search_issue", "--list", scratchfile, "--osversion", osver,
-                   "--model", "dl360g9", "--category", "hw",
-                   "--state", "discarded"]
+        command = ["search_issue", "--list", scratchfile,
+                   "--category", "hw", "--state", "discarded"]
         self.noouttest(command)
 
     def test_501_host_list_filter_os_fail(self):
         hosts = ["unittest15.aqd-unittest.ms.com", "unittest02.one-nyp.ms.com"]
         scratchfile = self.writescratch("search_issue_list", "\n".join(hosts))
-        command = ["search_issue", "--list", scratchfile, "--osname", "linux",
-                   "--model", "dl360g9", "--category", "hw",
-                   "--state", "discarded"]
-        err = self.badrequesttest(command)
-        self.matchoutput(err, "Bad Request: "
-                              "Operating System linux is not unique.",
-                         command)
-
+        command = ["search_issue", "--list", scratchfile,
+                   "--category", "hw", "--state", "discarded"]
+        self.noouttest(command)
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestSearchIssue)
