@@ -1,7 +1,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2009-2013,2019  Contributor
+# Copyright (C) 2009-2013,2019,2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -88,6 +88,9 @@ class MockHub(object):
     def __init__(self, engine, name=None, organisation=None, domain=None,
                  default_archetype=None, default_personality=None,
                  default_os=None, default_os_version=None,
+                 default_cluster=None,
+                 default_cluster_archetype=None,
+                 default_cluster_personality=None,
                  grn='grn:/ms/ei/aquilon/aqd'):
         # The engine object should be an instance of TestBrokerCommand (or its
         # subclass), and, if one wants to create machines or hosts,
@@ -110,7 +113,10 @@ class MockHub(object):
         self.default_organisation = organisation or self.random_name()
         self.default_domain = domain or self.random_name()
         self.default_archetype = default_archetype or self.random_name()
+        self.default_cluster = default_cluster or self.random_name()
+        self.default_cluster_archetype = default_cluster_archetype or self.random_name() + '_cluster'  # noqa: E501
         self.default_personality = default_personality or self.random_name()
+        self.default_cluster_personality = default_cluster_personality or self.random_name() + '_cluster'  # noqa: E501
         self.default_os = default_os or self.random_name()
         self.default_os_version = default_os_version or self.random_name()
         self.grn = grn
@@ -121,6 +127,7 @@ class MockHub(object):
         self.operating_systems = []
         self.domains = []
         self.continents = []
+        self.clusters = []
         self.countries = []
         self.cities = []
         self.buildings = []
@@ -254,11 +261,14 @@ class MockHub(object):
         self._engine.net.dispose_network(self._engine, name)
         del self.networks[name]
 
-    def add_archetype(self, name=None):
+    def add_archetype(self, name=None, cluster_type=None):
         name = self.get_or_create_name(name)
         if name in self.archetypes:
             raise ValueError('Archetype {} already exists.'.format(name))
-        self._engine.noouttest(['add_archetype', '--archetype', name])
+        command = ['add_archetype', '--archetype', name]
+        if cluster_type:
+            command += ['--cluster_type', cluster_type]
+        self._engine.noouttest(command)
         self.archetypes.append(name)
         return name
 
@@ -273,7 +283,8 @@ class MockHub(object):
         self.operating_systems.append(os)
         return os
 
-    def add_personality(self, name, archetype, promote=True):
+    def add_personality(self, name, archetype, cluster_required=False,
+                        promote=True):
         personality = (name, archetype)
         if personality in self.personalities:
             raise ValueError('Personality {} (archetype: {}) already '
@@ -282,9 +293,11 @@ class MockHub(object):
                    '--personality', name, '--archetype', archetype,
                    '--grn', self.grn, '--config_override',
                    '--host_environment', 'dev']
+        if cluster_required:
+            command.append('--cluster_required')
         self._engine.successtest(command)
         self._engine.check_plenary_exists(
-            self.default_archetype,
+            archetype,
             'personality', '{}+next'.format(name),
             'config')
         if promote:
@@ -292,6 +305,21 @@ class MockHub(object):
                                       '--archetype', archetype])
         self.personalities.append(personality)
         return personality
+
+    def add_cluster(self, name, archetype, personality,
+                    down_hosts_threshold=1000, city=None):
+        if name in self.clusters:
+            raise ValueError('Cluster {} (archetype: {}) already '
+                             'exists.'.format(name, archetype))
+        command = ['add_cluster', '--cluster', name,
+                   '--archetype', archetype,
+                   '--personality', personality,
+                   '--down_hosts_threshold', down_hosts_threshold,
+                   '--city', self.get_or_create_city(city),
+                   '--domain', self.default_domain]
+        self._engine.successtest(command)
+        self.clusters.append(name)
+        return name
 
     def add_organisation(self, name=None):
         name = self.get_or_create_name(name)
@@ -431,6 +459,13 @@ class MockHub(object):
             self._verify_deletion_with_show_all('city', self.cities)
         self.cities = []
 
+    def delete_clusters(self, verify=False):
+        for cluster in self.clusters:
+            self._engine.successtest(['del_cluster', '--cluster', cluster])
+        if verify:
+            self._verify_deletion_with_show_all('cluster', self.clusters)
+        self.clusters = []
+
     def delete_countries(self, verify=False):
         for country in self.countries:
             self._engine.successtest(['del_country', '--country', country,
@@ -547,6 +582,7 @@ class MockHub(object):
         self.delete_desks(verify)
         # Delete buildings.
         self.delete_buildings(verify)
+        self.delete_clusters(verify)
         # Delete cities.
         self.delete_cities(verify)
         # Delete countries.
@@ -925,6 +961,11 @@ class MockHub(object):
         if not self._exists_according_to_show('archetype',
                                               self.default_archetype):
             self.add_archetype(self.default_archetype)
+        # Add the default cluster archetype if it does not exist.
+        if not self._exists_according_to_show('archetype',
+                                              self.default_cluster_archetype):
+            self.add_archetype(self.default_cluster_archetype,
+                               cluster_type='storage')
         # Add the default OS if it does not exist.
         os = ['--osname', self.default_os,
               '--osversion', self.default_os_version,
@@ -940,3 +981,20 @@ class MockHub(object):
                 'personality', None, *personality):
             self.add_personality(self.default_personality,
                                  self.default_archetype)
+
+        # Also add a cluster personality
+        personality = ['--personality', self.default_cluster_personality,
+                       '--archetype', self.default_cluster_archetype]
+        if not self._exists_according_to_show(
+                'personality', None, *personality):
+            self.add_personality(self.default_cluster_personality,
+                                 self.default_cluster_archetype,
+                                 cluster_required=True)
+
+        # Add the default cluster
+        cluster = ['--cluster', self.default_cluster]
+        if not self._exists_according_to_show(
+                'cluster', None, *cluster):
+            self.add_cluster(self.default_cluster,
+                             self.default_cluster_archetype,
+                             self.default_cluster_personality)

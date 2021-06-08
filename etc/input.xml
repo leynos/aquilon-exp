@@ -6046,6 +6046,7 @@
                 <option name="resourcegroup" type="string">Resourcegroup to apply resource</option>
             </optgroup>
             <option name="filesystem" type="string">Filesystem name</option>
+            <option name="transport_type" type="string">Filesystem transport type</option>
         </optgroup>
         <transport method="get" path="find/resource/filesystem"/>
         <format name="proto" >

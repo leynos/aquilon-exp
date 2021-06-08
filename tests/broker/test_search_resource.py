@@ -1,8 +1,7 @@
-#!/usr/bin/env python
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2018  Contributor
+# Copyright (C) 2018,2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +17,7 @@
 """Module for testing the search application, filesystem, hostlink, intervention,
  reboot_schedule, resourcegroup, service_address commands."""
 
+from broker.utils import MockHub
 import unittest
 
 if __name__ == "__main__":
@@ -57,6 +57,41 @@ class TestSearchResource(TestBrokerCommand):
         self.matchoutput(out, 'Block Device: /dev/vx/dsk/dg.0/gnr.0', command)
         self.matchoutput(out, 'Bound to: Host server1.aqd-unittest.ms.com', command)
         self.matchoutput(out, 'Block Device: /dev/vx/dsk/dg.0/gnr.0', command)
+
+    def test_017_search_filesystem_transport_type(self):
+        mh = MockHub(self)
+        command = ['add_filesystem', '--cluster', mh.default_cluster,
+                   '--filesystem', 'transport_type_none',
+                   '--type', 'ext4', '--mountpoint', '/fs/',
+                   '--blockdevice', '/dev/vx/dsk/bj20db11.oth.0/gnr.1',
+                   '--bootmount']
+        self.noouttest(command)
+
+        command = ['add_filesystem', '--cluster', mh.default_cluster,
+                   '--filesystem', 'transport_type_iscsi',
+                   '--type', 'ext4', '--mountpoint', '/fs/',
+                   '--blockdevice', '/dev/vx/dsk/bj20db11.oth.0/gnr.2',
+                   '--transport_type', 'iscsi',
+                   '--bootmount']
+        self.noouttest(command)
+
+        command = ['search_filesystem',
+                   '--transport_type', 'none']
+        out = self.commandtest(command)
+        self.matchclean(out, 'iscsi', command)
+        self.matchoutput(out, 'Transport Type: None', command)
+
+        command = ['search_filesystem',
+                   '--transport_type', 'iscsi']
+        out = self.commandtest(command)
+        self.matchclean(out, 'Transport Type: None', command)
+        self.matchoutput(out, 'Transport Type: iscsi', command)
+
+        command = ['search_filesystem',
+                   '--filesystem', 'transport_type_none',
+                   '--transport_type', 'iscsi']
+        self.noouttest(command)
+        mh.delete()
 
     def test_020_search_hostlink(self):
         command = ['search_hostlink', '--hostname', 'server1.aqd-unittest.ms.com']
