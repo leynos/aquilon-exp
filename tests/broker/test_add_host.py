@@ -2,7 +2,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2008-2019  Contributor
+# Copyright (C) 2008-2019,2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -121,6 +121,12 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         self.assertEqual(len(host.personality.eonid_maps), 1)
         self.assertEqual(host.personality.eonid_maps[0].target, 'esp')
         self.assertEqual(host.personality.eonid_maps[0].eonid, 3)
+
+        for disk in host.machine.disks:
+            if disk.device_name == 'sda':
+                self.assertEqual(disk.boot, True)
+            else:
+                self.assertEqual(disk.boot, False)
 
     def test_105_cat_fail(self):
         # The plenary should not be there before make/reconfigure was run
