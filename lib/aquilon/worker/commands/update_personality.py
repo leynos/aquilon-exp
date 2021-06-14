@@ -1,7 +1,8 @@
+#!/usr/bin/env python
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2010,2011,2012,2013,2014,2015,2016,2017  Contributor
+# Copyright (C) 2010-2017,2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -81,10 +82,16 @@ class CommandUpdatePersonality(BrokerCommand):
 
             dbpersona.staged = staged
 
-        dbstage = dbpersona.active_stage(personality_stage)
+        if (dbpersona.staged and
+           not personality_stage and
+           not vmhost_capacity_function):
+            dbstage = dbpersona.active_stage("current")
+        else:
+            dbstage = dbpersona.active_stage(personality_stage)
+
 
         cm = ChangeManagement(session, user, justification, reason, logger, self.command, **arguments)
-        # It's a bit ugly. If any of the non-staged attributes are touched,
+        # If any of the non-staged attributes are touched,
         # then we need to check for prod hosts for all stages
         if (cluster_required is not None or config_override is not None or
                 host_environment or grn or eon_id or

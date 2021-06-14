@@ -2,7 +2,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2012-2019  Contributor
+# Copyright (C) 2012-2019,2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -352,12 +352,6 @@ class TestUpdateBuilding(PersonalityTestMixin, MachineTestMixin,
         }
         for personality, kwargs in personalities.items():
             self.create_personality("aquilon", personality, **kwargs)
-
-        # Force the next stage to be created
-        self.noouttest(["update_personality", "--personality", PPROD,
-                        "--archetype", "aquilon"])
-        self.noouttest(["update_personality", "--personality", QPROD,
-                        "--archetype", "aquilon"])
 
     def test_160_set_up_cluster_resource(self):
         ip = self.net["zebra_vip"].usable[10]

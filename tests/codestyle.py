@@ -2,7 +2,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2018  Contributor
+# Copyright (C) 2018,2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,10 @@ import shutil
 import site
 import sys
 import tempfile
+
+if sys.version_info[0] < 3:
+    print('You need to run codestyle.py with Python 3')
+    sys.exit(1)
 
 TESTDIR = os.path.dirname(__file__)
 LIBDIR = os.path.realpath(os.path.join(TESTDIR, '..', 'lib'))

@@ -2,7 +2,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2014,2015,2016,2017,2018  Contributor
+# Copyright (C) 2014-2018,2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ class TestJustification(PersonalityTestMixin, TestBrokerCommand):
     def test_200_update_personality(self):
         command = ["update_personality",
                    "--archetype", "aquilon",
+                   "--personality_stage", "next",
                    "--personality", PPROD]
         self.justificationmissingtest(command, auth=True, msgcheck=False)
 
@@ -239,7 +240,15 @@ class TestJustification(PersonalityTestMixin, TestBrokerCommand):
         command = ["update_personality",
                    "--archetype", "aquilon",
                    "--personality", QPROD]
-        self.noouttest(command)
+        out = self.notfoundtest(command)
+        self.matchoutput(out,
+                         "Personality aquilon/" + QPROD + " does not "
+                         "have stage current", command)
+        command = ["update_personality",
+                   "--archetype", "aquilon",
+                   "--personality", QPROD,
+                   "--personality_stage", "next"]
+        out = self.notfoundtest(command)
 
     def test_410_add_parameter(self):
         command = ["add_parameter",
@@ -337,12 +346,14 @@ class TestJustification(PersonalityTestMixin, TestBrokerCommand):
     def test_601_justification_no_reason(self):
         command = ["update_personality",
                    "--archetype", "aquilon",
+                   "--personality_stage", "next",
                    "--personality", PPROD] + self.emergency_just_without_reason
         self.reasonmissingtest(command, auth=True, msgcheck=False)
 
     def test_605_update_personality_reason(self):
         command = ["update_personality",
                    "--archetype", "aquilon",
+                   "--personality_stage", "next",
                    "--personality", PPROD] + self.emergency_just_with_reason
         self.emergencynojustification(command)
 
@@ -550,6 +561,7 @@ class TestJustification(PersonalityTestMixin, TestBrokerCommand):
         # To Do: create tests for rejected tickets
         command = ["update_personality",
                    "--archetype", "aquilon",
+                   "--personality_stage", "next",
                    "--personality", PPROD] + self.valid_just_tcm
         self.noouttest(command)
 
@@ -557,6 +569,7 @@ class TestJustification(PersonalityTestMixin, TestBrokerCommand):
         # To Do: create tests for rejected tickets
         command = ["update_personality",
                    "--archetype", "aquilon",
+                   "--personality_stage", "next",
                    "--personality", PPROD] + self.valid_just_sn
         self.noouttest(command)
 

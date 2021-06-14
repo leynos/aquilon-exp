@@ -2,7 +2,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2009,2010,2011,2012,2013,2014,2015,2016,2017  Contributor
+# Copyright (C) 2009-2017,2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ if __name__ == "__main__":
 from broker.brokertest import TestBrokerCommand
 from broker.grntest import VerifyGrnsMixin
 from broker.personalitytest import PersonalityTestMixin
+from broker.utils import MockHub
 
 
 class TestUpdatePersonality(VerifyGrnsMixin, PersonalityTestMixin,
@@ -196,7 +197,9 @@ class TestUpdatePersonality(VerifyGrnsMixin, PersonalityTestMixin,
         self.check_plenary_gone("aquilon", "personality",
                                 "compileserver+next", "config")
         self.noouttest(["update_personality", "--personality", "compileserver",
-                        "--archetype", "aquilon", "--staged"])
+                        "--archetype", "aquilon", "--staged",
+                        "--vmhost_capacity_function",
+                        "{'memory': (memory - 1500) * 0.94}"])
         self.check_plenary_exists("aquilon", "personality",
                                   "compileserver+next", "config")
 
@@ -233,7 +236,9 @@ class TestUpdatePersonality(VerifyGrnsMixin, PersonalityTestMixin,
 
     def test_176_create_next_again(self):
         self.noouttest(["update_personality", "--personality", "compileserver",
-                        "--archetype", "aquilon"])
+                        "--vmhost_capacity_function",
+                        "{'memory': (memory - 1500) * 0.94}",
+                        "--archetype", "aquilon"] + self.valid_just_tcm)
 
     def test_178_make_unstaged(self):
         self.check_plenary_exists("aquilon", "personality",
@@ -318,6 +323,38 @@ class TestUpdatePersonality(VerifyGrnsMixin, PersonalityTestMixin,
                          "Personality aquilon/utunused/dev already has "
                          "its environment set to dev, and cannot be updated.",
                          command)
+
+    # Test that update personality does not unecessarly create a next stage
+    def test_300_update_personality_without_stage(self):
+        mh = MockHub(engine=self)
+        command = ['update_personality',
+                   '--personality', mh.default_personality,
+                   '--archetype', mh.default_archetype]
+        self.noouttest(command)
+        command = ['search_personality',
+                   '--personality', mh.default_personality,
+                   '--personality_stage', 'next']
+        self.noouttest(command)
+        mh.delete()
+
+    # Test that update personality creates a next stage when necessary
+    def test_300_update_personality_with_stage(self):
+        mh = MockHub(engine=self)
+        command = ['update_personality',
+                   '--personality', mh.default_personality,
+                   '--archetype', mh.default_archetype,
+                   '--vmhost_capacity_function',
+                   "{'memory': (memory - 1500) * 0.94}"]
+        self.noouttest(command)
+        command = ['search_personality',
+                   '--personality', mh.default_personality,
+                   '--personality_stage', 'next']
+        out = self.commandtest(command)
+        self.matchoutput(
+                out,
+                mh.default_archetype + '/' + mh.default_personality + '@next',
+                command)
+        mh.delete()
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestUpdatePersonality)
