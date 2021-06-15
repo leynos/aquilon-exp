@@ -1,7 +1,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2008-2015,2018-2019  Contributor
+# Copyright (C) 2008-2015,2018-2019,2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ class CommandSearchResource(BrokerCommand):
 
     def render(self, session, logger, hostname, cluster, metacluster,
                personality=None, archetype=None, grn=None, eon_id=None,
-               host_environment=None, **kwargs):
+               host_environment=None, query_filters=None, **kwargs):
 
         # resourcegroup is special, because it's both a holder and a resource
         # itself
@@ -50,6 +50,11 @@ class CommandSearchResource(BrokerCommand):
 
         if name:
             q = q.filter_by(name=name)
+
+        if query_filters:
+            for key in query_filters:
+                q = q.filter(
+                    getattr(self.resource_class, key) == query_filters[key])
 
         if hostname or cluster or resourcegroup or personality or \
                 archetype or grn or eon_id:
