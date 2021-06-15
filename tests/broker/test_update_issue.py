@@ -1,8 +1,7 @@
-#!/usr/bin/env python
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2020  Contributor
+# Copyright (C) 2020-2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -159,7 +158,7 @@ class TestUpdateIssue(TestBrokerCommand):
 
     def test_160_search_issue_model(self):
         command = ["search", "issue", "--hostname",
-                   "unittest02.one-nyp.ms.com"]
+                   "unittest02.one-nyp.ms.com", "--state_all"]
         out = self.commandtest(command)
         self.matchoutput(out, "unixops-000", command)
 
@@ -175,7 +174,7 @@ class TestUpdateIssue(TestBrokerCommand):
 
     def test_168_search_issue_model_os(self):
         command = ["search", "issue",
-                   "--hostname", "unittest02.one-nyp.ms.com"]
+                   "--hostname", "unittest02.one-nyp.ms.com", "--state_all"]
         out = self.commandtest(command)
         self.matchoutput(out, "unixops-000", command)
         self.matchoutput(out, "unixops-001", command)

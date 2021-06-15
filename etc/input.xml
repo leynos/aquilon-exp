@@ -1132,30 +1132,28 @@
         <p/>
         --hostname to find all the issues linked to a Host.
         --list hostnames.txt to find all the issues linked to Hosts in a file. Each hostname in the file should be in a new line.
-
+        --osversion to find all the issues linked to the OS Version.
+        --model to find all the issues linked to the Model.
         <p/>
         Optional filters work with an AND logic: Issues will be displayed if they correspond to ALL the optional filters.
         <optgroup mandatory="True" fields="one">
             <option name="hostname" type="string">Hostname</option>
             <option name="list" type="list">File of hostnames (1 per line)</option>
-        </optgroup>
-
-        <optgroup>
-            <option name="model" type="string">Model</option>
-            <option name="vendor" type="string">Vendor</option>
-
-            <option name="osname" type="string" >OS name</option>
             <option name="osversion" type="string">OS version</option>
-            <option name="archetype" type="string">Archetype</option>
-
+            <option name="model" type="string">Model</option>
+        </optgroup>
+        <optgroup>
+            <option name="vendor" type="string">Vendor</option>
             <option name="state" type="string">State</option>
+            <option name="state_all" type="flag" conflicts="state">Display all the Issues irrespective of issue state.</option>
             <option name="category" type="string">Category</option>
-
             <option name="fullinfo" type="flag">Display all the attributes of the Issues</option>
         </optgroup>
 
         <!-- "list" needs to be POST, because the value may be too big for GET -->
         <transport trigger="hostname" method="get" path="search_issue_hostname"/>
+        <transport trigger="osversion" method="get" path="search_issue_osversion"/>
+        <transport trigger="model" method="get" path="search_issue_model"/>
         <transport trigger="list" method="post" path="command/search_issue/list"/>
 
         <format name="proto">

@@ -1,7 +1,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2020  Contributor
+# Copyright (C) 2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,10 +18,9 @@
 
 from aquilon.worker.broker import BrokerCommand
 from aquilon.aqdb.model import (
-                                Issue,
-                                Model,
-                                OperatingSystem,
-                                )
+    Issue,
+    Vendor,
+    )
 from aquilon.worker.dbwrappers.host import hostlist_to_hosts
 from aquilon.worker.formats.list import StringAttributeList
 
@@ -30,40 +29,28 @@ class CommandSearchIssueList(BrokerCommand):
 
     required_parameters = ["list"]
 
-    def render(self, session, logger, list, model, vendor, osname, osversion,
-               archetype, state, category, fullinfo, style, **_):
+    def render(self, session, logger, list, state, category, fullinfo, style,
+               state_all, vendor, **_):
 
         issues = session.query(Issue)
         # --------------------------------------------------
         # filters
-        do_filter_model = (model is not None or
-                           vendor is not None)
+        do_filter_model = (vendor is not None)
         do_filter_state = (state is not None)
         do_filter_category = (category is not None)
-        do_filter_os = (osname is not None or
-                        osversion is not None or
-                        archetype is not None)
+
+        if do_filter_model:
+            dbvendor = Vendor.get_unique(session, vendor, compel=True)
+            issues = issues.filter(Issue.models.any(vendor=dbvendor))
 
         if do_filter_state:
             issues = issues.filter(Issue.state == state)
+        elif not state_all:
+            # Display only open issue if state filter is not provided
+            issues = issues.filter(Issue.state == "open")
 
         if do_filter_category:
             issues = issues.filter(Issue.category == category)
-
-        # query model to filter
-        if do_filter_model:
-            model = Model.get_unique(session,
-                                     name=model,
-                                     vendor=vendor,
-                                     compel=True)
-            issues = issues.filter(Issue.models.contains(model))
-
-        if do_filter_os:
-            os = OperatingSystem.get_unique(session, name=osname,
-                                            version=osversion,
-                                            archetype=archetype,
-                                            compel=True)
-            issues = issues.filter(Issue.os.contains(os))
 
         # --------------------------------------------------
         # link issues with hosts
