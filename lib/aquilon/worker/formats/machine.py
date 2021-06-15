@@ -1,7 +1,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2008-2016,2019  Contributor
+# Copyright (C) 2008-2016,2019,2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -154,6 +154,10 @@ class MachineFormatter(HardwareEntityFormatter):
                 disk_msg.device_name = disk.device_name
                 disk_msg.capacity = disk.capacity
                 disk_msg.disk_type = disk.controller_type
+                if disk.bootable:
+                    disk_msg.boot = True
+                else:
+                    disk_msg.boot = False
                 if disk.wwn:
                     disk_msg.wwn = disk.wwn
                 if disk.address:

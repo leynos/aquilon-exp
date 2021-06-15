@@ -2,7 +2,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2008,2009,2010,2011,2012,2013,2014,2015,2016,2017  Contributor
+# Copyright (C) 2008-2017,2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -595,7 +595,12 @@ class TestSearchHost(TestBrokerCommand):
 
     def testprotobuf(self):
         command = "search host --hostname unittest02.one-nyp.ms.com --format proto"
-        self.protobuftest(command.split(" "), expect=1)
+        host_proto = self.protobuftest(command.split(" "), expect=1)[0]
+        for disk in host_proto.machine.disks:
+            if disk.device_name == 'sda':
+                self.assertEqual(disk.boot, True)
+            else:
+                self.assertEqual(disk.boot, False)
 
     def testprotobuf_machine_netdev_mix(self):
         # Pick network with Machine as well as NetworkDevices
