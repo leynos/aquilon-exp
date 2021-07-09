@@ -2,7 +2,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2008-2019  Contributor
+# Copyright (C) 2008-2019,2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -211,8 +211,8 @@ def create_sandbox(pageData, noexec=False):
     cmd_clone = ("git", "clone", "--branch", sandbox_name,
                  template_king_url, sandbox_name)
     cmd_prepare = None
-    if globalOptions.get('prepare_sandbox'):
-        cmd_prepare = (globalOptions.get("prepare_sandbox"), sandbox_dir)
+    if defaultOpts.get('prepare_sandbox'):
+        cmd_prepare = (defaultOpts.get("prepare_sandbox"), sandbox_dir)
     if noexec:
         print("cd '%s'" % user_base)
         print(" ".join("'%s'" % c for c in cmd_clone))
