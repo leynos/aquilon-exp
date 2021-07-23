@@ -2,7 +2,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2008-2020  Contributor
+# Copyright (C) 2008-2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -99,6 +99,7 @@ from .test_add_share import TestAddShare
 from .test_add_shared_service_name import TestAddSharedServiceName
 from .test_add_srv_record import TestAddSrvRecord
 from .test_add_static_route import TestAddStaticRoute
+from .test_add_subscription import TestAddSubscription
 from .test_add_user import TestAddUser
 from .test_add_user_type import TestAddUserType
 from .test_add_vendor import TestAddVendor
@@ -211,6 +212,7 @@ from .test_del_share import TestDelShare
 from .test_del_shared_service_name import TestDelSharedServiceName
 from .test_del_srv_record import TestDelSrvRecord
 from .test_del_static_route import TestDelStaticRoute
+from .test_del_subscription import TestDelSubscription
 from .test_del_user import TestDelUser
 from .test_del_user_type import TestDelUserType
 from .test_del_vendor import TestDelVendor
@@ -411,7 +413,7 @@ class BrokerTestSuite(unittest.TestSuite):
                  TestAddSrvRecord,
                  TestMapService, TestBindClient, TestPrebindServer,
                  TestAddResourceGroup, TestAddShare, TestAddFilesystem,
-                 TestAddApplication, TestAddIntervention,
+                 TestAddApplication, TestAddIntervention, TestAddSubscription,
                  TestAddHostlink, TestAddRebootSchedule, TestAddRebootIntervention,
                  TestAddSharedServiceName, TestAddServiceAddressSNAliases,
                  TestFlush,
@@ -512,7 +514,7 @@ class BrokerTestSuite(unittest.TestSuite):
                  TestDel10GigHardware, TestDelVirtualHardware,
                  TestUnbindCluster, TestUncluster,
                  TestDelServiceAddressSNAliases, TestDelSharedServiceName,
-                 TestDelShare, TestDelFilesystem,
+                 TestDelShare, TestDelFilesystem, TestDelSubscription,
                  TestDelHostlink, TestDelRebootIntervention, TestDelRebootSchedule,
                  TestDelIntervention, TestDelApplication,
                  TestDelResourceGroup,

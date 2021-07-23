@@ -8126,5 +8126,79 @@ appear earlier
         <transport method="get" path="permission/currentuser"/>
     </command>
 
+    <command name="show_subscription">
+        Show subscription based on filtering for host/cluster association
+        <p/>
+        Supported options for --format: raw, csv.
+        <p/>
+        The 'csv' format contains the following fields, in this order:
+        Host, Config Mode, Username, Subscription.
+        <optgroup mandatory="True">
+            <optgroup>
+                <option name="hostname" type="string" conflicts="cluster metacluster">Hostname to apply resource</option>
+                <option name="cluster" type="string" conflicts="hostname metacluster">Cluster to apply resource</option>
+                <option name="metacluster" type="string" conflicts="hostname cluster">Metacluster to apply resource</option>
+                <option name="resourcegroup" type="string">Resourcegroup to apply resource</option>
+            </optgroup>
+            <option name="all" type="flag" conflicts="hostname cluster metacluster resourcegroup subscription">List all subscription</option>
+        </optgroup>
+        <transport method="get" trigger="subscription" path="resource/subscription/%(hostname)s"/>
+        <transport method="get" path="resource/subscription"/>
+    </command>
+
+    <command name="add_subscription">
+        Add a new subscription resource.
+        <optgroup mandatory="True" fields="all">
+            <optgroup>
+                <option name="hostname" type="string" conflicts="cluster metacluster">Hostname to apply resource</option>
+                <option name="cluster" type="string" conflicts="hostname metacluster">Cluster to apply resource</option>
+                <option name="metacluster" type="string" conflicts="hostname cluster">Metacluster to apply resource</option>
+                <option name="resourcegroup" type="string">Resourcegroup to apply resource</option>
+            </optgroup>
+            <option name="subscription" type="string">Name of subscription</option>
+            <option name="mode" type="string">Mode</option>
+            <option name="username" type="string">Username</option>
+        </optgroup>
+        <optgroup>
+            <option name="comments" type="string">Comments</option>
+            <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
+            <option name="reason" type="string">Human readable description of why the operation was performed</option>
+            <option name="cm_check" type="flag">Do a dry-run, and report the objects in-scope for change-management.</option>
+        </optgroup>
+        <transport method="put" path="resource/subscription/%(hostname)s"/>
+    </command>
+
+    <command name="del_subscription">
+        Delete a subscription resource.
+        <optgroup mandatory="True" fields="one">
+                <option name="hostname" type="string" conflicts="cluster metacluster">Hostname to apply resource</option>
+                <option name="cluster" type="string" conflicts="hostname metacluster">Cluster to apply resource</option>
+                <option name="metacluster" type="string" conflicts="hostname cluster">Metacluster to apply resource</option>
+                <option name="resourcegroup" type="string">Resourcegroup to apply resource</option>
+        </optgroup>
+        <optgroup>
+            <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
+            <option name="reason" type="string">Human readable description of why the operation was performed</option>
+            <option name="cm_check" type="flag">Do a dry-run, and report the objects in-scope for change-management.</option>
+        </optgroup>
+        <transport method="delete" path="resource/subscription/%(hostname)s"/>
+    </command>
+
+    <command name="search_subscription">
+        Search subscription based on filtering for host/cluster association
+        <optgroup mandatory="True">
+            <optgroup>
+                <option name="hostname" type="string" conflicts="cluster metacluster">Hostname to apply resource</option>
+                <option name="cluster" type="string" conflicts="hostname metacluster">Cluster to apply resource</option>
+                <option name="metacluster" type="string" conflicts="hostname cluster">Metacluster to apply resource</option>
+                <option name="resourcegroup" type="string">Resourcegroup to apply resource</option>
+            </optgroup>
+            <option name="subscription" type="string">Name of subscription</option>
+            <option name="mode" type="string">Mode</option>
+            <option name="username" type="string">Username</option>
+        </optgroup>
+        <transport method="get" path="find/resource/subscription"/>
+    </command>
+
 </commandline>
 <!-- vim: set ai sw=4: -->

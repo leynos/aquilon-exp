@@ -1,7 +1,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2011-2019  Contributor
+# Copyright (C) 2011-2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ from aquilon.aqdb.model import (
     ServiceAddress,
     Share,
     SharedServiceName,
+    Subscription,
     SystemList,
     VirtualMachine,
 )
@@ -239,6 +240,11 @@ class PlenaryResource(StructurePlenary):
                  for entry in self.dbobj.entries.values()}
         pan_assign(lines, "members", hosts)
 
+    def body_subscription(self, lines):
+        pan_assign(lines, "subscription", self.dbobj.subscription)
+        pan_assign(lines, "mode", self.dbobj.configmode)
+        pan_assign(lines, "user", self.dbobj.username)
+
 
 Plenary.handlers[Application] = PlenaryResource
 Plenary.handlers[Filesystem] = PlenaryResource
@@ -252,6 +258,7 @@ Plenary.handlers[Share] = PlenaryResource
 Plenary.handlers[VirtualMachine] = PlenaryResource
 Plenary.handlers[AutoStartList] = PlenaryResource
 Plenary.handlers[SystemList] = PlenaryResource
+Plenary.handlers[Subscription] = PlenaryResource
 
 
 class PlenaryResourceGroup(PlenaryCollection):

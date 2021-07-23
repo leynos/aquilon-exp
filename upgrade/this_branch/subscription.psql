@@ -1,0 +1,9 @@
+CREATE TABLE subscription (
+        resource_id INTEGER NOT NULL,
+        configmode varchar(32) NOT NULL,
+        username varchar(32) NOT NULL,
+        subscription varchar(255) NOT NULL,
+        CONSTRAINT subscription_pk PRIMARY KEY (resource_id),
+        CONSTRAINT subscription_resource_id_fk FOREIGN KEY (resource_id) REFERENCES "resource" (id) ON DELETE CASCADE,
+        CONSTRAINT subscription_userinfo_fk FOREIGN KEY (username) REFERENCES "userinfo" (name)
+);
