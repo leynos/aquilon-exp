@@ -1,7 +1,7 @@
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
-# Copyright (C) 2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018  Contributor
+# Copyright (C) 2008-2018,2021  Contributor
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ from sqlalchemy.orm import object_session, subqueryload
 from sqlalchemy.inspection import inspect
 
 from aquilon.aqdb.model import Network, HardwareEntity, Machine
+from aquilon.utils import chunk
 from aquilon.worker.formats.formatters import ObjectFormatter
 from aquilon.worker.formats.list import ListFormatter
 from aquilon.worker.formats.service_address import ServiceAddressFormatter
@@ -248,31 +249,44 @@ class NetworkHostListFormatter(ListFormatter):
                      net.assignments)
         if hw_ids:
             session = object_session(net)
-            q = session.query(HardwareEntity)
-            q = q.filter(HardwareEntity.id.in_(hw_ids))
-            q = q.options(subqueryload('interfaces'),
-                          subqueryload('host'),
-                          subqueryload('host.personality_stage'),
-                          subqueryload('host.operating_system'))
             hwent_by_id = {}
-            for dbhwent in q:
-                hwent_by_id[dbhwent.id] = dbhwent
+            # aqd runs on 3 different db engines: oracle, postgres and sqlite.
+            # The query below filters on a sql "IN" clause of HardwareEntity.id
+            # Different engines impose different limits on the number of values
+            # allowed inside an "IN" clause, as well as number of SQL variables
+            # in a statement.
+            # To work around these limits in a fashion compatible with all
+            # supported db engines, we chunk the query such that the number of
+            # values in the "IN" clause and number of SQL variables in this SQL
+            # statement is never larger than 999.
+            for hw_ids_chunk in chunk(hw_ids, 999):
+                q = session.query(HardwareEntity)
+                q = q.filter(HardwareEntity.id.in_(hw_ids_chunk))
+                q = q.options(subqueryload('interfaces'),
+                              subqueryload('host'),
+                              subqueryload('host.personality_stage'),
+                              subqueryload('host.operating_system'))
+                for dbhwent in q:
+                    hwent_by_id[dbhwent.id] = dbhwent
 
-                iface_by_id = {}
-                slaves_by_id = defaultdict(list)
+                    iface_by_id = {}
+                    slaves_by_id = defaultdict(list)
 
-                # We have all the interfaces loaded already, so compute the
-                # master/slave relationships to avoid having to touch the
-                # database again
-                for iface in dbhwent.interfaces:
-                    iface_by_id[iface.id] = iface
-                    if iface.master_id is not None:
-                        slaves_by_id[iface.master_id].append(iface)
+                    # We have all the interfaces loaded already, so compute the
+                    # master/slave relationships to avoid having to touch the
+                    # database again
+                    for iface in dbhwent.interfaces:
+                        iface_by_id[iface.id] = iface
+                        if iface.master_id is not None:
+                            slaves_by_id[iface.master_id].append(iface)
 
-                for iface in dbhwent.interfaces:
-                    set_committed_value(iface, "master",
-                                        iface_by_id.get(iface.master_id, None))
-                    set_committed_value(iface, "slaves", slaves_by_id[iface.id])
+                    for iface in dbhwent.interfaces:
+                        set_committed_value(iface, "master",
+                                            iface_by_id.get(
+                                                iface.master_id,
+                                                None))
+                        set_committed_value(iface, "slaves",
+                                            slaves_by_id[iface.id])
 
         # Add interfaces that have addresses in this network
         for addr in net.assignments:
