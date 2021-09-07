@@ -50,7 +50,6 @@ version.txt: FORCE
 clean:
 	-rm -rf html
 	-rm -rf man
-	-rm -f version.txt
 	-rm -f $(GENERATED_XML)
 
 install-man: man

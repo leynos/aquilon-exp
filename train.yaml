@@ -4,17 +4,19 @@ train_version: 1.0
 
 tools:
    - msde/git/2.9.5
-   - python/core/2.7.9-64
+   - python/core/2.7.18-64
    - msde/msdlbuild/prod
+
 
 build_types:
    - build_type:
-      name: release
-      build:
-         - script: msdlbuild clean
-         - script: make clean
-         - script: make install
-         - script: msdlbuild metadata
+          name: release
+          build:
+          - script: git ls-remote --sort='version:refname' --tags /ms/dev/aquilon/aqd/SCM/aqd.git | grep refs/tags/TRAIN_DIST_aquilon/aqd | tail -n 2 | head -n 1 | awk '{print $2}' | sed 's/^\([^/]\+\/\)\{2\}//' > doc/version.txt
+          - script: msdlbuild clean
+          - script: make clean
+          - script: make install
+          - script: msdlbuild metadata
 
 test_types:
     - test_type:
@@ -22,10 +24,20 @@ test_types:
          test: set -o pipefail; ./tests/runtests.py --config=./tests/unittest.conf --no-interactive | tee ./tests/aqdtests.log
     - test_type:
          name: failfast
-         test: set -o pipefail; ./tests/runtests.py --config=./tests/unittest.conf --failfast --no-interactive | tee ./tests/aqdtests.log
+         test: set -o pipefail; ./tests/runtests.py --config=./tests/unittest.conf --failfast --no-interactive --coverage | tee ./tests/aqdtests.log
     - test_type:
          name: restart
          test: ./tests/restarttests.sh
     - test_type:
          name: jenkins
-         test: ./tests/jenkinstest.sh
+         test: 
+         - script: |
+               ./tests/jenkinstest.sh
+               mkdir -p ../install/test-results/
+               cp tests/aqdtests.log ../install/test-results/aqdtests.log
+               cp -R /var/tmp/$USER/run/quattor/logs/ ../install/test-results/quattor-logs
+               PYLINTHOME=../run/.pylint.d tests/pylint --msg-template='{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}' lib/aquilon/ bin/*.py sbin/*.py > ../install/test-results/pylint.out || /bin/true
+               # In the past, commits did not have the codestyle.py file available; let's use the flake8 checker directly
+               module unload python/core/2.7.18-64
+               module load python/core/3.4.4
+               ./tests/codestyle.py --all > ../install/test-results/flake8.out || /bin/true
