@@ -60,10 +60,16 @@ if DSDB_ENABLED:
         # sys.path for python modules when running tests
         # DSDB python client
         import ms.version
-        ms.version.addpkg("requests", "2.7.0")
-        ms.version.addpkg("requests-kerberos", "0.5-ms2")
-        ms.version.addpkg("kerberos", "1.1.5")
+        ms.version.addpkg("requests-kerberos", "0.11.0")
+        ms.version.addpkg("kerberos", "1.3.1-1.16-ms1-py27-64")
+        ms.version.addpkg("cryptography", "2.8-py27-64")
+        ms.version.addpkg("enum34", "1.1.6")
         ms.version.addpkg("dns", "1.10.0")
+        ms.version.addpkg('urllib3', '1.25.5')
+        ms.version.addpkg('chardet', '3.0.4')
+        ms.version.addpkg('certifi', '2019.6.16')
+        ms.version.addpkg("idna", "2.8")
+        ms.version.addpkg("requests", "2.26.0")
         ms.version.addpkg('ms.dsdb', '6.0.32')
     import ms.dsdb.client
 
