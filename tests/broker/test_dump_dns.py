@@ -16,6 +16,7 @@
 # limitations under the License.
 """Module for testing the dump_dns command."""
 
+from broker.utils import MockHub
 import unittest
 
 if __name__ == '__main__':
@@ -268,6 +269,85 @@ class TestDumpDns(TestBrokerCommand):
                    "--format", "raw"]
         out = self.commandtest(command)
         self.matchclean(out, "aqd-unittest.ms.com", command)
+
+    def test_dns_dump_proto_a_records(self):
+        mh = MockHub(self)
+
+        mh.add_dns_domain('test-dns.cc', restricted=False)
+
+        mh.add_network()
+
+        mh.add_address('a-ttl-no.test-dns.cc', '10.28.0.1')
+        mh.add_address('a-ttl-yes.test-dns.cc', '10.28.0.2', ttl=100)
+        mh.add_alias('cname-ttl-no.test-dns.cc', 'a-ttl-no.test-dns.cc')
+        mh.add_alias('cname-ttl-yes.test-dns.cc', 'a-ttl-yes.test-dns.cc',
+                     ttl=100)
+
+        mh.add_srvrecord('service-ttl-no', 'test-dns.cc', 10, 10,
+                         'a-ttl-no.test-dns.cc', 246)
+        mh.add_srvrecord('service-ttl-yes', 'test-dns.cc', 10, 10,
+                         'a-ttl-yes.test-dns.cc', 246, ttl=100)
+
+        command = ['dump_dns',
+                   '--format', 'proto',
+                   '--dns_domain', 'test-dns.cc']
+        dns = self.protobuftest(command)
+
+        all_grns = mh.get_grns()
+        eon_id = int(all_grns[mh.grn]['eon_id'])
+
+        self.assertEqual(len(dns), 8)
+
+        self.assertEqual(dns[0].fqdn, '_service-ttl-no._tcp.test-dns.cc')
+        self.assertEqual(dns[0].owner_eonid, eon_id)
+        self.assertEqual(dns[0].rdata[0].rrtype, 4)
+        self.assertEqual(dns[0].rdata[0].target, 'a-ttl-no.test-dns.cc')
+        self.assertEqual(dns[0].rdata[0].ttl, 0)
+
+        self.assertEqual(dns[1].fqdn, '_service-ttl-yes._tcp.test-dns.cc')
+        self.assertEqual(dns[1].owner_eonid, eon_id)
+        self.assertEqual(dns[1].rdata[0].rrtype, 4)
+        self.assertEqual(dns[1].rdata[0].target, 'a-ttl-yes.test-dns.cc')
+        self.assertEqual(dns[1].rdata[0].ttl, 100)
+
+        self.assertEqual(dns[2].fqdn, 'a-ttl-no.test-dns.cc')
+        self.assertEqual(dns[2].owner_eonid, eon_id)
+        self.assertEqual(dns[2].rdata[0].rrtype, 1)
+        self.assertEqual(dns[2].rdata[0].target, '10.28.0.1')
+        self.assertEqual(dns[2].rdata[0].ttl, 0)
+
+        self.assertEqual(dns[3].fqdn, '1.0.28.10.in-addr.arpa')
+        self.assertEqual(dns[3].owner_eonid, eon_id)
+        self.assertEqual(dns[3].rdata[0].rrtype, 6)
+        self.assertEqual(dns[3].rdata[0].target, 'a-ttl-no.test-dns.cc')
+        self.assertEqual(dns[3].rdata[0].ttl, 0)
+
+        self.assertEqual(dns[4].fqdn, 'a-ttl-yes.test-dns.cc')
+        self.assertEqual(dns[4].owner_eonid, eon_id)
+        self.assertEqual(dns[4].rdata[0].rrtype, 1)
+        self.assertEqual(dns[4].rdata[0].target, '10.28.0.2')
+        self.assertEqual(dns[4].rdata[0].ttl, 100)
+
+        self.assertEqual(dns[5].fqdn, '2.0.28.10.in-addr.arpa')
+        self.assertEqual(dns[5].owner_eonid, eon_id)
+        self.assertEqual(dns[5].rdata[0].rrtype, 6)
+        self.assertEqual(dns[5].rdata[0].target, 'a-ttl-yes.test-dns.cc')
+        self.assertEqual(dns[5].rdata[0].ttl, 100)
+
+        self.assertEqual(dns[6].fqdn, 'cname-ttl-no.test-dns.cc')
+        self.assertEqual(dns[6].owner_eonid, eon_id)
+        self.assertEqual(dns[6].rdata[0].rrtype, 3)
+        self.assertEqual(dns[6].rdata[0].target, 'a-ttl-no.test-dns.cc')
+        self.assertEqual(dns[6].rdata[0].ttl, 0)
+
+        self.assertEqual(dns[7].fqdn, 'cname-ttl-yes.test-dns.cc')
+        self.assertEqual(dns[7].owner_eonid, eon_id)
+        self.assertEqual(dns[7].rdata[0].rrtype, 3)
+        self.assertEqual(dns[7].rdata[0].target, 'a-ttl-yes.test-dns.cc')
+        self.assertEqual(dns[7].rdata[0].ttl, 100)
+
+        mh.delete()
+
 
 
 if __name__ == '__main__':

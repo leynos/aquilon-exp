@@ -22,6 +22,7 @@ from aquilon.aqdb.model import (
     DnsDomain,
     DnsRecord,
     Fqdn,
+    Grn,
     Network,
 )
 from aquilon.aqdb.model.network_environment import get_net_dns_envs
@@ -55,6 +56,7 @@ class CommandDumpDns(BrokerCommand):
 
         q = session.query(DnsRecord)
         q = q.with_polymorphic('*')
+        q = q.outerjoin((Grn, DnsRecord.owner_eon_id == Grn.eon_id))
         q = q.join((Fqdn, DnsRecord.fqdn_id == Fqdn.id))
         q = q.options(contains_eager('fqdn'))
 
