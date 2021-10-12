@@ -136,6 +136,9 @@ class MockHub(object):
         self.hosts = {}
         self.dns_domains = []
         self.networks = {}
+        self.addresses = {}
+        self.aliases = {}
+        self.srvrecords = {}
         self.create(name)
         self._initialise_dependencies()
         self.default_dns_domain = self.add_dns_domain('{}.cc'.format(
@@ -210,14 +213,16 @@ class MockHub(object):
             next_available += 1
         return '{}{}.{}'.format(prefix, next_available, dns_domain)
 
-    def add_dns_domain(self, fqdn):
+    def add_dns_domain(self, fqdn, restricted=True):
         if fqdn in self.dns_domains:
             raise ValueError('DNS domain {} already exists.'.format(fqdn))
         self._engine.dsdb_expect('add_dns_domain -domain_name {} '
                                  '-comments '.format(fqdn))
-        self._engine.noouttest(['add_dns_domain', '--dns_domain', fqdn,
-                                '--restricted',
-                                '--justification', 'tcm=123456789'])
+        command = ['add_dns_domain', '--dns_domain', fqdn,
+                   '--justification', 'tcm=123456789']
+        if restricted:
+            command.append('--restricted')
+        self._engine.noouttest(command)
         self._engine.dsdb_verify()
         self.dns_domains.append(fqdn)
         return fqdn
@@ -230,6 +235,66 @@ class MockHub(object):
         self.dns_domains.remove(fqdn)
         if fqdn == self.default_dns_domain:
             self.default_dns_domain = None
+
+    def add_address(self, fqdn, ip, ttl=None):
+        self._engine.dsdb_expect('add_host -host_name {} -ip_address {} '
+                                 '-status aq -manager_grn {}'.format(
+                                    fqdn, ip, self.grn))
+        command = ['add_address', '--fqdn', fqdn,
+                   '--ip', ip,
+                   '--grn', self.grn]
+        if ttl is not None:
+            command.append('--ttl')
+            command.append(ttl)
+        self._engine.noouttest(command + self._engine.valid_just_tcm)
+        self.addresses[fqdn] = {'ip': ip}
+
+    def delete_address(self, fqdn, ip):
+        self._engine.dsdb_expect('delete_host -ip_address {}'.format(ip))
+        command = ['del_address', '--fqdn', fqdn,
+                   '--ip', ip]
+        self._engine.noouttest(command + self._engine.valid_just_tcm)
+        del self.addresses[fqdn]
+
+    def add_alias(self, fqdn, target, ttl=None):
+        command = ['add_alias', '--fqdn', fqdn,
+                   '--target', target,
+                   '--grn', self.grn]
+        if ttl is not None:
+            command.append('--ttl')
+            command.append(ttl)
+        self._engine.noouttest(command)
+        self.aliases[fqdn] = {'target': target}
+
+    def delete_alias(self, fqdn):
+        command = ['del_alias', '--fqdn', fqdn]
+        self._engine.noouttest(command)
+        del self.aliases[fqdn]
+
+    def add_srvrecord(self, service, dns_domain, priority, weight, target,
+                      port, ttl=None):
+        command = ['add_srv_record', '--service', service,
+                   '--protocol', 'tcp',
+                   '--dns_domain', dns_domain,
+                   '--priority', priority,
+                   '--weight', weight,
+                   '--target', target,
+                   '--port', port,
+                   '--grn', self.grn]
+        if ttl is not None:
+            command.append('--ttl')
+            command.append(ttl)
+        self._engine.noouttest(command + self._engine.valid_just_tcm)
+        self.srvrecords[service+dns_domain] = {'service': service,
+                                               'dns_domain': dns_domain}
+
+    def delete_srvrecord(self, service, dns_domain):
+        command = ['del_srv_record',
+                   '--service', service,
+                   '--protocol', 'tcp',
+                   '--dns_domain', dns_domain]
+        self._engine.noouttest(command + self._engine.valid_just_tcm)
+        del self.srvrecords[service+dns_domain]
 
     def add_network(self, name=None, location_type='hub', location=None):
         name = self.get_or_create_name(name)
@@ -597,6 +662,16 @@ class MockHub(object):
         self.delete_archetypes(verify)
         # Delete domains.
         self.delete_domains(verify)
+        # Delete SRV Records
+        for k in self.srvrecords.keys():
+            self.delete_srvrecord(self.srvrecords[k]['service'],
+                                  self.srvrecords[k]['dns_domain'])
+        # Delete Aliases
+        for fqdn in self.aliases.keys():
+            self.delete_alias(fqdn)
+        # Delete Addresses
+        for fqdn in self.addresses.keys():
+            self.delete_address(fqdn, self.addresses[fqdn]['ip'])
         # Delete DNS domains.
         for dns_domain in self.dns_domains[:]:
             self.delete_dns_domain(dns_domain)

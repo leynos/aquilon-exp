@@ -184,6 +184,9 @@ def process_reverse_ptr(container, record):
     reverse.environment_name = \
         record.network.network_environment.dns_environment.name
 
+    if record.owner_eon_id is not None:
+        reverse.owner_eonid = record.owner_eon_id
+
     # Then add the PTR record to the reverse
     ptr_record = reverse.rdata.add()
     ptr_record.rrtype = ptr_record.PTR
@@ -311,6 +314,9 @@ class DnsDumpFormatter(ObjectFormatter):
                 entry = container.add()
                 entry.fqdn = r_fqdn
                 entry.environment_name = r_env
+
+            if record.owner_eon_id is not None:
+                entry.owner_eonid = record.owner_eon_id
 
             skeleton = entry.rdata.add()
             self.redirect_proto(record, skeleton)
