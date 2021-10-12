@@ -81,6 +81,12 @@ class TestUpdateBuilding(PersonalityTestMixin, MachineTestMixin,
                    "--default_dns_domain", "aqd-unittest.ms.com"]
         self.noouttest(command)
 
+    def test_122_verify_ut_dnsdomain_proto(self):
+        command = ["show", "building", "--building", "ut",
+                   "--format", "proto"]
+        building = self.protobuftest(command)[0]
+        self.assertEqual(building.default_dns_domain, "aqd-unittest.ms.com")
+
     def test_125_verify_ut_dnsdomain(self):
         command = ["show", "building", "--building", "ut"]
         out = self.commandtest(command)

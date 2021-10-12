@@ -52,6 +52,8 @@ class LocationFormatter(ObjectFormatter):
 
     def fill_proto(self, loc, skeleton, embedded=True, indirect_attrs=True):
         skeleton.name = loc.name
+        if loc.default_dns_domain is not None:
+            skeleton.default_dns_domain = loc.default_dns_domain.name
         # Backwards compatibility
         if loc.location_type == "organization":
             skeleton.location_type = "company"
