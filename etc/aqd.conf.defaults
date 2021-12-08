@@ -49,7 +49,7 @@ dbuser =
 # There is no default - the value is only used if set.
 #audit_schema = %(user)s
 dsn = oracle://%(dbuser)s:PASSWORD@%(server)s
-module = orcl/client/11.2.0.1.0
+module = orcl/client/12.2.0.1.0
 
 # There are two pools - one for commands that use locks and one for
 # commands that don't.  These values apply to each pool.
