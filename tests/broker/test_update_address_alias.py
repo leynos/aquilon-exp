@@ -18,6 +18,7 @@
 """Module for testing the update address alias command."""
 
 import unittest
+import json
 
 if __name__ == '__main__':
     import utils
@@ -44,6 +45,25 @@ class TestUpdateAddressAlias(TestBrokerCommand):
         self.matchoutput(out, "Comments: New address alias comments", command)
         self.matchoutput(out, "TTL: 900", command)
 
+    def test_121_verify_add_comment_json_data(self):
+        command = ["search", "dns", "--fullinfo",
+                   "--fqdn", "addralias1.aqd-unittest.ms.com",
+                   "--target", "arecord13.aqd-unittest.ms.com",
+                   "--format", "json"]
+        out = self.commandtest(command)
+        expected = [
+            {
+                "record_type": "address_alias",
+                "fqdn": "addralias1.aqd-unittest.ms.com",
+                "dns_environment": "internal",
+                "target": "arecord13.aqd-unittest.ms.com",
+                "comments": "New address alias comments",
+                "ip": "4.2.1.18",
+                "ttl": 900
+            }
+        ]
+        self.assertEqual(json.loads(out), expected)
+
     def test_130_update_to_change_comment(self):
         command = ["update", "address", "alias",
                    "--fqdn", "addralias1.aqd-unittest.ms.com",
@@ -58,6 +78,25 @@ class TestUpdateAddressAlias(TestBrokerCommand):
         out = self.commandtest(command)
         self.matchoutput(out, "Comments: New other address alias comments", command)
 
+    def test_141_verify_update_to_change_comment_json_data(self):
+        command = ["search", "dns", "--fullinfo",
+                   "--fqdn", "addralias1.aqd-unittest.ms.com",
+                   "--target", "arecord14.aqd-unittest.ms.com",
+                   "--format", "json"]
+        out = self.commandtest(command)
+        expected = [
+            {
+                "record_type": "address_alias",
+                "fqdn": "addralias1.aqd-unittest.ms.com",
+                "dns_environment": "internal",
+                "target": "arecord14.aqd-unittest.ms.com",
+                "ip": "4.2.1.19",
+                "comments": "New other address alias comments",
+                "ttl": 1800
+            }
+        ]
+        self.assertEqual(json.loads(out), expected)
+
     def test_150_update_to_no_comment(self):
         command = ["update", "address", "alias",
                    "--fqdn", "addralias1.aqd-unittest.ms.com",
@@ -71,6 +110,32 @@ class TestUpdateAddressAlias(TestBrokerCommand):
                    "--target", "arecord14.aqd-unittest.ms.com"]
         out = self.commandtest(command)
         self.matchclean(out, "Comments:", command)
+
+    def test_161_verify_update_to_no_comment_json(self):
+        command = ["search", "dns", "--fullinfo",
+                   "--fqdn", "addralias1.aqd-unittest.ms.com",
+                   "--target", "arecord14.aqd-unittest.ms.com",
+                   "--format", "json"]
+        out = self.commandtest(command)
+        self.matchclean(out, '"comments":" "', command)
+
+    def test_162_verify_update_to_no_comment_json_data(self):
+        command = ["search", "dns", "--fullinfo",
+                   "--fqdn", "addralias1.aqd-unittest.ms.com",
+                   "--target", "arecord14.aqd-unittest.ms.com",
+                   "--format", "json"]
+        out = self.commandtest(command)
+        expected = [
+            {
+                "record_type": "address_alias",
+                "fqdn": "addralias1.aqd-unittest.ms.com",
+                "dns_environment": "internal",
+                "target": "arecord14.aqd-unittest.ms.com",
+                "ip": "4.2.1.19",
+                "ttl": 1800
+            }
+        ]
+        self.assertEqual(json.loads(out), expected)
 
     def test_170_update_to_no_ttl(self):
         command = ["update", "address", "alias",
@@ -153,6 +218,13 @@ class TestUpdateAddressAlias(TestBrokerCommand):
                    "--fqdn", "addralias3.aqd-unittest.ms.com"]
         out = self.commandtest(command)
         self.matchclean(out, "Owned by GRN:", command)
+
+    def test_316_verify_clear_grn_json(self):
+        command = ["search", "dns", "--fullinfo",
+                   "--fqdn", "addralias3.aqd-unittest.ms.com",
+                   "--format", "json"]
+        out = self.commandtest(command)
+        self.matchclean(out, '"eon_id": ', command)
 
     def test_320_update_eon_id(self):
         command = ["update", "address", "alias",

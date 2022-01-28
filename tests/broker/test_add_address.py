@@ -18,6 +18,7 @@
 """Module for testing the add address command."""
 
 import unittest
+import json
 
 if __name__ == "__main__":
     from broker import utils
@@ -389,6 +390,20 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         self.matchoutput(out,
                          "Reverse PTR: reverse.restrict.aqd-unittest.ms.com",
                          command)
+
+    def test_472_verify_reverse_json_output(self):
+        command = ["search", "dns", "--fullinfo",
+                   "--fqdn", "reverse.restrict.aqd-unittest.ms.com",
+                   "--format", "json"]
+        out = self.commandtest(command)
+        expected = [
+            {
+                "record_type": "dns_record",
+                "fqdn": "reverse.restrict.aqd-unittest.ms.com",
+                "dns_environment": "internal"
+            }
+        ]
+        self.assertEqual(json.loads(out), expected)
 
     def test_500_addunittest20eth1(self):
         ip = self.net["zebra_eth1"].usable[0]

@@ -28,6 +28,7 @@ from aquilon.aqdb.model import (DnsRecord, DynamicStub, ARecord, Alias,
 
 class DnsRecordFormatter(ObjectFormatter):
     template_raw = "dns_record.mako"
+    template_json = "dns_record.mako"
 
     def csv_fields(self, dns_record):
         yield (dns_record.fqdn, dns_record.fqdn.dns_environment.name, None)
@@ -35,6 +36,7 @@ class DnsRecordFormatter(ObjectFormatter):
 
 class ARecordFormatter(ObjectFormatter):
     template_raw = "a_record.mako"
+    template_json = "a_record.mako"
 
     def csv_fields(self, dns_record):
         if isinstance(dns_record.ip, IPv4Address):
@@ -60,6 +62,7 @@ class ARecordFormatter(ObjectFormatter):
 
 class AliasFormatter(ObjectFormatter):
     template_raw = "alias.mako"
+    template_json = "alias.mako"
 
     def csv_fields(self, dns_record):
         yield (dns_record.fqdn, dns_record.fqdn.dns_environment.name,
@@ -75,6 +78,7 @@ class AliasFormatter(ObjectFormatter):
 
 class SrvRecordFormatter(ObjectFormatter):
     template_raw = "srv_record.mako"
+    template_json = "srv_record.mako"
 
     def csv_fields(self, dns_record):
         yield (dns_record.fqdn, dns_record.fqdn.dns_environment.name,
@@ -94,6 +98,7 @@ class SrvRecordFormatter(ObjectFormatter):
 
 class AddressAliasFormatter(ObjectFormatter):
     template_raw = "address_alias.mako"
+    template_json = "address_alias.mako"
 
     def csv_fields(self, dns_record):
         if isinstance(dns_record.target_ip, IPv4Address):
