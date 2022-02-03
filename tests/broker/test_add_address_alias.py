@@ -18,6 +18,7 @@
 """Module for testing the add address alias command."""
 
 import unittest
+import json
 
 if __name__ == '__main__':
     import utils
@@ -56,6 +57,22 @@ class TestAddAddressAlias(TestBrokerCommand):
                          "Target: arecord13.aqd-unittest.ms.com [%s]" %
                          self.net["unknown0"].usable[13], command)
 
+    def test_151_verify_addralias_json_data(self):
+        command = ["search", "dns",
+                   "--fqdn", "addralias1.aqd-unittest.ms.com",
+                   "--fullinfo", "--format", "json"]
+        out = self.commandtest(command)
+        expected = [
+            {
+                "record_type": "address_alias",
+                "fqdn": "addralias1.aqd-unittest.ms.com",
+                "dns_environment": "internal",
+                "target": "arecord13.aqd-unittest.ms.com",
+                "ip": "4.2.1.18"
+            }
+        ]
+        self.assertEqual(json.loads(out), expected)
+
     def test_200_add_new_addralias_with_comment_and_ttl(self):
         command = ["add", "address", "alias",
                    "--fqdn", "addralias1.aqd-unittest.ms.com",
@@ -93,6 +110,24 @@ class TestAddAddressAlias(TestBrokerCommand):
         self.matchoutput(out, "TTL: 1800", command)
         self.matchoutput(out, "Comments: Some address alias comments", command)
         self.matchoutput(out, "Comments: Some other address alias comments", command)
+
+    def test_251_verify_addralias_json(self):
+        command = ["search", "dns",
+                       "--fqdn", "addralias1.aqd-unittest.ms.com",
+                       "--fullinfo", "--format", "json"]
+        out = self.commandtest(command)
+        self.matchoutput(out, '"fqdn": "addralias1.aqd-unittest.ms.com"',
+                         command)
+        self.matchoutput(out, '"dns_environment": "internal"', command)
+        self.matchoutput(out,
+                         '"target": "arecord13.aqd-unittest.ms.com"', command)
+        self.matchoutput(out,
+                         '"target": "arecord14.aqd-unittest.ms.com"', command)
+        self.matchoutput(out,
+                         '"target": "arecord15.aqd-unittest.ms.com"', command)
+        self.matchoutput(out, '"ttl": 1800', command)
+        self.matchoutput(out, '"comments": "Some address alias comments"', command)
+        self.matchoutput(out, '"comments": "Some other address alias comments"', command)
 
     def test_260_verify_dump_dns(self):
         # Dump all DNS
@@ -211,6 +246,33 @@ class TestAddAddressAlias(TestBrokerCommand):
                          " addralias1.aqd-unittest-ut-env.ms.com [environment: ut-env],"
                          " addralias1.aqd-unittest.ms.com",
                          command)
+
+    def test_701_verify_target_output_json_data(self):
+        command = ["search", "dns",
+                   "--fqdn", "arecord13.aqd-unittest.ms.com", "--fullinfo",
+                   "--format", "json"]
+        out = self.commandtest(command)
+        expected = [
+            {
+                "record_type": "a_record",
+                "fqdn": "arecord13.aqd-unittest.ms.com",
+                "dns_environment": "internal",
+                "address_aliases": ["addralias1.aqd-unittest-ut-env.ms.com[environment: ut-env]",
+                                    "addralias1.aqd-unittest.ms.com"],
+                "network": "unknown0",
+                "ip": "4.2.1.18",
+                "netmask": "4.2.1.0/26",
+                "network_environment": "internal",
+                "aliases": ["alias.ms.com", "alias13.aqd-unittest.ms.com[environment: ut-env]",
+                            "alias2alias.aqd-unittest-ut-env.ms.com[environment: ut-env]",
+                            "alias2alias.aqd-unittest.ms.com",
+                            "alias2host.aqd-unittest-ut-env.ms.com[environment: ut-env]",
+                            "alias2host.aqd-unittest.ms.com", "alias3alias.aqd-unittest.ms.com",
+                            "alias4alias.aqd-unittest.ms.com"],
+                "eon_id": 2
+            }
+        ]
+        self.assertEqual(json.loads(out), expected)
 
     def test_800_grn(self):
         command = ["add", "address", "alias",

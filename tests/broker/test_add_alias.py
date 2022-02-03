@@ -18,6 +18,7 @@
 """Module for testing the add/show alias command."""
 
 import unittest
+import json
 
 if __name__ == '__main__':
     from broker import utils
@@ -152,6 +153,21 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
                "--record_type", "reserved_name"]
         out = self.commandtest(cmd)
         self.matchoutput(out, "target.restrict.aqd-unittest.ms.com", cmd)
+
+    def test_202_verify_autocreate_json_data(self):
+        cmd = ["search", "dns", "--fullinfo",
+               "--fqdn", "target.restrict.aqd-unittest.ms.com", "--format",
+               "json"]
+        out = self.commandtest(cmd)
+        expected = [
+            {
+                "record_type": "dns_record",
+                "dns_environment": "internal",
+                "fqdn": "target.restrict.aqd-unittest.ms.com",
+                "aliases": ["restrict1.aqd-unittest.ms.com"]
+            }
+        ]
+        self.assertEqual(json.loads(out), expected)
 
     def test_210_autocreate_second_alias(self):
         cmd = ["add", "alias", "--fqdn", "restrict2.aqd-unittest.ms.com",
@@ -337,6 +353,22 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
         out = self.commandtest(command)
         self.matchoutput(out, "Owned by GRN: grn:/ms/ei/aquilon/aqd",
                          command)
+
+    def test_806_verify_grn_json_data(self):
+        command = ["search", "dns", "--fullinfo",
+                   "--fqdn", "alias2host-grn.aqd-unittest.ms.com",
+                   "--format", "json"]
+        out = self.commandtest(command)
+        expected = [
+            {
+                "record_type": "alias",
+                "fqdn": "alias2host-grn.aqd-unittest.ms.com",
+                "dns_environment": "internal",
+                "target": "arecord50.aqd-unittest.ms.com",
+                "eon_id": 2
+            }
+        ]
+        self.assertEqual(json.loads(out), expected)
 
     def test_810_eon_id(self):
         command = ["add", "alias",

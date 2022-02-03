@@ -18,6 +18,7 @@
 """Module for testing the del alias command."""
 
 import unittest
+import json
 
 if __name__ == '__main__':
     import utils
@@ -97,6 +98,22 @@ class TestDelAlias(EventsTestMixin, TestBrokerCommand):
         self.matchoutput(out,
                          "Reserved Name: target2.restrict.aqd-unittest.ms.com",
                          command)
+
+    def test_302_verify_target_json_data(self):
+        # There was a second alias, so the target must still exist
+        command = ["search", "dns", "--fullinfo",
+                   "--fqdn", "target2.restrict.aqd-unittest.ms.com" ,
+                   "--format", "json"]
+        out = self.commandtest(command)
+        expected = [
+            {
+                "record_type": "dns_record",
+                "fqdn": "target2.restrict.aqd-unittest.ms.com",
+                "dns_environment": "internal",
+                "aliases": ["restrict2.aqd-unittest.ms.com"]
+            }
+        ]
+        self.assertEqual(json.loads(out), expected)
 
     def test_310_del_autotarget(self):
         command = ["del", "alias", "--fqdn", "restrict2.aqd-unittest.ms.com"]

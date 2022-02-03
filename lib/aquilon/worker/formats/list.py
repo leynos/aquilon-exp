@@ -50,6 +50,16 @@ class ListFormatter(ObjectFormatter):
             ObjectFormatter.redirect_proto(item, skeleton, embedded=embedded,
                                            indirect_attrs=indirect_attrs)
 
+    def format_json(self, result, embedded=True, indirect_attrs=True):
+        if hasattr(self, "template_json"):
+            return ObjectFormatter.format_json(self, result,
+                                              embedded=embedded,
+                                              indirect_attrs=indirect_attrs)
+        return ",\n".join(self.redirect_json(item, embedded=embedded,
+                                           indirect_attrs=indirect_attrs)
+                         for item in result)
+
+
 ObjectFormatter.handlers[list] = ListFormatter()
 ObjectFormatter.handlers[Query] = ListFormatter()
 ObjectFormatter.handlers[InstrumentedList] = ListFormatter()

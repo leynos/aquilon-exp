@@ -18,6 +18,7 @@
 """Module for testing the update archetype command."""
 
 import unittest
+import json
 
 if __name__ == "__main__":
     from broker import utils
@@ -104,11 +105,44 @@ class TestUpdateAlias(EventsTestMixin, TestBrokerCommand):
         out = self.commandtest(command)
         self.matchoutput(out, "Target: arecord14.aqd-unittest.ms.com", command)
 
+    def test_301_verify_alias_json_data(self):
+        command = ["search", "dns", "--fullinfo",
+                   "--fqdn", "alias2host.aqd-unittest.ms.com", "--format",
+                   "json"]
+        out = self.commandtest(command)
+        expected = [
+            {
+                "record_type": "alias",
+                "fqdn": "alias2host.aqd-unittest.ms.com",
+                "dns_environment": "internal",
+                "aliases": ["alias2alias.aqd-unittest.ms.com",
+                            "alias3alias.aqd-unittest.ms.com",
+                            "alias4alias.aqd-unittest.ms.com"],
+                "target": "arecord14.aqd-unittest.ms.com"
+            }
+        ]
+        self.assertEqual(json.loads(out), expected)
+
     def test_310_verify_mscom(self):
         command = ["search", "dns", "--fullinfo", "--fqdn", "alias.ms.com"]
         out = self.commandtest(command)
         self.matchoutput(out, "Target: arecord14.aqd-unittest.ms.com", command)
         self.matchoutput(out, "Comments: New alias comments", command)
+
+    def test_311_verify_mscom_json(self):
+        command = ["search", "dns", "--fullinfo", "--fqdn", "alias.ms.com",
+                   "--format", "json"]
+        out = self.commandtest(command)
+        expected = [
+            {
+                "record_type": "alias",
+                "fqdn": "alias.ms.com",
+                "dns_environment": "internal",
+                "target": "arecord14.aqd-unittest.ms.com",
+                "comments": "New alias comments"
+            }
+        ]
+        self.assertEqual(json.loads(out), expected)
 
     def test_320_verify_oldtarget(self):
         command = ["search", "dns", "--fullinfo",
@@ -124,6 +158,30 @@ class TestUpdateAlias(EventsTestMixin, TestBrokerCommand):
         self.matchoutput(out, "Aliases: alias.ms.com, "
                          "alias2alias.aqd-unittest.ms.com, "
                          "alias2host.aqd-unittest.ms.com", command)
+
+    def test_331_verify_newtarget_json(self):
+        command = ["search", "dns", "--fullinfo",
+                   "--fqdn", "arecord14.aqd-unittest.ms.com", "--format",
+                   "json"]
+        out = self.commandtest(command)
+        expected = [
+            {
+                "record_type": "a_record",
+                "fqdn": "arecord14.aqd-unittest.ms.com",
+                "dns_environment": "internal",
+                "address_aliases": ["addralias1.aqd-unittest.ms.com", "addralias3.aqd-unittest.ms.com"],
+                "network": "unknown0",
+                "ip": "4.2.1.19",
+                "netmask": "4.2.1.0/26",
+                "network_environment": "internal",
+                "aliases": ["alias.ms.com", "alias2alias.aqd-unittest.ms.com",
+                            "alias2host.aqd-unittest.ms.com", "alias3alias.aqd-unittest.ms.com",
+                            "alias4alias.aqd-unittest.ms.com"],
+                "eon_id": 2,
+                "reverse_ptr": "arecord13.aqd-unittest.ms.com"
+            }
+        ]
+        self.assertEqual(json.loads(out), expected)
 
     def test_400_repoint_restrict1(self):
         command = ["update", "alias", "--fqdn", "restrict1.aqd-unittest.ms.com",
@@ -167,6 +225,22 @@ class TestUpdateAlias(EventsTestMixin, TestBrokerCommand):
                          "restrict2.aqd-unittest.ms.com",
                          command)
 
+    def test_431_verify_target2_json(self):
+        command = ["search", "dns", "--fullinfo",
+                   "--fqdn", "target2.restrict.aqd-unittest.ms.com",
+                   "--format", "json"]
+        out = self.commandtest(command)
+        expected = [
+            {
+                "record_type": "dns_record",
+                "fqdn": "target2.restrict.aqd-unittest.ms.com",
+                "dns_environment": "internal",
+                "aliases": ["restrict1.aqd-unittest.ms.com",
+                            "restrict2.aqd-unittest.ms.com"]
+            }
+        ]
+        self.assertEqual(json.loads(out), expected)
+
     def test_500_repoint2diff_environment(self):
         command = ["update", "alias",
                    "--fqdn", "alias2host.aqd-unittest-ut-env.ms.com",
@@ -197,6 +271,23 @@ class TestUpdateAlias(EventsTestMixin, TestBrokerCommand):
         out = self.commandtest(command)
         self.matchoutput(out, "Alias: alias2alias.aqd-unittest.ms.com", command)
         self.matchoutput(out, "TTL: 120", command)
+
+    def test_621_verify_update_ttl_json(self):
+        command = ["search", "dns", "--fullinfo",
+                   "--fqdn", "alias2alias.aqd-unittest.ms.com",
+                   "--format", "json"]
+        out = self.commandtest(command)
+        expected = [
+            {
+                "record_type": "alias",
+                "fqdn": "alias2alias.aqd-unittest.ms.com",
+                "dns_environment": "internal",
+                "target": "alias2host.aqd-unittest.ms.com",
+                "aliases": ["alias3alias.aqd-unittest.ms.com", "alias4alias.aqd-unittest.ms.com"],
+                "ttl": 120
+            }
+        ]
+        self.assertEqual(json.loads(out), expected)
 
     def test_700_remove_ttl(self):
         command = ["update", "alias",
@@ -235,6 +326,23 @@ class TestUpdateAlias(EventsTestMixin, TestBrokerCommand):
         out = self.commandtest(command)
         self.matchoutput(out, "Owned by GRN: grn:/ms/ei/aquilon/aqd",
                          command)
+
+    def test_815_verify_update_eon_id_json(self):
+        command = ["search", "dns", "--fullinfo",
+                   "--fqdn", "alias3alias.aqd-unittest.ms.com",
+                   "--format", "json"]
+        out = self.commandtest(command)
+        expected = [
+            {
+                "record_type": "alias",
+                "fqdn": "alias3alias.aqd-unittest.ms.com",
+                "dns_environment": "internal",
+                "aliases": ["alias4alias.aqd-unittest.ms.com"],
+                "target": "alias2alias.aqd-unittest.ms.com",
+                "eon_id": 2
+            }
+        ]
+        self.assertEqual(json.loads(out), expected)
 
     def test_816_grn_conflict_with_multi_level_alias(self):
         command = ["update", "alias",

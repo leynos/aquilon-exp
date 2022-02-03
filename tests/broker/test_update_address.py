@@ -18,6 +18,7 @@
 """Module for testing the update address command."""
 
 import unittest
+import json
 
 if __name__ == "__main__":
     from broker import utils
@@ -149,6 +150,26 @@ class TestUpdateAddress(TestBrokerCommand):
         self.matchclean(out, "reverse.restrict", command)
         self.matchoutput(out, "reverse2.restrict.aqd-unittest.ms.com", command)
 
+    def test_142_verify_reverse_json_data(self):
+        command = ["search", "dns", "--fullinfo",
+                   "--fqdn", "arecord17.aqd-unittest.ms.com", "--format",
+                   "json"]
+        out = self.commandtest(command)
+        expected = [
+            {
+                "record_type": "a_record",
+                "fqdn": "arecord17.aqd-unittest.ms.com",
+                "dns_environment": "internal",
+                "network": "unknown0",
+                "network_environment": "internal",
+                "ip": "4.2.1.37",
+                "netmask": "4.2.1.0/26",
+                "reverse_ptr": "reverse2.restrict.aqd-unittest.ms.com",
+                "eon_id": 2
+            }
+        ]
+        self.assertEqual(json.loads(out), expected)
+
     def test145_alias_reverse(self):
         command = ["update", "address",
                    "--fqdn", "arecord17.aqd-unittest.ms.com",
@@ -162,6 +183,26 @@ class TestUpdateAddress(TestBrokerCommand):
         self.matchoutput(out,
                          "Reverse PTR: alias2host.aqd-unittest.ms.com",
                          command)
+
+    def test147_verify_reverse_json_data(self):
+        command = ["search", "dns", "--fullinfo",
+                   "--fqdn", "arecord17.aqd-unittest.ms.com", "--format",
+                   "json"]
+        out = self.commandtest(command)
+        expected = [
+            {
+                "record_type": "a_record",
+                "fqdn": "arecord17.aqd-unittest.ms.com",
+                "dns_environment": "internal",
+                "network": "unknown0",
+                "network_environment": "internal",
+                "ip": "4.2.1.37",
+                "netmask": "4.2.1.0/26",
+                "reverse_ptr": "alias2host.aqd-unittest.ms.com",
+                "eon_id": 2
+            }
+        ]
+        self.assertEqual(json.loads(out), expected)
 
     def test150_address_alias_reverse(self):
         command = ["update", "address",
@@ -177,6 +218,26 @@ class TestUpdateAddress(TestBrokerCommand):
                          "Reverse PTR: addralias1.aqd-unittest.ms.com",
                          command)
         self.matchclean(out, "alias2host.aqd-unittest.ms.com", command)
+
+    def test152_verify_reverse_json_data(self):
+        command = ["search", "dns", "--fullinfo",
+                   "--fqdn", "arecord17.aqd-unittest.ms.com",
+                   "--format", "json"]
+        out = self.commandtest(command)
+        expected = [
+            {
+                "record_type": "a_record",
+                "fqdn": "arecord17.aqd-unittest.ms.com",
+                "dns_environment": "internal",
+                "network": "unknown0",
+                "network_environment": "internal",
+                "ip": "4.2.1.37",
+                "netmask": "4.2.1.0/26",
+                "reverse_ptr": "addralias1.aqd-unittest.ms.com",
+                "eon_id": 2
+            }
+        ]
+        self.assertEqual(json.loads(out), expected)
 
     def test_200_update_dyndhcp(self):
         ip = self.net["dyndhcp0"].usable[12]

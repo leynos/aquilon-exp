@@ -18,6 +18,7 @@
 
 import csv
 import sys
+import json
 
 from six import text_type
 from six.moves import cStringIO as StringIO  # pylint: disable=F0401
@@ -41,7 +42,7 @@ class ResponseFormatter(object):
         handlers and wrapped appropriately.
 
     """
-    formats = ["raw", "csv", "proto", "djb"]
+    formats = ["raw", "csv", "proto", "djb", "json"]
 
     loaded_protocols = {}
 
@@ -144,6 +145,20 @@ class ResponseFormatter(object):
         request.setHeader("Content-Type", "application/octet-stream")
         return container.SerializeToString()
 
+    def format_json(self, result, request):
+        """AQDB Data is converted into JSON object. The nested objects
+           finally need to be converted to JSON string here since the
+           mako templates are dependent on each other
+        """
+        formatted = ObjectFormatter.redirect_json(result)
+        formatted = formatted.replace("'", '"')
+        formatted = formatted.replace("}\n,", "},")
+        formatted = formatted.replace(",\n    }", "\n    }")
+        formatted = "[\n" + formatted + "]\n"
+        formatted = formatted.encode("utf-8")
+        request.setHeader("Content-Type", "application/json; charset=utf-8")
+        return formatted
+
 
 class ObjectFormatter(object):
     """This class and its subclasses are meant to do the real work of
@@ -176,6 +191,8 @@ class ObjectFormatter(object):
                                    imports=['from string import rstrip',
                                             'from aquilon.worker.formats.formatters import shift'],
                                    default_filters=['unicode', 'rstrip'])
+
+    lookup_json = build_mako_lookup(config, "json")
 
     # Pass embedded=False if this is the top-level object being rendered.
     # Pass indirect_attrs=False to prevent loading expensive collection-based
@@ -229,6 +246,15 @@ class ObjectFormatter(object):
         self.fill_proto(result, skeleton, embedded=embedded,
                         indirect_attrs=indirect_attrs)
 
+    def format_json(self, result, embedded=True, indirect_attrs=True):
+        # The JSON Formatter is set-up currently with schemas for
+        # dns records only
+
+        if hasattr(self, "template_json"):
+            template = self.lookup_json.get_template(self.template_json)
+            return template.render(record=result, formatter=self)
+        return json.loads(result)
+
     def fill_proto(self, result, skeleton, embedded=True, indirect_attrs=True):  # pragma: no cover
         # pylint: disable=W0613
         # There's no default protobuf message type
@@ -260,6 +286,13 @@ class ObjectFormatter(object):
                                                ObjectFormatter.default_handler)
         handler.format_proto(result, container, embedded=embedded,
                              indirect_attrs=indirect_attrs)
+
+    @staticmethod
+    def redirect_json(result, embedded=True, indirect_attrs=True):
+        handler = ObjectFormatter.handlers.get(result.__class__,
+                                               ObjectFormatter.default_handler)
+        return handler.format_json(result, embedded=embedded,
+                                   indirect_attrs=indirect_attrs)
 
 ObjectFormatter.default_handler = ObjectFormatter()
 
