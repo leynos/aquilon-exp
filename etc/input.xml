@@ -2343,10 +2343,15 @@
     </command>
 
     <command name="map_service">
-        Map a service instance to a location. This declares that the specified service
-        instance is default within a specific location, and will be a candidate for
-        automatic selection during any bind_server (or rebuilds that invoke bind_server)
-        commands.
+        Map a service instance to a location, network or host_environment.
+
+	The specified service instance is default for all hosts within a specific location if mapped to a location.
+	The specified service instance is default for all hosts in the subnet if mapped to a networkip.
+
+        The service can also be mapped to a personality/archetype or host_environment. In this case the default will be
+	determined  by host personality or host environment first before defaulting to broader networkip or location.
+	The specified service will be automatically mapped to a host during a host reconfigure, make host, make cluster.
+
         <optgroup mandatory="True" fields="all">
             <option name="service" type="string" mandatory="True">Service name</option>
             <option name="instance" type="string" mandatory="True">Instance name</option>
@@ -2415,8 +2420,8 @@
     </command>
 
     <command name="unmap_service">
-        Remove the map from a service instance to a location. Existing bindings of
-        clients will remain unmodified.
+        Remove the map from a service instance to a location, network or host_environment.
+        Existing bindings of clients will remain unmodified.
         <optgroup mandatory="True" fields="all">
             <option name="service" type="string" mandatory="True">Service name</option>
             <option name="instance" type="string" mandatory="True">Instance name</option>
