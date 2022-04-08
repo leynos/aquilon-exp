@@ -33,11 +33,11 @@ test_types:
          test: 
          - script: |
                ./tests/jenkinstest.sh
-               mkdir -p ../install/test-results/
-               cp tests/aqdtests.log ../install/test-results/aqdtests.log
-               cp -R /var/tmp/$USER/run/quattor/logs/ ../install/test-results/quattor-logs
-               PYLINTHOME=../run/.pylint.d tests/pylint --msg-template='{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}' lib/aquilon/ bin/*.py sbin/*.py > ../install/test-results/pylint.out || /bin/true
+               mkdir -p ../install/common/test-results/
+               cp tests/aqdtests.log ../install/common/test-results/aqdtests.log
+               cp -R /var/tmp/$USER/run/quattor/logs/ ../install/common/test-results/quattor-logs
+               PYLINTHOME=../run/.pylint.d tests/pylint --msg-template='{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}' lib/aquilon/ bin/*.py sbin/*.py > ../install/common/test-results/pylint.out || /bin/true
                # In the past, commits did not have the codestyle.py file available; let's use the flake8 checker directly
                module unload python/core/2.7.18-64
                module load python/core/3.4.4
-               ./tests/codestyle.py --all > ../install/test-results/flake8.out || /bin/true
+               ./tests/codestyle.py --all > ../install/common/test-results/flake8.out || /bin/true

@@ -116,6 +116,7 @@ class BrokerCommand(object):
 
     """
 
+
     # Override to indicate whether the command will generally take a
     # lock during execution.
     #
@@ -149,6 +150,7 @@ class BrokerCommand(object):
         # parameters).
         self.required_parameters = self.required_parameters[:]
         self.optional_parameters = self.optional_parameters[:]
+        self.non_db_change_commands = ('compile', 'pxeswitch')
 
         self.action = self.__module__
         package_prefix = "aquilon.worker.commands."
@@ -162,6 +164,10 @@ class BrokerCommand(object):
            self.action.startswith("search") or \
            self.action.startswith("cat"):
             self.requires_readonly = True
+
+        self.skip_audit_for_ro = True if not self.requires_readonly or \
+                                    self.command in self.non_db_change_commands \
+            else False
 
         if not self.defer_to_thread:
             if self.requires_transaction:  # pragma: no cover
@@ -246,7 +252,8 @@ class BrokerCommand(object):
                 # We should therefore avoid looking up anything in the DB
                 # before this point which might be used later.
                 status = request.status
-                start_xtn(session, status.requestid, status.user,
+                if self.skip_audit_for_ro:
+                    start_xtn(session, status.requestid, status.user,
                           status.command, self.requires_readonly,
                           kwargs, _IGNORED_AUDIT_ARGS)
 
@@ -274,20 +281,22 @@ class BrokerCommand(object):
             if self.requires_format:
                 style = kwargs.get("style", None)
                 retval = self.formatter.format(style, retval, request)
-            if session:
-                with exporter:
-                    session.commit()
+            if self.skip_audit_for_ro:
+                if session:
+                    with exporter:
+                        session.commit()
             return retval
         except Exception as e:
             raising_exception = e
             # Need to close after the rollback, or the next time session
             # is accessed it tries to commit the transaction... (?)
             if session:
-                try:
-                    session.rollback()
-                except:  # pragma: no cover
-                    rollback_failed = True
-                    raise
+                if self.skip_audit_for_ro:
+                    try:
+                        session.rollback()
+                    except:  # pragma: no cover
+                        rollback_failed = True
+                        raise
                 session.close()
             raise
         finally:
@@ -296,14 +305,18 @@ class BrokerCommand(object):
             if session:
                 # Complete the transaction. We really want to get rid of the
                 # session, even if end_xtn() fails
+
                 try:
-                    if not rollback_failed:
-                        # If session.rollback() failed for whatever reason,
-                        # our best bet is to avoid touching the session
-                        end_xtn(session, requestid,
-                                get_code_for_error_class(
-                                    raising_exception.__class__),
-                                getattr(request, '_audit_result', None))
+                    if self.skip_audit_for_ro:
+                        if not rollback_failed:
+                            # If session.rollback() failed for whatever
+                            # reason, our best bet is to avoid touching
+                            # the session
+                            end_xtn(session, requestid,
+                                    get_code_for_error_class(
+                                        raising_exception.__class__),
+                                    getattr(request, '_audit_result',
+                                            None))
                 finally:
                     if self.is_lock_free:
                         self.dbf.NLSession.remove()

@@ -499,8 +499,18 @@ class TestBrokerCommand(unittest.TestCase):
                         "output for %s did not include '%s':\n@@@\n'%s'\n@@@\n" %
                         (command, s, out))
 
+    def matchnooutput(self, out, s, command):
+        self.assertFalse(out.find(s) >= 0,
+                        "output for %s did not include '%s':\n@@@\n'%s'\n@@@\n" %
+                        (command, s, out))
+
     def matchclean(self, out, s, command):
         self.assertTrue(out.find(s) < 0,
+                        "output for %s includes '%s':\n@@@\n'%s'\n@@@\n" %
+                        (command, s, out))
+
+    def matchnoclean(self, out, s, command):
+        self.assertFalse(out.find(s) < 0,
                         "output for %s includes '%s':\n@@@\n'%s'\n@@@\n" %
                         (command, s, out))
 
@@ -510,6 +520,16 @@ class TestBrokerCommand(unittest.TestCase):
         else:
             m = re.search(r, out)
         self.assertTrue(m,
+                        "output for %s did not match '%s':\n@@@\n'%s'\n@@@\n"
+                        % (command, r, out))
+        return m
+
+    def searchnooutput(self, out, r, command):
+        if isinstance(r, string_types):
+            m = re.search(r, out, re.MULTILINE)
+        else:
+            m = re.search(r, out)
+        self.assertFalse(m,
                         "output for %s did not match '%s':\n@@@\n'%s'\n@@@\n"
                         % (command, r, out))
         return m
