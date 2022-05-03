@@ -116,6 +116,15 @@ class BrokerCommand(object):
 
     """
 
+    """ Require skipping of Audit logs for read only commands.
+
+    It is automatically set to True for all search and show commands,
+    but could be reversed back to False by overriding __init__ for the
+    command.
+    
+    """
+    requires_audit = False
+
 
     # Override to indicate whether the command will generally take a
     # lock during execution.
@@ -165,10 +174,6 @@ class BrokerCommand(object):
            self.action.startswith("cat"):
             self.requires_readonly = True
 
-        self.skip_audit_for_ro = True if not self.requires_readonly or \
-                                    self.command in self.non_db_change_commands \
-            else False
-
         if not self.defer_to_thread:
             if self.requires_transaction:  # pragma: no cover
                 self.defer_to_thread = True
@@ -214,6 +219,10 @@ class BrokerCommand(object):
             raise UnimplementedError("Command %s not available on a "
                                      "read-only broker." % self.command)
 
+        if not self.requires_readonly or \
+                    self.command in self.non_db_change_commands:
+            self.requires_audit = True
+
         try:
             if self.requires_transaction:
                 # Set up a session...
@@ -252,7 +261,8 @@ class BrokerCommand(object):
                 # We should therefore avoid looking up anything in the DB
                 # before this point which might be used later.
                 status = request.status
-                if self.skip_audit_for_ro:
+
+                if self.requires_audit:
                     start_xtn(session, status.requestid, status.user,
                           status.command, self.requires_readonly,
                           kwargs, _IGNORED_AUDIT_ARGS)
@@ -281,7 +291,7 @@ class BrokerCommand(object):
             if self.requires_format:
                 style = kwargs.get("style", None)
                 retval = self.formatter.format(style, retval, request)
-            if self.skip_audit_for_ro:
+            if self.requires_audit:
                 if session:
                     with exporter:
                         session.commit()
@@ -291,7 +301,7 @@ class BrokerCommand(object):
             # Need to close after the rollback, or the next time session
             # is accessed it tries to commit the transaction... (?)
             if session:
-                if self.skip_audit_for_ro:
+                if self.requires_audit:
                     try:
                         session.rollback()
                     except:  # pragma: no cover
@@ -307,7 +317,7 @@ class BrokerCommand(object):
                 # session, even if end_xtn() fails
 
                 try:
-                    if self.skip_audit_for_ro:
+                    if self.requires_audit:
                         if not rollback_failed:
                             # If session.rollback() failed for whatever
                             # reason, our best bet is to avoid touching
