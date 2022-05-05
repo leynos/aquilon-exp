@@ -36,6 +36,8 @@ test_types:
                mkdir -p ../install/common/test-results/
                cp tests/aqdtests.log ../install/common/test-results/aqdtests.log
                cp -R /var/tmp/$USER/run/quattor/logs/ ../install/common/test-results/quattor-logs
+               mkdir -p ../install/common/test-results/INTEGRATION/coveragepy/xml/
+               cp ../install/common/test-results/quattor-logs/coverage/aqd.xml ../install/common/test-results/INTEGRATION/coveragepy/xml/coverage-test.xml
                PYLINTHOME=../run/.pylint.d tests/pylint --msg-template='{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}' lib/aquilon/ bin/*.py sbin/*.py > ../install/common/test-results/pylint.out || /bin/true
                # In the past, commits did not have the codestyle.py file available; let's use the flake8 checker directly
                module unload python/core/2.7.18-64
