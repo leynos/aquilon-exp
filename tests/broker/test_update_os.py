@@ -26,24 +26,26 @@ from brokertest import TestBrokerCommand
 
 
 class TestUpdateOS(TestBrokerCommand):
+
+
     def test_100_check_host_for_cm(self):
 
         command = "search host --host_environment prod --buildstatus ready" \
-                  " --osname linux --osversion 6.1-x86_64 --archetype aquilon"
+                  " --osname linux --osversion " +  self.osversion + " --archetype aquilon"
         out = self.commandtest(command.split())
         self.matchoutput(out, "aquilon91.aqd-unittest.ms.com",
                          command)
 
     def test_100_require_just(self):
         self.justificationmissingtest(["update_os", "--archetype", "aquilon", "--osname", "linux",
-                                       "--osversion", "6.1-x86_64", "--lifecycle", "production"], auth=True,
+                                       "--osversion", self.osversion, "--lifecycle", "production"], auth=True,
                                       msgcheck=False)
 
     def test_110_not_require_just(self):
         self.noouttest(["update_os", "--archetype", "aquilon", "--osname", "linux",
-                        "--osversion", "6.1-x86_64", "--comments", "'Comments are not "
+                        "--osversion", self.osversion, "--comments", "'Comments are not "
                                                                    "harmful to change'"])
 
     def test_120_require_just_success(self):
         self.noouttest(["update_os", "--archetype", "aquilon", "--osname", "linux",
-                        "--osversion", "6.1-x86_64", "--lifecycle", "production"] + self.valid_just_tcm)
+                        "--osversion", self.osversion, "--lifecycle", "production"] + self.valid_just_tcm)

@@ -103,6 +103,7 @@ class TestBrokerCommand(unittest.TestCase):
         cls.sandboxdir = os.path.join(cls.config.get("broker", "templatesdir"),
                                       cls.user)
 
+        cls.osversion = cls.config.get("archetype_aquilon", "default_osversion")
         cls.template_extension = cls.config.get("panc", "template_extension")
         cls.gzip_profiles = cls.config.getboolean("panc", "gzip_output")
         if cls.gzip_profiles:
