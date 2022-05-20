@@ -327,6 +327,11 @@ def get_default_opts(auth_option, conf_file=None, readonly=None):
     if conf_file:
         config.read(conf_file)
         config_options = {}
+        if not config_options and readonly and \
+                config.has_section("readonly_batch"):
+            allowed_proids = config.get("readonly_batch", "proids").split(',\n')
+            if get_username() in allowed_proids:
+                config_options = dict(config.items("readonly_batch"))
         if not auth_option and config.has_section("readonly"):
             config_options = dict(config.items("readonly"))
         if not config_options and readonly and \
