@@ -31,7 +31,9 @@ PPROD = "justify-prod"
 QPROD = "justify-qa"
 
 
+
 class TestJustification(PersonalityTestMixin, TestBrokerCommand):
+
     def test_100_setup(self):
 
         command = ["add", "feature", "--feature", "testfeature",
@@ -451,23 +453,23 @@ class TestJustification(PersonalityTestMixin, TestBrokerCommand):
     def test_675_add_required_svc_reason_os(self):
         command = ["add_required_service", "--service=chooser1",
                    "--archetype=aquilon", "--osname", "linux", "--osversion",
-                   "5.1-x86_64"]
+                   "6.1-x86_64"]
         self.justificationmissingtest(command, auth=True, msgcheck=False)
 
         command = ["add_required_service", "--service=chooser1",
                    "--archetype=aquilon", "--osname", "linux", "--osversion",
-                   "5.1-x86_64"] + self.emergency_just_with_reason
+                   "6.1-x86_64"] + self.emergency_just_with_reason
         self.emergencynojustification(command)
 
     def test_676_del_required_svc_reason_os(self):
         command = ["del_required_service", "--service=chooser1",
                    "--archetype=aquilon", "--osname", "linux", "--osversion",
-                   "5.1-x86_64"] + self.emergency_just_without_reason
+                   "6.1-x86_64"] + self.emergency_just_without_reason
         self.reasonmissingtest(command, auth=True, msgcheck=False)
 
         command = ["del_required_service", "--service=chooser1",
                    "--archetype=aquilon", "--osname", "linux", "--osversion",
-                   "5.1-x86_64"] + self.emergency_tcm_just_with_reason
+                   "6.1-x86_64"] + self.emergency_tcm_just_with_reason
         self.noouttest(command)
 
     def test_680_add_static_route_reason(self):
