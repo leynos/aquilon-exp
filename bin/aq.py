@@ -376,7 +376,7 @@ if __name__ == "__main__":
     if globalOptions.get('aqconf'):
         globalOptions.update(get_default_opts(globalOptions.get('auth'),
                                               globalOptions.get('aqconf'),
-                                              readonly=is_readonly(command)))
+                                              readonly=is_readonly(command))[0])
 
     # Default for /ms/dist
     if re.match(r"/ms(/.(global|local)/[^/]+)?/dist/", BINDIR):
@@ -390,8 +390,8 @@ if __name__ == "__main__":
         default_aqhost = socket.gethostname()
         default_aqservice = get_username()
 
-    if override_allowed:
-        host = defaultOpts.get('aqhost') or os.environ.get('AQHOST', None)
+    if override_allowed and not globalOptions.get('aqconf'):
+        host = os.environ.get('AQHOST', None) or defaultOpts.get('aqhost')
     else:
         host = globalOptions.get('aqhost') or os.environ.get('AQHOST', None) or \
                defaultOpts.get('aqhost') or default_aqhost
