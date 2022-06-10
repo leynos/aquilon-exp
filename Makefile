@@ -9,6 +9,7 @@ MPR    := $(shell echo $(PWD) | awk -F/ '{print $$(NF-3), $$(NF-2), $$(NF-1)}')
 META   = $(word 1,$(MPR))
 PROJ   = $(word 2,$(MPR))
 REL    = $(word 3,$(MPR))
+NON_AQ6_HOST := $(findstring 6., $(shell egrep '\s6\.[0-9]+' /etc/redhat-release))
 
 ifneq (aquilon,$(META))
 	META = aquilon
@@ -121,8 +122,10 @@ install: remove_stale $(INSTALLFILES) install-doc
 	ln -sf aqd "$(COMMON)/sbin/aqd_readonly"
 	$(COMMON)/sbin/aqd --help >/dev/null
 	./tools/gen_completion.py --outputdir="$(COMMON)/etc" --templatedir="./etc/templates" --all
-	./tools/graph_schema.py --outputdir="$(COMMON)/doc"
-	./tools/build_schema_htdocs.py --outputdir="$(COMMON)/doc/schema"
+	if ! [ -z "${strip $(NON_AQ6_HOST)}" ]; then \
+		./tools/graph_schema.py --outputdir="$(COMMON)/doc"; \
+		./tools/build_schema_htdocs.py --outputdir="$(COMMON)/doc/schema"; \
+	fi
 
 .PHONY: install-doc
 install-doc:
@@ -189,4 +192,3 @@ thaw:
 create:
 	vms create release ${META} ${PROJ} ${REL} -- -nobuildvolume
 	vms create install ${META} ${PROJ} ${REL} common
-
