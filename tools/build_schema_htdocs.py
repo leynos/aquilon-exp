@@ -56,11 +56,12 @@ config = Config(configfile=lookup_file_path('aqd.conf.mem'))
 ###############################################################################
 
 try:
+    import os
     import ms.modulecmd
 except ImportError:
     pass
 else:
-    ms.modulecmd.load("fsf/graphviz/2.6")
+    os.environ["PATH"] += os.pathsep+' /ms/dist/fsf/PROJ/graphviz/2.38.0/bin'
 
 from aquilon.aqdb.db_factory import DbFactory
 from aquilon.aqdb.model import *  # pylint: disable=W0401,W0614

@@ -42,6 +42,8 @@ default_config_file = os.path.join(BINDIR, 'unittest.conf')
 # noinspection SpellCheckingInspection
 SRCDIR = os.path.join(BINDIR, '..')
 sys.path.append(os.path.join(SRCDIR, "lib"))
+sys.path.append(os.path.join(SRCDIR, "bin"))
+
 
 
 # The below import fixes 'ImportError: No module named twisted.python'.

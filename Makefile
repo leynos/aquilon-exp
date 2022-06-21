@@ -122,10 +122,8 @@ install: remove_stale $(INSTALLFILES) install-doc
 	ln -sf aqd "$(COMMON)/sbin/aqd_readonly"
 	$(COMMON)/sbin/aqd --help >/dev/null
 	./tools/gen_completion.py --outputdir="$(COMMON)/etc" --templatedir="./etc/templates" --all
-	if ! [ -z "${strip $(NON_AQ6_HOST)}" ]; then \
-		./tools/graph_schema.py --outputdir="$(COMMON)/doc"; \
-		./tools/build_schema_htdocs.py --outputdir="$(COMMON)/doc/schema"; \
-	fi
+	./tools/graph_schema.py --outputdir="$(COMMON)/doc"
+	./tools/build_schema_htdocs.py --outputdir="$(COMMON)/doc/schema"
 
 .PHONY: install-doc
 install-doc:
