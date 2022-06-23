@@ -155,11 +155,18 @@ class TestJustification(PersonalityTestMixin, TestBrokerCommand):
         command += self.valid_just_tcm
         self.statustest(command)
 
+    def test_303_set_build_status(self):
+        host = "unittest26.aqd-unittest.ms.com"
+
+        command = ["reconfigure", "--hostname", host,
+                   "--archetype", "aquilon", "--buildstatus", "decommissioned"]
+        self.statustest(command)
+
     def test_305_update_host_back(self):
         host = "unittest26.aqd-unittest.ms.com"
 
         command = ["reconfigure", "--hostname", host,
-                   "--archetype", "aquilon", "--buildstatus", "ready",
+                   "--archetype", "aquilon", "--buildstatus", "decommissioned",
                    "--personality", "inventory"] + self.valid_just_tcm
         self.statustest(command)
 

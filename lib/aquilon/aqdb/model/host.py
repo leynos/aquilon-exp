@@ -20,12 +20,20 @@ from datetime import datetime
 
 from sqlalchemy import (Boolean, DateTime, String, Column, ForeignKey,
                         PrimaryKeyConstraint)
-from sqlalchemy.orm import relation, backref, deferred
+from sqlalchemy.orm import backref
+from sqlalchemy.orm import deferred
+from sqlalchemy.orm import reconstructor
+from sqlalchemy.orm import relation
+from sqlalchemy.orm import validates
 
 from aquilon.aqdb.model import (Base, HardwareEntity, HostLifecycle, Grn,
                                 OperatingSystem, CompileableMixin)
 
 from aquilon.aqdb.column_types import AqStr
+
+from aquilon.config import Config
+
+from aquilon.exceptions_ import ArgumentError
 
 _TN = 'host'
 _HOSTGRN = 'host_grn_map'
@@ -78,6 +86,61 @@ class Host(CompileableMixin, Base):
     operating_system = relation(OperatingSystem, innerjoin=True)
     owner_grn = relation(Grn)
 
+    @validates('owner_grn')
+    def validate_owner_grn(self, key, grn):
+        effective_owner_grn = self.effective_owner_grn
+
+        if (self.validate_grn_changes is False or
+           (grn is None and self.owner_grn is None) or
+           effective_owner_grn == grn or
+           not self.archetype.is_grn_change_restricted()):
+            return grn
+
+        config = Config()
+
+        statuses_allowed_grn_change = []
+        if (config.has_option("grn_change_restrictions",
+                              "allow_host_build_status")):
+            statuses_allowed_grn_change = [s.strip().lower() for s in
+                                           config.get(
+                                             "grn_change_restrictions",
+                                             "allow_host_build_status")
+                                       .split(",")]
+        if str(self.status).lower() in statuses_allowed_grn_change:
+            return grn
+
+        eon_ids_allowed_grn_change = []
+        if (config.has_option("grn_change_restrictions",
+                              "allow_owner_eon_id")):
+            eon_ids_allowed_grn_change = [int(s.strip()) for s in
+                                          config.get(
+                                            "grn_change_restrictions",
+                                            "allow_owner_eon_id").split(",")]
+        if effective_owner_grn.eon_id in eon_ids_allowed_grn_change:
+            return grn
+
+        vendors_allowed_grn_change = []
+        if (config.has_option("grn_change_restrictions", "allow_vendors")):
+            vendors_allowed_grn_change = [s.strip().lower() for s in
+                                          config.get(
+                                              "grn_change_restrictions",
+                                              "allow_vendors")
+                                          .split(",")]
+
+        if self.hardware_entity.model.vendor.name in \
+           vendors_allowed_grn_change:
+            return grn
+
+        raise ArgumentError("Changing {0} ({1}, {2}, {3}) to {4} from {5} is "
+                            "not allowed because it would change the host "
+                            "effective grn (host {6} has {7}), ".format(
+                                self, self.archetype,
+                                self.hardware_entity.model.vendor,
+                                self.status, grn,
+                                self.owner_grn,
+                                self.personality_stage,
+                                self.personality_stage.owner_grn))
+
     @property
     def fqdn(self):
         return self.hardware_entity.fqdn
@@ -103,12 +166,66 @@ class Host(CompileableMixin, Base):
         else:
             return self.personality_stage.owner_grn
 
+    @validates('personality_stage')
+    def validate_personality_stage(self, key, stage):
+
+        if (
+          self.validate_grn_changes is False or
+          self.archetype.is_grn_change_restricted() is False or
+          self.owner_grn is not None or
+          self.effective_owner_grn.eon_id == stage.owner_eon_id):
+            return stage
+
+        config = Config()
+
+        statuses_allowed_grn_change = []
+        if (config.has_option("grn_change_restrictions",
+                              "allow_host_build_status")):
+            statuses_allowed_grn_change = [s.strip() for s in
+                                           config.get(
+                                            "grn_change_restrictions",
+                                            "allow_host_build_status")
+                                           .split(",")]
+        if str(self.status) in statuses_allowed_grn_change:
+            return stage
+
+        eon_ids_allowed_grn_change = []
+        if (config.has_option("grn_change_restrictions",
+                              "allow_owner_eon_id")):
+            eon_ids_allowed_grn_change = [int(s.strip()) for s in
+                                          config.get("grn_change_restrictions",
+                                                     "allow_owner_eon_id"
+                                                     ).split(",")]
+        if self.effective_owner_grn.eon_id in eon_ids_allowed_grn_change:
+            return stage
+
+        raise ArgumentError("Changing to {0} ({1}) from {2} is not allowed "
+                            "because it would change the effective grn of {3},"
+                            " {4}, {5}, {6}".format(
+                                stage, stage.owner_grn,
+                                self.personality_stage,
+                                self, self.archetype,
+                                self.status,
+                                self.effective_owner_grn))
+
     @property
     def required_services(self):
         # Order matters in case the same key is present in both
         rqs = {dbsrv: None for dbsrv in self.operating_system.required_services}
         rqs.update(super(Host, self).required_services)
         return rqs
+
+    def __init__(self, *args, **kwargs):
+
+        # validate_grn_changes will be false when creating a new host
+        self.validate_grn_changes = kwargs.pop('validate_grn_changes', True)
+        super(Host, self).__init__(*args, **kwargs)
+
+    @reconstructor
+    def setup(self):
+        # Loading an object from the DB does not call __init__
+        if not hasattr(self, 'validate_grn_changes'):
+            self.validate_grn_changes = True
 
 
 class HostGrnMap(Base):

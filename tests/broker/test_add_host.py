@@ -671,6 +671,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                         "--ip", "127.0.0.1", "--machine", "ut8s02p6",
                         "--domain", "unittest", "--buildstatus", "ready",
                         "--archetype", "aquilon",
+                        "--grn", "grn:/ms/ei/aquilon/unittest",
                         "--personality", "compileserver"])
         command = ["bind", "server", "--service", "utnotify",
                    "--instance", "localhost", "--hostname", hostname]

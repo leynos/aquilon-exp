@@ -17,9 +17,19 @@
 # limitations under the License.
 """Contains the logic for `aq update personality`."""
 
+from aquilon.aqdb.model import Cluster
+from aquilon.aqdb.model import HardwareEntity
+from aquilon.aqdb.model import Host
+from aquilon.aqdb.model import HostEnvironment
+from aquilon.aqdb.model import HostLifecycle
+from aquilon.aqdb.model import Model
+from aquilon.aqdb.model import Personality
+from aquilon.aqdb.model import PersonalityESXClusterInfo
+from aquilon.aqdb.model import PersonalityStage
+from aquilon.aqdb.model import Vendor
+
 from aquilon.exceptions_ import ArgumentError
-from aquilon.aqdb.model import (Personality, PersonalityStage, Cluster, Host,
-                                HostEnvironment, PersonalityESXClusterInfo)
+
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.dbwrappers.grn import lookup_grn
@@ -131,7 +141,28 @@ class CommandUpdatePersonality(BrokerCommand):
             dbgrn = lookup_grn(session, grn, eon_id, logger=logger,
                                config=self.config)
             old_grn = dbpersona.owner_grn
-            dbpersona.owner_grn = dbgrn
+
+            statuses_allowed_grn_change = []
+            if (self.config.has_option("grn_change_restrictions",
+                                       "allow_host_build_status")):
+                statuses_allowed_grn_change = [s.strip().lower() for s in
+                                               self.config.get(
+                                                "grn_change_restrictions",
+                                                "allow_host_build_status")
+                                               .split(",")]
+            q = session.query(HostLifecycle)
+            q = q.filter(HostLifecycle.name.notin_(
+                                statuses_allowed_grn_change))
+            status_ids_restricted_grn_change = [r.id for r in q.distinct()]
+
+            vendors_allowed_grn_change = []
+            if (self.config.has_option("grn_change_restrictions",
+                                       "allow_vendors")):
+                vendors_allowed_grn_change = [s.strip().lower() for s in
+                                              self.config.get(
+                                                  "grn_change_restrictions",
+                                                  "allow_vendors")
+                                              .split(",")]
 
             # Hosts which inherit the ownership from the personality need to be
             # updated
@@ -141,6 +172,25 @@ class CommandUpdatePersonality(BrokerCommand):
             q = q.filter_by(personality=dbpersona)
             q = q.options(PlenaryHost.query_options())
             plenaries.add(q)
+
+            q = q.filter(
+                Host.lifecycle_id.in_(status_ids_restricted_grn_change))
+            q = q.join(HardwareEntity)
+            q = q.join(Model)
+            q = q.join(Vendor)
+            q = q.filter(Vendor.name.notin_(
+                                vendors_allowed_grn_change))
+
+            if (
+               dbpersona.archetype.is_grn_change_restricted() and
+               q.count() > 0):
+                raise ArgumentError("Changing grn of {0} from {1} to {2} not "
+                                    "allowed because it would change the "
+                                    "effective grn of {3} of its hosts"
+                                    .format(dbpersona, old_grn, dbgrn,
+                                            q.count()))
+
+            dbpersona.owner_grn = dbgrn
 
             if not leave_existing:
                 # If this is a public personality, then there may be hosts with
@@ -152,6 +202,7 @@ class CommandUpdatePersonality(BrokerCommand):
                 q = q.filter_by(personality=dbpersona)
                 q = q.options(PlenaryHost.query_options())
                 for dbhost in q:
+                    dbhost.validate_grn_changes = False
                     dbhost.owner_grn = dbgrn
                     plenaries.add(dbhost)
 

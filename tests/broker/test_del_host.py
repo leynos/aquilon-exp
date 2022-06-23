@@ -34,7 +34,7 @@ from utils import MockHub
 class TestDelHost(VerifyNotificationsMixin, MachineTestMixin,
                   TestBrokerCommand):
 
-    def to_windows(self, hostname):
+    def to_windows(self, hostname, personality='generic'):
         # Aquilon-6292 makes it impossible to delete 'aquilon' hosts in
         # protected states.  A simple workaround to make legacy tests work
         # again is to make them windows hosts.
@@ -43,7 +43,7 @@ class TestDelHost(VerifyNotificationsMixin, MachineTestMixin,
         self.successtest(
             ['reconfigure', '--hostname', hostname,
              '--archetype', 'windows',
-             '--personality', 'generic',
+             '--personality', personality,
              '--osname', 'windows',
              '--osversion', 'generic'])
 
@@ -330,6 +330,29 @@ class TestDelHost(VerifyNotificationsMixin, MachineTestMixin,
         self.delete_host("infra2.one-nyp.ms.com", ip, "np3c5n14",
                          eth0_ip=eth0_ip, eth1_ip=eth1_ip)
 
+    def test_290_setup_personality(self):
+        # test_300_del_hp_rack_hosts will move a number of hosts to the generic
+        # personality in the windows archetype, owned by
+        # grn:/ms/ei/aquilon/unittest
+        # That fails when the underlying host is previously in a different grn
+        # hence i'm creating a new personality owned by grn:/ms/ei/aquilon/aqd,
+        # so that such hosts can be moved to the windows archetype through this
+        # new personality
+        self.noouttest(
+            ['add_personality', '--archetype', 'windows',
+             '--personality', 'genericaqd',
+             '--grn', 'grn:/ms/ei/aquilon/aqd',
+             '--host_environment', 'prod'])
+
+        self.noouttest(
+            ['promote', '--archetype', 'windows',
+             '--personality', 'genericaqd'])
+
+    def test_305_del_personality(self):
+        self.noouttest(
+            ['del_personality', '--archetype', 'windows',
+             '--personality', 'genericaqd'])
+
     def test_300_del_hp_rack_hosts(self):
         servers = 0
         net = self.net["hp_eth0"]
@@ -345,7 +368,11 @@ class TestDelHost(VerifyNotificationsMixin, MachineTestMixin,
             ip = net.usable[port]
             if hostname == 'aquilon67.aqd-unittest.ms.com':
                 ip = self.net["ut_bucket2_localvip"].usable[0]
-            self.to_windows(hostname)
+            if hostname == 'aquilon71.aqd-unittest.ms.com' \
+            or hostname == 'aquilon91.aqd-unittest.ms.com':
+                self.to_windows(hostname, personality='genericaqd')
+            else:
+                self.to_windows(hostname)
             self.delete_host(hostname, ip, machine,
                              manager_ip=mgmt_net.usable[port],
                              justification=True)

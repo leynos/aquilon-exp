@@ -112,7 +112,7 @@ def create_host(session, logger, config, dbhw, dbarchetype, domain=None,
     dbhost = Host(hardware_entity=dbhw, branch=dbbranch, owner_grn=dbgrn,
                   sandbox_author=dbauthor, status=dbstatus,
                   personality_stage=dbstage, operating_system=dbos,
-                  comments=comments)
+                  comments=comments, validate_grn_changes=False)
     session.add(dbhost)
 
     if dbgrn and config.has_option(section, "default_grn_target"):

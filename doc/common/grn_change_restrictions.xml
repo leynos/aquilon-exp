@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<refsect1 xmlns="http://docbook.org/ns/docbook" xml:id="sect1-grn-change-restrictions">
+    <title xml:id="sect1-grn-change-restrictions-title">GRN Change Restrictions</title>
+    <para>
+        For compliance reasons, moving a host to a different GRN is not allowed when the host archetype is configured to restrict grn changes, unless the host is in one of the build states listed in the configuration setting <literal>grn_change_restrictions.allow_host_build_status</literal> (almostready, blind, build, decommissioned), is owned by a grn configured to allow grn changes in configuration setting <literal>grn_change_restrictions.allow_owner_eond_id</literal>, or is hosted in a model by a vendor exempted from grn change restrictions in the configuration setting <literal>grnchange_restrictions.allow_vendors</literal>.
+    </para>
+    <para>
+        In the case that the host inherits its owner GRN from its personality, moving the host to a different personality is not allowed where the GRN of the new personality is different than the GRN of the existing personality.
+    </para>
+    <para>
+        Exceptions for the above rules can be configured in the <literal>[grn_change_restrictions]</literal> section of the broker config file.
+    </para>
+
+    <example>
+        <title>Define archetype to which GRN change restrictions apply</title>
+        <programlisting>
+[archetype_<replaceable>ARCHETYPE_NAME</replaceable>]
+restrict_grn_changes = True
+        </programlisting>
+    </example>
+    <example>
+        <title>Exempt hosts by vendors from GRN change restrictions</title>
+        <programlisting>
+[grn_change_restrictions]
+allow_vendors = <replaceable>vmware</replaceable>, <replaceable>another_vendor</replaceable>
+        </programlisting>
+    </example>
+    <example>
+        <title>Exempt hosts owned by GRN from GRN change restrictions</title>
+        <programlisting>
+[grn_change_restrictions]
+allow_owner_eon_id = <replaceable>EON_ID_1</replaceable>, <replaceable>EON_ID_2</replaceable>
+        </programlisting>
+    </example>
+    <example>
+        <title>Exempt hosts in build states from GRN change restrictions</title>
+        <programlisting>
+[grn_change_restrictions]
+allow_host_build_status = almostready, blind, build, decommissioned
+        </programlisting>
+    </example>
+</refsect1>
+<!-- vim: set ai sw=4: -->

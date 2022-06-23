@@ -115,6 +115,7 @@ class MockHub(object):
         self.default_archetype = default_archetype or self.random_name()
         self.default_cluster = default_cluster or self.random_name()
         self.default_cluster_archetype = default_cluster_archetype or self.random_name() + '_cluster'  # noqa: E501
+        self.default_grn_change_unrestricted_archetype = 'can_change_grn'
         self.default_personality = default_personality or self.random_name()
         self.default_cluster_personality = default_cluster_personality or self.random_name() + '_cluster'  # noqa: E501
         self.default_os = default_os or self.random_name()
@@ -316,7 +317,7 @@ class MockHub(object):
         self.networks[name] = {
             'net': self._engine.net.allocate_network(
                 testsuite=self._engine, name=name,
-                prefixlength=28, network_type='unknown',
+                prefixlength=25, network_type='unknown',
                 loc_type=location_type, loc_name=location),
             'allocated': set()
         }
@@ -349,14 +350,18 @@ class MockHub(object):
         return os
 
     def add_personality(self, name, archetype, cluster_required=False,
-                        promote=True):
+                        promote=True, grn=None):
         personality = (name, archetype)
         if personality in self.personalities:
             raise ValueError('Personality {} (archetype: {}) already '
                              'exists.'.format(name, archetype))
+
+        if grn is None:
+            grn = self.grn
+
         command = ['add_personality',
                    '--personality', name, '--archetype', archetype,
-                   '--grn', self.grn, '--config_override',
+                   '--grn', grn, '--config_override',
                    '--host_environment', 'dev']
         if cluster_required:
             command.append('--cluster_required')
@@ -856,7 +861,7 @@ class MockHub(object):
             desks.append(self.add_desk(building=building))
         return desks
 
-    def add_machine(self, name=None, desk=None, building=None,
+    def add_machine(self, name=None, desk=None, building=None, model='dl360g9',
                     network=None, net_index=None, net_index_limit=10**5):
         name = self.get_or_create_name(name)
         if name in self.machines:
@@ -886,7 +891,12 @@ class MockHub(object):
                         limit=net_index_limit, network=network))
         # Get MAC or raise an error if found net index out of range.
         eth0_mac = net['net'].usable[net_index].mac
-        self._engine.create_machine_dl360g9(name, desk=desk, eth0_mac=eth0_mac)
+        if model == "dl360g9":
+            self._engine.create_machine_dl360g9(name, desk=desk,
+                                                eth0_mac=eth0_mac)
+        elif model == "hs21":
+            self._engine.create_machine_hs21(name, desk=desk,
+                                             eth0_mac=eth0_mac)
         self.machines[name] = {'network': network, 'net_index': net_index,
                                'desk': desk, 'building': building}
         return name
@@ -909,14 +919,23 @@ class MockHub(object):
             machines.append(self.add_machine(desk=desk, network=network))
         return machines
 
-    def add_host(self, hostname=None,
+    def add_host(self, hostname=None, model='dl360g9',
                  prefix=None, dns_domain=None,
                  machine=None, building=None, desk=None,
+                 archetype=None, personality=None, grn=None,
+                 build_status=None,
                  extra_arguments=None):
         # If machine does not exist, and desk exists, building is ignored.
         # If hostname given, prefix and dns_domain are ignored.
         # NB: Hosts stored in self.hosts by hostname (given directly or
         # computed) which has to be unique.
+
+        if archetype is None:
+            archetype = self.default_archetype
+
+        if personality is None:
+            personality = self.default_personality
+
         if hostname and (prefix or dns_domain):
             raise ValueError(
                 'Prefix or DNS domain cannot be used when hostname ({}) '
@@ -934,7 +953,8 @@ class MockHub(object):
             machine = self.get_or_create_machine(machine,
                                                  desk=desk, building=building)
         else:
-            machine = self.add_machine(desk=desk, building=building)
+            machine = self.add_machine(desk=desk, building=building,
+                                       model=model)
         if building and building != self.machines[machine]['building']:
             raise ValueError(
                 'Machine {machine} is located in building {machine_building} '
@@ -954,8 +974,8 @@ class MockHub(object):
         ip = net.usable[self.machines[machine]['net_index']]
         mac = net.usable[self.machines[machine]['net_index']].mac
         command = ['add_host', '--domain', self.default_domain,
-                   '--archetype', self.default_archetype,
-                   '--personality', self.default_personality,
+                   '--archetype', archetype,
+                   '--personality', personality,
                    '--osname', self.default_os,
                    '--osversion', self.default_os_version,
                    '--ip', ip, '--machine', machine]
@@ -977,6 +997,10 @@ class MockHub(object):
                     'Could not find default DNS domain while attempting to add'
                     ' a host with prefix {}.'.format(prefix))
             hostname = self.get_next_available_hostname(prefix, dns_domain)
+        if grn:
+            command.extend(['--grn', grn])
+        if build_status:
+            command.extend(['--buildstatus', build_status])
         command.extend(extra_arguments or [])
         self._engine.dsdb_expect_add(hostname, ip, 'eth0', mac)
         self._engine.successtest(command)
@@ -1041,13 +1065,20 @@ class MockHub(object):
                                               self.default_cluster_archetype):
             self.add_archetype(self.default_cluster_archetype,
                                cluster_type='storage')
+        # Add the default grn change unrestricted archetype if it doesn't exist
+        if not self._exists_according_to_show(
+                        'archetype',
+                        self.default_grn_change_unrestricted_archetype):
+            self.add_archetype(self.default_grn_change_unrestricted_archetype)
+
         # Add the default OS if it does not exist.
-        os = ['--osname', self.default_os,
-              '--osversion', self.default_os_version,
-              '--archetype', self.archetypes]
-        if not self._exists_according_to_show('os', None, *os):
-            self.add_os(self.default_os, self.default_os_version,
-                        self.default_archetype)
+        for archetype in self.archetypes:
+            os = ['--osname', self.default_os,
+                  '--osversion', self.default_os_version,
+                  '--archetype', archetype]
+            if not self._exists_according_to_show('os', None, *os):
+                self.add_os(self.default_os, self.default_os_version,
+                            archetype)
         # Add the default personality for the default archetype if it does not
         # exist.
         personality = ['--personality', self.default_personality,
