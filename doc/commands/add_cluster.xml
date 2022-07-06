@@ -28,7 +28,7 @@
                 <synopfragmentref linkend="global-options">Global options</synopfragmentref>
             </group>
             <group>
-                <synopfragmentref linkend="change-management">Change management</synopfragmentref>
+                <synopfragmentref linkend="cm-check-not-needed">Non CM Check Change Options</synopfragmentref>
             </group>
             <group choice="req">
                 <arg choice="plain"><option>--cluster <replaceable>CLUSTER</replaceable></option></arg>
@@ -52,7 +52,7 @@
             <arg><option>--vm_to_host_ratio <replaceable>VM_COUNT</replaceable>:<replaceable>HOST_COUNT</replaceable></option></arg>
             <arg><option>--switch <replaceable>SWITCH</replaceable></option></arg>
             <arg><option>--comments <replaceable>COMMENTS</replaceable></option></arg>
-            <xi:include href="../common/change_management.xml"/>
+            <xi:include href="../common/non_cm_check.xml"/>
             <xi:include href="../common/global_options.xml"/>
             <xi:include href="../common/location_options.xml"/>
         </cmdsynopsis>
@@ -268,7 +268,7 @@
             </varlistentry>
         </variablelist>
         <xi:include href="../common/location_options_desc.xml"/>
-        <xi:include href="../common/change_management_desc.xml"/>
+        <xi:include href="../common/non_cm_check_desc.xml"/>
         <xi:include href="../common/global_options_desc.xml"/>
     </refsect1>
 
