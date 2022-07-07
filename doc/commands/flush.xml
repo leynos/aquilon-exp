@@ -28,7 +28,7 @@
                 <synopfragmentref linkend="global-options">Global options</synopfragmentref>
             </group>
             <group>
-                <synopfragmentref linkend="change-management">Change management</synopfragmentref>
+                <synopfragmentref linkend="cm-check-not-needed">Non CM Check Change Options</synopfragmentref>
             </group>
             <group choice="req">
                 <arg choice="plain"><option>--hosts</option></arg>
@@ -44,7 +44,7 @@
                 <arg choice="plain"><option>--archetypes</option></arg>
                 <arg choice="plain"><option>--grns</option></arg>
             </group>
-            <xi:include href="../common/change_management.xml"/>
+            <xi:include href="../common/non_cm_check.xml"/>
             <xi:include href="../common/global_options.xml"/>
         </cmdsynopsis>
         <cmdsynopsis>
@@ -213,7 +213,7 @@
                 </listitem>
             </varlistentry>
         </variablelist>
-        <xi:include href="../common/change_management_desc.xml"/>
+        <xi:include href="../common/non_cm_check_desc.xml"/>
         <xi:include href="../common/global_options_desc.xml"/>
     </refsect1>
 </refentry>

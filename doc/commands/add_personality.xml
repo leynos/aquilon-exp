@@ -28,7 +28,7 @@
                 <synopfragmentref linkend="global-options">Global options</synopfragmentref>
             </group>
             <group>
-                <synopfragmentref linkend="change-management">Change management</synopfragmentref>
+                <synopfragmentref linkend="cm-check-not-needed">Non CM Check Change Options</synopfragmentref>
             </group>
             <arg choice="plain"><option>--personality <replaceable>PERSONALITY</replaceable></option></arg>
             <arg choice="plain"><option>--archetype <replaceable>ARCHETYPE</replaceable></option></arg>
@@ -48,7 +48,7 @@
                 <arg choice="plain"><option>--staged</option></arg>
                 <arg choice="plain"><option>--unstaged</option></arg>
             </group>
-            <xi:include href="../common/change_management.xml"/>
+            <xi:include href="../common/non_cm_check.xml"/>
             <xi:include href="../common/global_options.xml"/>
         </cmdsynopsis>
     </refsynopsisdiv>
@@ -183,7 +183,7 @@
                 </listitem>
             </varlistentry>
         </variablelist>
-        <xi:include href="../common/change_management_desc.xml"/>
+        <xi:include href="../common/non_cm_check_desc.xml"/>
         <xi:include href="../common/global_options_desc.xml"/>
     </refsect1>
 
