@@ -20,6 +20,9 @@ build_types:
 
 test_types:
     - test_type:
+         name: unit
+         test: mkdir -p ../install/common/test-results/unittest/; python test/test_xmlrunner.py
+    - test_type:
          name: all
          test: set -o pipefail; ./tests/runtests.py --config=./tests/unittest.conf --no-interactive | tee ./tests/aqdtests.log
     - test_type:
@@ -32,8 +35,9 @@ test_types:
          name: jenkins
          test: 
          - script: |
+               mkdir -p ../install/common/test-results/unittest/
+               python test/test_xmlrunner.py
                ./tests/jenkinstest.sh
-               mkdir -p ../install/common/test-results/
                cp tests/aqdtests.log ../install/common/test-results/aqdtests.log
                cp -R /var/tmp/$USER/run/quattor/logs/ ../install/common/test-results/quattor-logs
                mkdir -p ../install/common/test-results/INTEGRATION/coveragepy/xml/
