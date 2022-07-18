@@ -221,15 +221,17 @@ class TestAddBuilding(TestBrokerCommand):
         # Valid UTF-8: a with acute, u with double acute, greek phi
         command = ["add", "building", "--building", "nonascii", "--city", "ny",
                    "--address", "\xc3\xa1\xc5\xb1\xcf\x86"]
-        out = self.badrequesttest(command)
-        self.matchoutput(out, "Only ASCII characters are allowed for --address.",
+        out = self.commandtest(command)
+        self.matchoutput(out, "Non-ascii characters detected on command options."
+                              "Only ASCII characters are allowed for --address",
                          command)
 
     def test_135_nonutf8(self):
         command = ["add", "building", "--building", "nonascii", "--city", "ny",
                    "--address", "\xe1\xe9\xed\xf3\xfa"]
-        out = self.internalerrortest(command)
-        self.matchoutput(out, "Value for parameter address is not valid UTF-8",
+        out = self.commandtest(command)
+        self.matchoutput(out, "Non-ascii characters detected on command options."
+                              "Only ASCII characters are allowed for --address",
                          command)
 
 

@@ -46,7 +46,7 @@ for module in modules_to_test:
     suite.addTests(loader.loadTestsFromModule(module))
 out_file = os.path.join(BASEDIR,
                             '../install/common/test-results/'
-                            'unittest/tests.xml')
+                            'UNIT/xml/test.xml')
 with open(out_file, 'wb') as output:
     results = xmlrunner.XMLTestRunner(output=output).run(suite)
 
