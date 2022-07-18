@@ -318,7 +318,7 @@ def is_readonly(command):
 
 
 def get_default_opts(auth_option, conf_file=None, readonly=None,
-                     globalopts_aqhost=None):
+                     globalopts_aqhost=None, env_aqhost=None):
 
     allow_override = False
     config = SafeConfigParser()
@@ -332,8 +332,10 @@ def get_default_opts(auth_option, conf_file=None, readonly=None,
         if readonly and config.has_section("readonly_batch") and \
             get_username() in \
             config.get("readonly_batch", "proids").split(',\n') \
-            and (globalopts_aqhost == config.get("readonly_auth", "aqhost")
-                 or globalopts_aqhost is None):
+            and ((env_aqhost == config.get("readonly_auth", "aqhost")
+                  or env_aqhost is None) and
+                 (globalopts_aqhost == config.get("readonly_auth", "aqhost")
+                  or globalopts_aqhost is None)):
             allow_override = True
             config_options = dict(config.items("readonly_batch"))
         if not auth_option and config.has_section("readonly"):
@@ -372,7 +374,8 @@ if __name__ == "__main__":
     defaultOpts, override_allowed = \
         get_default_opts(globalOptions.get('auth'),
                          readonly=is_readonly(command),
-                         globalopts_aqhost=globalOptions.get('aqhost'))
+                         globalopts_aqhost=globalOptions.get('aqhost'),
+                         env_aqhost=os.environ.get('AQHOST', None))
     if globalOptions.get('aqconf'):
         globalOptions.update(get_default_opts(globalOptions.get('auth'),
                                               globalOptions.get('aqconf'),
@@ -391,7 +394,7 @@ if __name__ == "__main__":
         default_aqservice = get_username()
 
     if override_allowed and not globalOptions.get('aqconf'):
-        host = os.environ.get('AQHOST', None) or defaultOpts.get('aqhost')
+        host = defaultOpts.get('aqhost')
     else:
         host = globalOptions.get('aqhost') or os.environ.get('AQHOST', None) or \
                defaultOpts.get('aqhost') or default_aqhost
