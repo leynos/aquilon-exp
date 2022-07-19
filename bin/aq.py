@@ -369,6 +369,19 @@ if __name__ == "__main__":
               file=sys.stderr)
         sys.exit(1)
 
+    for k, v in iteritems(commandOptions):
+        try:
+            if isinstance(v, str) and v.decode('ascii'):
+                pass
+            elif isinstance(v, list):
+                for i in v:
+                    if isinstance(i, str) and i.decode('ascii'):
+                        pass
+        except UnicodeDecodeError as e:
+            print("Non-ascii characters detected on command options."
+                  "Only ASCII characters are allowed for --%s" %k)
+            sys.exit(0)
+
     # if a client config file is specified on command line
     # that should overide  env or default options.
     defaultOpts, override_allowed = \
