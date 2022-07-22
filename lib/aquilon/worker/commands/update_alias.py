@@ -103,6 +103,13 @@ class CommandUpdateAlias(BrokerCommand):
                                        .format(dbalias, srv.service_instance,
                                                provider))
 
+            if dbalias.target.dns_domain.restricted != \
+                    old_target.dns_domain.restricted:
+                raise ArgumentError("Cannot update alias {0} because the "
+                                    "value of the restricted flag does not "
+                                    "match between old and new DNS domains"
+                                    .format(fqdn))
+
             if dbalias.target != old_target:
                 delete_target_if_needed(session, old_target)
 
@@ -119,7 +126,8 @@ class CommandUpdateAlias(BrokerCommand):
 
         session.flush()
 
-        if dbdns_env.is_default and dbalias.fqdn.dns_domain.name == "ms.com":
+        if dbdns_env.is_default and dbalias.fqdn.dns_domain.name == "ms.com"\
+                and not dbalias.target.dns_domain.restricted:
             dsdb_runner = DSDBRunner(logger=logger)
             dsdb_runner.update_alias(fqdn, dbalias.target.fqdn,
                                      dbalias.comments, old_target_fqdn,
