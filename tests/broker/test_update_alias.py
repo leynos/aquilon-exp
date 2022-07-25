@@ -99,6 +99,17 @@ class TestUpdateAlias(EventsTestMixin, TestBrokerCommand):
                          "Alias arecord13.aqd-unittest.ms.com not found.",
                          command)
 
+    def test_211_non_restricted_alias_to_restricted(self):
+        fqdn = "alias2alias.aqd-unittest.ms.com"
+        cmd = ["update", "alias", "--fqdn", fqdn,
+               "--target", "target.restrict.aqd-unittest.ms.com"]
+        out = self.badrequesttest(cmd)
+        self.matchoutput(out,
+                         "Cannot update alias {0} because the "
+                         "value of the restricted flag does not "
+                         "match between old and new DNS domains"
+                         .format(fqdn), cmd)
+
     def test_300_verify_alias(self):
         command = ["search", "dns", "--fullinfo",
                    "--fqdn", "alias2host.aqd-unittest.ms.com"]
@@ -240,6 +251,17 @@ class TestUpdateAlias(EventsTestMixin, TestBrokerCommand):
             }
         ]
         self.assertEqual(json.loads(out), expected)
+
+    def test_432_restricted_alias_to_non_restricted(self):
+        fqdn = "restrict1.aqd-unittest.ms.com"
+        cmd = ["update", "alias", "--fqdn", fqdn,
+               "--target", "arecord14.aqd-unittest.ms.com"]
+        out = self.badrequesttest(cmd)
+        self.matchoutput(out,
+                         "Cannot update alias {0} because the "
+                         "value of the restricted flag does not "
+                         "match between old and new DNS domains"
+                         .format(fqdn), cmd)
 
     def test_500_repoint2diff_environment(self):
         command = ["update", "alias",
