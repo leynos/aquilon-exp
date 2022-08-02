@@ -95,6 +95,72 @@ class TestAddMachine(MachineTestMixin, TestBrokerCommand):
         self.matchoutput(out, '"chassis" = "ut3c5.aqd-unittest.ms.com";', command)
         self.matchoutput(out, '"slot" = 10;', command)
 
+    def test_100_add_ut3c5n17(self):
+        self.noouttest(["add", "machine", "--machine", "ut3c5n17",
+                        "--chassis", "ut3c5", "--slot", '17',
+                        "--model", "hs21-8853",
+                        "--cpucount", "2", "--cpuvendor", "intel",
+                        "--cpuname", "e5-2660",
+                        "--memory", "8192", "--serial", "99C5554",
+                        "--comments", "Some /n machine comments"])
+
+    def test_101_update_ut3c5n17_ip(self):
+        command = ["update", "machine", "--machine", "ut3c5n17",
+                   "--ip", self.net["unknown0"].usable[0]]
+        out = self.badrequesttest(command)
+        self.matchoutput(out, "Machine ut3c5n17 does not have a primary name.",
+                         command)
+
+    def test_105_show_ut3c5n17(self):
+        command = "show machine --machine ut3c5n17"
+        out = self.commandtest(command.split(" "))
+        self.output_equals(out, """
+                Machine: ut3c5n17
+                  Building: ut
+                  Bunker: zebrabucket.ut
+                  Campus: ny
+                  City: ny
+                  Continent: na
+                  Country: us
+                  Hub: ny
+                  Organization: ms
+                  Rack: ut3
+                    Row: a
+                    Column: 3
+                    Fullname: ut3
+                  Room: utroom1
+                  Vendor: ibm Model: hs21-8853
+                    Model Type: blade
+                  Serial: 99C5554
+                  Comments: Some /n machine comments
+                  Chassis: ut3c5.aqd-unittest.ms.com
+                  Slot: 17
+                  Cpu: e5-2660 x 2
+                  Memory: 8192 MB
+                  Disk: sda 68 GB scsi (local) [boot]
+                """, command)
+
+    def test_105_cat_ut3c5n17(self):
+        command = "cat --machine ut3c5n17"
+        out = self.commandtest(command.split(" "))
+        self.matchoutput(out, '"location" = "ut.ny.na";', command)
+        self.matchoutput(out, '"serialnumber" = "99C5554";', command)
+        self.matchoutput(out,
+                         'include "hardware/machine/ibm/hs21-8853";',
+                         command)
+        self.searchoutput(out,
+                          r'"ram" = list\(\s*'
+                          r'create\("hardware/ram/generic",\s*'
+                          r'"size", 8192\*MB\s*\)\s*\);',
+                          command)
+        self.searchoutput(out,
+                          r'"cpu" = list\(\s*'
+                          r'create\("hardware/cpu/intel/e5-2660"\),\s*'
+                          r'create\("hardware/cpu/intel/e5-2660"\s*\)\s*\);',
+                          command)
+        self.matchoutput(out, '"chassis" = "ut3c5.aqd-unittest.ms.com";', command)
+        self.matchoutput(out, '"slot" = 17;', command)
+
     # Used for Zebra tests
     def test_110_add_ut3c5n2(self):
         self.create_machine_hs21("ut3c5n2", chassis="ut3c5", slot=2,

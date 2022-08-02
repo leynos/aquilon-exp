@@ -32,6 +32,7 @@ def pan(obj, indent=0):
     accumulator = list()
 
     if isinstance(obj, string_types):
+        obj = ''.join(char for char in obj if ord(char) >= 32)
         quote = '"'
         if '"' in obj:
             quote = "'"

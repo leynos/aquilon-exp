@@ -984,6 +984,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
               Slot #13 (type: machine): ut3c5n13 (infra1.aqd-unittest.ms.com)
               Slot #14 (type: machine): ut3c5n14 (infra2.aqd-unittest.ms.com)
               Slot #16 (type: machine): ut3c5n16 (no hostname)
+              Slot #17 (type: machine): ut3c5n17 (no hostname)
               Slot #1 (type: network_device): ut3c5netdev1 (ut3c5netdev1.aqd-unittest.ms.com)
               Slot #2 (type: network_device): ut3c5netdev1 (ut3c5netdev1.aqd-unittest.ms.com)
               Slot #3 (type: network_device): Empty
