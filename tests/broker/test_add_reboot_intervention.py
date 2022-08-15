@@ -94,6 +94,45 @@ class TestAddRebootIntervention(TestBrokerCommand):
                    "--hostname=server3.aqd-unittest.ms.com"]
         self.notfoundtest(command)
 
+    def test_20_basic_reboot_intervention_escape(self):
+        command = ["show_reboot_intervention",
+                   "--hostname=server2.aqd-unittest.ms.com"]
+        out = self.notfoundtest(command)
+
+        command = ["add_reboot_intervention", "--expiry", EXPIRY,
+                   "--reason=test\n Users",
+                   "--hostname=server2.aqd-unittest.ms.com"]
+        self.successtest(command)
+
+        command = ["show_reboot_intervention",
+                   "--hostname=server2.aqd-unittest.ms.com"]
+        out = self.commandtest(command)
+        self.searchoutput(out, "RebootIntervention$", command)
+        self.matchoutput(out, "Bound to: Host server2.aqd-unittest.ms.com",
+                         command)
+        self.matchoutput(out, "Start: ", command)
+        self.matchoutput(out, "Expiry: ", command)
+        self.matchoutput(out, "Reason: ", command)
+
+        command = ["cat", "--reboot_intervention",
+                   "--hostname=server2.aqd-unittest.ms.com"]
+        out = self.commandtest(command)
+        self.matchoutput(out,
+                         "structure template resource"
+                         "/host/server2.aqd-unittest.ms.com"
+                         "/reboot_iv/reboot_intervention/config;",
+                         command)
+        self.matchoutput(out, "\"name\" = \"reboot_intervention\";", command)
+        self.matchoutput(out, "\"start\" =", command)
+        self.matchoutput(out, "\"expiry\" =", command)
+        self.matchoutput(out, "\"justification\" = \"test Users\";", command)
+
+        command = ["cat", "--reboot_intervention",
+                   "--hostname=server2.aqd-unittest.ms.com",
+                   "--generate"]
+        newout = self.commandtest(command)
+        self.assertEqual(out, newout)
+
     def test_30_checkthehost(self):
         command = ["show_host", "--host=server1.aqd-unittest.ms.com"]
         out = self.commandtest(command)

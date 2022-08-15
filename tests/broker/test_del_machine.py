@@ -42,12 +42,27 @@ class TestDelMachine(EventsTestMixin, TestBrokerCommand):
         command = "show machine --machine ut3c5n10"
         self.notfoundtest(command.split(" "))
 
+    def testdelut3c5n17(self):
+        self.check_plenary_exists("machine", "americas", "ut", "ut3",
+                                  "ut3c5n17")
+        command = "del machine --machine ut3c5n17"
+        self.noouttest(command.split(" "))
+        self.check_plenary_gone("machine", "americas", "ut", "ut3", "ut3c5n17")
+
+    def testverifydelut3c5n17(self):
+        command = "show machine --machine ut3c5n17"
+        self.notfoundtest(command.split(" "))
+
     def testdelut3c5n16(self):
         self.check_plenary_exists("machine", "americas", "ut", "ut3",
                                   "ut3c5n16")
         command = "del machine --machine ut3c5n16"
         self.noouttest(command.split(" "))
         self.check_plenary_gone("machine", "americas", "ut", "ut3", "ut3c5n16")
+
+    def testverifydelut3c5n16(self):
+        command = "show machine --machine ut3c5n16"
+        self.notfoundtest(command.split(" "))
 
     def testdelut3c1n3(self):
         command = "del machine --machine ut3c1n3"
