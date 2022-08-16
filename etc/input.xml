@@ -795,7 +795,8 @@
         <optgroup mandatory="True" fields="one">
             <option name="network" type="string">Network name</option>
             <option name="ip" type="ip">IP address</option>
-            <option name="all" type="flag">All</option>
+            <option name="all" type="flag">Internal Network Environment only</option>
+            <option name="all_dns_environments" type="flag">Show all DNS environments Network Data</option>
         </optgroup>
         <optgroup>
             <option name="network_environment" type="string">Network environment (default: internal)</option>
