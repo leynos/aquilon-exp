@@ -125,6 +125,37 @@ class TestShowNetwork(TestBrokerCommand):
                                                service_addresses=self.network_details["service_addresses"].get(net.name,
                                                                                                                []))
 
+    def test_116_show_global_network_details(self):
+        command = ["show_network", "--all_dns_environments"]
+        out = self.commandtest(command)
+        for net in self.net:
+            if net.name in self.network_not_exist:
+                continue
+            self._test_network_detailed_output(out,
+                                               net, command)
+
+    def test_117_show_global_network_addr_details(self):
+        command = ["show_network", "--all_dns_environments", "--address_assignments"]
+        out = self.commandtest(command)
+        for net in self.net:
+            if net.name in self.network_not_exist:
+                continue
+            self._test_network_detailed_output(out,
+                                               net, command,
+                                               hosts=self.network_details["hosts"].get(net.name, True),
+                                               service_addresses=self.network_details["service_addresses"].get(net.name,
+                                                                                                               []))
+
+    def test_118_show_global_network_all_error(self):
+        command = ["show_network", "--all_dns_environments", "--network_environment",
+                   "external"]
+        out = self.badrequesttest(command)
+        self.matchoutput(out,
+                         "Optional argument 'network_environment' and "
+                         "'all_dns_environment' are mutually exclusive."
+                         " Only specify one.",
+                         command)
+
     def test_120_show_network_all_details_proto(self):
         command = ["show_network", "--all", "--address_assignments", "--format=proto"]
         networks = self.protobuftest(command)

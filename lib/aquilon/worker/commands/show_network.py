@@ -18,6 +18,7 @@
 
 from sqlalchemy.orm import joinedload, subqueryload, undefer
 
+from aquilon.exceptions_ import ArgumentError
 from aquilon.aqdb.model import Network, NetworkEnvironment
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.location import get_location
@@ -28,8 +29,14 @@ class CommandShowNetwork(BrokerCommand):
 
     required_parameters = []
 
-    def render(self, session, network, ip, network_environment, all, hosts,
-               address_assignments, **arguments):
+    def render(self, session, network, ip, network_environment, all,
+               all_dns_environments, hosts, address_assignments, **arguments):
+
+        if all_dns_environments and network_environment:
+            raise ArgumentError("Optional argument 'network_environment' and "
+                                "'all_dns_environment' are mutually exclusive."
+                                " Only specify one.")
+
         options = [undefer('comments'),
                    joinedload('location'),
                    undefer('routers.comments'),
@@ -45,12 +52,10 @@ class CommandShowNetwork(BrokerCommand):
 
         dbnet_env = NetworkEnvironment.get_unique_or_default(session,
                                                              network_environment)
-
         if network or ip:
             dbnetwork = Network.get_unique(session, name=network, ip=ip,
                                            network_environment=dbnet_env,
                                            query_options=options, compel=True)
-
             if address_assignments:
                 return NetworkAddressAssignmentList([dbnetwork])
             elif hosts:
@@ -59,7 +64,8 @@ class CommandShowNetwork(BrokerCommand):
                 return dbnetwork
 
         q = session.query(Network)
-        q = q.filter_by(network_environment=dbnet_env)
+        if not all_dns_environments:
+            q = q.filter_by(network_environment=dbnet_env)
         q = q.order_by(Network.ip)
         q = q.options(*options)
         if address_assignments:
