@@ -142,12 +142,12 @@ class Network(Base):
     router_ips = association_proxy("routers", "ip")
 
     __table_args__ = (UniqueConstraint(network_environment_id, ip),
-                      #CheckConstraint(and_(cidr >= 1,
-                      #                     cidr <= case(
-                      #                         [(and_(ip >= IPv4Address(0),
-                      #                                ip <= IPv4Address(0xffffffff)),
-                      #                           32)],
-                      #                         else_=128))),
+                      CheckConstraint(and_(cidr >= 1,
+                                           cidr <= case(
+                                               [(and_(ip >= IPv4Address(0),
+                                                      ip <= IPv4Address(0xffffffff)),
+                                                 32)],
+                                               else_=128))),
                       {'info': {'unique_fields': ['network_environment', 'ip'],
                                 'extra_search_fields': ['name', 'cidr']}})
 
