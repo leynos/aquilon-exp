@@ -42,6 +42,7 @@ if LIBDIR not in sys.path:
 # -- end path_setup --
 
 from aquilon.client import depends  # pylint: disable=W0611
+from aquilon.client.ldap_search import check_ldap_filter
 from aquilon.config import lookup_file_path, get_username
 from aquilon.exceptions_ import AquilonError
 from aquilon.client.knchttp import KNCHTTPConnection
@@ -331,11 +332,16 @@ def get_default_opts(auth_option, conf_file=None, readonly=None,
         config_options = {}
         if readonly and config.has_section("readonly_batch") and \
             get_username() in \
-            config.get("readonly_batch", "proids").split(',\n') \
-            and ((env_aqhost == config.get("readonly_auth", "aqhost")
-                  or env_aqhost is None) and
-                 (globalopts_aqhost == config.get("readonly_auth", "aqhost")
-                  or globalopts_aqhost is None)):
+                config.get("readonly_batch", "batch_users").split(',\n'):
+            allow_override = True
+            config_options = dict(config.items("readonly_batch"))
+        if readonly and config.has_section("readonly_batch") and \
+            check_ldap_filter(get_username()) and get_username() not in \
+            config.get("readonly_batch", "ro_users").split(',\n') \
+                and ((env_aqhost == config.get("readonly_auth", "aqhost")
+                      or env_aqhost is None) and
+                     (globalopts_aqhost == config.get("readonly_auth", "aqhost")
+                      or globalopts_aqhost is None)):
             allow_override = True
             config_options = dict(config.items("readonly_batch"))
         if not auth_option and config.has_section("readonly"):
@@ -411,6 +417,12 @@ if __name__ == "__main__":
     else:
         host = globalOptions.get('aqhost') or os.environ.get('AQHOST', None) or \
                defaultOpts.get('aqhost') or default_aqhost
+
+    '''Some Users are overriding the above set-up. Hence explicitly making 
+    the allocation again for batch users.'''
+    if get_username() in defaultOpts.get(
+            "readonly_batch", "batch_proids").split(',\n'):
+        host = defaultOpts.get("readonly_batch", "aqhost")
 
     port = globalOptions.get('aqport') or os.environ.get('AQPORT', None) or \
         defaultOpts.get('aqport')

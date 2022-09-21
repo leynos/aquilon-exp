@@ -67,47 +67,56 @@ class TestAQClient(unittest.TestCase):
         self.assertEqual(exp_result.get('aqhost'), globalopts_host)
 
     @mock.patch('aq.get_username')
-    def test_103_get_default_opts_aqbatch(self, mock_username):
+    @mock.patch('aq.check_ldap_filter')
+    def test_103_get_default_opts_aqbatch(self, mock_ldap, mock_username):
         auth_option = True
         conf_file = os.path.join(os.getcwd(), "tests/unit/bin/data/unittest-aq.conf")
         readonly = True
-        mock_username.return_value = 'aqddev_test'
-        exp_result, exp_override = ({'proids': 'aqddev_test\n,aqdqa_test\n,'
-                                               'aqbld_test\n,aqbldtrain_test',
-                                     'aqservice': 'cdb', 'aqport': '6900',
-                                     'aqhost': 'test_aqd-batch.ms.com'}, True)
+        mock_username.return_value = 'aqbldtrain1'
+        mock_ldap.return_value = True
+        exp_result, exp_override = ({'aqhost': 'test_aqd-batch.ms.com',
+                                     'batch_users': 'aqddev1,\naqdqa1,\naqbld1,\naqbldtrain1',
+                                     'ro_users': 'aqddev_test1,\naqdqa_test1,\naqbld_test1,'
+                                                  '\naqbldtrain_test1',
+                                     'aqservice': 'cdb', 'aqport': '6900'}, True)
         result, override = get_default_opts(auth_option, conf_file,
                                             readonly)
         self.assertEqual(override, exp_override)
         self.assertEqual(result.get('aqhost'), 'test_aqd-batch.ms.com')
 
     @mock.patch('aq.get_username')
-    def test_104_get_default_opts_aqbatch_ro_host(self, mock_username):
+    @mock.patch('aq.check_ldap_filter')
+    def test_104_get_default_opts_aqbatch_ro_host(self, mock_ldap, mock_username):
         auth_option = True
         conf_file = os.path.join(os.getcwd(), "tests/unit/bin/data/unittest-aq.conf")
         readonly = True
         globalopts_host = 'test_aqd-ro.ms.com'
-        mock_username.return_value = 'aqddev_test'
-        exp_result, exp_override = ({'proids': 'aqddev_test\n,aqdqa_test\n,'
-                                               'aqbld_test\n,aqbldtrain_test',
-                                     'aqservice': 'cdb', 'aqport': '6900',
-                                     'aqhost': 'test_aqd-batch.ms.com'}, True)
+        mock_username.return_value = 'aqbld1'
+        mock_ldap.return_value = True
+        exp_result, exp_override = ({'aqhost': 'test_aqd-batch.ms.com',
+                                     'batch_users': 'aqddev1,\naqdqa1,\naqbld1,\naqbldtrain1',
+                                     'ro_users': 'aqddev_test1,\naqdqa_test1,\naqbld_test1,'
+                                                  '\naqbldtrain_test1',
+                                     'aqservice': 'cdb', 'aqport': '6900'}, True)
         result, override = get_default_opts(auth_option, conf_file,
                                             readonly, globalopts_host)
         self.assertEqual(override, exp_override)
         self.assertEqual(result.get('aqhost'), 'test_aqd-batch.ms.com')
 
     @mock.patch('aq.get_username')
-    def test_105_get_default_opts_aqhost_env_ro_host(self, mock_username):
+    @mock.patch('aq.check_ldap_filter')
+    def test_105_get_default_opts_aqhost_env_ro_host(self, mock_ldap, mock_username):
         auth_option = True
         conf_file = os.path.join(os.getcwd(), "tests/unit/bin/data/unittest-aq.conf")
         readonly = True
         env_host = 'test_aqd-ro.ms.com'
-        mock_username.return_value = 'aqddev_test'
-        exp_result, exp_override = ({'proids': 'aqddev_test\n,aqdqa_test\n,'
-                                               'aqbld_test\n,aqbldtrain_test',
-                                     'aqservice': 'cdb', 'aqport': '6900',
-                                     'aqhost': 'test_aqd-batch.ms.com'}, True)
+        mock_username.return_value = 'aqdqa1'
+        mock_ldap.return_value = True
+        exp_result, exp_override = ({'aqhost': 'test_aqd-batch.ms.com',
+                                     'batch_users': 'aqddev1,\naqdqa1,\naqbld1,\naqbldtrain1',
+                                     'ro_users': 'aqddev_test1,\naqdqa_test1,\naqbld_test1,'
+                                                  '\naqbldtrain_test1',
+                                     'aqservice': 'cdb', 'aqport': '6900'}, True)
         result, override = get_default_opts(auth_option, conf_file,
                                             readonly,
                                             env_aqhost=env_host)
@@ -115,17 +124,20 @@ class TestAQClient(unittest.TestCase):
         self.assertEqual(result.get('aqhost'), 'test_aqd-batch.ms.com')
 
     @mock.patch('aq.get_username')
-    def test_106_get_default_opts_aqhost_env_global(self, mock_username):
+    @mock.patch('aq.check_ldap_filter')
+    def test_106_get_default_opts_aqhost_env_global(self, mock_ldap, mock_username):
         auth_option = True
         conf_file = os.path.join(os.getcwd(), "tests/unit/bin/data/unittest-aq.conf")
         readonly = True
         globalopts_host = 'test_aqd-ro.ms.com'
         env_host = 'test_aqd-ro.ms.com'
-        mock_username.return_value = 'aqddev_test'
-        exp_result, exp_override = ({'proids': 'aqddev_test\n,aqdqa_test\n,'
-                                               'aqbld_test\n,aqbldtrain_test',
-                                     'aqservice': 'cdb', 'aqport': '6900',
-                                     'aqhost': 'test_aqd-batch.ms.com'}, True)
+        mock_username.return_value = 'aqddev1'
+        mock_ldap.return_value = True
+        exp_result, exp_override = ({'aqhost': 'test_aqd-batch.ms.com',
+                                     'batch_users': 'aqddev1,\naqdqa1,\naqbld1,\naqbldtrain1',
+                                     'ro_users': 'aqddev_test1,\naqdqa_test1,\naqbld_test1,'
+                                                  '\naqbldtrain_test1',
+                                     'aqservice': 'cdb', 'aqport': '6900'}, True)
         result, override = get_default_opts(auth_option, conf_file,
                                             readonly, globalopts_host,
                                             env_host)
@@ -133,12 +145,14 @@ class TestAQClient(unittest.TestCase):
         self.assertEqual(result.get('aqhost'), 'test_aqd-batch.ms.com')
 
     @mock.patch('aq.get_username')
-    def test_107_get_default_opts_aqhost_env_nonro_config(self, mock_username):
+    @mock.patch('aq.check_ldap_filter')
+    def test_107_get_default_opts_aqhost_env_nonro_config(self, mock_ldap, mock_username):
         auth_option = True
         conf_file = os.path.join(os.getcwd(), "tests/unit/bin/data/unittest-aq.conf")
         readonly = True
         env_host = 'test_aqd-r0.ms.com'
         mock_username.return_value = 'aqddev_test'
+        mock_ldap.return_value = True
         exp_result, exp_override = ({}, False)
         result, override = get_default_opts(auth_option, conf_file,
                                             readonly,
@@ -173,12 +187,44 @@ class TestAQClient(unittest.TestCase):
         self.assertEqual(result.get('aqhost'), 'test_nyaqd1_ro')
 
     @mock.patch('aq.get_username')
-    def test_110_get_default_opts_ro(self, mock_username):
+    @mock.patch('aq.check_ldap_filter')
+    def test_110_get_default_opts_ro(self, mock_ldap, mock_username):
         auth_option = True
         conf_file = os.path.join(os.getcwd(), "tests/unit/bin/data/unittest-aq.conf")
         readonly = True
-        mock_username.return_value = 'aqd_test'
+        mock_username.return_value = 'aqbld_test1'
+        mock_ldap.return_value = True
         exp_result, exp_override = ({'aqservice': 'cdb', 'aqport': '6901',
+                                     'aqhost': 'test_aqd-ro.ms.com'}, False)
+        result, override = get_default_opts(auth_option, conf_file,
+                                            readonly)
+        self.assertEqual(override, exp_override)
+        self.assertEqual(result.get('aqhost'), 'test_aqd-ro.ms.com')
+
+    @mock.patch('aq.get_username')
+    @mock.patch('aq.check_ldap_filter')
+    def test_111_get_default_opts_aqhost_env(self, mock_ldap, mock_username):
+        auth_option = True
+        conf_file = None
+        readonly = True
+        env_host = 'test_aqd_ring1.ms.com'
+        mock_username.return_value = 'aqbld_test1'
+        mock_ldap.return_value = True
+        exp_result, exp_override = ({}, False)
+        result, override = get_default_opts(auth_option, conf_file,
+                                            readonly, env_aqhost= env_host)
+        self.assertEqual(override, exp_override)
+        self.assertEqual(result.get('aqhost'), None)
+
+    @mock.patch('aq.get_username')
+    @mock.patch('aq.check_ldap_filter')
+    def test_112_get_default_opts_ro_users(self, mock_ldap, mock_username):
+        auth_option = True
+        conf_file = os.path.join(os.getcwd(), "tests/unit/bin/data/unittest-aq.conf")
+        readonly = True
+        mock_username.return_value = 'aqbldtrain_test1'
+        mock_ldap.return_value = True
+        exp_result, exp_override = ({'aqservice': 'cdb', 'aqport': '6900',
                                      'aqhost': 'test_aqd-ro.ms.com'}, False)
         result, override = get_default_opts(auth_option, conf_file,
                                             readonly)

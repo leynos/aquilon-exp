@@ -427,3 +427,31 @@ ignore_network_compartments_regex =
 
 [protocols]
 directory = /ms/dist/aquilon/PROJ/protocols/2021.10.06-1/common/lib/python/
+
+# [readonly_batch]
+# A Section in the config file having details of the aqhost, port
+# and service; along with users which are segregated as batch and
+# read only. This is referenced by broker to route ro commands for
+# users making bulk requests and long processing the aq commands.
+
+# [batch_users]
+# Users whose ro commands will be routed to the BATCH hosts and not
+# the regular ro brokers. These are the users who make bulk requests
+# and processing the aq commands need a long time.
+
+# [ro_users]
+# Users whose ro commands will be routed to the RO hosts.
+
+# [readonly]
+# A Section in the config file having details of the aqhost, port
+# and service. This is referenced by broker to route ro commands
+# without authentication.
+
+# [readonly_auth]
+# A Section in the config file having details of the aqhost, port
+# and service. This is referenced by broker to route ro commands
+# which uses authentication.
+
+# [defaults]
+# A Section in the config file having details of the aqhost, port
+# and service. This is referenced by broker to route write commands.

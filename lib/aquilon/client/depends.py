@@ -27,6 +27,12 @@ else:
 
     ms.version.addpkg('lxml', '3.2.5')
     ms.version.addpkg('six', '1.9.0')
+    ms.version.addpkg("pyasn1", "0.4.8")
+    ms.version.addpkg("pyasn1-modules", "0.2.4")
+    ms.version.addpkg("python-ldap", "3.2.0")
+    ms.version.addpkg("ms.directory", "3.2.0")
+    ms.version.addpkg("ldap3", "2.7")
+    ms.version.addpkg("kerberos", "1.3.1-1.16")
 
     if sys.platform == "sunos5":
         # ctypes is missing from the default Python build on Solaris, due to
