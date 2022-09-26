@@ -330,14 +330,14 @@ def get_default_opts(auth_option, conf_file=None, readonly=None,
     if conf_file:
         config.read(conf_file)
         config_options = {}
-        if readonly and config.has_section("readonly_batch") and \
-            get_username() in \
+        if readonly and config.has_option("readonly_batch", "batch_users") \
+                and get_username() in \
                 config.get("readonly_batch", "batch_users").split(',\n'):
             allow_override = True
             config_options = dict(config.items("readonly_batch"))
-        if readonly and config.has_section("readonly_batch") and \
-            check_ldap_filter(get_username()) and get_username() not in \
-            config.get("readonly_batch", "ro_users").split(',\n') \
+        if readonly and config.has_option("readonly_batch", "batch_users") and \
+                check_ldap_filter(get_username()) and get_username() not in \
+                config.get("readonly_batch", "ro_users").split(',\n') \
                 and ((env_aqhost == config.get("readonly_auth", "aqhost")
                       or env_aqhost is None) and
                      (globalopts_aqhost == config.get("readonly_auth", "aqhost")
