@@ -23,7 +23,7 @@ except ImportError:
 else:
     ms.version.addpkg('sqlalchemy', '1.0.11')
     ms.version.addpkg('cx_Oracle', '5.1-11.2.0.1.0')
-    ms.version.addpkg('psycopg2', '2.5-9.2.4')
+    ms.version.addpkg('psycopg2-binary', '2.8.3')
     ms.version.addpkg('ms.modulecmd', '1.0.4')
     ms.version.addpkg('ipaddress', '1.0.6')
     ms.version.addpkg('dateutil', '1.5')
