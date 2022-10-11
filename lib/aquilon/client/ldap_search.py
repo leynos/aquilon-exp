@@ -17,19 +17,15 @@
 
 # Use ldapsearch capabilities to retrieve data for further operations
 
-
-from aquilon.config import Config
-
 from aquilon.client import depends
 
 from ms.directory import *
 import os
 import ldap
 
-def check_ldap_filter(uid):
+def check_ldap_filter(uid, config):
     try:
         # Get the LDAP Server configs from config file
-        config = Config()
         os.environ['LDAPTLS_CACERTDIR'] = config.get("ldap", "LDAPTLS_CACERTDIR")
         ldap_server = config.get("ldap", "server")
         baseDN = config.get("ldap", "baseDN")
