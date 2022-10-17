@@ -28,6 +28,7 @@ from aquilon.aqdb.model import (
     Parameterized,
 )
 from aquilon.aqdb.column_types import AqStr
+from aquilon.config import Config
 
 _TN = 'archetype'
 
@@ -56,6 +57,11 @@ class Archetype(Base):
         if not self.is_compileable:
             raise UnimplementedError("{0} is not compileable, {1!s}."
                                      .format(self, msg))
+
+    def is_grn_change_restricted(self):
+        config = Config()
+        return config.getboolean("archetype_" + self.name,
+                                 "restrict_grn_change", False)
 
 
 class ParameterizedArchetype(Parameterized):

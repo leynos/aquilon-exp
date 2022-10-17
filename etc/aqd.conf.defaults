@@ -257,12 +257,15 @@ default_eonid = 47599
 [hardware_network_device]
 default_archetype = netinfra
 
+[grn_change_restrictions]
+
 [archetype_aquilon]
 default_personality = inventory
 default_osname = linux
 default_grn_target = esp
 host_grn_targets = esp
 personality_grn_targets = esp,invited
+restrict_grn_change = True
 
 [archetype_aurora]
 default_personality = generic

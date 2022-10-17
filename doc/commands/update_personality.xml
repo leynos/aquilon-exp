@@ -111,6 +111,24 @@
                         specified, all hosts having the same owner GRN as the personality will be updated as well. Hosts
                         having an owner GRN different from the original owner of the personality will not be affected.
                     </para>
+                    <para>
+                        If GRN change restrictions apply to the archetype of the personality, changing the owner GRN of the personality is only allowed if this doesn't change the effective GRN of any of the hosts using the personality, ie:
+                        <itemizedlist>
+                            <listitem>
+                                <para>
+                                    The personality has no hosts
+                                </para>
+                            </listitem>
+                            <listitem>
+                                <para>
+                                    No hosts using the personality inherit GRN from it
+                                </para>
+                            </listitem>
+                        </itemizedlist>
+                    </para>
+                    <para>
+                        See section <link linkend="sect1-grn-change-restrictions" endterm="sect1-grn-change-restrictions-title"/>.
+                    </para>
                 </listitem>
             </varlistentry>
             <varlistentry>
@@ -196,6 +214,8 @@
         <xi:include href="../common/change_management_desc.xml"/>
         <xi:include href="../common/global_options_desc.xml"/>
     </refsect1>
+
+    <xi:include href="../common/grn_change_restrictions.xml"/>
 
     <refsect1>
         <title>See also</title>

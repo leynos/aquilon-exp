@@ -9,3 +9,4 @@ id,parent_id,name,type,display_name,deleted,lifecycle,can_map_resources
 8,7,grn:/ms/windows/desktop,domain,Windows,0,Production,1
 9,,,unknown,"Unknown entry",0,Evaluation,0
 10,10,grn:/ms/et/aquilon,domain,ET Aquilon,0,Production,1
+11,1,grn:/ms/ei/aquilon/unittest_can_change_grn,system,Unit test can change grn,0,Production,1

@@ -91,6 +91,15 @@ class TestUpdatePersonality(VerifyGrnsMixin, PersonalityTestMixin,
         self.verifycatpersonality("aquilon", "utunused/dev",
                                   config_override=True)
 
+    def test_135_setup_hosts(self):
+        hosts = ['unittest20.aqd-unittest.ms.com',
+                 'server1.aqd-unittest.ms.com']
+        for host in hosts:
+            command = ["reconfigure", "--hostname", host,
+                       "--archetype", "aquilon",
+                       "--personality", "unixeng-test"]
+            self.successtest(command)
+
     def test_140_update_owner_grn(self):
         command = ["update_personality", "--personality", "compileserver",
                    "--archetype", "aquilon", "--grn", "grn:/ms/ei/aquilon/ut2"]
@@ -129,9 +138,10 @@ class TestUpdatePersonality(VerifyGrnsMixin, PersonalityTestMixin,
         self.searchoutput(out, r'"system/owner_eon_id" = %d;' %
                           self.grns["grn:/ms/ei/aquilon/aqd"], command)
 
-    def test_141_verify_cat_unittest20(self):
+    def test_141_verify_cat_unittest22(self):
         # Inherited - should be updated
-        command = ["cat", "--hostname", "unittest20.aqd-unittest.ms.com", "--data"]
+        command = ["cat", "--hostname", "unittest22.aqd-unittest.ms.com",
+                   "--data"]
         out = self.commandtest(command)
         self.searchoutput(out, r'"system/owner_eon_id" = %d;' %
                           self.grns["grn:/ms/ei/aquilon/ut2"], command)
@@ -354,6 +364,99 @@ class TestUpdatePersonality(VerifyGrnsMixin, PersonalityTestMixin,
                 out,
                 mh.default_archetype + '/' + mh.default_personality + '@next',
                 command)
+        mh.delete()
+
+    def test_400_update_personality(self):
+        mh = MockHub(engine=self, default_archetype='cannot_change_grn')
+        mh.add_personality(mh.default_personality,
+                           mh.default_grn_change_unrestricted_archetype)
+
+        test_cases = {
+            'changegrn': {
+                'expected_failures': [
+                    mh.default_archetype + '__ready__None__dl360g9'
+                ]
+            }
+        }
+
+        for archetype in [mh.default_grn_change_unrestricted_archetype,
+                          mh.default_archetype]:
+            for build_status in ['build', 'ready']:
+                # status 'build' is configured to allow grn changes
+                # status 'ready' is configured to restrict grn changes
+
+                for original_grn in [
+                  None,
+                  'grn:/ms/ei/aquilon/unittest',
+                  'grn:/ms/ei/aquilon/unittest_can_change_grn',
+                  'grn:/ms/ei/aquilon/ut2'
+                ]:
+                    for vendor_model in ['hs21', 'dl360g9']:
+                        # model hs21 has vendor 'ibm' to which
+                        # grn change restrictions do not apply
+                        # model dl360g9 has vendor 'hp' to which
+                        # grn change restrictions do apply
+
+                        test_key = archetype + '__' + build_status + '__' + \
+                                str(original_grn) + '__' + vendor_model
+
+                        for test_case in test_cases.keys():
+
+                            command = [
+                                'update_personality',
+                                '--personality', mh.default_personality,
+                                '--archetype', archetype,
+                                '--grn', 'grn:/ms/ei/aquilon/ut2']
+
+                            mh.delete_hosts()
+                            mh.add_host(
+                                archetype=archetype,
+                                grn=original_grn,
+                                personality=mh.default_personality,
+                                build_status=build_status,
+                                model=vendor_model
+                            )
+
+                        if test_key in \
+                           test_cases[test_case]['expected_failures']:
+                            (out, err) = self.failuretest(command, 4)
+                            self.matchoutput(err,
+                                             'Changing grn of Personality',
+                                             command)
+                        else:
+                            (out, err) = self.successtest(command)
+                            self.assertEmptyOut(out, command)
+        mh.delete()
+
+    # Test that grn change restrictions do not prevent update_personality from
+    # updating the grn of hosts that have the same grn as their personality
+    def test_410_update_personality(self):
+        mh = MockHub(engine=self, default_archetype='cannot_change_grn')
+        personality = mh.add_personality('test_410_update_personality',
+                                         mh.default_archetype,
+                                         grn='grn:/ms/ei/aquilon/ut2')
+
+        hostname = mh.add_host(
+            personality=personality[0],
+            archetype=personality[1],
+            grn='grn:/ms/ei/aquilon/ut2',
+            build_status='ready'
+        )
+
+        command = [
+            'update_personality',
+            '--personality', personality[0],
+            '--archetype', personality[1],
+            '--grn', 'grn:/ms/ei/aquilon/aqd']
+
+        self.noouttest(command)
+
+        (out, err) = self.failuretest(['reconfigure',
+                                       '--hostname', hostname,
+                                       '--cleargrn'], 4)
+        self.matchoutput(err, 'because it would change the host effective grn',
+                         command)
+
         mh.delete()
 
 if __name__ == '__main__':

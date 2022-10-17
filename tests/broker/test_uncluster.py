@@ -61,9 +61,9 @@ class TestUncluster(TestBrokerCommand):
             hostname = 'evh%s.aqd-unittest.ms.com' % i
             self.verify_buildfiles('utsandbox', hostname, want_exist=True,
                                    command='uncluster')
-            self.noouttest(['uncluster', '--personality', 'generic',
+            self.noouttest(['uncluster', '--personality', 'ec-infra-auth',
                             '--hostname', hostname, '--cluster', 'utecl1'])
-            # We declare that personality generic is OK without a cluster,
+            # We declare that personality ec-infra-auth is OK without a cluster
             # so the build files should still be there.
             self.verify_buildfiles('utsandbox', hostname, want_exist=True,
                                    command='uncluster')

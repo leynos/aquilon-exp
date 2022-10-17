@@ -42,7 +42,7 @@ class TestRebindCluster(TestBrokerCommand):
     def test_110_unbind_evh2(self):
         # Let's see if we can put a node back after the cluster size has shrunk
         command = ["uncluster", "--hostname", "evh2.aqd-unittest.ms.com",
-                   "--personality", "generic", "--cluster", "utecl1"]
+                   "--personality", "esx_standalone", "--cluster", "utecl1"]
         self.successtest(command)
 
     def test_111_rebind_evh2(self):

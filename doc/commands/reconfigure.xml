@@ -222,7 +222,7 @@
                 </term>
                 <listitem>
                     <para>
-                        Set or change the owner GRN of the host.
+                        Set or change the owner GRN of the host.  See section <link linkend="sect1-grn-change-restrictions" endterm="sect1-grn-change-restrictions-title"/>.
                     </para>
                 </listitem>
             </varlistentry>
@@ -232,7 +232,7 @@
                 </term>
                 <listitem>
                     <para>
-                        Clear the owner GRN of the host, the ownership will be inherited from the personality.
+                        Clear the owner GRN of the host, the ownership will be inherited from the personality.  See section <link linkend="sect1-grn-change-restrictions" endterm="sect1-grn-change-restrictions-title"/>.
                     </para>
                 </listitem>
             </varlistentry>
@@ -300,6 +300,8 @@
             </varlistentry>
         </variablelist>
     </refsect1>
+
+    <xi:include href="../common/grn_change_restrictions.xml"/>
 
     <refsect1>
         <title>Examples</title>

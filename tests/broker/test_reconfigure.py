@@ -24,6 +24,8 @@ from datetime import datetime
 
 import unittest
 
+from broker.utils import MockHub
+
 if __name__ == "__main__":
     from broker import utils
     utils.import_depends()
@@ -48,6 +50,142 @@ class TestReconfigure(VerifyGrnsMixin, VerifyNotificationsMixin,
                                                 "linux_version_prev")
         cls.linux_version_curr = cls.config.get("unittest",
                                                 "linux_version_curr")
+
+    def test_100_grn_change_restrictions(self):
+        mh = MockHub(self, default_archetype='cannot_change_grn')
+
+        test_cases = {
+            'cleargrn': {
+                'cmd_args': ['--cleargrn'],
+                'expected_failures': [
+                    mh.default_archetype +
+                    '__ready__grn:/ms/ei/aquilon/unittest__dl360g9',
+                    mh.default_archetype +
+                    '__ready__grn:/ms/ei/aquilon/ut2__dl360g9'
+                ]
+            },
+            'changegrn': {
+                'cmd_args': ['--grn', 'grn:/ms/ei/aquilon/ut2'],
+                'expected_failures': [
+                    mh.default_archetype+'__ready__None__dl360g9',
+                    mh.default_archetype +
+                    '__ready__grn:/ms/ei/aquilon/unittest__dl360g9'
+                ]
+            }
+        }
+
+        mh.add_personality(
+            mh.default_personality,
+            mh.default_grn_change_unrestricted_archetype)
+
+        for archetype in [
+          mh.default_archetype,
+          mh.default_grn_change_unrestricted_archetype]:
+            for build_status in ['build', 'ready']:
+                for original_grn in [
+                  None,
+                  'grn:/ms/ei/aquilon/unittest',
+                  'grn:/ms/ei/aquilon/unittest_can_change_grn',
+                  'grn:/ms/ei/aquilon/ut2'
+                ]:
+                    for vendor_model in ['hs21', 'dl360g9']:
+                        test_key = archetype + '__' + build_status + '__' + \
+                                   str(original_grn) + '__' + vendor_model
+
+                        for test_case in test_cases.keys():
+
+                            mh.delete_hosts()
+                            hostname = mh.add_host(
+                                archetype=archetype,
+                                grn=original_grn,
+                                build_status=build_status,
+                                model=vendor_model
+                            )
+
+                            command = [
+                                'reconfigure',
+                                '--hostname', hostname,
+                                '--archetype', archetype
+                            ] + test_cases[test_case]['cmd_args']
+
+                            if test_key in \
+                               test_cases[test_case]['expected_failures']:
+                                (out, err) = self.failuretest(command, 4)
+                                self.matchoutput(
+                                    err,
+                                    'is not allowed because it would ' +
+                                    'change the host effective grn',
+                                    command)
+                            else:
+                                (out, err) = self.successtest(command)
+                                self.assertEmptyOut(out, command)
+
+        mh.delete()
+
+    def test_110_grn_change_restrictions_personality(self):
+        mh = MockHub(self, default_archetype='cannot_change_grn')
+
+        mh.add_personality(
+                    'personality1', mh.default_archetype,
+                    grn='grn:/ms/ei/aquilon/unittest')
+        mh.add_personality(
+                    'personality2', mh.default_archetype,
+                    grn='grn:/ms/ei/aquilon/ut2')
+
+        # test case when build status is 'ready' and host grn is not set
+        hostname = mh.add_host(
+            grn=None,
+            personality='personality1',
+            build_status='ready')
+        command = [
+            'reconfigure',
+            '--hostname', hostname,
+            '--personality', 'personality2'
+        ]
+        (out, err) = self.failuretest(command, 4)
+        self.matchoutput(err, 'Changing to Personality', command)
+
+        # test case when build status is 'ready' and host grn is set
+        hostname = mh.add_host(
+            grn='grn:/ms/ei/aquilon/aqd',
+            personality='personality1',
+            build_status='ready')
+
+        command = [
+            'reconfigure',
+            '--hostname', hostname,
+            '--personality', 'personality2'
+        ]
+        (out, err) = self.successtest(command)
+        self.assertEmptyOut(out, command)
+
+        # test case when build status is 'build' and host grn is not set
+        hostname = mh.add_host(
+            grn=None,
+            personality='personality1',
+            build_status='build')
+        command = [
+            'reconfigure',
+            '--hostname', hostname,
+            '--personality', 'personality2'
+        ]
+        (out, err) = self.successtest(command)
+        self.assertEmptyOut(out, command)
+
+        # test case when build status is 'build' and host grn is set
+        hostname = mh.add_host(
+            grn='grn:/ms/ei/aquilon/aqd',
+            personality='personality1',
+            build_status='build')
+        command = [
+            'reconfigure',
+            '--hostname', hostname,
+            '--personality', 'personality2'
+        ]
+        (out, err) = self.successtest(command)
+        self.assertEmptyOut(out, command)
+
+        mh.delete()
 
     def test_1000_edit_machine_plenary(self):
         # "aq reconfigure" should refresh the machine plenary. We verify that by
@@ -121,15 +259,15 @@ class TestReconfigure(VerifyGrnsMixin, VerifyNotificationsMixin,
             self.searchclean(out, "^  Owned by GRN", command)
 
     def test_1030_reconfigure_cleargrn(self):
-        command = "show host --hostname aquilon91.aqd-unittest.ms.com"
+        command = "show host --hostname evh1.aqd-unittest.ms.com"
         out = self.commandtest(command.split(" "))
         self.matchoutput(out, "Owned by GRN: grn:/ms/ei/aquilon/aqd", command)
 
-        command = ["reconfigure", "--hostname", "aquilon91.aqd-unittest.ms.com",
+        command = ["reconfigure", "--hostname", "evh1.aqd-unittest.ms.com",
                    "--cleargrn"] + self.valid_just_tcm
         out = self.successtest(command)
 
-        command = "show host --hostname aquilon91.aqd-unittest.ms.com"
+        command = "show host --hostname evh1.aqd-unittest.ms.com"
         out = self.commandtest(command.split(" "))
         self.searchclean(out, "^  Owned by GRN", command)
 
@@ -162,7 +300,7 @@ class TestReconfigure(VerifyGrnsMixin, VerifyNotificationsMixin,
     def test_1051_reconfigure_unittest02(self):
         basetime = datetime.now()
         command = ["reconfigure", "--hostname", "unittest02.one-nyp.ms.com",
-                   "--buildstatus", "ready", "--grn", "grn:/ms/ei/aquilon/aqd",
+                   "--buildstatus", "build", "--grn", "grn:/ms/ei/aquilon/aqd",
                    "--comments", "New host comments"]
         err = self.statustest(command)
         self.matchoutput(err,
@@ -176,6 +314,9 @@ class TestReconfigure(VerifyGrnsMixin, VerifyNotificationsMixin,
         self.matchoutput(err, "Index rebuild and notifications will happen in "
                          "the background.", command)
         self.wait_notification(basetime, 1)
+        command = ["reconfigure", "--hostname", "unittest02.one-nyp.ms.com",
+                   "--buildstatus", "ready"]
+        err = self.successtest(command)
 
     def test_1055_show_unittest02(self):
         command = "show host --hostname unittest02.one-nyp.ms.com"
@@ -391,7 +532,7 @@ class TestReconfigure(VerifyGrnsMixin, VerifyNotificationsMixin,
         # compiler
         command = ["reconfigure",
                    "--hostname", "unittest01.one-nyp.ms.com",
-                   "--buildstatus", "ready"]
+                   "--buildstatus", "almostready"]
         out = self.statustest(command)
         self.matchoutput(out, "No object profiles: nothing to do.", command)
         self.assertFalse(os.path.exists(
@@ -441,10 +582,10 @@ class TestReconfigure(VerifyGrnsMixin, VerifyNotificationsMixin,
         self.matchoutput(out, "Primary Name: unittest01.one-nyp.ms.com", command)
         self.matchoutput(out, "Archetype: windows", command)
         self.matchoutput(out, "Personality: desktop", command)
-        self.matchoutput(out, "Build Status: ready", command)
+        self.matchoutput(out, "Build Status: almostready", command)
         self.matchoutput(out, "Operating System: windows", command)
         self.matchoutput(out, "Version: nt61e", command)
-        self.matchoutput(out, "Advertise Status: True", command)
+        self.matchoutput(out, "Advertise Status: False", command)
         self.matchoutput(out, "Domain: ut-prod", command)
 
     def test_1080_reconfigure_os(self):
