@@ -19,7 +19,6 @@
 
 from aquilon.client import depends
 
-from ms.directory import *
 import os
 import ldap
 
