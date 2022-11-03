@@ -20,34 +20,30 @@
 from aquilon.client import depends
 
 import os
-import ldap
 
 def check_ldap_filter(uid, config):
     try:
-        # Get the LDAP Server configs from config file
-        os.environ['LDAPTLS_CACERTDIR'] = config.get("ldap", "LDAPTLS_CACERTDIR")
+        # The ms.directory module is included in this try catch block
+        # since this module is not available in upstream repo. The aq
+        # client script will continue without using this method.
+
+        # LDAPS is not available for the Solaris hosts.
+
+        # LDAP module compatible on Solaris needs managing a password
+        # which is also pretty undesirable.
+
+        # Once python-ldap modules with Solaris compatibility are
+        # available, use ldaps capability.
+
+        #Get the LDAP Server configs from config file
+        from ms.directory import LDAPConnection
         ldap_server = config.get("ldap", "server")
-        baseDN = config.get("ldap", "baseDN")
 
         # Setup connection to LDAP
-        ldap.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_ALLOW)
-        ldap_conn = ldap.initialize(ldap_server)
-        ldap_conn.set_option(ldap.OPT_REFERRALS, 0)
-        ldap_conn.set_option(ldap.OPT_PROTOCOL_VERSION, 3)
-        ldap_conn.set_option(ldap.OPT_X_TLS, ldap.OPT_X_TLS_DEMAND)
-        ldap_conn.set_option(ldap.OPT_X_TLS_DEMAND, True)
-        ldap_conn.set_option(ldap.OPT_X_TLS_NEWCTX, 0)
-        sasl = ldap.sasl.gssapi()
-        ldap_conn.sasl_interactive_bind_s('', sasl)
+        conn = LDAPConnection(host=ldap_server, kerberos=True)
 
         # Define the search attributes on LDAP
-        searchFilter = "uid=%s" % uid
-
-        attrlist = ['cn']
-        searchScope = ldap.SCOPE_SUBTREE
-
-        result_id = ldap_conn.search(baseDN, searchScope, searchFilter, attrlist)
-        result_type, result_data = ldap_conn.result(result_id)
+        result_data = conn.getProdID(uid)
 
         if result_data:
             return result_data
