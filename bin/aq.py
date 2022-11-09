@@ -330,12 +330,7 @@ def get_default_opts(auth_option, conf_file=None, readonly=None,
     if conf_file:
         config.read(conf_file)
         config_options = {}
-        if readonly and config.has_option("readonly_batch", "batch_users") \
-                and get_username() in \
-                config.get("readonly_batch", "batch_users").split(',\n'):
-            allow_override = True
-            config_options = dict(config.items("readonly_batch"))
-        if readonly and config.has_option("readonly_batch", "batch_users") and \
+        if readonly and config.has_option("readonly_batch", "ro_users") and \
                 check_ldap_filter(get_username(), config) and \
                 get_username() not in \
                 config.get("readonly_batch", "ro_users").split(',\n') \
@@ -418,12 +413,6 @@ if __name__ == "__main__":
     else:
         host = globalOptions.get('aqhost') or os.environ.get('AQHOST', None) or \
                defaultOpts.get('aqhost') or default_aqhost
-
-    '''Some Users are overriding the above set-up. Hence explicitly making 
-    the allocation again for batch users.'''
-    if get_username() in defaultOpts.get(
-            "readonly_batch", "batch_proids").split(',\n'):
-        host = defaultOpts.get("readonly_batch", "aqhost")
 
     port = globalOptions.get('aqport') or os.environ.get('AQPORT', None) or \
         defaultOpts.get('aqport')

@@ -74,7 +74,6 @@ class TestAQClient(unittest.TestCase):
         mock_username.return_value = 'def1'
         mock_ldap.return_value = True
         exp_result, exp_override = ({'aqhost': 'test_vwxyz-batch.abc.com',
-                                     'batch_users': 'abc1,\ndef1,\nghi1,\njkl1',
                                      'ro_users': 'abc_test1,\ndef_test1,\nghi_test1,'
                                                   '\njkl_test1',
                                      'aqservice': 'stu', 'aqport': '6900'}, True)
@@ -93,7 +92,6 @@ class TestAQClient(unittest.TestCase):
         mock_username.return_value = 'abc1'
         mock_ldap.return_value = True
         exp_result, exp_override = ({'aqhost': 'test_vwxyz-batch.abc.com',
-                                     'batch_users': 'abc1,\ndef1,\nghi1,\njkl1',
                                      'ro_users': 'abc_test1,\ndef_test1,\nghi_test1,'
                                                  '\njkl_test1',
                                      'aqservice': 'stu', 'aqport': '6900'}, True)
@@ -112,7 +110,6 @@ class TestAQClient(unittest.TestCase):
         mock_username.return_value = 'jkl1'
         mock_ldap.return_value = True
         exp_result, exp_override = ({'aqhost': 'test_vwxyz-batch.abc.com',
-                                     'batch_users': 'abc1,\ndef1,\nghi1,\njkl1',
                                      'ro_users': 'abc_test1,\ndef_test1,\nghi_test1,'
                                                  '\njkl_test1',
                                      'aqservice': 'stu', 'aqport': '6900'}, True)
@@ -133,7 +130,6 @@ class TestAQClient(unittest.TestCase):
         mock_username.return_value = 'ghi1'
         mock_ldap.return_value = True
         exp_result, exp_override = ({'aqhost': 'test_vwxyz-batch.abc.com',
-                                     'batch_users': 'abc1,\ndef1,\nghi1,\njkl1',
                                      'ro_users': 'abc_test1,\ndef_test1,\nghi_test1,'
                                                  '\njkl_test1',
                                      'aqservice': 'stu', 'aqport': '6900'}, True)
@@ -238,12 +234,14 @@ class TestAQClient(unittest.TestCase):
         readonly = True
         mock_username.return_value = 'def1'
         mock_ldap.return_value = True
-        exp_result, exp_override = ({'aqservice': 'cdb', 'aqport': '6900',
-                                     'aqhost': 'test_vwxyz-ro.abc.com'}, False)
+        exp_result, exp_override = ({'aqhost': 'test_vwxyz-batch.abc.com',
+                                     'ro_users': 'abc_test1,\ndef_test1,\nghi_test1,'
+                                                 '\njkl_test1',
+                                     'aqservice': 'stu', 'aqport': '6900'}, True)
         result, override = get_default_opts(auth_option, conf_file,
                                             readonly)
         self.assertEqual(override, exp_override)
-        self.assertEqual(result.get('aqhost'), 'test_vwxyz-ro.abc.com')
+        self.assertEqual(result.get('aqhost'), 'test_vwxyz-batch.abc.com')
 
     @mock.patch('aq.get_username')
     @mock.patch('aq.check_ldap_filter')
