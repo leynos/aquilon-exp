@@ -16,6 +16,8 @@
 # limitations under the License.
 import json
 import unittest
+import io
+import contextlib
 
 try:
     from unittest import mock
@@ -69,6 +71,42 @@ class TestCommandUnderChangeManagement(unittest.TestCase):
         self.assertIn('list of in-scope objects', result)
         for o in expected_objects:
             self.assertIn(str(o), result)
+
+    @mock.patch.object(change_management.ChangeManagement, '__init__')
+    def test_validate_does_not_output_in_scope_objects_if_skip_aqd_check(
+            self, a_mock):
+        a_mock.return_value = None
+        expected_objects = sorted([object() for _ in range(3)])
+        # noinspection PyArgumentList
+        cm_instance = change_management.ChangeManagement()
+        cm_instance.impacted_objects = {'ESX Cluster': expected_objects[:]}
+        cm_instance.cm_check = False
+        cm_instance.check_enabled = True
+        cm_instance.is_user_exempt = True
+        with self.assertRaises(AttributeError) as cm:
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                cm_instance.validate()
+            self.assertIn('''self.logger.debug('"Status": "Approved"')''',
+                              buf.getvalue())
+
+    @mock.patch.object(change_management.ChangeManagement, '__init__')
+    def test_validate_does_not_output_in_scope_objects_if_skip_aqd_check2(
+            self, a_mock):
+        a_mock.return_value = None
+        expected_objects = sorted([object() for _ in range(3)])
+        # noinspection PyArgumentList
+        cm_instance = change_management.ChangeManagement()
+        cm_instance.impacted_objects = {'ESX Cluster': expected_objects[:]}
+        cm_instance.cm_check = False
+        cm_instance.is_user_exempt = False
+        cm_instance.check_enabled = True
+        buf = io.StringIO()
+        with self.assertRaises(AttributeError) as cm:
+            with contextlib.redirect_stdout(buf):
+                cm_instance.validate()
+            self.assertIn("self.logger.debug('Prepare impacted envs to call EDM')",
+                          buf.getvalue())
 
     @mock.patch.object(change_management.ChangeManagement, '__init__')
     def test_validate_correctly_notifies_about_no_in_scope_objects(

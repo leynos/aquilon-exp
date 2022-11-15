@@ -28,7 +28,7 @@ try:
 except ImportError:
     pass
 else:
-    ms.version.addpkg('setuptools', '0.6c11')
+    ms.version.addpkg("setuptools", "41.0.1")
     ms.version.addpkg('protobuf', '3.6.1')
     ms.version.addpkg('zope.interface', '4.5.0')
     ms.version.addpkg('twisted', '12.0.0')
@@ -38,3 +38,10 @@ else:
     ms.version.addpkg('cdb', '0.34')
     ms.version.addpkg('six', '1.9.0')
     ms.version.addpkg('jsonschema', '2.3.0')
+    ms.version.addpkg("ms.directory", "3.2.0")
+    ms.version.addpkg("decorator", "4.4.2")
+    ms.version.addpkg("pykerberos", "1.2.1-1.16")
+    ms.version.addpkg("winkerberos", "0.7.0")
+    ms.version.addpkg("pyasn1", "0.4.8")
+    ms.version.addpkg("ldap3", "2.7")
+    ms.version.addpkg("kerberos", "1.1.5-ms3")
