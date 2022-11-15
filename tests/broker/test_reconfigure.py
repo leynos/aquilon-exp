@@ -185,6 +185,36 @@ class TestReconfigure(VerifyGrnsMixin, VerifyNotificationsMixin,
         (out, err) = self.successtest(command)
         self.assertEmptyOut(out, command)
 
+        # test case when build status is 'ready' and host grn is not initially
+        # set but is set later to same grn as old personality
+        hostname = mh.add_host(
+            personality='personality1',
+            build_status='ready')
+
+        command = [
+            'reconfigure',
+            '--hostname', hostname,
+            '--personality', 'personality2',
+            '--grn', 'grn:/ms/ei/aquilon/unittest'
+        ]
+        (out, err) = self.successtest(command)
+        self.assertEmptyOut(out, command)
+
+        # test case when build status is 'ready' and host grn is not initially
+        # set but is set later to grn different than the old personality
+        hostname = mh.add_host(
+            personality='personality1',
+            build_status='ready')
+
+        command = [
+            'reconfigure',
+            '--hostname', hostname,
+            '--personality', 'personality2',
+            '--grn', 'grn:/ms/ei/aquilon/ut2'
+        ]
+        (out, err) = self.failuretest(command, 4)
+        self.matchoutput(err, 'Changing Host', command)
+
         mh.delete()
 
     def test_1000_edit_machine_plenary(self):

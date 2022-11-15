@@ -52,6 +52,14 @@ class CommandMake(BrokerCommand):
         else:
             dbarchetype = dbhost.archetype
 
+        if grn or eon_id:
+            dbgrn = lookup_grn(session, grn, eon_id, logger=logger,
+                               config=self.config)
+            dbhost.owner_grn = dbgrn
+
+        if cleargrn:
+            dbhost.owner_grn = None
+
         if personality or personality_stage or old_archetype != dbarchetype:
             if not personality:
                 personality = dbhost.personality.name
@@ -94,14 +102,6 @@ class CommandMake(BrokerCommand):
                 logger.client_info("Warning: requested build status was '{0}' "
                                    "but resulting status is '{1}'.".
                                    format(dbstatus.name, dbhost.status.name))
-
-        if grn or eon_id:
-            dbgrn = lookup_grn(session, grn, eon_id, logger=logger,
-                               config=self.config)
-            dbhost.owner_grn = dbgrn
-
-        if cleargrn:
-            dbhost.owner_grn = None
 
         if comments is not None:
             dbhost.comments = comments
