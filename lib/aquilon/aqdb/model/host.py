@@ -119,6 +119,10 @@ class Host(CompileableMixin, Base):
         if effective_owner_grn.eon_id in eon_ids_allowed_grn_change:
             return grn
 
+        if (grn is not None and
+           grn.eon_id in eon_ids_allowed_grn_change):
+            return grn
+
         vendors_allowed_grn_change = []
         if (config.has_option("grn_change_restrictions", "allow_vendors")):
             vendors_allowed_grn_change = [s.strip().lower() for s in

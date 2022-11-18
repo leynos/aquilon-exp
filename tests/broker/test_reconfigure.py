@@ -122,6 +122,43 @@ class TestReconfigure(VerifyGrnsMixin, VerifyNotificationsMixin,
 
         mh.delete()
 
+    def test_105_grn_change_restriction_owner_eonid_exception(self):
+        mh = MockHub(self, default_archetype='cannot_change_grn')
+
+        hostname = mh.add_host(
+            archetype=mh.default_archetype,
+            grn='grn:/ms/ei/aquilon/unittest',
+            build_status='ready',
+            model='dl360g9'
+                            )
+        command = [
+            'reconfigure',
+            '--hostname', hostname,
+            '--archetype', mh.default_archetype,
+            '--grn', 'grn:/ms/ei/aquilon/ut2'
+        ]
+
+        (out, err) = self.failuretest(command, 4)
+        self.matchoutput(
+            err,
+            'is not allowed because it would ' +
+            'change the host effective grn',
+            command)
+
+        # Test that we can move the GRN back to one of the GRNs configured in
+        # grn_change_restrictions.allow_owner_eon_id
+        command = [
+            'reconfigure',
+            '--hostname', hostname,
+            '--archetype', mh.default_archetype,
+            '--grn', 'grn:/ms/ei/aquilon/unittest_can_change_grn'
+        ]
+
+        (out, err) = self.successtest(command)
+        self.assertEmptyOut(out, command)
+
+        mh.delete()
+
     def test_110_grn_change_restrictions_personality(self):
         mh = MockHub(self, default_archetype='cannot_change_grn')
 
