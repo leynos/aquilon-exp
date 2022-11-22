@@ -22,8 +22,10 @@ import socket
 import pwd
 import sys
 from six.moves.configparser import SafeConfigParser  # pylint: disable=F0401
+from six.moves.configparser import NoSectionError, NoOptionError
 
 from aquilon.exceptions_ import AquilonError
+from aquilon.ldap_utils import check_ldapgroup
 
 _SRCDIR = os.path.realpath(os.path.join(os.path.dirname(__file__),
                                         "..", ".."))
@@ -83,6 +85,30 @@ def amend_sys_path(config):
         sys.path = [config.get('unittest', 'fake_module_location')] + sys.path
 
 
+# The ldap server and the group details have to be fetched from the 
+# broker config file
+def get_group_members():
+    config = SafeConfigParser()
+    conf_file = lookup_file_path("aq.conf")
+    config.read(conf_file)
+
+    # The group and its members will be loaded in the broker during startup
+    # and will skip actual invocation of edm checks. If the ldap server and
+    # the group details are not availble, skip_checkedm will be set to None,
+    # and edm checks will be not be skipped to ensure no failures.
+
+    # The config file cannot be passed as argument since defaults are 
+    # initiated before calling Config class. This method will be used only
+    # for the production broker and not in non-prod.
+    try:
+        skip_checkedm = check_ldapgroup(config.get("ldap", "server"),
+                                        config.get("change_management", "skip_edm_check"))
+        return skip_checkedm
+    except (NoSectionError, NoOptionError) as e:
+        return None
+        pass
+
+
 # All defaults should be in etc/aqd.conf.defaults.  This is only needed to
 # supply defaults that are determined by code at run time.
 global_defaults = {
@@ -95,6 +121,7 @@ global_defaults = {
     # scripts that want to execute stand-alone.
     "srcdir": _SRCDIR,
     "hostname": socket.getfqdn(),
+    "skip_members": get_group_members(),
 }
 
 

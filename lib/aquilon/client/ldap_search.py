@@ -19,8 +19,6 @@
 
 from aquilon.client import depends
 
-import os
-
 def check_ldap_filter(uid, config):
     try:
         # The ms.directory module is included in this try catch block
@@ -53,3 +51,4 @@ def check_ldap_filter(uid, config):
         the return value will be set to False which will route the requests 
         to RO VIP and not BATCH VIP.'''
         return False
+

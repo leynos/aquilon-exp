@@ -140,6 +140,9 @@ class ChangeManagement(object):
         dbuser = get_or_create_user_principal(session, user, commitoncreate=True)
         self.username = dbuser.name
         self.role_name = dbuser.role.name
+        # check if user is part of group for which change management can be skipped
+        self.is_user_exempt = self.username in self.config.get("database", 
+                                                               "skip_members")
 
     def consider(self, target_obj, enforce_validation=False):
         """
@@ -214,6 +217,11 @@ class ChangeManagement(object):
                 '{}\n'.format(self._get_in_scope_objects_as_text()))
         if not self.check_enabled:
             self.logger.debug('Change management is disabled. Exiting validate.')
+            return
+
+        if self.is_user_exempt:
+            self.logger.debug('"Status": "Approved", '
+                              '"Reason": Proid is exempted from change management controls.')
             return
 
         # Clean final impacted env list
