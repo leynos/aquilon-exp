@@ -68,9 +68,18 @@ class TestDelHost(VerifyNotificationsMixin, MachineTestMixin,
         self.matchclean(out, "unittest02", command)
 
     def test_110_del_unittest00(self):
-        self.dsdb_expect_delete(self.net["unknown0"].usable[2])
-        command = "del host --hostname unittest00.one-nyp.ms.com"
-        self.statustest(command.split(" "))
+        dsdb_command = "delete_host -ip_address {0}".\
+            format(self.net["unknown0"].usable[2])
+        errstr = "Host with IP address {0} is not defined".\
+            format(self.net["unknown0"].usable[2])
+        self.dsdb_expect(dsdb_command, True, errstr)
+
+        command = ['del_host', '--hostname', 'unittest00.one-nyp.ms.com']
+        err = self.statustest(command)
+        self.matchoutput(err,
+                         "DSDB did not have a host with this IP address, "
+                         "proceeding.",
+                         command)
         self.dsdb_verify()
 
     def test_115_verify_del_unittest00(self):
