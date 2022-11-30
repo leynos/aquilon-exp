@@ -410,6 +410,8 @@ DNS_DOMAIN_NOT_FOUND = re.compile(r"DNS domain ([-\w\.\d]+) doesn't exists")
 
 DNS_DOMAIN_EXISTS = re.compile(r"DNS domain [-\w\.\d]+ already defined")
 
+ALIAS_NOT_FOUND = re.compile(r"Alias [-\w\.\d]+.ms.com doesn't exist")
+
 # The regexp is taken from DSDB
 INVALID_NAME_RE = re.compile(r"[^A-Za-z0-9_.-]")
 
@@ -1119,7 +1121,9 @@ class DSDBRunner(object):
                     "-alias_name", alias]
         if old_comments:
             rollback.extend(["-comments", old_comments])
-        self.add_action(command, rollback)
+        self.add_action(command, rollback, ALIAS_NOT_FOUND,
+                        "Alias {} is not in DSDB, proceeding".
+                        format(alias))
 
     def update_alias(self, alias, target, comments, old_target, old_comments):
         command = ["update_host_alias", "-alias", alias,
