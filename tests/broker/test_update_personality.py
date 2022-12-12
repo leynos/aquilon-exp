@@ -101,107 +101,107 @@ class TestUpdatePersonality(VerifyGrnsMixin, PersonalityTestMixin,
             self.successtest(command)
 
     def test_140_update_owner_grn(self):
-        command = ["update_personality", "--personality", "compileserver",
-                   "--archetype", "aquilon", "--grn", "grn:/ms/ei/aquilon/ut2"]
+        mh = MockHub(engine=self)
+        mh.add_personality(mh.default_personality,
+                           mh.default_grn_change_unrestricted_archetype,
+                           grn='grn:/ms/ei/aquilon/unittest')
+
+        hostnames = []
+        for grn in [None,
+                    'grn:/ms/ei/aquilon/unittest',
+                    'grn:/ms/ei/aquilon/aqd']:
+            hostname = mh.add_host(
+                archetype=mh.default_grn_change_unrestricted_archetype,
+                grn=grn,
+                personality=mh.default_personality
+            )
+            hostnames.append(hostname)
+
+        command = ["update_personality",
+                   "--personality", mh.default_personality,
+                   "--archetype", mh.default_grn_change_unrestricted_archetype,
+                   "--grn", "grn:/ms/ei/aquilon/ut2"]
         # Some hosts may emit warnings if 'aq make' was not run on them
         self.successtest(command)
 
-    def test_141_verify_show_personality(self):
-        command = ["show_personality", "--personality", "compileserver"]
+        command = ["show_personality",
+                   "--personality", mh.default_personality,
+                   "--archetype", mh.default_grn_change_unrestricted_archetype]
         out = self.commandtest(command)
         self.matchoutput(out, "Owned by GRN: grn:/ms/ei/aquilon/ut2", command)
 
-    def test_141_verify_show_unittest02(self):
         # Different owner, should not be updated
-        command = ["show_host", "--hostname", "unittest02.one-nyp.ms.com"]
+        command = ["show_host", "--hostname", hostnames[2]]
         out = self.commandtest(command)
-        self.matchoutput(out, "Personality: compileserver", command)
+        self.matchoutput(out, "Personality: " + mh.default_personality,
+                         command)
         self.searchoutput(out, r"^  Owned by GRN: grn:/ms/ei/aquilon/aqd", command)
 
-    def test_141_verify_show_unittest21(self):
         # Owner is the same as the personality - should be updated
-        command = ["show_host", "--hostname", "unittest21.aqd-unittest.ms.com"]
+        command = ["show_host", "--hostname", hostnames[1]]
         out = self.commandtest(command)
-        self.matchoutput(out, "Personality: compileserver", command)
+        self.matchoutput(out, "Personality: " + mh.default_personality,
+                         command)
         self.searchoutput(out, r"^  Owned by GRN: grn:/ms/ei/aquilon/ut2", command)
 
-    def test_141_verify_cat_personality(self):
-        command = ["cat", "--personality", "compileserver"]
+        command = ["cat",
+                   "--personality", mh.default_personality,
+                   "--archetype", mh.default_grn_change_unrestricted_archetype]
         out = self.commandtest(command)
         self.searchoutput(out, r'"/system/personality/owner_eon_id" = %d;' %
                           self.grns["grn:/ms/ei/aquilon/ut2"], command)
 
-    def test_141_verify_cat_unittest02(self):
-        # Different owner, should not be updated
-        command = ["cat", "--hostname", "unittest02.one-nyp.ms.com", "--data"]
-        out = self.commandtest(command)
-        self.searchoutput(out, r'"system/owner_eon_id" = %d;' %
-                          self.grns["grn:/ms/ei/aquilon/aqd"], command)
-
-    def test_141_verify_cat_unittest22(self):
         # Inherited - should be updated
-        command = ["cat", "--hostname", "unittest22.aqd-unittest.ms.com",
-                   "--data"]
+        command = ["show_host", "--hostname", hostnames[0], "--grns"]
         out = self.commandtest(command)
-        self.searchoutput(out, r'"system/owner_eon_id" = %d;' %
-                          self.grns["grn:/ms/ei/aquilon/ut2"], command)
+        self.searchoutput(
+            out,
+            r"^  Owned by GRN: grn:/ms/ei/aquilon/ut2 \[inherited\]$",
+            command)
 
-    def test_141_verify_cat_unittest21(self):
-        # Owner is the same as the personality - should be updated
-        command = ["cat", "--hostname", "unittest21.aqd-unittest.ms.com", "--data"]
-        out = self.commandtest(command)
-        self.searchoutput(out, r'"system/owner_eon_id" = %d;' %
-                          self.grns["grn:/ms/ei/aquilon/ut2"], command)
-
-    def test_142_update_owner_grn_nohosts(self):
-        command = ["update_personality", "--personality", "compileserver",
-                   "--archetype", "aquilon", "--grn", "grn:/ms/ei/aquilon/unittest",
+        command = ["update_personality",
+                   "--personality", mh.default_personality,
+                   "--archetype", mh.default_grn_change_unrestricted_archetype,
+                   "--grn", "grn:/ms/ei/aquilon/unittest",
                    "--leave_existing"]
         self.statustest(command)
 
-    def test_143_verify_show_personality(self):
-        command = ["show_personality", "--personality", "compileserver"]
+        command = ["show_personality",
+                   "--personality", mh.default_personality,
+                   "--archetype", mh.default_grn_change_unrestricted_archetype]
         out = self.commandtest(command)
         self.matchoutput(out, "Owned by GRN: grn:/ms/ei/aquilon/unittest", command)
 
-    def test_143_verify_show_unittest02(self):
-        command = ["show_host", "--hostname", "unittest02.one-nyp.ms.com"]
+        # Different owner, should not be updated
+        command = ["show_host", "--hostname", hostnames[2]]
         out = self.commandtest(command)
-        self.matchoutput(out, "Personality: compileserver", command)
+        self.matchoutput(out, "Personality: " + mh.default_personality,
+                         command)
         self.searchoutput(out, r"^  Owned by GRN: grn:/ms/ei/aquilon/aqd", command)
 
-    def test_143_verify_show_unittest21(self):
-        command = ["show_host", "--hostname", "unittest21.aqd-unittest.ms.com"]
+        # Should not be updated due to --leave_existing
+        command = ["show_host", "--hostname", hostnames[1]]
         out = self.commandtest(command)
-        self.matchoutput(out, "Personality: compileserver", command)
+        self.matchoutput(out, "Personality: " + mh.default_personality,
+                         command)
         self.searchoutput(out, r"^  Owned by GRN: grn:/ms/ei/aquilon/ut2", command)
 
-    def test_144_verify_cat_personality(self):
-        command = ["cat", "--personality", "compileserver"]
+        command = ["cat",
+                   "--personality", mh.default_personality,
+                   "--archetype", mh.default_grn_change_unrestricted_archetype]
         out = self.commandtest(command)
         self.searchoutput(out, r'"/system/personality/owner_eon_id" = %d;' %
                           self.grns["grn:/ms/ei/aquilon/unittest"], command)
 
-    def test_144_verify_cat_unittest02(self):
-        # Different owner, should not be updated
-        command = ["cat", "--hostname", "unittest02.one-nyp.ms.com", "--data"]
-        out = self.commandtest(command)
-        self.searchoutput(out, r'"system/owner_eon_id" = %d;' %
-                          self.grns["grn:/ms/ei/aquilon/aqd"], command)
-
-    def test_144_verify_cat_unittest20(self):
         # Inherited, should be updated
-        command = ["cat", "--hostname", "unittest20.aqd-unittest.ms.com", "--data"]
+        command = ["show_host", "--hostname", hostnames[0], "--grns"]
         out = self.commandtest(command)
-        self.searchoutput(out, r'"system/owner_eon_id" = %d;' %
-                          self.grns["grn:/ms/ei/aquilon/unittest"], command)
+        self.searchoutput(
+            out,
+            r"^  Owned by GRN: grn:/ms/ei/aquilon/unittest \[inherited\]$",
+            command)
 
-    def test_144_verify_cat_unittest21(self):
-        # Should not be updated due to --leave_existing
-        command = ["cat", "--hostname", "unittest21.aqd-unittest.ms.com", "--data"]
-        out = self.commandtest(command)
-        self.searchoutput(out, r'"system/owner_eon_id" = %d;' %
-                          self.grns["grn:/ms/ei/aquilon/ut2"], command)
+        mh.delete()
 
     def test_170_make_staged(self):
         self.check_plenary_gone("aquilon", "personality",
@@ -447,6 +447,7 @@ class TestUpdatePersonality(VerifyGrnsMixin, PersonalityTestMixin,
             'update_personality',
             '--personality', personality[0],
             '--archetype', personality[1],
+            '--leave_existing',
             '--grn', 'grn:/ms/ei/aquilon/aqd']
 
         self.noouttest(command)

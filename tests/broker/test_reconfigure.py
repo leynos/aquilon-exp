@@ -34,6 +34,7 @@ from broker.brokertest import TestBrokerCommand
 from broker.grntest import VerifyGrnsMixin
 from broker.notificationtest import VerifyNotificationsMixin
 
+import tempfile
 
 class TestReconfigure(VerifyGrnsMixin, VerifyNotificationsMixin,
                       TestBrokerCommand):
@@ -253,6 +254,77 @@ class TestReconfigure(VerifyGrnsMixin, VerifyNotificationsMixin,
         self.matchoutput(err, 'Changing Host', command)
 
         mh.delete()
+
+    def test_120_grn_change_restrictions_personality_cluster(self):
+        mh = MockHub(self,
+                     default_archetype='cannot_change_grn',
+                     default_cluster_type='compute',
+                     default_cluster_build_status='ready')
+
+        # 2 personalities with different GRNs
+        mh.add_personality(
+                    'personality1', mh.default_archetype,
+                    grn='grn:/ms/ei/aquilon/unittest')
+        mh.add_personality(
+                    'personality2', mh.default_archetype,
+                    grn='grn:/ms/ei/aquilon/ut2')
+
+        hostname_to_cluster = mh.add_host(
+            personality='personality1',
+            build_status='ready')
+
+        command = [
+            'cluster',
+            '--hostname', hostname_to_cluster,
+            '--cluster', mh.default_cluster
+        ]
+        self.noouttest(command)
+
+        hostname_to_file = mh.add_host(
+            personality='personality1',
+            build_status='ready')
+
+        hosts_file_fd, hosts_file_path = tempfile.mkstemp()
+        hosts_file = os.fdopen(hosts_file_fd, "w")
+        hosts_file.write(hostname_to_file)
+        hosts_file.close()
+
+        test_cases = [
+            ['--membersof', mh.default_cluster],
+            ['--list', hosts_file_path]
+        ]
+
+        for test_case in test_cases:
+            # test that moving host to personality fails
+            # because personality has different grn
+            command = [
+                'reconfigure',
+                test_case[0], test_case[1],
+                '--personality', 'personality2'
+            ]
+            (out, err) = self.failuretest(command, 4)
+            self.matchoutput(err, 'Changing to Personality', command)
+
+            # test that moving host to a different personality
+            # succeeds when effective grn does not change
+            command = [
+                'reconfigure',
+                test_case[0], test_case[1],
+                '--personality', 'personality2',
+                '--grn', 'grn:/ms/ei/aquilon/unittest'
+            ]
+            self.successtest(command)
+
+        command = [
+            'uncluster',
+            '--hostname', hostname_to_cluster,
+            '--cluster', mh.default_cluster
+        ]
+        self.noouttest(command)
+
+        os.remove(hosts_file_path)
+        mh.delete()
+
 
     def test_1000_edit_machine_plenary(self):
         # "aq reconfigure" should refresh the machine plenary. We verify that by

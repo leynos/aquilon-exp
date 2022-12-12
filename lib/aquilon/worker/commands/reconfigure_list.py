@@ -134,6 +134,9 @@ class CommandReconfigureList(BrokerCommand):
             else:
                 target_archetype = dbhost.archetype
 
+            if grn or eon_id:
+                dbhost.owner_grn = dbgrn
+
             if personality or personality_stage or old_archetype != target_archetype:
                 try:
                     dbstage = select_personality(session, personality_cache,
@@ -156,6 +159,9 @@ class CommandReconfigureList(BrokerCommand):
 
                 dbhost.personality_stage = dbstage
 
+            if cleargrn:
+                dbhost.owner_grn = None
+
             if osname or osversion or old_archetype != target_archetype:
                 try:
                     dbos = select_os(session, os_cache, dbhost, osname,
@@ -165,11 +171,6 @@ class CommandReconfigureList(BrokerCommand):
                     continue
 
                 dbhost.operating_system = dbos
-
-            if grn or eon_id:
-                dbhost.owner_grn = dbgrn
-            if cleargrn:
-                dbhost.owner_grn = None
 
             if buildstatus:
                 dbhost.status.transition(dbhost, dbstatus)
