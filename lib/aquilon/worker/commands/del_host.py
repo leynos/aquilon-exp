@@ -25,7 +25,8 @@ from aquilon.worker.dbwrappers.host import hostname_to_host, remove_host
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.processes import DSDBRunner
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
-from aquilon.aqdb.model import Machine
+from aquilon.aqdb.model import Machine, ServiceAddress
+from aquilon.worker.dbwrappers.resources import walk_resources
 
 import aquilon.aqdb.model.hostlifecycle
 
@@ -114,6 +115,13 @@ class CommandDelHost(BrokerCommand):
             raise ArgumentError("{0} is still a member of {1:l}, and cannot "
                                 "be deleted.  Please remove it from the "
                                 "cluster first.".format(dbhost, dbhost.cluster))
+
+        # Check for any Service Address except hostname which is primary address
+        for res in walk_resources(dbhost):
+            if isinstance(res, ServiceAddress) and str(res) != 'hostname':
+                raise ArgumentError("{0} still has {1} assigned, please delete "
+                                    "it first.".format(dbhost, res))
+
 
         # Any service bindings that we need to clean up afterwards
 
