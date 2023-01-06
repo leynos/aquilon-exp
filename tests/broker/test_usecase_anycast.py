@@ -109,6 +109,16 @@ class TestUsecaseAnycast(MachineTestMixin, TestBrokerCommand):
                             "--service", anycast['service'],
                             "--instance", anycast['instance']])
 
+    def test_601_del_utinfra3_associated_sa(self):
+        eth0_ip = self.net["unknown0"].usable[39]
+        eth1_ip = self.net["unknown1"].usable[38]
+        ip = self.net["zebra_vip"].usable[3]
+        command = ['del_host', '--hostname', 'infra3.aqd-unittest.ms.com']
+        out = self.badrequesttest(command)
+        self.matchoutput(out, "Host infra3.aqd-unittest.ms.com still has Service "
+                              "Address {0} assigned, please delete it first.".
+                         format(anycast['sa_name']), command)
+
     def test_700_del_service_address(self):
         self.dsdb_expect_delete(anycast['sa_ip'](self))
         for server in anycast['servers']:
