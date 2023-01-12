@@ -300,6 +300,8 @@
     </command>
 
     <command name="search_system">
+        This command is DEPRECATED. Please use search_dns instead.
+        <p/>
         Shows any information available for the matching systems.  These
         could be hosts, top of rack switches, chassis, or any other system
         tracked by AQDB.
