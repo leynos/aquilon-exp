@@ -86,14 +86,34 @@ class Host(CompileableMixin, Base):
     operating_system = relation(OperatingSystem, innerjoin=True)
     owner_grn = relation(Grn)
 
+    # Optionally check if grn change restrictions apply to this host
     @validates('owner_grn')
     def validate_owner_grn(self, key, grn):
         effective_owner_grn = self.effective_owner_grn
+        pers_stage = self.personality_stage
 
-        if (self.validate_grn_changes is False or
-           (grn is None and self.owner_grn is None) or
-           effective_owner_grn == grn or
-           not self.archetype.is_grn_change_restricted()):
+        # There are a number of conditions where we never want to
+        # validate grn change restrictions, ie:
+
+        # When building a new object that has not been populated yet
+        if self.validate_grn_changes is False:
+            return grn
+
+        # When clearing grn on a host where grn is already clear
+        if (grn is None and self.owner_grn is None):
+            return grn
+
+        # When the host effective grn is not changing
+        if effective_owner_grn == grn:
+            return grn
+
+        # When the archetype does not require grn change restriction checks
+        if not self.archetype.is_grn_change_restricted():
+            return grn
+
+        # When clearing grn without changing the host effective grn
+        if (grn is None and self.owner_grn is not None and
+           effective_owner_grn.eon_id == pers_stage.owner_grn.eon_id):
             return grn
 
         config = Config()
@@ -142,8 +162,8 @@ class Host(CompileableMixin, Base):
                                 self.hardware_entity.model.vendor,
                                 self.status, grn,
                                 self.owner_grn,
-                                self.personality_stage,
-                                self.personality_stage.owner_grn))
+                                pers_stage,
+                                pers_stage.owner_grn))
 
     @property
     def fqdn(self):

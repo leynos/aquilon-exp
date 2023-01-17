@@ -57,9 +57,6 @@ class CommandMake(BrokerCommand):
                                config=self.config)
             dbhost.owner_grn = dbgrn
 
-        if cleargrn:
-            dbhost.owner_grn = None
-
         if personality or personality_stage or old_archetype != dbarchetype:
             if not personality:
                 personality = dbhost.personality.name
@@ -78,6 +75,9 @@ class CommandMake(BrokerCommand):
                                             ", ".join(allowed)))
 
             dbhost.personality_stage = dbpersonality.default_stage(personality_stage)
+
+        if cleargrn:
+            dbhost.owner_grn = None
 
         if osname or osversion or old_archetype != dbarchetype:
             if not osname:

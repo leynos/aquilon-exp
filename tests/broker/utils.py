@@ -90,7 +90,9 @@ class MockHub(object):
                  default_os=None, default_os_version=None,
                  default_cluster=None,
                  default_cluster_archetype=None,
+                 default_cluster_build_status=None,
                  default_cluster_personality=None,
+                 default_cluster_type='storage',
                  grn='grn:/ms/ei/aquilon/aqd'):
         # The engine object should be an instance of TestBrokerCommand (or its
         # subclass), and, if one wants to create machines or hosts,
@@ -115,9 +117,11 @@ class MockHub(object):
         self.default_archetype = default_archetype or self.random_name()
         self.default_cluster = default_cluster or self.random_name()
         self.default_cluster_archetype = default_cluster_archetype or self.random_name() + '_cluster'  # noqa: E501
+        self.default_cluster_build_status = default_cluster_build_status
         self.default_grn_change_unrestricted_archetype = 'can_change_grn'
         self.default_personality = default_personality or self.random_name()
         self.default_cluster_personality = default_cluster_personality or self.random_name() + '_cluster'  # noqa: E501
+        self.default_cluster_type = default_cluster_type
         self.default_os = default_os or self.random_name()
         self.default_os_version = default_os_version or self.random_name()
         self.grn = grn
@@ -377,8 +381,10 @@ class MockHub(object):
         return personality
 
     def add_cluster(self, name, archetype, personality,
-                    down_hosts_threshold=1000, city=None):
-        if name in self.clusters:
+                    down_hosts_threshold=1000, city=None, build_status=None):
+
+        cluster_names = map(lambda v: v[0], self.clusters)
+        if name in cluster_names:
             raise ValueError('Cluster {} (archetype: {}) already '
                              'exists.'.format(name, archetype))
         command = ['add_cluster', '--cluster', name,
@@ -387,8 +393,10 @@ class MockHub(object):
                    '--down_hosts_threshold', down_hosts_threshold,
                    '--city', self.get_or_create_city(city),
                    '--domain', self.default_domain]
+        if build_status:
+            command.extend(['--buildstatus', build_status])
         self._engine.successtest(command)
-        self.clusters.append(name)
+        self.clusters.append([name, build_status])
         return name
 
     def add_organisation(self, name=None):
@@ -529,11 +537,20 @@ class MockHub(object):
             self._verify_deletion_with_show_all('city', self.cities)
         self.cities = []
 
+    def decomm_clusters(self):
+        for cluster_name, cluster_status in self.clusters:
+            if cluster_status != "decommissioned":
+                self._engine.successtest(['change_status',
+                                          '--cluster', cluster_name,
+                                          '--buildstatus', 'decommissioned'])
+
     def delete_clusters(self, verify=False):
-        for cluster in self.clusters:
-            self._engine.successtest(['del_cluster', '--cluster', cluster])
+        cluster_names = map(lambda v: v[0], self.clusters)
+        for cluster_name in cluster_names:
+            self._engine.successtest(['del_cluster',
+                                      '--cluster', cluster_name])
         if verify:
-            self._verify_deletion_with_show_all('cluster', self.clusters)
+            self._verify_deletion_with_show_all('cluster', cluster_names)
         self.clusters = []
 
     def delete_countries(self, verify=False):
@@ -641,6 +658,7 @@ class MockHub(object):
         self.preexisting_grns = {}
 
     def delete(self, slow=False, verify=False):
+        self.decomm_clusters()
         # Use slow=True to try to delete objects not created via methods
         # defined in this class.
         # Use verify=True to confirm if all objects stored in MockHub have been
@@ -1064,7 +1082,7 @@ class MockHub(object):
         if not self._exists_according_to_show('archetype',
                                               self.default_cluster_archetype):
             self.add_archetype(self.default_cluster_archetype,
-                               cluster_type='storage')
+                               cluster_type=self.default_cluster_type)
         # Add the default grn change unrestricted archetype if it doesn't exist
         if not self._exists_according_to_show(
                         'archetype',
@@ -1103,4 +1121,5 @@ class MockHub(object):
                 'cluster', None, *cluster):
             self.add_cluster(self.default_cluster,
                              self.default_cluster_archetype,
-                             self.default_cluster_personality)
+                             self.default_cluster_personality,
+                             build_status=self.default_cluster_build_status)

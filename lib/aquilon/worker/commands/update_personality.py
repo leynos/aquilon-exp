@@ -202,7 +202,6 @@ class CommandUpdatePersonality(BrokerCommand):
                 q = q.filter_by(personality=dbpersona)
                 q = q.options(PlenaryHost.query_options())
                 for dbhost in q:
-                    dbhost.validate_grn_changes = False
                     dbhost.owner_grn = dbgrn
                     plenaries.add(dbhost)
 
