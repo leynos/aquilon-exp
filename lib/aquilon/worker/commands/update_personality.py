@@ -186,7 +186,9 @@ class CommandUpdatePersonality(BrokerCommand):
                q.count() > 0):
                 raise ArgumentError("Changing grn of {0} from {1} to {2} not "
                                     "allowed because it would change the "
-                                    "effective grn of {3} of its hosts"
+                                    "effective grn of {3} of its hosts.  This"
+                                    " change requires a complete disk wipe of"
+                                    " the affected hosts(s)"
                                     .format(dbpersona, old_grn, dbgrn,
                                             q.count()))
 
