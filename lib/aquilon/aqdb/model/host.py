@@ -157,7 +157,9 @@ class Host(CompileableMixin, Base):
 
         raise ArgumentError("Changing {0} ({1}, {2}, {3}) to {4} from {5} is "
                             "not allowed because it would change the host "
-                            "effective grn (host {6} has {7}), ".format(
+                            "effective grn (host {6} has {7}).  This change "
+                            "requires a complete disk wipe of the affected "
+                            "host(s).".format(
                                 self, self.archetype,
                                 self.hardware_entity.model.vendor,
                                 self.status, grn,
@@ -225,7 +227,8 @@ class Host(CompileableMixin, Base):
 
         raise ArgumentError("Changing to {0} ({1}) from {2} is not allowed "
                             "because it would change the effective grn of {3},"
-                            " {4}, {5}, {6}".format(
+                            " {4}, {5}, {6}.  This change requires a complete "
+                            "disk wipe of the affect host(s)".format(
                                 stage, stage.owner_grn,
                                 self.personality_stage,
                                 self, self.archetype,

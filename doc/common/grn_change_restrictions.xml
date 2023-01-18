@@ -10,6 +10,9 @@
     <para>
         Exceptions for the above rules can be configured in the <literal>[grn_change_restrictions]</literal> section of the broker config file.
     </para>
+    <para>
+        Where grn change restrictions apply, changing the host grn can only be done with a complete disk wipe.
+    </para>
 
     <example>
         <title>Define archetype to which GRN change restrictions apply</title>
