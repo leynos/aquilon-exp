@@ -342,6 +342,8 @@ class TestAddVirtualHardware(EventsTestMixin, TestBrokerCommand):
         self.matchoutput(out, '"osversion", "nt61e"', command)
         self.matchoutput(out, '"hostname", "aqddesk1"', command)
         self.matchoutput(out, '"domainname", "msad.ms.com"', command)
+        self.matchoutput(out, '"host_environment", "prod"', command)
+        self.matchoutput(out, '"name", "generic"', command)
 
     def test_145_verify_windows(self):
         command = "show host --hostname aqddesk1.msad.ms.com"
