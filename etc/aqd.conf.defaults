@@ -64,7 +64,7 @@ module = orcl/client/12.2.0.1.0
 #
 # Having timeout defined but unset allows for incoming connections to wait as
 # long as needed for a database connection from the pool.
-pool_size = 3
+pool_size = 4
 pool_max_overflow = 0
 pool_timeout =
 #pool_recycle =
@@ -101,7 +101,7 @@ dsn = postgresql+psycopg2://%(dbuser)s:PASSWORD@%(server)s/%(dbname)s
 #
 # Having timeout defined but unset allows for incoming connections to wait as
 # long as needed for a database connection from the pool.
-pool_size = 3
+pool_size = 4
 pool_max_overflow = 0
 pool_timeout =
 #pool_recycle =
