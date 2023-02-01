@@ -220,13 +220,18 @@ class PlenaryResource(StructurePlenary):
             arch = machine.host.archetype
             os = machine.host.operating_system
             pn = machine.primary_name.fqdn
+            personality = machine.host.personality_stage.personality
 
-            system = {'archetype': {'name': arch.name,
-                                    'os': os.name,
-                                    'osversion': os.version},
-                      'build': machine.host.status.name,
-                      'network': {'hostname': pn.name,
-                                  'domainname': pn.dns_domain}}
+            system = {
+                'archetype': {'name': arch.name,
+                              'os': os.name,
+                              'osversion': os.version},
+                'build': machine.host.status.name,
+                'network': {'hostname': pn.name,
+                            'domainname': pn.dns_domain},
+                'personality': {'name': personality.name,
+                                'host_environment': personality.host_environment.name},
+            }
             pan_assign(lines, "system", system)
 
     def body_auto_start_list(self, lines):
