@@ -1,0 +1,24 @@
+{
+	"_comment": "The contents of this file must be in sync with the parameters of the update_machine command with recipe",
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"id": "interface_update#",
+	"type": "object",
+	"properties": {
+		"machine": {
+			"type": "string"
+		},
+		"interface": {
+			"type": "string"
+		},
+		"pg": {
+			"type": "string"
+		},
+		"autopg": {
+			"type": "boolean"
+		},
+		"comments": {
+			"type": "string"
+		}
+	},
+	"required": [ "interface" ]
+}

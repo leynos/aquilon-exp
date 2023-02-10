@@ -471,20 +471,135 @@ class TestAddVirtualHardware(EventsTestMixin, TestBrokerCommand):
         out = self.commandtest(command)
         self.matchclean(out, "Port Group", command)
 
-    def test_223_updatemanual(self):
-        command = ["update_interface", "--machine=evm10", "--interface=eth0",
-                   "--pg", "user-v710"]
-        self.noouttest(command)
-        self.verifypg()
+    def test_223_updatemanual_fail(self):
+        command = "cat --machine evm10 --generate"
+        out = self.commandtest(command.split(" "))
+        self.searchnooutput(out, '"port_group", "user-v710"', command)
+
+        recipe = {
+            "interface": "eth0",
+            "pg": "user-v710",
+            "reason": "Check update_machine with recipe"
+        }
+        command = ["update", "machine", "--machine", "evm10",
+                   "--cluster", "utecl6",
+                   "--recipe", json.dumps(recipe)]
+        out = self.badrequesttest(command)
+        self.matchoutput(out,
+                         "ESX Cluster utecl6 does not have share utecl5_share "
+                         "assigned to it.",
+                         command)
+
+        command = "cat --machine evm10 --generate"
+        out = self.commandtest(command.split(" "))
+        self.searchnooutput(out, '"port_group", "user-v710"', command)
+
+    def test_223_updatemanual_fail_pg(self):
+        command = "cat --machine evm10 --generate"
+        out = self.commandtest(command.split(" "))
+        self.searchoutput(out,
+                    r'"ram" = list\(\s*'
+                    r'create\("hardware/ram/generic",\s*'
+                    r'"size", 8192\*MB\s*\)\s*\);',
+                    command)
+
+        recipe = {
+            "interface": "eth0",
+            "pg": "user-v720",
+            "reason": "Check update_machine with recipe"
+        }
+        command = ["update", "machine", "--machine", "evm10",
+                   "--memory", 4096,
+                   "--recipe", json.dumps(recipe)]
+        out = self.badrequesttest(command)
+        self.matchoutput(out,
+                         "No available user-v720 port groups on switch "
+                         "ut01ga2s01.aqd-unittest.ms.com.",
+                         command)
+
+        command = "cat --machine evm10 --generate"
+        out = self.commandtest(command.split(" "))
+        self.searchnooutput(out, '"port_group", "user-v720"', command)
+        self.searchoutput(out,
+                          r'"ram" = list\(\s*'
+                          r'create\("hardware/ram/generic",\s*'
+                          r'"size", 8192\*MB\s*\)\s*\);',
+                          command)
+
+    def test_223_updatemanual_pass(self):
+        command = "cat --machine evm10 --generate"
+        out = self.commandtest(command.split(" "))
+        self.searchnooutput(out, '"port_group", "user-v710"', command)
+
+        recipe = {
+            "interface": "eth0",
+            "pg": "user-v710",
+            "reason": "Check update_machine with recipe"
+        }
+        command = ["update", "machine", "--machine", "evm10",
+                   "--memory", 4096,
+                   "--recipe", json.dumps(recipe)]
+        out = self.noouttest(command)
+
+        command = "cat --machine evm10 --generate"
+        out = self.commandtest(command.split(" "))
+        self.searchoutput(out,
+                          r'"ram" = list\(\s*'
+                          r'create\("hardware/ram/generic",\s*'
+                          r'"size", 4096\*MB\s*\)\s*\);',
+                          command)
+        self.searchoutput(out, '"port_group", "user-v710"', command)
 
     def test_224_updateauto(self):
         command = ["update_interface", "--machine=evm10", "--interface=eth0",
                    "--pg", ""]
         self.noouttest(command)
-        command = ["update_interface", "--machine=evm10", "--interface=eth0",
-                   "--autopg"]
+
+        command = "cat --machine evm10 --generate"
+        out = self.commandtest(command.split(" "))
+        self.searchnooutput(out, "port_group", command)
+
+    def test_225_updatemachine_noautopg(self):
+        recipe = {
+            "interface": "eth0",
+            "autopg": False,
+            "reason": "Check update_machine with recipe"
+        }
+        command = ["update", "machine", "--machine", "evm10",
+                   "--memory", 2048,
+                   "--recipe", json.dumps(recipe)]
+        self.noouttest(command)
+
+        command = "cat --machine evm10 --generate"
+        out = self.commandtest(command.split(" "))
+        self.searchnooutput(out, "port_group", command)
+        self.searchoutput(out,
+                          r'"ram" = list\(\s*'
+                          r'create\("hardware/ram/generic",\s*'
+                          r'"size", 2048\*MB\s*\)\s*\);',
+                          command)
+
+
+    def test_226_updatemachine(self):
+        recipe = {
+            "interface": "eth0",
+            "autopg": True,
+            "reason": "Check update_machine with recipe"
+        }
+        command = ["update", "machine", "--machine", "evm10",
+                   "--memory", 8192,
+                   "--recipe", json.dumps(recipe)]
         self.noouttest(command)
         self.verifypg()
+
+        command = "cat --machine evm10 --generate"
+        out = self.commandtest(command.split(" "))
+        self.searchoutput(out, '"port_group", "user-v710"', command)
+        self.searchoutput(out,
+                          r'"ram" = list\(\s*'
+                          r'create\("hardware/ram/generic",\s*'
+                          r'"size", 8192\*MB\s*\)\s*\);',
+                          command)
 
     def test_240_add_utmc4_aux(self):
         net = self.net["vm_storage_net"]

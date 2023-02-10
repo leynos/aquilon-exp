@@ -4164,6 +4164,7 @@
         </optgroup>
         <optgroup>
             <option name="model" type="string">Machine model</option>
+            <option name="recipe" type="json">Hardware parameters to apply</option>
             <option name="vendor" type="string" requires="model">Machine vendor</option>
             <option name="cpuname" type="string">CPU name</option>
             <option name="cpuvendor" type="string">CPU vendor</option>

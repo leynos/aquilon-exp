@@ -51,6 +51,8 @@ from aquilon.worker.templates import (PlenaryHostData,
                                       PlenaryServiceInstanceToplevel)
 from aquilon.worker.processes import DSDBRunner
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from aquilon.worker.commands.update_interface_machine import CommandUpdateInterfaceMachine
+from aquilon.utils import force_mac, validate_json
 
 _disk_map_re = re.compile(r'^([^/]+)/(?:([^/]+)/)?([^/]+):([^/]+)/(?:([^/]+)/)?([^/]+)$')
 
@@ -192,6 +194,17 @@ def move_vm(session, logger, dbmachine, resholder, remap_disk,
         dbmachine.location = new_holder.hardware_entity.location
 
 
+def validate_recipe(config, recipe):
+    validate_json(config, recipe, "interface_update", "recipe")
+
+    # Type conversions not covered by the schema
+    if "interfaces" in recipe:
+        for iface, params in recipe["interfaces"].items():
+            if "mac" in params:
+                params["mac"] = force_mac("MAC address of " + iface,
+                                          params["mac"])
+
+
 class CommandUpdateMachine(BrokerCommand):
     requires_plenaries = True
 
@@ -200,7 +213,7 @@ class CommandUpdateMachine(BrokerCommand):
     def render(self, session, logger, plenaries, machine, model, vendor, serial, uuid,
                clear_uuid, chassis, slot, clearchassis, multislot, vmhost,
                cluster, metacluster, allow_metacluster_change, cpuname,
-               cpuvendor, cpucount, memory, ip, autoip, swap_ip, uri,
+               cpuvendor, cpucount, memory, recipe, ip, autoip, swap_ip, uri,
                remap_disk, comments, user, justification, reason, **arguments):
         dsdb_runner = DSDBRunner(logger=logger)
         dbmachine = Machine.get_unique(session, machine, compel=True)
@@ -340,6 +353,31 @@ class CommandUpdateMachine(BrokerCommand):
                     allow_metacluster_change, autoip, plenaries)
         elif remap_disk:
             update_disk_backing_stores(dbmachine, None, None, remap_disk)
+
+        # FIXED: If a machine has its interface(s) in a portgroup
+        # this command will need to be followed by an update_interface to
+        # re-evaluate the portgroup for overflow.
+        # It would be better to have --pg and --autopg options to let it
+        # happen at this point.
+        if recipe:
+            validate_recipe(self.config, recipe)
+
+            int_update = CommandUpdateInterfaceMachine()
+            int_update.update_interface_machine(session, logger, plenaries,
+                                                recipe.get("interface"), machine,
+                                                mac=recipe.get("mac", None),
+                                                model=recipe.get("model", None),
+                                                vendor=recipe.get("vendor", None),
+                                                boot=recipe.get("boot", None),
+                                                pg=recipe.get("pg", None),
+                                                autopg=recipe.get("autopg", None),
+                                                comments=recipe.get("comments", None),
+                                                master=recipe.get("master", None),
+                                                clear_master=recipe.get("clear_master", None),
+                                                default_route=recipe.get("default_route", None),
+                                                rename_to=recipe.get("rename_to", None),
+                                                bus_address=recipe.get("bus_address", None),
+                                                **arguments)
 
         swap_addr = None
         old_ip = None
