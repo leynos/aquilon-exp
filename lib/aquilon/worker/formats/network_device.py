@@ -125,6 +125,9 @@ class NetworkDeviceFormatter(HardwareEntityFormatter):
             if hasattr(addr, "priority"):
                 addr_msg.priority = addr.priority
 
+            addr_msg.network_environment_name = \
+            addr.network.network_environment.name
+
     def _fill_system_proto(self, host, skeleton, embedded=True,
                            indirect_attrs=True):
 

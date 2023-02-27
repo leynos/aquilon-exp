@@ -52,6 +52,14 @@ class TestAddNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
         self.matchoutput(out, "ut3gd1r01.aqd-unittest.ms.com,%s,bor,"
                          "ut3,ut,hp,uttorswitch,SNgd1r01,xge49," % ip, command)
 
+    def test_102_verify_protobuf(self):
+        command = ["show_network_device", "--network_device",
+                   "ut3gd1r01.aqd-unittest.ms.com", "--format", "proto"]
+        network_device = self.protobuftest(command)[0]
+        self.assertEqual(
+            network_device.hardware.interfaces[0].address_assignments[0].
+            network_environment_name, "internal")
+
     def test_105_add_ut3gd1r04(self):
         ip = self.net["ut10_eth1"].usable[0]
         self.dsdb_expect_add("ut3gd1r04.aqd-unittest.ms.com", ip, "xge49",

@@ -34,7 +34,7 @@ class TestClientFailure(TestBrokerCommand):
     def testinvalidaqhost(self):
         command = "status --aqhost=invalidhost"
         (p, out, err) = self.runcommand(command.split(" "))
-        self.assertIn("failed", err.lower())
+        self.assertIn("badstatusline", err.lower())
         self.assertEqual(out, "",
                          "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n"
                          % (command, out))
