@@ -49,14 +49,27 @@ class CommandUpdateInterfaceMachine(BrokerCommand):
 
         """
 
-        audit_results = []
-
         dbhw_ent = Machine.get_unique(session, machine, compel=True)
 
         # Validate ChangeManagement
         cm = ChangeManagement(session, user, justification, reason, logger, self.command, **arguments)
         cm.consider(dbhw_ent)
         cm.validate()
+
+        self.\
+        update_interface_machine(session, logger, plenaries, interface, machine, mac,
+                                 model, vendor, boot, pg, autopg, comments, master,
+                                 clear_master, default_route, rename_to, bus_address,
+                                 **arguments)
+
+    def update_interface_machine(self, session, logger, plenaries, interface, machine, mac=None,
+                                 model=None, vendor=None, boot=None, pg=None,
+                                 autopg=None, comments=None, master=None,
+                                 clear_master=None, default_route=None, rename_to=None,
+                                 bus_address=None, **arguments):
+        audit_results = []
+
+        dbhw_ent = Machine.get_unique(session, machine, compel=True)
 
         dbinterface = Interface.get_unique(session, hardware_entity=dbhw_ent,
                                            name=interface, compel=True)
