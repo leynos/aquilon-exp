@@ -1,0 +1,386 @@
+<?xml version="1.0"?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V5.0//EN"
+"http://docbook.org/xml/5.0/dtd/docbook.dtd" [
+<!ENTITY aqd_version SYSTEM "../version.txt">
+]>
+<refentry xml:id="aq_update_machine"
+          xmlns="http://docbook.org/ns/docbook"
+          xmlns:xi="http://www.w3.org/2001/XInclude">
+    <refmeta>
+        <refentrytitle>aq_update_machine</refentrytitle>
+        <manvolnum>1</manvolnum>
+        <refmiscinfo class="version">&aqd_version;</refmiscinfo>
+        <refmiscinfo class="manual">Aquilon Commands</refmiscinfo>
+    </refmeta>
+
+    <refnamediv>
+        <refname>aq update machine</refname>
+        <refpurpose>
+            Update a machine by hardware name or hostname.
+        </refpurpose>
+        <refclass>Aquilon</refclass>
+    </refnamediv>
+
+    <refsynopsisdiv>
+        <cmdsynopsis>
+            <command>aq update machine</command>
+            <group>
+                <synopfragmentref linkend="global-options">Global options</synopfragmentref>
+            </group>
+            <group choice="req">
+                <group choice="req">
+                    <arg choice="plain"><option>--hostname <replaceable>FQDN</replaceable></option></arg>
+                    <arg choice="plain"><option>--machine <replaceable>LABEL</replaceable></option></arg>
+                </group>
+                <group>
+                    <arg choice="plain"><option>--chassis <replaceable>FQDN</replaceable></option></arg>
+                    <arg choice="plain"><option>--slot <replaceable>NUMBER</replaceable></option></arg>
+                </group>
+                <group>
+                    <arg><option>--rack <replaceable>NAME</replaceable></option></arg>
+                    <arg><option>--desk <replaceable>NAME</replaceable></option></arg>
+                    <arg><option>--cluster <replaceable>NAME</replaceable></option></arg>
+                    <arg><option>--metacluster <replaceable>NAME</replaceable></option></arg>
+                    <arg><option>--vmhost <replaceable>FQFDN</replaceable></option></arg>
+                </group>
+                <arg><option>--model <replaceable>NAME</replaceable></option></arg>
+                <arg><option>--recipe <replaceable>JSON</replaceable></option></arg>
+                <arg><option>--vendor <replaceable>NAME</replaceable></option></arg>
+                <arg><option>--cpuname <replaceable>NAME</replaceable></option></arg>
+                <arg><option>--cpuvendor <replaceable>NAME</replaceable></option></arg>
+                <arg><option>--cpucount <replaceable>NUMBER</replaceable></option></arg>
+                <arg><option>--memory <replaceable>NUMBER</replaceable></option></arg>
+                <arg><option>--serial <replaceable>SERIAL</replaceable></option></arg>
+                <arg><option>--uuid <replaceable>UUID</replaceable></option></arg>
+                <arg><option>--clear_uuid</option></arg>
+                <group>
+                    <arg choice="plain"><option>--clearchassis</option></arg>
+                    <arg choice="plain"><option>--noclearchassis</option></arg>
+                </group>
+                <group>
+                    <arg choice="plain"><option>--multislot</option></arg>
+                    <arg choice="plain"><option>--nomultislot</option></arg>
+                </group>
+                <group>
+                    <arg choice="plain"><option>--allow_metacluster_change</option></arg>
+                    <arg choice="plain"><option>--noallow_metacluster_change</option></arg>
+                </group>
+                <arg><option>--uri <replaceable>URI</replaceable></option></arg>
+                <arg><option>--remap_disk <replaceable>REMAP_DISK</replaceable></option></arg>
+                <group>
+                    <arg choice="plain"><option>--autoip</option></arg>
+                    <arg choice="plain"><option>--ip <replaceable>IP</replaceable></option></arg>
+                    <arg choice="plain"><option>--swap_ip <replaceable>IP</replaceable></option></arg>
+                </group>
+            </group>
+            <arg><option>--comments <replaceable>COMMENTS</replaceable></option></arg>
+            <xi:include href="../common/change_management.xml"/>
+            <xi:include href="../common/global_options.xml"/>
+        </cmdsynopsis>
+    </refsynopsisdiv>
+
+    <refsect1>
+        <title>Description</title>
+        <para>
+            The <command>aq update machine</command> updates a machine by hardware name or hostname.
+
+            Updating the model for a machine will not automatically update
+            the machine to the new model's default specifications.  To do so, give
+            the new information (cpu, count, memory) at the same time.
+        </para>
+    </refsect1>
+
+    <refsect1>
+        <title>Options</title>
+        <variablelist>
+            <title>Command-specific options</title>
+            <varlistentry>
+                <term>
+                    <option>--hostname <replaceable>FQDN</replaceable></option>
+                </term>
+                <listitem>
+                    <para>
+                        Fully qualified host name.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>--machine <replaceable>LABEL</replaceable></option>
+                </term>
+                <listitem>
+                    <para>
+                        Machine name.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>--rack <replaceable>NAME</replaceable></option>
+                </term>
+                <listitem>
+                    <para>
+                        Machine Rack <replaceable>NAME</replaceable>.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>--desk <replaceable>NAME</replaceable></option>
+                </term>
+                <listitem>
+                    <para>
+                        Machines desk <replaceable>NAME</replaceable>.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>--model <replaceable>NAME</replaceable></option>
+                </term>
+                <listitem>
+                    <para>
+                        Machines hardware model <replaceable>NAME</replaceable>.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>--recipe <replaceable>JSON</replaceable></option>
+                </term>
+                <listitem>
+                    <para>
+                        Hardware parameters to apply <replaceable>JSON</replaceable>.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>--vendor <replaceable>NAME</replaceable></option>
+                </term>
+                <listitem>
+                    <para>
+                        Machine vendor <replaceable>NAME</replaceable>.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>--serial <replaceable>SERIAL</replaceable></option>
+                </term>
+                <listitem>
+                    <para>
+                        Serial number <replaceable>SERIAL</replaceable>.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>--uuid <replaceable>UUID</replaceable></option>
+                </term>
+                <listitem>
+                    <para>
+                        Machine UUID <replaceable>UUID</replaceable>.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>--clear_uuid</option>
+                </term>
+                <listitem>
+                    <para>
+                        Clear the machine UUID.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>--clearchassis</option>, <option>--noclearchassis</option>
+                </term>
+                <listitem>
+                    <para>
+                        Remove chassis and slot information.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>--multislot</option>, <option>--nomultislot</option>
+                </term>
+                <listitem>
+                    <para>
+                        Use to record machine as taking multiple slots in a chassis.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>--allow_metacluster_change</option>, <option>--noallow_metacluster_change</option>
+                </term>
+                <listitem>
+                    <para>
+                        When changing clusters, allow the cluster to be in a different metacluster.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>--cluster <replaceable>NAME</replaceable></option>
+                </term>
+                <listitem>
+                    <para>
+                        Cluster name hosting the VM <replaceable>NAME</replaceable>.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>--metacluster <replaceable>NAME</replaceable></option>
+                </term>
+                <listitem>
+                    <para>
+                        Metacluster name hosting the VM <replaceable>NAME</replaceable>.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>--vmhost <replaceable>FQDN</replaceable></option>
+                </term>
+                <listitem>
+                    <para>
+                        Virtual machines hosted by hypervisor host <replaceable>FQDN</replaceable>.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>--cpuname <replaceable>NAME</replaceable></option>
+                </term>
+                <listitem>
+                    <para>
+                        CPU model name <replaceable>NAME</replaceable>.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>--cpuvendor <replaceable>NAME</replaceable></option>
+                </term>
+                <listitem>
+                    <para>
+                        CPU vendor <replaceable>NAME</replaceable>.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>--cpucount <replaceable>NUMBER</replaceable></option>
+                </term>
+                <listitem>
+                    <para>
+                        Number of CPU sockets.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>--memory <replaceable>NUMBER</replaceable></option>
+                </term>
+                <listitem>
+                    <para>
+                        Amount of memory installed in MB.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>--chassis <replaceable>FQDN</replaceable></option>
+                </term>
+                <listitem>
+                    <para>
+                        Chassis Name.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>--slot <replaceable>NUMBER</replaceable></option>
+                </term>
+                <listitem>
+                    <para>
+                        Chassis slot.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>--autoip</option>
+                </term>
+                <listitem>
+                    <para>
+                        Re-assign IP addresses.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>--ip <replaceable>IP</replaceable></option>
+                </term>
+                <listitem>
+                    <para>
+                        New primary IP <replaceable>IP</replaceable>
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>--swap_ip <replaceable>IP</replaceable></option>
+                </term>
+                <listitem>
+                    <para>
+                        Swap IP address with an existing DNS record (added via add_address) <replaceable>IP</replaceable>
+                    </para>
+                </listitem>
+            </varlistentry>
+        <varlistentry>
+                <term>
+                    <option>--uri <replaceable>URI</replaceable></option>
+                </term>
+                <listitem>
+                    <para>
+                        URI to point to a template describing the virtual appliance <replaceable>URI</replaceable>
+                    </para>
+                </listitem>
+        </varlistentry>
+        <varlistentry>
+                <term>
+                    <option>--remap_disk<replaceable>REMAP_DISK</replaceable></option>
+                </term>
+                <listitem>
+                    <para>
+                        Vitual disk backend remapping definitions <replaceable>REMAP_DISK</replaceable>
+                    </para>
+                </listitem>
+        </varlistentry>
+        <varlistentry>
+            <term>
+                <option>--comments <replaceable>COMMENTS</replaceable></option>
+            </term>
+            <listitem>
+                <para>
+                    Free form comments for this interface.
+                </para>
+            </listitem>
+        </varlistentry>
+    </variablelist>
+    <xi:include href="../common/change_management_desc.xml"/>
+    <xi:include href="../common/global_options_desc.xml"/>
+    </refsect1>
+
+    <xi:include href="../common/sect1_bus_address.xml"/>
+
+</refentry>
+
+<!-- vim: set ai sw=4: -->
