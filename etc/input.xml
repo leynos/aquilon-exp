@@ -4341,7 +4341,7 @@
     <command name="show_network_device">
         Show the configuration information for the specified network device.
         <p/>
-        Supported options for --format: raw, csv.
+        Supported options for --format: raw, csv, proto.
         <p/>
         The 'csv' format contains the following fields, in this order:
         FQDN, Type, Rack, Building, Vendor name, Model name, Serial number,
