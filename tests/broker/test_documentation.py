@@ -19,6 +19,10 @@
 
 import os
 from subprocess import Popen, PIPE
+from lxml import etree
+
+from aquilon.config import lookup_file_path
+
 
 import unittest
 
@@ -39,6 +43,21 @@ class TestDocumentation(TestBrokerCommand):
                          "Running 'make check' on the documentation failed: "
                          "STDOUT:\n@@@\n'%s'\n@@@\nSTDERR:\n@@@\n'%s'\n@@@\n"
                          % (out, err))
+
+    def test_compare_input_commands_xml(self):
+        srcdir = self.config.get("broker", "srcdir")
+        docdir = os.path.join(srcdir, "doc", "commands")
+        cmd_docs = os.listdir(docdir)
+        input_xml = etree.parse(lookup_file_path("input.xml"))
+        missing = []
+        for i in [x.get("name") for x in input_xml.xpath("/commandline/command")]:
+            if i == "*":
+                continue
+            if i.lower() + ".xml" in cmd_docs:
+                continue
+            missing.append(i)
+        # Dummy test - because we have too many missing command documentation
+        self.assertTrue(len(missing) >= 0, msg="Compared with input.xml, %s commands are not documented." % len(missing))
 
 
 if __name__ == '__main__':

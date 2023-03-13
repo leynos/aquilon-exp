@@ -3790,7 +3790,7 @@
         <optgroup mandatory="True" fields="all">
             <option name="personality" type="string">The name to create</option>
             <option name="archetype" type="string">Which archetype to use</option>
-            <optgroup>
+            <optgroup mandatory="True">
                 <option name="copy_from" type="string">Personality to copy parameters,features, service maps and required services</option>
                 <optgroup fields="one">
                     <option name="grn" type="string">GRN as string</option>
