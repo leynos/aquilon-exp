@@ -17,6 +17,7 @@
 # limitations under the License.
 """Basic module for running tests on broker commands."""
 
+import logging
 import pwd
 import os
 import sys
@@ -45,6 +46,7 @@ CM_EMERGENCY = "Use of emergency requires a reason to be supplied."
 CM_FORMAT = "Failed to parse justification, no valid TCM or SN ticket found."
 CM_EDM = "Executing an emergency change without a justification, EDM has not be called."
 CM_WARN = 'Continuing with execution; however in the future this operation will fail.'
+LOGGER = logging.getLogger(__name__)
 
 
 class TestBrokerCommand(unittest.TestCase):
@@ -78,7 +80,11 @@ class TestBrokerCommand(unittest.TestCase):
         cls.net = DummyNetworks(cls.config)
 
         cls.scratchdir = cls.config.get("unittest", "scratchdir")
+        LOGGER.debug("Scratch directory: {}".format(cls.scratchdir))
+        # Required by external scripts such as fake_dsdb
+        os.environ["AQTEST_SCRATCHDIR"] = cls.scratchdir
         cls.dsdb_coverage_dir = os.path.join(cls.scratchdir, "dsdb_coverage")
+        LOGGER.debug("DSDB coverage directory: {}".format(cls.dsdb_coverage_dir))
 
         dirs = [cls.scratchdir, cls.dsdb_coverage_dir]
         for dir in dirs:
@@ -140,6 +146,7 @@ class TestBrokerCommand(unittest.TestCase):
                      DSDB_ISSUED_CMDS_FILE, DSDB_EXPECT_FAILURE_ERROR]:
             path = os.path.join(self.dsdb_coverage_dir, name)
             try:
+                LOGGER.debug("Deleting path {}".format(path))
                 os.remove(path)
             except OSError:
                 pass
@@ -179,12 +186,11 @@ class TestBrokerCommand(unittest.TestCase):
                              "Plenary directory '%s' still exists" % dir)
 
     def check_plenary_contents(self, *path, **kwargs):
-        # Passing lists as a keyword arg triggrest a type error
+        # Passing lists as a keyword arg triggered a type error
         contains = kwargs.pop('contains', None)
         clean = kwargs.pop('clean', None)
         if not contains and not clean:
-            self.assertTrue(0, "check_plenary_contents called without "
-                            "contains or clean")
+            self.fail("check_plenary_contents called without contains, not_contains, or clean")
 
         self.check_plenary_exists(*path)
         plenary = self.plenary_name(*path)
@@ -273,13 +279,15 @@ class TestBrokerCommand(unittest.TestCase):
             if 'USER' not in env:
                 env['USER'] = os.environ.get('USER', '')
             kwargs["env"] = env
+        LOGGER.debug("Running command {}".format(args))
         p = Popen(args, stdout=PIPE, stderr=PIPE, **kwargs)
         (out, err) = p.communicate()
+        if err:
+            LOGGER.debug(err)
         # Strip any msversion dev warnings out of STDERR
         err = self.msversion_dev_re.sub('', err)
         # Lock messages are pretty common...
-        err = err.replace('Client status messages disabled, '
-                          'retries exceeded.\n', '')
+        err = err.replace('Client status messages disabled, retries exceeded.\n', '')
         return (p, out, err)
 
     def successtest(self, command, **kwargs):

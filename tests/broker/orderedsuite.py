@@ -27,11 +27,6 @@ and 'unbind', 'map' and 'unmap', etc.
 from __future__ import absolute_import
 
 import unittest
-import os
-from subprocess import Popen
-
-from aquilon.config import Config
-
 from .test_add_address import TestAddAddress
 from .test_add_address_alias import TestAddAddressAlias
 from .test_add_alias import TestAddAlias
@@ -230,6 +225,7 @@ from .test_flush import TestFlush
 from .test_get import TestGet
 from .test_grns import TestGrns
 from .test_hub import TestHub
+from .test_ib_services_start import TestIBServicesStart
 from .test_justification import TestJustification
 from .test_make import TestMake
 from .test_make_aquilon import TestMakeAquilon
@@ -357,9 +353,9 @@ class BrokerTestSuite(unittest.TestSuite):
 
     """
     test_start = [TestBrokerStart,
-                  TestPing, TestStatus]
+                  TestPing, TestStatus, TestIBServicesStart]
     test_restart = [TestBrokerReStart,
-                    TestPing, TestStatus]
+                    TestPing, TestStatus, TestIBServicesStart]
     test_stop = [TestBrokerStop]
     test_list = [TestAddRole, TestPermission,
                  TestAddDnsDomain, TestAddDnsEnvironment,

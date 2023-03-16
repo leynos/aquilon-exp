@@ -22,6 +22,7 @@ the chain.
 
 """
 from functools import wraps
+import httplib
 import os
 import re
 import logging
@@ -33,8 +34,11 @@ import types
 
 from six import iteritems
 
-from ipaddress import IPv4Address
+from ipaddress import IPv4Address, IPv4Network
 from mako.lookup import TemplateLookup
+from requests import Session
+from requests.adapters import HTTPAdapter, Retry
+from requests_kerberos import HTTPKerberosAuth, DISABLED
 from twisted.python import context
 from twisted.python.log import callWithContext, ILogContext
 from sqlalchemy.inspection import inspect
@@ -43,12 +47,16 @@ from aquilon.exceptions_ import (ProcessException, AquilonError, ArgumentError,
                                  InternalError)
 from aquilon.config import Config, running_from_source
 from aquilon.aqdb.model import Machine
-from aquilon.utils import remove_dir
+from aquilon.utils import remove_dir, with_timer
 
 LOGGER = logging.getLogger(__name__)
 config = Config()
 
 DSDB_ENABLED = config.getboolean("dsdb", "enable")
+IB_SERVICES_URL = config.get("ib-services", "url")
+IB_SERVICES_TIMEOUT = float(config.get("ib-services", "timeout"))
+CA_CHAIN = config.get("ib-services", "ca_chain")
+
 if DSDB_ENABLED:
     try:
         import ms.version
@@ -60,16 +68,9 @@ if DSDB_ENABLED:
         # sys.path for python modules when running tests
         # DSDB python client
         import ms.version
-        ms.version.addpkg("requests-kerberos", "0.11.0")
-        ms.version.addpkg("kerberos", "1.3.1-1.16-ms1-py27-64")
         ms.version.addpkg("cryptography", "2.8-py27-64")
         ms.version.addpkg("enum34", "1.1.6")
         ms.version.addpkg("dns", "1.10.0")
-        ms.version.addpkg('urllib3', '1.25.5')
-        ms.version.addpkg('chardet', '3.0.4')
-        ms.version.addpkg('certifi', '2019.6.16')
-        ms.version.addpkg("idna", "2.8")
-        ms.version.addpkg("requests", "2.26.0")
         ms.version.addpkg('ms.dsdb', '6.0.32')
     import ms.dsdb.client
 
@@ -452,6 +453,41 @@ class DSDBEnabledMeta(type):
             instance.dsdbclient = ms.dsdb.client.DSDB(plant='prod',
                                                       timeout=use_timeout)
         return instance
+
+
+class IBServices(object):
+
+    def __init__(self):
+        self.ib_service_url = IB_SERVICES_URL
+        self.session = Session()
+        if CA_CHAIN:
+            self.session.auth = HTTPKerberosAuth(mutual_authentication=DISABLED, force_preemptive=True)
+            self.session.verify = CA_CHAIN
+        retries = Retry(total=3, status_forcelist=(500, 501, 502, 503, 504))
+        self.session.mount(self.ib_service_url, HTTPAdapter(max_retries=retries))
+
+    def assert_ip(self, ip):
+        if not isinstance(ip, IPv4Address):
+            raise ArgumentError("IP address should be an IPv4Address object")
+
+    def assert_network(self, network):
+        if not isinstance(network, IPv4Network):
+            raise ArgumentError("Network address should be an IPv4Network object")
+
+    def host_url(self, ip):
+        return self.ib_service_url + "/hosts/ipv4addr/" + str(ip)
+
+    @with_timer
+    def create_host(self, ip, payload):
+        self.assert_ip(ip)
+
+        url = self.host_url(ip)
+        LOGGER.info("Invoking {} with payload: {}".format(url, payload))
+        response = self.session.post(url, json=payload, timeout=IB_SERVICES_TIMEOUT)
+        if response.status_code == httplib.CREATED:
+            LOGGER.info("Host added to Infoblox")
+        else:
+            raise ArgumentError(response.text)
 
 
 class DSDBRunner(object):

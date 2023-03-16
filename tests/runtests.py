@@ -19,6 +19,7 @@
 
 from __future__ import print_function
 
+import logging
 import os
 import re
 import sys
@@ -54,6 +55,12 @@ epilog = """
     code into the directory given in the mirrordir option of the unittest
     section of the config and then re-launches the tests from there.
     """ % default_configfile
+
+
+def setup_logger(level = logging.INFO):
+    logging.basicConfig(format="%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s",
+                        datefmt='%H:%M:%S',
+                        level=level)
 
 
 def force_yes(msg):
@@ -125,6 +132,8 @@ def get_options(epilog):
 
 
 opts = get_options(epilog)
+setup_logger(logging.DEBUG if "-v" in opts else logging.INFO)
+logging.getLogger().warning(str(opts))
 
 if not os.path.exists(opts.config):
     print("configfile %s does not exist" % opts.config, file=sys.stderr)

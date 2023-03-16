@@ -1,0 +1,28 @@
+# Running the isolated tests
+
+These tests are designed to run as isolated units, each starting an AQ broker with a copy of a database in a known state.
+
+This is an evolution of the unit tests under tests/broker which are linked and run against a single database, but are inheritently brittle if one test injects unexpected data into the database (perhaps through adding or modifying a test mid-way through the sequence), which then causes later tests to fail. To run the isolated tests:
+
+`train test -t isolated`
+
+## Running individual tests
+
+Use unittest:
+
+```
+export AQDCONF=tests/unittest.conf
+python -m unittest tests/isolated/test_add_interface_address.py
+```
+
+# Connecting to an isolated database
+
+The easiest way is to add the following to your test:
+
+import pdb
+pdb.set_trace()
+
+and using the aq command to connect to the local broker:
+
+aq status --aqport 6902 --aqservice $USER
+

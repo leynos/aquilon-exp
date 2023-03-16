@@ -7,7 +7,6 @@ tools:
    - python/core/2.7.18-64
    - msde/msdlbuild/prod
 
-
 build_types:
    - build_type:
           name: release
@@ -32,8 +31,16 @@ test_types:
          name: restart
          test: ./tests/restarttests.sh
     - test_type:
+         name: isolated
+         test:
+          # Create /var/tmp/user/aqtest directory structure by running unit tests
+          - ./tests/runtests.py --config=./tests/unittest.conf -x integration
+          - export AQDCONF=tests/unittest.conf
+          - python tests/isolated/test_brokers_will_start.py
+          - python tests/isolated/test_add_interface_address.py
+    - test_type:
          name: jenkins
-         test: 
+         test:
          - script: |
                mkdir -p ../install/common/test-results/UNIT/xml/
                AQDCONF=tests/unittest.conf python test/test_xmlrunner.py
@@ -48,3 +55,5 @@ test_types:
                module unload python/core/2.7.18-64
                module load python/core/3.4.4
                ./tests/codestyle.py --all > ../install/common/test-results/flake8.out || /bin/true
+
+
