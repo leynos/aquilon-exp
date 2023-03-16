@@ -151,6 +151,7 @@ class AQDMaker(object):
             config.set('broker', 'mode', 'readwrite')
 
         log.msg("Loading broker in mode %s" % config.get('broker', 'mode'))
+        log.msg("Broker pid is %i" % os.getpid())
 
         # Dynamic import means that we can parse config options before
         # importing aqdb.  This is a hack until aqdb can be imported without
