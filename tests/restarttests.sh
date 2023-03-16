@@ -19,7 +19,7 @@ DIR="$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)"
 restart_from=$(grep -oP "(?<='train test -t restart' command. Last test failed: ).*$" $DIR/aqdtests.log)
 if [ -z "$restart_from" ]; then
     echo "Re-starting point not found" >&2
-    return -1
+    exit -1
 fi
 echo "Re-starting tests from: $restart_from" >&2
 $DIR/runtests.py --config=$DIR/unittest.conf --failfast --no-interactive --start $restart_from | tee $DIR/aqdtests.log

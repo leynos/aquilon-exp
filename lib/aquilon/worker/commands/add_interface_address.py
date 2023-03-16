@@ -26,9 +26,10 @@ from aquilon.worker.dbwrappers.hardware_entity import get_hardware
 from aquilon.worker.dbwrappers.interface import (generate_ip,
                                                  assign_address)
 from aquilon.aqdb.model.network import get_net_id_from_ip
-from aquilon.worker.processes import DSDBRunner
+from aquilon.worker.processes import DSDBRunner, IBServices
 from aquilon.worker.dbwrappers.location import get_default_dns_domain
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from requests import RequestException
 
 
 class CommandAddInterfaceAddress(BrokerCommand):
@@ -196,6 +197,15 @@ class CommandAddInterfaceAddress(BrokerCommand):
                     dsdb_runner.delete_host_details(dbdns_rec.fqdn, ip)
                 dsdb_runner.update_host(dbhw_ent, oldinfo)
                 dsdb_runner.commit_or_rollback("Could not add host to DSDB")
+
+            if self.config.infoblox_feature_enabled("add_interface_address"):
+                try:
+                    IBServices().create_host(ip, payload = {"hostname": fqdn, "mac_address":str(dbinterface.mac) })
+                except (ArgumentError,RequestException) as e:
+                    logger.warning("Error calling Infoblox create_host: {0}".format(str(e)))
+                    logger.warning("Rolling back DSDB transaction ...")
+                    dsdb_runner.rollback()
+                    raise e
 
         for name, value in audit_results:
             self.audit_result(session, name, value, **kwargs)

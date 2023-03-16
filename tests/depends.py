@@ -28,3 +28,4 @@ else:
     ms.version.addpkg('dateutil', '1.5')
     ms.version.addpkg('six', '1.9.0')
     ms.version.addpkg('jsonschema', '2.3.0')
+    ms.version.addpkg("httplib2", "0.9-py27")

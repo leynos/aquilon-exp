@@ -33,6 +33,15 @@ mean = %(srcdir)s/tests/fakebin/fake_mean
 dsdb_use_testdb = True
 enable = True
 
+[ib-services]
+# ib-services related configurations
+ca_chain = /etc/pki/ms/certs/ms-ca-chain.crt
+# AQ + IB integration is disabled now. Can be enabled anytime by toggling this flag.
+enable = False
+timeout = 180
+# url of Infoblox API.
+url = https://ib-services.l0.ms.com
+
 [change_management]
 # The contents of --justification will not be validated externally
 # (syntax checking will still be performed)
