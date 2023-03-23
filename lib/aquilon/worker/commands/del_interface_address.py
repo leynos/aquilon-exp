@@ -16,6 +16,8 @@
 # limitations under the License.
 """Contains the logic for `aq del interface address`."""
 
+import logging
+
 from aquilon.worker.broker import BrokerCommand
 from aquilon.exceptions_ import ArgumentError
 from aquilon.aqdb.model import (Interface, AddressAssignment, DnsDomain, Fqdn,
@@ -23,9 +25,13 @@ from aquilon.aqdb.model import (Interface, AddressAssignment, DnsDomain, Fqdn,
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.hardware_entity import get_hardware
 from aquilon.worker.dbwrappers.service_instance import check_no_provided_service
-from aquilon.worker.processes import DSDBRunner
+from aquilon.worker.processes import DSDBRunner, IBServices
 from aquilon.utils import first_of
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from requests.exceptions import RequestException
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 class CommandDelInterfaceAddress(BrokerCommand):
@@ -130,5 +136,19 @@ class CommandDelInterfaceAddress(BrokerCommand):
             else:
                 dsdb_runner.update_host(dbhw_ent, oldinfo)
                 dsdb_runner.commit_or_rollback("Could not add host to DSDB")
+
+            if self.config.infoblox_feature_enabled("del_interface_address"):
+                try:
+                    if not IBServices().delete_host(ip):
+                        LOGGER.info("The host {} was not present in Infoblox; attempting to clear up DNS entries".format(ip))
+                        try:
+                            IBServices().remove_host_dns_entries(ip)
+                        except ArgumentError as e:
+                            LOGGER.warning("Failed to remove DNS entries associated with {}".format(ip, str(e)))
+                except (ArgumentError,RequestException) as e:
+                    logger.warning("Error calling Infoblox delete_host: {0}".format(str(e)))
+                    logger.warning("Rolling back DSDB transaction ...")
+                    dsdb_runner.rollback()
+                    raise e
 
         return

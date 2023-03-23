@@ -25,4 +25,3 @@ pdb.set_trace()
 and using the aq command to connect to the local broker:
 
 aq status --aqport 6902 --aqservice $USER
-

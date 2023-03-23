@@ -17,6 +17,7 @@ HOST_PATH = re.compile(r'^/hosts/ipv4addr/((\d+\.){3}\d+)$')
 PORT = 8900
 QUERIES_NETWORK_BY_IP_PATH = re.compile(r'^/queries/network_by_ip/((\d+\.){3}\d+)$')
 QUERIES_NEXT_AVAILABLE_IPS_PATH = re.compile(r'^/queries/next_available_ips/((\d+\.){3}\d+/\d+)(\?.*)$')
+REMOVE_LEGACY_DNS_ENTRIES_PATH = re.compile(r'^/legacy/aq/remove-dns-entries/((\d+\.){3}\d+)$')
 
 
 class IBServicesRequestHandler(SimpleHTTPRequestHandler, object):
@@ -113,6 +114,29 @@ class IBServicesRequestHandler(SimpleHTTPRequestHandler, object):
             LOGGER.info("Hostname {0} already exists in Infoblox".format(hostname))
             return True
 
+    def do_DELETE(self):
+        self.inform_callbacks("DELETE", self.path)
+
+        if HOST_PATH.match(self.path):
+            # This is delete_host endpoint
+            ib_endpoint = "delete_host"
+            LOGGER.info("Received DELETE request: {0}".format(self.path))
+            ip = HOST_PATH.match(self.path).group(1)
+            response_code = httplib.UNPROCESSABLE_ENTITY
+            for v in (("success", httplib.NO_CONTENT), ("not_found", httplib.NOT_FOUND), ("fail", httplib.BAD_REQUEST)):
+                if ip in FIXTURES[ib_endpoint][v[0]]:
+                    FIXTURES[ib_endpoint][v[0]].remove(ip)
+                    response_code = v[1]
+            LOGGER.info("Responding with HTTP {0}".format(response_code))
+            self.send_response(response_code)
+
+        if REMOVE_LEGACY_DNS_ENTRIES_PATH.match(self.path):
+            # This is delete_host endpoint
+            LOGGER.info("Received DELETE request: {0}".format(self.path))
+            response_code = httplib.NO_CONTENT
+            LOGGER.info("Responding with HTTP {0}".format(response_code))
+            self.send_response(response_code)
+
 
 class IBServicesServer(TCPServer):
     allow_reuse_address = True
@@ -163,6 +187,11 @@ def add_fixture_get_next_ip(network, ip):
       "output": {
         "ips": [ ip ]
     }})
+
+
+def add_fixture_delete_host(action, ip):
+    global FIXTURES
+    FIXTURES["delete_host"].setdefault(action, []).append(ip)
 
 
 def add_callback(callback):

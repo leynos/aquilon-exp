@@ -489,6 +489,32 @@ class IBServices(object):
         else:
             raise ArgumentError(response.text)
 
+    @with_timer
+    def delete_host(self, ip):
+        self.assert_ip(ip)
+
+        url = self.host_url(ip)
+        response = self.session.delete(url, timeout=IB_SERVICES_TIMEOUT)
+        if response.status_code == httplib.NO_CONTENT:
+            LOGGER.info("Host removed from Infoblox")
+            return True
+        if response.status_code == httplib.NOT_FOUND:
+            LOGGER.info("Host does not exist in Infoblox")
+            return False
+        else:
+            raise ArgumentError(response.text)
+
+    @with_timer
+    def remove_host_dns_entries(self, ip):
+        self.assert_ip(ip)
+
+        url = self.ib_service_url + "/legacy/aq/remove-dns-entries/" + str(ip)
+        response = self.session.delete(url, timeout=IB_SERVICES_TIMEOUT)
+        if response.status_code == httplib.NO_CONTENT:
+            LOGGER.info("Remove dns entries for {} successful".format(ip))
+        else:
+            raise ArgumentError(response.text)
+
 
 class DSDBRunner(object):
     __metaclass__ = DSDBEnabledMeta
