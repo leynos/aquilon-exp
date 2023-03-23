@@ -120,11 +120,9 @@
   },
 
   "delete_host" : {
-    "expected_input": {
-      "hostname": "ut3gd1r03.aqd-unittest.ms.com"
-    },
-    "existing_hostname": "hostname-exists-in-ib.ms.com",
-    "missing_hostname": "hostname-does-not-exist-in-ib.ms.com"
+    "success": [],
+    "not_found": [],
+    "fail": []
   },
 
   "network_by_ip" : [],
