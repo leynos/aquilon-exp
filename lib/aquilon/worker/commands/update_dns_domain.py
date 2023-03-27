@@ -18,15 +18,25 @@
 
 from aquilon.aqdb.model import DnsDomain
 from aquilon.worker.broker import BrokerCommand
+from aquilon.worker.processes import DSDBRunner
 
 
 class CommandUpdateDnsDomain(BrokerCommand):
 
     required_parameters = ["dns_domain"]
 
-    def render(self, session, dns_domain, restricted, comments, **_):
+    def render(self, session, dns_domain, restricted, comments, logger, **_):
         dbdns_domain = DnsDomain.get_unique(session, dns_domain, compel=True)
         if restricted is not None:
+            if restricted != dbdns_domain.restricted:
+                dsdb_runner = DSDBRunner(logger=logger)
+                if restricted:
+                    dsdb_runner.delete_dns_domain(dns_domain, comments)
+                else:
+                    dsdb_runner.add_dns_domain(dns_domain, comments)
+
+                dsdb_runner.commit_or_rollback()
+
             dbdns_domain.restricted = restricted
         if comments is not None:
             dbdns_domain.comments = comments

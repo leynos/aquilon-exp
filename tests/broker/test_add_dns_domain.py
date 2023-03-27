@@ -19,6 +19,8 @@
 
 import unittest
 
+from utils import MockHub
+
 if __name__ == "__main__":
     import utils
     utils.import_depends()
@@ -54,12 +56,10 @@ class TestAddDnsDomain(TestBrokerCommand):
         self.dsdb_verify()
 
     def testaddrestricteddomain(self):
-        self.dsdb_expect("add_dns_domain -domain_name restrict.aqd-unittest.ms.com "
-                         "-comments ")
         command = ["add", "dns_domain", "--dns_domain", "restrict.aqd-unittest.ms.com",
                         "--restricted"] + self.valid_just_tcm
         self.noouttest(command)
-        self.dsdb_verify()
+        self.dsdb_verify(empty=True)
 
     def testverifyaddaqdunittestdomain(self):
         command = "show dns_domain --dns_domain aqd-unittest.ms.com"
@@ -157,6 +157,35 @@ class TestAddDnsDomain(TestBrokerCommand):
             command = ["add", "dns", "domain", "--dns_domain", domain] + self.valid_just_tcm
             self.noouttest(command)
             self.dsdb_verify()
+
+    def test_update_domain_to_restricted(self):
+        mh = MockHub(self)
+        dns_domain = mh.random_name() + ".aqd-unittest.ms.com"
+        mh.add_dns_domain(dns_domain, False)
+
+        command = ["update", "dns", "domain",
+                   "--dns_domain", dns_domain, "--restricted"]
+
+        self.dsdb_expect("delete_dns_domain -domain_name %s" % dns_domain)
+        self.statustest(command)
+        self.dsdb_verify()
+
+        mh.delete()
+
+    def test_update_domain_to_unrestricted(self):
+        mh = MockHub(self)
+        dns_domain = mh.random_name() + ".aqd-unittest.ms.com"
+        mh.add_dns_domain(dns_domain, True)
+
+        command = ["update", "dns", "domain",
+                   "--dns_domain", dns_domain, "--norestricted"]
+
+        self.dsdb_expect(
+            "add_dns_domain -domain_name %s -comments " % dns_domain)
+        self.statustest(command)
+        self.dsdb_verify()
+
+        mh.delete()
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestAddDnsDomain)

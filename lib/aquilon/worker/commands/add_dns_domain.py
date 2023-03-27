@@ -42,8 +42,9 @@ class CommandAddDnsDomain(BrokerCommand):
         session.add(dbdns_domain)
         session.flush()
 
-        dsdb_runner = DSDBRunner(logger=logger)
-        dsdb_runner.add_dns_domain(dbdns_domain.name, comments)
-        dsdb_runner.commit_or_rollback()
+        if not restricted:
+            dsdb_runner = DSDBRunner(logger=logger)
+            dsdb_runner.add_dns_domain(dbdns_domain.name, comments)
+            dsdb_runner.commit_or_rollback()
 
         return
