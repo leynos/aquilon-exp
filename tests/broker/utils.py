@@ -221,14 +221,19 @@ class MockHub(object):
     def add_dns_domain(self, fqdn, restricted=True):
         if fqdn in self.dns_domains:
             raise ValueError('DNS domain {} already exists.'.format(fqdn))
-        self._engine.dsdb_expect('add_dns_domain -domain_name {} '
-                                 '-comments '.format(fqdn))
         command = ['add_dns_domain', '--dns_domain', fqdn,
                    '--justification', 'tcm=123456789']
         if restricted:
             command.append('--restricted')
+        else:
+            self._engine.dsdb_expect('add_dns_domain -domain_name {} '
+                                     '-comments '.format(fqdn))
+
         self._engine.noouttest(command)
-        self._engine.dsdb_verify()
+        if restricted:
+            self._engine.dsdb_verify(empty=True)
+        else:
+            self._engine.dsdb_verify()
         self.dns_domains.append(fqdn)
         return fqdn
 
