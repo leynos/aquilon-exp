@@ -82,16 +82,16 @@ if __name__ == '__main__':
     dest_engine = create_engine(opts.dsn, convert_unicode=True, echo=opts.verbose)
     dest_session = sessionmaker(bind=dest_engine)()
 
-    if db.engine.dialect.supports_sequences and \
-       dest_engine.dialect.supports_sequences:
+    # if db.engine.dialect.supports_sequences and \
+    #    dest_engine.dialect.supports_sequences:
         # The only operation on sequences that all DBs support is getting the
         # next value. Unfortunately that means we have to alter the state of the
         # source database here.
-        for seq in Base.metadata._sequences.values():
-            nextid = src_session.execute(seq)
+        # for seq in Base.metadata._sequences.values():
+            # nextid = src_session.execute(seq)
             # Make sure the sequence is re-created with the right start index
-            seq.drop(dest_engine, checkfirst=True)
-            seq.start = nextid
+            # seq.drop(dest_engine, checkfirst=True)
+            # seq.start = nextid
 
     # Avoid auto-populating tables as that would interfere with the copying
     Base.populate_table_on_create = False
@@ -99,7 +99,10 @@ if __name__ == '__main__':
     # Need to call this explicitely to make the __extra_table_args__ hack work
     configure_mappers()
 
-    Base.metadata.create_all(dest_engine, checkfirst=True)
+    Base.metadata.create_all(dest_engine, checkfirst=True,
+                             tables=[Base.metadata.tables['xtn'],
+                                     Base.metadata.tables['xtn_detail'],
+                                     Base.metadata.tables['xtn_end']])
 
     if dest_engine.dialect.name == 'postgresql':
         dest_session.execute(text('SET CONSTRAINTS ALL DEFERRED'))
@@ -118,33 +121,34 @@ if __name__ == '__main__':
     multirow_insert = db.engine.dialect.supports_multivalues_insert
 
     for table in Base.metadata.sorted_tables:
-        total = src_session.execute(table.count()).scalar()
-        print('Processing %s (%d rows)' % (table, total), end=' ')
-        sys.stdout.flush()
-        cnt = 0
+        if str(table) == 'xtn_detail' or str(table) == 'xtn_end' or str(table) == 'xtn':
+            total = src_session.execute(table.count()).scalar()
+            print('Processing %s (%d rows)' % (table, total), end=' ')
+            sys.stdout.flush()
+            cnt = 0
 
-        signal.setitimer(signal.ITIMER_REAL, 5, 5)
-        for rows in chunk(src_session.execute(table.select()), 1000):
-            cnt = cnt + len(rows)
-            if signalled:
-                print("... %d" % cnt, end=' ')
-                sys.stdout.flush()
-                signalled = 0
+            signal.setitimer(signal.ITIMER_REAL, 5, 5)
+            for rows in chunk(src_session.execute(table.select()), 1000):
+                cnt = cnt + len(rows)
+                if signalled:
+                    print("... %d" % cnt, end=' ')
+                    sys.stdout.flush()
+                    signalled = 0
 
-            if multirow_insert:
-                data = [{col.key: getattr(row, col.key)
-                         for col in table.columns}
-                        for row in rows]
-
-                dest_session.execute(table.insert().values(data))
-            else:
-                for row in rows:
-                    data = {col.key: getattr(row, col.key) for col in table.columns}
+                if multirow_insert:
+                    data = [{col.key: getattr(row, col.key)
+                            for col in table.columns}
+                            for row in rows]
 
                     dest_session.execute(table.insert().values(data))
+                else:
+                    for row in rows:
+                        data = {col.key: getattr(row, col.key) for col in table.columns}
 
-        signal.setitimer(signal.ITIMER_REAL, 0)
-        dest_session.flush()
-        print()
+                        dest_session.execute(table.insert().values(data))
+
+            signal.setitimer(signal.ITIMER_REAL, 0)
+            dest_session.flush()
+            print()
 
     dest_session.commit()
