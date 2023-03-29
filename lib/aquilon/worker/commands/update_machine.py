@@ -121,7 +121,8 @@ def update_disk_backing_stores(dbmachine, old_holder, new_holder, remap_disk):
         dbdisk.backing_store = new_bstore
 
 
-def update_interface_bindings(session, logger, dbmachine, autoip, autopg):
+def update_interface_bindings(session, logger, dbmachine, autoip,
+                              autopg, pg):
     for dbinterface in dbmachine.interfaces:
         old_pg = dbinterface.port_group
         if not old_pg:
@@ -133,6 +134,9 @@ def update_interface_bindings(session, logger, dbmachine, autoip, autopg):
         # later
         if autopg:
             set_port_group(session, logger, dbinterface, 'user',
+                           check_pg_consistency=False)
+        elif pg:
+            set_port_group(session, logger, dbinterface, pg,
                            check_pg_consistency=False)
         else:
             set_port_group(session, logger, dbinterface, old_pg.name,
@@ -165,7 +169,8 @@ def update_interface_bindings(session, logger, dbmachine, autoip, autopg):
 
 
 def move_vm(session, logger, dbmachine, resholder, remap_disk,
-            allow_metacluster_change, autoip, plenaries, autopg=False):
+            allow_metacluster_change, autoip, plenaries,
+            autopg=False, pg=None):
     old_holder = dbmachine.vm_container.holder.holder_object
     if resholder:
         new_holder = resholder.holder_object
@@ -190,7 +195,7 @@ def move_vm(session, logger, dbmachine, resholder, remap_disk,
         update_disk_backing_stores(dbmachine, old_holder, new_holder, remap_disk)
 
     if new_holder != old_holder or autoip:
-        update_interface_bindings(session, logger, dbmachine, autoip, autopg)
+        update_interface_bindings(session, logger, dbmachine, autoip, autopg, pg)
 
     if hasattr(new_holder, 'location_constraint'):
         dbmachine.location = new_holder.location_constraint
@@ -339,6 +344,10 @@ class CommandUpdateMachine(BrokerCommand):
         if uri is not None:
             dbmachine.uri = uri
 
+        # Will be set to True if pg in recipe will be used if below
+        # conditions apply.
+        pg_used = False
+
         # FIXME: For now, if a machine has its interface(s) in a portgroup
         # this command will need to be followed by an update_interface to
         # re-evaluate the portgroup for overflow.
@@ -369,6 +378,12 @@ class CommandUpdateMachine(BrokerCommand):
                 move_vm(session, logger, dbmachine, resholder, remap_disk,
                         allow_metacluster_change, autoip, plenaries,
                         autopg=recipe.get("autopg"))
+            elif recipe and len(recipe.get('interface').split()) == 1 and \
+                    recipe.get("pg"):
+                move_vm(session, logger, dbmachine, resholder, remap_disk,
+                        allow_metacluster_change, autoip, plenaries,
+                        pg=recipe.get("pg"))
+                pg_used = True
             else:
                 move_vm(session, logger, dbmachine, resholder, remap_disk,
                         allow_metacluster_change, autoip, plenaries)
@@ -399,6 +414,13 @@ class CommandUpdateMachine(BrokerCommand):
             else:
                 new_pg = recipe.get("autopg")
 
+            # This will check to ensure if pg is already set and will
+            # not be set again in update_interface code.
+            if recipe.get("pg") and pg_used:
+                target_pg = None
+            else:
+                target_pg = recipe.get("pg")
+
             if len(recipe.get('interface').split()) == 1:
                 int_update = CommandUpdateInterfaceMachine()
                 int_update.update_interface_machine(session, logger, plenaries,
@@ -407,7 +429,7 @@ class CommandUpdateMachine(BrokerCommand):
                                                     model=recipe.get("model", None),
                                                     vendor=recipe.get("vendor", None),
                                                     boot=recipe.get("boot", None),
-                                                    pg=recipe.get("pg", None),
+                                                    pg=target_pg,
                                                     autopg=new_pg,
                                                     comments=recipe.get("comments", None),
                                                     master=recipe.get("master", None),
