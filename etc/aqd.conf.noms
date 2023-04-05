@@ -52,8 +52,6 @@ ssh =
 
 # Network related tools
 switch_discover =
-# Raw Network data used by refresh_network command
-qip_dump_subnetdata =
 # Used in poll_net_device command, path to binary
 vlan2net =
 
