@@ -515,6 +515,60 @@ class IBServices(object):
         else:
             raise ArgumentError(response.text)
 
+    def build_a_ptr_payload(self, name, ip, assign_ptr_to_fqdn, ttl):
+        payload = dict()
+        if name:
+            payload["name"] = name
+        if ip:
+            self.assert_ip(ip)
+            payload["address"] = str(ip)
+        if assign_ptr_to_fqdn:
+            payload["assign_ptr_to_fqdn"] = assign_ptr_to_fqdn
+        if ttl:
+            payload["ttl"] = ttl
+        return payload
+
+    @with_timer
+    def add_a_ptr(self, name, ip, assign_ptr_to_fqdn=None, ttl=None):
+        payload = self.build_a_ptr_payload(name, ip, assign_ptr_to_fqdn, ttl)
+        url = self.ib_service_url + "/dns/a_ptr"
+        LOGGER.info("Invoking {} with payload: {}".format(url, payload))
+        response = self.session.post(url, json=payload, timeout=IB_SERVICES_TIMEOUT)
+        if response.status_code == httplib.CREATED:
+            LOGGER.info("A/PTR added to Infoblox")
+        else:
+            # BAD_REQUEST is returned if there is an error creating the A/PTR records
+            raise ArgumentError(response.text)
+
+    @with_timer
+    def update_a_ptr(self, name, ip, new_ip=None, assign_ptr_to_fqdn=None, ttl=None):
+        self.assert_ip(ip)
+
+        assert new_ip or assign_ptr_to_fqdn or ttl
+
+        payload = self.build_a_ptr_payload(None, new_ip, assign_ptr_to_fqdn, ttl)
+        url = self.ib_service_url + "/dns/a_ptr/{}/{}".format(name, ip)
+        LOGGER.info("Invoking {} with payload: {}".format(url, payload))
+        response = self.session.patch(url, json=payload, timeout=IB_SERVICES_TIMEOUT)
+        if response.status_code == httplib.NO_CONTENT:
+            LOGGER.info("A/PTR updated in Infoblox")
+        else:
+            # BAD_REQUEST is returned if there is an error updating the A/PTR records
+            raise ArgumentError(response.text)
+
+    @with_timer
+    def delete_a_ptr(self, name, ip):
+        self.assert_ip(ip)
+
+        url = self.ib_service_url + "/dns/a_ptr/{}/{}".format(name, ip)
+        response = self.session.delete(url, timeout=IB_SERVICES_TIMEOUT)
+        if response.status_code == httplib.NO_CONTENT:
+            LOGGER.info("Matching A/PTR records removed from Infoblox")
+            return True
+        else:
+            # BAD_REQUEST is returned if there is an error deleting A/PTR records
+            raise ArgumentError(response.text)
+
 
 class DSDBRunner(object):
     __metaclass__ = DSDBEnabledMeta
