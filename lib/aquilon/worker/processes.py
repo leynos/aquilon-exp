@@ -41,10 +41,12 @@ from requests.adapters import HTTPAdapter, Retry
 from requests_kerberos import HTTPKerberosAuth, DISABLED
 from twisted.python import context
 from twisted.python.log import callWithContext, ILogContext
+from urllib import urlencode
+from urlparse import urlparse, urlunparse
 from sqlalchemy.inspection import inspect
 
 from aquilon.exceptions_ import (ProcessException, AquilonError, ArgumentError,
-                                 InternalError)
+                                 InternalError, UnimplementedError)
 from aquilon.config import Config, running_from_source
 from aquilon.aqdb.model import Machine
 from aquilon.utils import remove_dir, with_timer
@@ -474,6 +476,16 @@ class IBServices(object):
         if not isinstance(network, IPv4Network):
             raise ArgumentError("Network address should be an IPv4Network object")
 
+    def assert_dns_environment(self, environment):
+        if environment == 'internal':
+            return True
+        else:
+            LOGGER.warning('DNS environment {} has not been integrated with Infoblox yet'.format(environment))
+
+    def generate_url_from_params(self, url, params):
+        parse = urlparse(url)._replace(query=urlencode(params))
+        return urlunparse(parse)
+
     def host_url(self, ip):
         return self.ib_service_url + "/hosts/ipv4addr/" + str(ip)
 
@@ -529,8 +541,9 @@ class IBServices(object):
         return payload
 
     @with_timer
-    def add_a_ptr(self, name, ip, assign_ptr_to_fqdn=None, ttl=None):
+    def add_a_ptr(self, name, ip, assign_ptr_to_fqdn=None, ttl=None, create_ptr=True):
         payload = self.build_a_ptr_payload(name, ip, assign_ptr_to_fqdn, ttl)
+        payload['create_ptr'] = create_ptr
         url = self.ib_service_url + "/dns/a_ptr"
         LOGGER.info("Invoking {} with payload: {}".format(url, payload))
         response = self.session.post(url, json=payload, timeout=IB_SERVICES_TIMEOUT)
@@ -558,13 +571,16 @@ class IBServices(object):
             raise ArgumentError(response.text)
 
     @with_timer
-    def delete_a_ptr(self, name, ip):
+    def delete_a_ptr(self, name, ip, delete_ptr=True):
         self.assert_ip(ip)
 
-        url = self.ib_service_url + "/dns/a_ptr/{}/{}".format(name, ip)
+        params = {'delete_ptr': delete_ptr}
+        url = self.ib_service_url + "/dns/a_ptr/{}/{}".format(str(name), ip)
+        url = self.generate_url_from_params(url, params)
         response = self.session.delete(url, timeout=IB_SERVICES_TIMEOUT)
         if response.status_code == httplib.NO_CONTENT:
-            LOGGER.info("Matching A/PTR records removed from Infoblox")
+            LOGGER.info("Matching A records removed from Infoblox")
+            LOGGER.info("Matching PTR records removed from Infoblox") if delete_ptr else None
             return True
         else:
             # BAD_REQUEST is returned if there is an error deleting A/PTR records
