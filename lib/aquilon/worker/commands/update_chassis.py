@@ -17,7 +17,7 @@
 """Contains the logic for `aq update chassis`."""
 
 from aquilon.aqdb.types import ChassisType
-from aquilon.aqdb.model import Model, Chassis, HardwareEntity
+from aquilon.aqdb.model import Model, Chassis, DnsRecord, ARecord
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.grn import lookup_grn
 from aquilon.worker.dbwrappers.hardware_entity import (
@@ -25,9 +25,10 @@ from aquilon.worker.dbwrappers.hardware_entity import (
     update_primary_ip,
 )
 from aquilon.worker.dbwrappers.location import get_location
-from aquilon.exceptions_ import NotFoundException
-from aquilon.worker.processes import DSDBRunner
+from aquilon.exceptions_ import ArgumentError, NotFoundException
+from aquilon.worker.processes import DSDBRunner, IBServices
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from requests import RequestException
 
 
 class CommandUpdateChassis(BrokerCommand):
@@ -66,6 +67,7 @@ class CommandUpdateChassis(BrokerCommand):
         if serial is not None:
             dbchassis.serial_no = serial
 
+        old_ip = dbchassis.primary_name.ip if type(dbchassis.primary_name) == ARecord else None
         if ip:
             update_primary_ip(session, logger, dbchassis, ip)
 
@@ -87,4 +89,17 @@ class CommandUpdateChassis(BrokerCommand):
         dsdb_runner.update_host(dbchassis, oldinfo)
         dsdb_runner.commit_or_rollback("Could not update chassis in DSDB")
 
-        return
+        if ip and self.config.infoblox_feature_enabled("update_chassis"):
+            try:
+                # If no existing IP, we must now create one.
+                if old_ip:
+                    IBServices().update_a_ptr(str(dbchassis.primary_name.fqdn), old_ip, ip)
+                else:
+                    IBServices().add_a_ptr(str(dbchassis.primary_name.fqdn), ip)
+            except (ArgumentError,RequestException) as e:
+                logger.warning("Error calling Infoblox {0} {1}".format(
+                    str(e), "update_a_ptr" if old_ip else "add_a_ptr")
+                )
+                logger.warning("Rolling back DSDB transaction ...")
+                dsdb_runner.rollback()
+                raise e

@@ -20,7 +20,7 @@ from datetime import datetime
 
 from aquilon.exceptions_ import ArgumentError
 from aquilon.aqdb.types import MACAddress
-from aquilon.aqdb.model import Model, NetworkDevice, ObservedMac, Chassis, NetworkDeviceChassisSlot
+from aquilon.aqdb.model import Model, NetworkDevice, ObservedMac, Chassis, NetworkDeviceChassisSlot, ARecord
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.location import get_location
 from aquilon.worker.dbwrappers.hardware_entity import (update_primary_ip,
@@ -28,10 +28,11 @@ from aquilon.worker.dbwrappers.hardware_entity import (update_primary_ip,
 from aquilon.worker.dbwrappers.observed_mac import (
     update_or_create_observed_mac)
 from aquilon.worker.dbwrappers.network_device import discover_network_device
-from aquilon.worker.processes import DSDBRunner
+from aquilon.worker.processes import DSDBRunner, IBServices
 from aquilon.worker.templates import PlenarySwitchData
 from aquilon.utils import validate_json
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from requests import RequestException
 
 
 class CommandUpdateNetworkDevice(BrokerCommand):
@@ -115,6 +116,7 @@ class CommandUpdateNetworkDevice(BrokerCommand):
             NetworkDevice.check_type(type)
             dbnetdev.switch_type = type
 
+        old_ip = dbnetdev.primary_name.ip
         if ip:
             update_primary_ip(session, logger, dbnetdev, ip)
 
@@ -150,7 +152,14 @@ class CommandUpdateNetworkDevice(BrokerCommand):
             dsdb_runner.update_host(dbnetdev, oldinfo)
             dsdb_runner.commit_or_rollback("Could not update network device in DSDB")
 
-        return
+            if ip and self.config.infoblox_feature_enabled("update_network_device"):
+                try:
+                    IBServices().update_a_ptr(str(dbnetdev.primary_name.fqdn), old_ip, ip)
+                except (ArgumentError, RequestException) as e:
+                    logger.warning("Error calling Infoblox update_a_ptr {0}".format(str(e)))
+                    logger.warning("Rolling back DSDB transaction ...")
+                    dsdb_runner.rollback()
+                    raise e
 
     def adjust_slot(self, session, logger,
                     dbnetdev, dbchassis, slot, multislot):
@@ -182,4 +191,3 @@ class CommandUpdateNetworkDevice(BrokerCommand):
         else:
             dbslot = NetworkDeviceChassisSlot(chassis=dbchassis, slot_number=slot)
         dbnetdev.chassis_slot.append(dbslot)
-        return

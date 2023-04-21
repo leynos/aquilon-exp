@@ -547,6 +547,7 @@ class IBServices(object):
         assert new_ip or assign_ptr_to_fqdn or ttl
 
         payload = self.build_a_ptr_payload(None, new_ip, assign_ptr_to_fqdn, ttl)
+        payload["create_if_doesnt_exist"] = True
         url = self.ib_service_url + "/dns/a_ptr/{}/{}".format(name, ip)
         LOGGER.info("Invoking {} with payload: {}".format(url, payload))
         response = self.session.patch(url, json=payload, timeout=IB_SERVICES_TIMEOUT)
