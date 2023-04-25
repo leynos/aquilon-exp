@@ -225,6 +225,9 @@ class Host(CompileableMixin, Base):
         if self.effective_owner_grn.eon_id in eon_ids_allowed_grn_change:
             return stage
 
+        if stage.owner_eon_id in eon_ids_allowed_grn_change:
+            return stage
+
         raise ArgumentError("Changing to {0} ({1}) from {2} is not allowed "
                             "because it would change the effective grn of {3},"
                             " {4}, {5}, {6}.  This change requires a complete "
