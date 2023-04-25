@@ -554,13 +554,14 @@ class IBServices(object):
             raise ArgumentError(response.text)
 
     @with_timer
-    def update_a_ptr(self, name, ip, new_ip=None, assign_ptr_to_fqdn=None, ttl=None):
+    def update_a_ptr(self, name, ip, new_ip=None, assign_ptr_to_fqdn=None, ttl=None, update_ptr=True):
         self.assert_ip(ip)
 
         assert new_ip or assign_ptr_to_fqdn or ttl
 
         payload = self.build_a_ptr_payload(None, new_ip, assign_ptr_to_fqdn, ttl)
         payload["create_if_doesnt_exist"] = True
+        payload['update_ptr'] = update_ptr
         url = self.ib_service_url + "/dns/a_ptr/{}/{}".format(name, ip)
         LOGGER.info("Invoking {} with payload: {}".format(url, payload))
         response = self.session.patch(url, json=payload, timeout=IB_SERVICES_TIMEOUT)

@@ -127,5 +127,18 @@
 
   "network_by_ip" : [],
 
-  "next_available_ip" : []
+  "next_available_ip" : [],
+
+  "add_a_ptr": {
+    "allow_fqdn": [
+      "dnstest1.aqd-unittest.ms.com",
+      "ut3gd1r03-vlan980.aqd-unittest.ms.com"
+    ]
+
+  },
+  "delete_a_ptr": {
+    "success": ["4.2.5.12"],
+    "not_found": [],
+    "fail": []
+  }
 }

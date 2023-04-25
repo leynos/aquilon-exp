@@ -146,7 +146,6 @@ class CommandDelInterfaceAddress(BrokerCommand):
                 """
                 try:
                     del_a_ptr = True
-
                     if dbinterface.mac:
                         invoking = "delete_host"
                         if not IBServices().delete_host(ip):
@@ -157,7 +156,8 @@ class CommandDelInterfaceAddress(BrokerCommand):
 
                     if del_a_ptr:
                         invoking = "delete_a_ptr"
-                        IBServices().delete_a_ptr(ARecord.fqdn, ip)
+                        for dns_rec in addr.dns_records:
+                            IBServices().delete_a_ptr(dns_rec, ip)
                 except (ArgumentError,RequestException) as e:
                     logger.warning("Error calling Infoblox {0}: {1}".format(invoking, str(e)))
                     logger.warning("Rolling back DSDB transaction ...")

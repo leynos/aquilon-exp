@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sys
 
+import depends  # pylint: disable=W0611
 import httplib
 import json
 import logging
@@ -8,12 +9,20 @@ import os
 import re
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 from SocketServer import TCPServer
+
+BINDIR = os.path.dirname(os.path.realpath(__file__))
+SRCDIR = os.path.join(BINDIR, "..")
+sys.path.append(os.path.join(SRCDIR, "lib"))
+
 from aquilon.config import Config
 
 CALLBACKS = []
 FIXTURES = dict()
+logging.basicConfig()
 LOGGER = logging.getLogger('ib-services')
 HOST_PATH = re.compile(r'^/hosts/ipv4addr/((\d+\.){3}\d+)$')
+DNS_PATH = re.compile(r'/dns/a_ptr')
+DNS_DELETE_A_PTR = re.compile(r'/dns/a_ptr/(.*)/((\d+\.){3}\d+)')
 PORT = 8900
 QUERIES_NETWORK_BY_IP_PATH = re.compile(r'^/queries/network_by_ip/((\d+\.){3}\d+)$')
 QUERIES_NEXT_AVAILABLE_IPS_PATH = re.compile(r'^/queries/next_available_ips/((\d+\.){3}\d+/\d+)(\?.*)$')
@@ -106,6 +115,14 @@ class IBServicesRequestHandler(SimpleHTTPRequestHandler, object):
             LOGGER.info("Responding with HTTP {0}".format(response_code))
             self.send_response(response_code)
 
+        if DNS_PATH.match(self.path):
+            LOGGER.info("Received POST request: {0}".format(self.path))
+            content_length = int(self.headers.getheader('content-length', 0))
+            body = json.loads(self.rfile.read(content_length))
+            LOGGER.debug("Request body: {0}".format(body))
+            response_code = httplib.CREATED
+            self.send_response(response_code)
+
     def validate_request_body(self, endpoint, hostname):
         return hostname in FIXTURES.get(endpoint, {}).get('allow_hostnames', [])
 
@@ -135,6 +152,20 @@ class IBServicesRequestHandler(SimpleHTTPRequestHandler, object):
             LOGGER.info("Received DELETE request: {0}".format(self.path))
             response_code = httplib.NO_CONTENT
             LOGGER.info("Responding with HTTP {0}".format(response_code))
+            self.send_response(response_code)
+
+        if DNS_DELETE_A_PTR.match(self.path):
+            ib_endpoint = 'delete_a_ptr'
+            LOGGER.info("Received DELETE request: {0}".format(self.path))
+            ip = DNS_DELETE_A_PTR.match(self.path).group(2)
+            response_code = httplib.UNPROCESSABLE_ENTITY
+
+            for v in (("success", httplib.NO_CONTENT), ("not_found", httplib.NOT_FOUND), ("fail", httplib.BAD_REQUEST)):
+                if ip in FIXTURES[ib_endpoint][v[0]]:
+                    FIXTURES[ib_endpoint][v[0]].remove(ip)
+                    response_code = v[1]
+            LOGGER.info("Responding with HTTP {0}".format(response_code))
+            response_code = httplib.NO_CONTENT
             self.send_response(response_code)
 
 
@@ -197,3 +228,7 @@ def add_fixture_delete_host(action, ip):
 def add_callback(callback):
     """ Add a callback to inform tests when this broker receives an HTTP request """
     CALLBACKS.append(callback)
+
+
+if __name__ == '__main__':
+    run_server()
