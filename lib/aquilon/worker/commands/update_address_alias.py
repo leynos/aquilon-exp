@@ -81,7 +81,7 @@ class CommandUpdateAddressAlias(BrokerCommand):
 
         cm.validate()
 
-        if self.config.infoblox_feature_enabled('update_address_alias'):
+        if self.config.infoblox_feature_enabled('update_address_alias') and ttl:
             try:
                 ib_services = IBServices()
                 for dns_rec in dbdns_records:
@@ -90,8 +90,6 @@ class CommandUpdateAddressAlias(BrokerCommand):
             except (ArgumentError, RequestException) as e:
                 logger.warning("Error calling Infoblox update_a_ptr: {0}".format(str(e)))
                 raise e
-            except AssertionError as e:
-                logger.warning("Address alias {} is already up-to-date in Infoblox. Nothing to do.".format(str(dns_rec)))
 
 
         if exporter:

@@ -40,7 +40,7 @@ class TestDelInterfaceAddress(BaseIsolatedTest):
         self.dsdb_verify()
         self.check_plenary_contents("hostdata", "unittest20.aqd-unittest.ms.com", clean=str(ip))
         self.assert_delete_host("/hosts/ipv4addr/{}".format(ip))
-        self.assert_delete_host("/legacy/aq/remove-dns-entries/{}".format(ip))
+        self.assert_delete_host("/dns/a_ptr/unittest20-e1.aqd-unittest.ms.com/{}?delete_ptr=True".format(ip))
 
 
 if __name__ == '__main__':

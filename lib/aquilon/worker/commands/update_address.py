@@ -93,11 +93,11 @@ class CommandUpdateAddress(BrokerCommand):
                                             old_comments=old_comments)
             dsdb_runner.commit_or_rollback()
 
-        if self.config.infoblox_feature_enabled("update_address"):
+        if self.config.infoblox_feature_enabled("update_address") and (ip or reverse_ptr or clear_ttl or ttl):
             try:
+                #logger.warning("{} {} {} {}".format(ip, reverse_ptr, clear_ttl, ttl))
                 a_fqdn = str(dbdns_rec.fqdn)
-                IBServices().update_a_ptr(a_fqdn, old_ip, ip if ip else None, reverse_ptr,
-                                          -1 if clear_ttl else ttl)
+                IBServices().update_a_ptr(a_fqdn, old_ip, ip if ip else None, reverse_ptr, -1 if clear_ttl else ttl)
                 if ip:
                     for address_alias in dbdns_rec.address_aliases:
                         alias_fqdn = str(address_alias.fqdn)

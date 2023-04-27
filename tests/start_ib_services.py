@@ -27,6 +27,7 @@ PORT = 8900
 QUERIES_NETWORK_BY_IP_PATH = re.compile(r'^/queries/network_by_ip/((\d+\.){3}\d+)$')
 QUERIES_NEXT_AVAILABLE_IPS_PATH = re.compile(r'^/queries/next_available_ips/((\d+\.){3}\d+/\d+)(\?.*)$')
 REMOVE_LEGACY_DNS_ENTRIES_PATH = re.compile(r'^/legacy/aq/remove-dns-entries/((\d+\.){3}\d+)$')
+DELETE_A_PTR = re.compile(r'^/dns/a_ptr/(.*?)/((\d+\.){3}\d+)?delete_ptr=(true|false)$')
 
 
 class IBServicesRequestHandler(SimpleHTTPRequestHandler, object):
@@ -134,6 +135,8 @@ class IBServicesRequestHandler(SimpleHTTPRequestHandler, object):
     def do_DELETE(self):
         self.inform_callbacks("DELETE", self.path)
 
+        response_code = httplib.NO_CONTENT
+
         if HOST_PATH.match(self.path):
             # This is delete_host endpoint
             ib_endpoint = "delete_host"
@@ -144,15 +147,10 @@ class IBServicesRequestHandler(SimpleHTTPRequestHandler, object):
                 if ip in FIXTURES[ib_endpoint][v[0]]:
                     FIXTURES[ib_endpoint][v[0]].remove(ip)
                     response_code = v[1]
-            LOGGER.info("Responding with HTTP {0}".format(response_code))
-            self.send_response(response_code)
 
-        if REMOVE_LEGACY_DNS_ENTRIES_PATH.match(self.path):
+        if REMOVE_LEGACY_DNS_ENTRIES_PATH.match(self.path) or DELETE_A_PTR.match(self.path):
             # This is delete_host endpoint
             LOGGER.info("Received DELETE request: {0}".format(self.path))
-            response_code = httplib.NO_CONTENT
-            LOGGER.info("Responding with HTTP {0}".format(response_code))
-            self.send_response(response_code)
 
         if DNS_DELETE_A_PTR.match(self.path):
             ib_endpoint = 'delete_a_ptr'
@@ -164,23 +162,60 @@ class IBServicesRequestHandler(SimpleHTTPRequestHandler, object):
                 if ip in FIXTURES[ib_endpoint][v[0]]:
                     FIXTURES[ib_endpoint][v[0]].remove(ip)
                     response_code = v[1]
-            LOGGER.info("Responding with HTTP {0}".format(response_code))
-            response_code = httplib.NO_CONTENT
-            self.send_response(response_code)
+
+        LOGGER.info("Responding with HTTP {0}".format(response_code))
+        self.send_response(response_code)
+
+
+class UnitTestIBServicesRequestHandler(SimpleHTTPRequestHandler, object):
+    """
+    This is used for the existing unit tests, because it's too much effort to pick through hundreds and set up the
+    test fixtures. We'll assume that the calls to IB are all sucessfull, as the unit tests have no element of testing
+    the IB endpoint.
+
+    The isolated unit tests will be used to more thoroughly test the endpoint.
+    """
+
+    def do_DELETE(self):
+        LOGGER.info("Received DELETE request: {0}".format(self.path))
+        response_code = httplib.NO_CONTENT
+        LOGGER.info("Responding with HTTP {0}".format(response_code))
+        self.send_response(response_code)
+
+    def do_GET(self):
+        LOGGER.info("Received GET request: {0}".format(self.path))
+        response_code = httplib.OK
+        LOGGER.info("Responding with HTTP {0}".format(response_code))
+        self.send_response(response_code)
+
+    def do_PATCH(self):
+        LOGGER.info("Received PATCH request: {0}".format(self.path))
+        content_length = int(self.headers.getheader('content-length', 0))
+        body = json.loads(self.rfile.read(content_length))
+        LOGGER.debug("Request body: {0}".format(body))
+        response_code = httplib.NO_CONTENT
+        self.send_response(response_code)
+
+    def do_POST(self):
+        LOGGER.info("Received POST request: {0}".format(self.path))
+        content_length = int(self.headers.getheader('content-length', 0))
+        body = json.loads(self.rfile.read(content_length))
+        LOGGER.debug("Request body: {0}".format(body))
+        response_code = httplib.CREATED
+        self.send_response(response_code)
 
 
 class IBServicesServer(TCPServer):
     allow_reuse_address = True
 
 
-def run_server():
+def run_server(handler = IBServicesRequestHandler):
     path = os.path.join(Config().get("unittest", "datadir"), "ib-services.json")
     LOGGER.info("Loading fixture file: {}".format(path))
     global FIXTURES
     FIXTURES = _load_ib_services_fixture(path)
     LOGGER.debug("Loaded fixtures: {}".format(json.dumps(FIXTURES, indent=4)))
 
-    handler = IBServicesRequestHandler
     httpd = IBServicesServer(("", PORT), handler)
     LOGGER.info("Starting ib-services HTTP proxy on port: {0}".format(PORT))
     httpd.serve_forever()
@@ -223,6 +258,11 @@ def add_fixture_get_next_ip(network, ip):
 def add_fixture_delete_host(action, ip):
     global FIXTURES
     FIXTURES["delete_host"].setdefault(action, []).append(ip)
+
+
+def add_fixture_delete_a_ptr(action, ip):
+    global FIXTURES
+    FIXTURES["delete_a_ptr"].setdefault(action, []).append(ip)
 
 
 def add_callback(callback):

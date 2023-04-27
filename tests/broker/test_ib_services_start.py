@@ -1,11 +1,11 @@
-import sys
-
 import logging
 import socket
+import sys
 import threading
 import time
 import unittest
-from start_ib_services import run_server, PORT
+
+from start_ib_services import run_server, PORT, IBServicesRequestHandler, UnitTestIBServicesRequestHandler
 
 if __name__ == "__main__":
     import utils
@@ -15,14 +15,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 class TestIBServicesStart(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        pass
+    HANDLER = IBServicesRequestHandler
 
     def test_ibservices_start(self):
-        logging.getLogger('ib-services').setLevel(logging.DEBUG)
-        LOGGER.info("Starting ib services proxy in thread")
-        ibs_broker = threading.Thread(target=run_server)
+        LOGGER.info("Starting ib services proxy in thread with HTTP handler {}".format(TestIBServicesStart.HANDLER))
+        ibs_broker = threading.Thread(target=run_server, args=(TestIBServicesStart.HANDLER,))
         ibs_broker.daemon = True
         ibs_broker.start()
 
@@ -42,3 +39,11 @@ class TestIBServicesStart(unittest.TestCase):
             sys.exit(1)
 
         return ibs_broker
+
+
+class TestIBServicesStartForUnits(TestIBServicesStart):
+    """ Start the IB services mock broker with no functionality beyond reporting success for all invocations """
+
+    @classmethod
+    def setUpClass(cls):
+        TestIBServicesStart.HANDLER = UnitTestIBServicesRequestHandler

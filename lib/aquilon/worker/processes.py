@@ -34,7 +34,7 @@ import types
 
 from six import iteritems
 
-from ipaddress import IPv4Address, IPv4Network
+from ipaddress import IPv4Address, IPv4Network, IPv6Address
 from mako.lookup import TemplateLookup
 from requests import Session
 from requests.adapters import HTTPAdapter, Retry
@@ -447,12 +447,13 @@ class DSDBEnabledMeta(type):
         if DSDB_ENABLED:
             if instance.dsdb_use_testdb:
                 os.environ['DSDB_USE_TESTDB'] = "1"
+                os.environ["DSDB_BROKER_URL"] = "http://dsdb.webfarm-qa.ms.com"
 
             # a timeout of zero in the broker config means "no timeout";  for ms.dsdb,
             # zero means immediate timeout (i.e. non-blocking operation).
             use_timeout = config.lookup_tool_timeout('dsdb') or None
 
-            instance.dsdbclient = ms.dsdb.client.DSDB(plant='prod',
+            instance.dsdbclient = ms.dsdb.client.DSDB(plant="prod",
                                                       timeout=use_timeout)
         return instance
 
@@ -542,6 +543,12 @@ class IBServices(object):
 
     @with_timer
     def add_a_ptr(self, name, ip, assign_ptr_to_fqdn=None, ttl=None, create_ptr=True):
+        # fixme
+        if isinstance(ip, IPv6Address):
+            LOGGER.warning("add_a_ptr does not yet support IPv6Address {}".format(str(ip)))
+            return
+        self.assert_ip(ip)
+
         payload = self.build_a_ptr_payload(name, ip, assign_ptr_to_fqdn, ttl)
         payload['create_ptr'] = create_ptr
         url = self.ib_service_url + "/dns/a_ptr"
@@ -555,9 +562,13 @@ class IBServices(object):
 
     @with_timer
     def update_a_ptr(self, name, ip, new_ip=None, assign_ptr_to_fqdn=None, ttl=None, update_ptr=True):
+        # fixme
+        if isinstance(ip, IPv6Address):
+            LOGGER.warning("update_a_ptr does not yet support IPv6Address {}".format(str(ip)))
+            return
         self.assert_ip(ip)
 
-        assert new_ip or assign_ptr_to_fqdn or ttl
+        assert new_ip or assign_ptr_to_fqdn or ttl, "new_ip, assign_ptr_to_fqdn and ttl all None"
 
         payload = self.build_a_ptr_payload(None, new_ip, assign_ptr_to_fqdn, ttl)
         payload["create_if_doesnt_exist"] = True
@@ -573,9 +584,13 @@ class IBServices(object):
 
     @with_timer
     def delete_a_ptr(self, name, ip, delete_ptr=True):
+        # fixme
+        if isinstance(ip, IPv6Address):
+            LOGGER.warning("update_a_ptr does not yet support IPv6Address {}".format(str(ip)))
+            return
         self.assert_ip(ip)
 
-        params = {'delete_ptr': delete_ptr}
+        params = {'delete_ptr': str(delete_ptr).lower()}
         url = self.ib_service_url + "/dns/a_ptr/{}/{}".format(str(name), ip)
         url = self.generate_url_from_params(url, params)
         response = self.session.delete(url, timeout=IB_SERVICES_TIMEOUT)
@@ -1198,6 +1213,7 @@ class DSDBRunner(object):
         return fields
 
     def show_chassis(self, chassis):
+        self.logger.info("Invoking show_chassis {}".format(chassis))
         chassis_data = self.dsdbclient.show_chassis(chassis_name=chassis).results()
         fields = {}
         if len(chassis_data) > 1:

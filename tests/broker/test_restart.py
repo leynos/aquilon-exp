@@ -17,6 +17,7 @@
 # limitations under the License.
 """Test module for starting the broker."""
 
+import logging
 import os
 import sys
 from subprocess import Popen, PIPE
@@ -30,6 +31,9 @@ if __name__ == "__main__":
 from aquilon.config import Config
 
 
+LOGGER = logging.getLogger(__name__)
+
+
 class TestBrokerReStart(unittest.TestCase):
 
     config = None
@@ -39,6 +43,7 @@ class TestBrokerReStart(unittest.TestCase):
         cls.config = Config()
 
     def run_command(self, command, **kwargs):
+        LOGGER.debug("Broker start: {}".format(command))
         p = Popen(command, stdout=PIPE, stderr=PIPE, **kwargs)
         out, err = p.communicate()
         self.assertEqual(p.returncode, 0,

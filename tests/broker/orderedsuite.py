@@ -225,7 +225,7 @@ from .test_flush import TestFlush
 from .test_get import TestGet
 from .test_grns import TestGrns
 from .test_hub import TestHub
-from .test_ib_services_start import TestIBServicesStart
+from .test_ib_services_start import TestIBServicesStartForUnits
 from .test_justification import TestJustification
 from .test_make import TestMake
 from .test_make_aquilon import TestMakeAquilon
@@ -353,9 +353,9 @@ class BrokerTestSuite(unittest.TestSuite):
 
     """
     test_start = [TestBrokerStart,
-                  TestPing, TestStatus, TestIBServicesStart]
+                  TestPing, TestStatus, TestIBServicesStartForUnits]
     test_restart = [TestBrokerReStart,
-                    TestPing, TestStatus, TestIBServicesStart]
+                    TestPing, TestStatus, TestIBServicesStartForUnits]
     test_stop = [TestBrokerStop]
     test_list = [TestAddRole, TestPermission,
                  TestAddDnsDomain, TestAddDnsEnvironment,

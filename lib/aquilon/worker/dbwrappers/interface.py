@@ -20,7 +20,7 @@
 To an extent, this has become a dumping ground for any common ip methods.
 
 """
-
+import logging
 from operator import attrgetter
 import re
 import os
@@ -669,7 +669,7 @@ def assign_address(dbinterface, ip, dbnetwork, label=None, shared=False,
     # Do not enforce bucket alignment for OOB management interfaces. We may want
     # to make that configurable in the future.
     if dbrack and not isinstance(dbinterface, ManagementInterface):
-        enforce_bucket_alignment(dbrack, dbnetwork, logger)
+        enforce_bucket_alignment(dbrack, dbnetwork, logger or logging.getLogger(__name__))
 
     dbinterface.validate_network(dbnetwork)
 

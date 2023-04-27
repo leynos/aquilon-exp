@@ -17,7 +17,7 @@
 """Contains the logic for `aq update chassis`."""
 
 from aquilon.aqdb.types import ChassisType
-from aquilon.aqdb.model import Model, Chassis, DnsRecord, ARecord
+from aquilon.aqdb.model import Model, Chassis, ARecord
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.grn import lookup_grn
 from aquilon.worker.dbwrappers.hardware_entity import (
@@ -98,7 +98,7 @@ class CommandUpdateChassis(BrokerCommand):
                     IBServices().add_a_ptr(str(dbchassis.primary_name.fqdn), ip)
             except (ArgumentError,RequestException) as e:
                 logger.warning("Error calling Infoblox {0} {1}".format(
-                    str(e), "update_a_ptr" if old_ip else "add_a_ptr")
+                    "update_a_ptr" if old_ip else "add_a_ptr", str(e))
                 )
                 logger.warning("Rolling back DSDB transaction ...")
                 dsdb_runner.rollback()
