@@ -8,11 +8,17 @@ This is an evolution of the unit tests under tests/broker which are linked and r
 
 ## Running individual tests
 
-Use unittest:
+To run individual tests:
 
 ```
 export AQDCONF=tests/unittest.conf
-python -m unittest tests/isolated/test_add_interface_address.py
+python tests/isolated/test_add_interface_address.py TestAddInterfaceAddress.test_300_add_address_ipfromip_success
+```
+
+Or to run all tests using unittest:
+
+```
+python -m unittest discover -s tests/isolated
 ```
 
 # Connecting to an isolated database

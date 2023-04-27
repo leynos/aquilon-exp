@@ -404,6 +404,7 @@ def with_timer(f):
         try:
             result = f(*args, **kwargs)
         except Exception as e:
+            LOGGER.warning(str(e))
             raise e
         finally:
             end = time.time()

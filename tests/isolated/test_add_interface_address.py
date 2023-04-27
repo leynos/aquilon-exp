@@ -68,7 +68,7 @@ class TestAddInterfaceAddress(BaseIsolatedTest):
         command = ["add", "interface", "address", "--machine", "ut3c5n2",
                    "--interface", "eth1", "--fqdn", fqdn, "--ip", ip]
         out = self.badrequesttest(command)
-        self.matchoutput(out, "Error calling Infoblox create_host", command)
+        self.matchoutput(out, "Error calling Infoblox add_a_ptr", command)
         self.dsdb_verify()
         self.check_plenary_contents("hostdata", "unittest20.aqd-unittest.ms.com", clean=str(ip))
         self.assert_create_host()

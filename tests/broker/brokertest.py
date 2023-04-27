@@ -279,7 +279,7 @@ class TestBrokerCommand(unittest.TestCase):
             if 'USER' not in env:
                 env['USER'] = os.environ.get('USER', '')
             kwargs["env"] = env
-        LOGGER.debug("Running command {}".format(args))
+        LOGGER.info("Running command {}".format(args))
         p = Popen(args, stdout=PIPE, stderr=PIPE, **kwargs)
         (out, err) = p.communicate()
         if err:
