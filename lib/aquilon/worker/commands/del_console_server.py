@@ -21,8 +21,10 @@ from aquilon.aqdb.model import ConsoleServer
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.hardware_entity import check_only_primary_ip
-from aquilon.worker.processes import DSDBRunner
+from aquilon.worker.processes import DSDBRunner, IBServices
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from requests import RequestException
+
 
 
 class CommandDelConsoleServer(BrokerCommand):
@@ -62,4 +64,11 @@ class CommandDelConsoleServer(BrokerCommand):
             dsdb_runner.update_host(None, oldinfo)
             dsdb_runner.commit_or_rollback("Could not remove console server from DSDB")
 
-        return
+            if self.config.infoblox_feature_enabled("del_console_server"):
+                try:
+                    IBServices().delete_a_ptr(str(dbcons.primary_name.fqdn), dbcons.primary_name.ip)
+                except (ArgumentError,RequestException) as e:
+                    logger.warning("Error calling Infoblox delete_a_ptr: {0}".format(str(e)))
+                    logger.warning("Rolling back DSDB transaction ...")
+                    dsdb_runner.rollback()
+                    raise e

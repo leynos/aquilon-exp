@@ -11,8 +11,8 @@ from start_ib_services import add_fixture_get_network_by_ip, add_fixture_get_nex
 LOGGER = logging.getLogger(__name__)
 
 
-class TestAddDelChassis(BaseIsolatedTest):
-    FQDN = "ut9c7.aqd-unittest.ms.com"
+class TestAddDelConsoleServer(BaseIsolatedTest):
+    FQDN = "utcs11.aqd-unittest.ms.com"
 
     def assert_create_a_ptr(self):
         self.assertIn("POST", BaseIsolatedTest.IB_SERVICES_CALLBACKS,
@@ -22,24 +22,25 @@ class TestAddDelChassis(BaseIsolatedTest):
         self.assertIn("DELETE", BaseIsolatedTest.IB_SERVICES_CALLBACKS,
                       "The ib-services DELETE /dns/a_ptr endpoint was not invoked")
 
-    def test_100_add_chassis(self):
-        LOGGER.info("Running add_chassis to invoke DSDB and IB broker")
-        ip = self.net["zebra_eth1"].usable[0]
-        self.dsdb_expect_add(TestAddDelChassis.FQDN, ip, "oa")
+    def test_100_add_console_server(self):
+        LOGGER.info("Running add_console_server to invoke DSDB and IB broker")
+        ip = self.net["ut9_conservers"].usable[0]
+        self.dsdb_expect_add(TestAddDelConsoleServer.FQDN, ip, "mgmt")
         BaseIsolatedTest.IB_SERVICES_CALLBACKS.clear()
-        command = ["add", "chassis", "--chassis", TestAddDelChassis.FQDN, "--rack", "ut9",
-                   "--model", "c-class", "--ip", ip, "--eon_id", "11"]
+        #  --console_server utcs11.aqd-unittest.ms.com --model utconserver --ip 8.6.8.20 --rack ut3
+        command = ["add", "console_server", "--console_server", TestAddDelConsoleServer.FQDN, "--rack", "ut3",
+                   "--model", "utconserver", "--ip", ip]
         self.statustest(command)
         self.dsdb_verify()
         self.assert_create_a_ptr()
 
-    def test_200_del_chassis(self):
-        """ This test depends on test_100_add_chassis """
-        LOGGER.info("Running del_chassis to invoke DSDB and IB broker")
-        ip = self.net["zebra_eth1"].usable[0]
+    def test_200_del_console_server(self):
+        """ This test depends on test_100_add_console_server """
+        LOGGER.info("Running del_console_server to invoke DSDB and IB broker")
+        ip = self.net["ut9_conservers"].usable[0]
         self.dsdb_expect_delete(ip)
         add_fixture_delete_a_ptr("success", str(ip))
-        command = ["del", "chassis", "--chassis", TestAddDelChassis.FQDN]
+        command = ["del", "console_server", "--console_server", TestAddDelConsoleServer.FQDN]
         self.statustest(command)
         self.dsdb_verify()
         self.assert_delete_a_ptr()
