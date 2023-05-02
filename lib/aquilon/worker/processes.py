@@ -602,6 +602,30 @@ class IBServices(object):
             # BAD_REQUEST is returned if there is an error deleting A/PTR records
             raise ArgumentError(response.text)
 
+    @with_timer
+    def add_dns_alias(self, name, target):
+        url = self.ib_service_url + '/dns/aliases/'
+        payload = {
+            'name': name,
+            'target': target
+        }
+        LOGGER.info("Invoking {} with payload: {}".format(url, payload))
+        response = self.session.post(url=url, json=payload, timeout=IB_SERVICES_TIMEOUT)
+        if response.status_code == httplib.CREATED:
+            LOGGER.info("DNS alias added to Infoblox")
+        else:
+            # BAD_REQUEST is returned if there is an error creating the alias in Infoblox grids
+            raise ArgumentError(response.text)
+
+    @with_timer
+    def del_dns_alias(self, name):
+        url = self.ib_service_url + '/dns/aliases/' + name
+        response = self.session.delete(url=url, timeout=IB_SERVICES_TIMEOUT)
+        if response.status_code == httplib.NO_CONTENT:
+            LOGGER.info('Matching CNAME removed from Infoblox')
+        else:
+            raise ArgumentError(response.text)
+
 
 class DSDBRunner(object):
     __metaclass__ = DSDBEnabledMeta
