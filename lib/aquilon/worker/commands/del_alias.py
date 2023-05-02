@@ -17,12 +17,15 @@
 """Contains the logic for `aq del alias`."""
 
 from aquilon.aqdb.model import DnsEnvironment, Alias
+from aquilon.exceptions_ import ArgumentError
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.service_instance import check_no_provided_service
-from aquilon.worker.processes import DSDBRunner
+from aquilon.worker.processes import DSDBRunner, IBServices
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.exceptions_ import ArgumentError
+
+from requests import RequestException
 
 
 class CommandDelAlias(BrokerCommand):
@@ -61,5 +64,15 @@ class CommandDelAlias(BrokerCommand):
             dsdb_runner = DSDBRunner(logger=logger)
             dsdb_runner.del_alias(fqdn, old_target_fqdn, old_comments)
             dsdb_runner.commit_or_rollback("Could not delete alias from DSDB")
+
+        if self.config.infoblox_feature_enabled("del_alias"):
+            try:
+                IBServices().del_dns_alias(str(dbdns_rec))
+            except (ArgumentError, RequestException) as e:
+                logger.warning("Error calling Infoblox del_dns_alias"
+                               ": {0}".format(str(e)))
+                logger.warning("Rolling back DSDB transaction ...")
+                dsdb_runner.rollback()
+                raise e
 
         return

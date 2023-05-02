@@ -21,8 +21,10 @@ from aquilon.aqdb.model import DnsRecord, Alias, Fqdn, DnsEnvironment
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import create_target_if_needed
 from aquilon.worker.dbwrappers.grn import lookup_grn
-from aquilon.worker.processes import DSDBRunner
+from aquilon.worker.processes import DSDBRunner, IBServices
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+
+from requests import RequestException
 
 
 class CommandAddAlias(BrokerCommand):
@@ -83,5 +85,14 @@ class CommandAddAlias(BrokerCommand):
             dsdb_runner = DSDBRunner(logger=logger)
             dsdb_runner.add_alias(fqdn, target, comments)
             dsdb_runner.commit_or_rollback("Could not add alias to DSDB")
+
+        if self.config.infoblox_feature_enabled("add_alias"):
+            try:
+                IBServices().add_dns_alias(str(db_record.fqdn), str(db_record.target))
+            except (ArgumentError, RequestException) as e:
+                logger.warning("Error calling Infoblox add_dns_alias: {0}".format(str(e)))
+                logger.warning("Rolling back DSDB transaction ...")
+                dsdb_runner.rollback()
+                raise e
 
         return
