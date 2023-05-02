@@ -22,12 +22,11 @@ logging.basicConfig()
 LOGGER = logging.getLogger('ib-services')
 HOST_PATH = re.compile(r'^/hosts/ipv4addr/((\d+\.){3}\d+)$')
 DNS_PATH = re.compile(r'/dns/a_ptr')
-DNS_DELETE_A_PTR = re.compile(r'/dns/a_ptr/(.*)/((\d+\.){3}\d+)')
+DNS_DELETE_A_PTR = re.compile(r'^/dns/a_ptr/(.*?)/((\d+\.){3}\d+)?delete_ptr=(true|false)$')
 PORT = 8900
 QUERIES_NETWORK_BY_IP_PATH = re.compile(r'^/queries/network_by_ip/((\d+\.){3}\d+)$')
 QUERIES_NEXT_AVAILABLE_IPS_PATH = re.compile(r'^/queries/next_available_ips/((\d+\.){3}\d+/\d+)(\?.*)$')
 REMOVE_LEGACY_DNS_ENTRIES_PATH = re.compile(r'^/legacy/aq/remove-dns-entries/((\d+\.){3}\d+)$')
-DELETE_A_PTR = re.compile(r'^/dns/a_ptr/(.*?)/((\d+\.){3}\d+)?delete_ptr=(true|false)$')
 
 
 class IBServicesRequestHandler(SimpleHTTPRequestHandler, object):
@@ -148,7 +147,7 @@ class IBServicesRequestHandler(SimpleHTTPRequestHandler, object):
                     FIXTURES[ib_endpoint][v[0]].remove(ip)
                     response_code = v[1]
 
-        if REMOVE_LEGACY_DNS_ENTRIES_PATH.match(self.path) or DELETE_A_PTR.match(self.path):
+        if REMOVE_LEGACY_DNS_ENTRIES_PATH.match(self.path):
             # This is delete_host endpoint
             LOGGER.info("Received DELETE request: {0}".format(self.path))
 
@@ -255,14 +254,14 @@ def add_fixture_get_next_ip(network, ip):
     }})
 
 
+def add_fixture_create_host(action, hostname):
+    global FIXTURES
+    FIXTURES["create_host"].setdefault(action, []).append(hostname)
+
+
 def add_fixture_delete_host(action, ip):
     global FIXTURES
     FIXTURES["delete_host"].setdefault(action, []).append(ip)
-
-
-def add_fixture_delete_a_ptr(action, ip):
-    global FIXTURES
-    FIXTURES["delete_a_ptr"].setdefault(action, []).append(ip)
 
 
 def add_callback(callback):

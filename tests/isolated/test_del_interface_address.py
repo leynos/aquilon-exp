@@ -5,8 +5,7 @@ import logging
 import sys
 import unittest
 from isolated import BaseIsolatedTest
-from start_ib_services import add_fixture_get_network_by_ip, add_fixture_get_next_ip, add_callback, \
-    add_fixture_delete_host
+from start_ib_services import add_fixture_delete_host, add_fixture_create_host
 
 LOGGER = logging.getLogger(__name__)
 
@@ -27,6 +26,7 @@ class TestDelInterfaceAddress(BaseIsolatedTest):
                    "--interface", "eth1", "--fqdn", fqdn, "--ip", str(ip)]
         self.dsdb_expect_add(fqdn, ip, "eth1", ip.mac,
                              primary="unittest20.aqd-unittest.ms.com")
+        add_fixture_create_host("allow_hostnames", fqdn)
         self.statustest(command)
 
         LOGGER.info("Running del_interface_address to invoke DSDB and IB broker")
@@ -40,7 +40,7 @@ class TestDelInterfaceAddress(BaseIsolatedTest):
         self.dsdb_verify()
         self.check_plenary_contents("hostdata", "unittest20.aqd-unittest.ms.com", clean=str(ip))
         self.assert_delete_host("/hosts/ipv4addr/{}".format(ip))
-        self.assert_delete_host("/dns/a_ptr/unittest20-e1.aqd-unittest.ms.com/{}?delete_ptr=True".format(ip))
+        self.assert_delete_host("/dns/a_ptr/unittest20-e1.aqd-unittest.ms.com/{}?delete_ptr=true".format(ip))
 
 
 if __name__ == '__main__':

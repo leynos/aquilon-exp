@@ -22,6 +22,8 @@ from aquilon.aqdb.model.network import get_net_id_from_ip
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from aquilon.worker.processes import IBServices
+from requests import RequestException
 
 
 class CommandDelRouterAddress(BrokerCommand):
@@ -69,8 +71,22 @@ class CommandDelRouterAddress(BrokerCommand):
         dbnetwork.routers.remove(dbrouter)
         session.flush()
 
-        # TODO: update the templates of Zebra hosts on the network
-        plenaries.add(dbnetwork)
-        plenaries.write()
+        with plenaries.transaction():
+            # TODO: update the templates of Zebra hosts on the network
+            plenaries.add(dbnetwork)
 
-        return
+            if self.config.infoblox_feature_enabled("del_router_address"):
+                # If FQDN not passed then look it up from the DNS records associated with the router
+                if not fqdn:
+                    for r in dbrouter.dns_records:
+                        if r.ip == ip:
+                            fqdn = r.fqdn
+                if not fqdn:
+                    logger.warning("Unable to determine FQDN from IP {} and can not remove A/PTR from Infoblox"
+                                   .format(ip))
+                try:
+                    IBServices().delete_a_ptr(fqdn, ip)
+                except (ArgumentError,RequestException) as e:
+                    logger.warning("Error calling Infoblox delete_a_ptr: {0}".format(str(e)))
+                    logger.warning("Rolling back DSDB transaction ...")
+                    raise e

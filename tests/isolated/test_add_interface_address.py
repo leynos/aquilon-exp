@@ -5,7 +5,8 @@ import bootstrap_tests
 import logging
 import unittest
 from isolated import BaseIsolatedTest
-from start_ib_services import add_fixture_get_network_by_ip, add_fixture_get_next_ip, add_fixture_delete_host
+from start_ib_services import add_fixture_get_network_by_ip, add_fixture_get_next_ip, add_fixture_delete_host, \
+    add_fixture_create_host
 
 LOGGER = logging.getLogger(__name__)
 
@@ -33,6 +34,7 @@ class TestAddInterfaceAddress(BaseIsolatedTest):
         fqdn = "unittest20-e1.aqd-unittest.ms.com"
         self.dsdb_expect_add(fqdn, ip, "eth1", ip.mac,
                              primary="unittest20.aqd-unittest.ms.com")
+        add_fixture_create_host("allow_hostnames", fqdn)
         BaseIsolatedTest.IB_SERVICES_CALLBACKS.clear()
         command = ["add", "interface", "address", "--machine", "ut3c5n2",
                    "--interface", "eth1", "--fqdn", fqdn, "--ip", ip]
@@ -64,6 +66,7 @@ class TestAddInterfaceAddress(BaseIsolatedTest):
         self.dsdb_expect_add(fqdn, ip, "eth1", ip.mac,
                              primary="unittest20.aqd-unittest.ms.com")
         self.dsdb_expect_delete(ip)
+        add_fixture_create_host("deny_hostnames", fqdn)
         BaseIsolatedTest.IB_SERVICES_CALLBACKS.clear()
         command = ["add", "interface", "address", "--machine", "ut3c5n2",
                    "--interface", "eth1", "--fqdn", fqdn, "--ip", ip]
@@ -82,6 +85,7 @@ class TestAddInterfaceAddress(BaseIsolatedTest):
                     "in the IP 4.2.12.69 being assigned.")
         ip = self.net["zebra_eth1"].usable[0]
         fqdn = "unittest20-e1.aqd-unittest.ms.com"
+        add_fixture_create_host("allow_hostnames", fqdn)
         self.dsdb_expect_add(fqdn, ip, "eth1", ip.mac,
                              primary="unittest20.aqd-unittest.ms.com")
         BaseIsolatedTest.IB_SERVICES_CALLBACKS.clear()
