@@ -5,8 +5,6 @@ import bootstrap_tests
 import logging
 import unittest
 from isolated import BaseIsolatedTest
-from start_ib_services import add_fixture_get_network_by_ip, add_fixture_get_next_ip, add_fixture_delete_host, \
-    add_fixture_delete_a_ptr
 
 LOGGER = logging.getLogger(__name__)
 
@@ -27,7 +25,6 @@ class TestAddDelConsoleServer(BaseIsolatedTest):
         ip = self.net["ut9_conservers"].usable[0]
         self.dsdb_expect_add(TestAddDelConsoleServer.FQDN, ip, "mgmt")
         BaseIsolatedTest.IB_SERVICES_CALLBACKS.clear()
-        #  --console_server utcs11.aqd-unittest.ms.com --model utconserver --ip 8.6.8.20 --rack ut3
         command = ["add", "console_server", "--console_server", TestAddDelConsoleServer.FQDN, "--rack", "ut3",
                    "--model", "utconserver", "--ip", ip]
         self.statustest(command)
@@ -39,7 +36,6 @@ class TestAddDelConsoleServer(BaseIsolatedTest):
         LOGGER.info("Running del_console_server to invoke DSDB and IB broker")
         ip = self.net["ut9_conservers"].usable[0]
         self.dsdb_expect_delete(ip)
-        add_fixture_delete_a_ptr("success", str(ip))
         command = ["del", "console_server", "--console_server", TestAddDelConsoleServer.FQDN]
         self.statustest(command)
         self.dsdb_verify()

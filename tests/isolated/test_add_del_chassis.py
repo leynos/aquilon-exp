@@ -5,8 +5,6 @@ import bootstrap_tests
 import logging
 import unittest
 from isolated import BaseIsolatedTest
-from start_ib_services import add_fixture_get_network_by_ip, add_fixture_get_next_ip, add_fixture_delete_host, \
-    add_fixture_delete_a_ptr
 
 LOGGER = logging.getLogger(__name__)
 
@@ -38,7 +36,6 @@ class TestAddDelChassis(BaseIsolatedTest):
         LOGGER.info("Running del_chassis to invoke DSDB and IB broker")
         ip = self.net["zebra_eth1"].usable[0]
         self.dsdb_expect_delete(ip)
-        add_fixture_delete_a_ptr("success", str(ip))
         command = ["del", "chassis", "--chassis", TestAddDelChassis.FQDN]
         self.statustest(command)
         self.dsdb_verify()
