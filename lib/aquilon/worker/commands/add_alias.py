@@ -83,7 +83,10 @@ class CommandAddAlias(BrokerCommand):
 
         if self.config.infoblox_feature_enabled("add_alias"):
             try:
-                IBServices().add_dns_alias(str(db_record.fqdn), str(db_record.target))
+                ib_services = IBServices()
+                if ib_services.assert_dns_environment(db_record.fqdn.dns_environment.name) and \
+                        ib_services.assert_dns_environment(db_record.target.dns_environment.name):
+                    ib_services.add_dns_alias(str(db_record.fqdn), str(db_record.target))
             except (ArgumentError, RequestException) as e:
                 logger.warning("Error calling Infoblox add_dns_alias: {0}".format(str(e)))
                 logger.warning("Rolling back DSDB transaction ...")

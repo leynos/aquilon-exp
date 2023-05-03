@@ -46,7 +46,7 @@ from urlparse import urlparse, urlunparse
 from sqlalchemy.inspection import inspect
 
 from aquilon.exceptions_ import (ProcessException, AquilonError, ArgumentError,
-                                 InternalError, UnimplementedError)
+                                 InternalError)
 from aquilon.config import Config, running_from_source
 from aquilon.aqdb.model import Machine
 from aquilon.utils import remove_dir, with_timer
@@ -623,6 +623,20 @@ class IBServices(object):
         response = self.session.delete(url=url, timeout=IB_SERVICES_TIMEOUT)
         if response.status_code == httplib.NO_CONTENT:
             LOGGER.info('Matching CNAME removed from Infoblox')
+        else:
+            raise ArgumentError(response.text)
+
+    @with_timer
+    def update_dns_alias(self, name, new_target, ttl):
+        payload = {'target': new_target}
+        if ttl is not None:
+            payload['ttl'] = ttl
+        url = '{}/dns/aliases/{}'.format(self.ib_service_url, name)
+        LOGGER.info("Invoking {} with payload: {}".format(url, payload))
+
+        response = self.session.patch(url=url, json=payload, timeout=IB_SERVICES_TIMEOUT)
+        if response.status_code == httplib.NO_CONTENT:
+            LOGGER.info('CNAME has been updated in Infoblox')
         else:
             raise ArgumentError(response.text)
 
