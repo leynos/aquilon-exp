@@ -133,7 +133,7 @@ if __name__ == '__main__':
 
             if multirow_insert:
                 data = [{col.key: getattr(row, col.key)
-                         for col in table.columns}
+                        for col in table.columns}
                         for row in rows]
 
                 dest_session.execute(table.insert().values(data))

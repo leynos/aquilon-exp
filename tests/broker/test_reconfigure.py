@@ -255,6 +255,36 @@ class TestReconfigure(VerifyGrnsMixin, VerifyNotificationsMixin,
 
         mh.delete()
 
+    def test_115_grn_change_restrictions_personality_exempt(self):
+        mh = MockHub(self, default_archetype='cannot_change_grn')
+
+        mh.add_personality(
+                    'personality_not_exempt', mh.default_archetype,
+                    grn='grn:/ms/ei/aquilon/unittest')
+
+        mh.add_personality(
+                    'personality_exempt',
+                    mh.default_archetype,
+                    grn='grn:/ms/ei/aquilon/unittest_can_change_grn')
+
+        # test case when host does not have grn set and
+        # is updated to a personality with grn that is exempt from
+        # grn change restrictions
+        hostname = mh.add_host(
+            grn=None,
+            personality='personality_not_exempt',
+            build_status='ready')
+        command = [
+            'reconfigure',
+            '--hostname', hostname,
+            '--personality', 'personality_exempt'
+        ]
+        (out, err) = self.successtest(command)
+        self.assertEmptyOut(out, command)
+
+        mh.delete()
+
+
     def test_120_grn_change_restrictions_personality_cluster(self):
         mh = MockHub(self,
                      default_archetype='cannot_change_grn',

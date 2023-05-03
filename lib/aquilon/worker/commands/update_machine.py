@@ -121,7 +121,8 @@ def update_disk_backing_stores(dbmachine, old_holder, new_holder, remap_disk):
         dbdisk.backing_store = new_bstore
 
 
-def update_interface_bindings(session, logger, dbmachine, autoip):
+def update_interface_bindings(session, logger, dbmachine, autoip,
+                              autopg, pg):
     for dbinterface in dbmachine.interfaces:
         old_pg = dbinterface.port_group
         if not old_pg:
@@ -131,8 +132,15 @@ def update_interface_bindings(session, logger, dbmachine, autoip):
 
         # Suppress the warning about PG mismatch - we'll update the addresses
         # later
-        set_port_group(session, logger, dbinterface, old_pg.name,
-                       check_pg_consistency=False)
+        if autopg:
+            set_port_group(session, logger, dbinterface, 'user',
+                           check_pg_consistency=False)
+        elif pg:
+            set_port_group(session, logger, dbinterface, pg,
+                           check_pg_consistency=False)
+        else:
+            set_port_group(session, logger, dbinterface, old_pg.name,
+                           check_pg_consistency=False)
         logger.info("Updated {0:l} to use {1:l}.".format(dbinterface,
                                                          dbinterface.port_group))
         new_net = dbinterface.port_group.network
@@ -161,7 +169,8 @@ def update_interface_bindings(session, logger, dbmachine, autoip):
 
 
 def move_vm(session, logger, dbmachine, resholder, remap_disk,
-            allow_metacluster_change, autoip, plenaries):
+            allow_metacluster_change, autoip, plenaries,
+            autopg=False, pg=None):
     old_holder = dbmachine.vm_container.holder.holder_object
     if resholder:
         new_holder = resholder.holder_object
@@ -186,7 +195,7 @@ def move_vm(session, logger, dbmachine, resholder, remap_disk,
         update_disk_backing_stores(dbmachine, old_holder, new_holder, remap_disk)
 
     if new_holder != old_holder or autoip:
-        update_interface_bindings(session, logger, dbmachine, autoip)
+        update_interface_bindings(session, logger, dbmachine, autoip, autopg, pg)
 
     if hasattr(new_holder, 'location_constraint'):
         dbmachine.location = new_holder.location_constraint
@@ -335,6 +344,10 @@ class CommandUpdateMachine(BrokerCommand):
         if uri is not None:
             dbmachine.uri = uri
 
+        # Will be set to True if pg in recipe will be used if below
+        # conditions apply.
+        pg_used = False
+
         # FIXME: For now, if a machine has its interface(s) in a portgroup
         # this command will need to be followed by an update_interface to
         # re-evaluate the portgroup for overflow.
@@ -349,8 +362,31 @@ class CommandUpdateMachine(BrokerCommand):
                                             cluster=cluster,
                                             metacluster=metacluster,
                                             compel=False)
-            move_vm(session, logger, dbmachine, resholder, remap_disk,
-                    allow_metacluster_change, autoip, plenaries)
+
+            # For now the autopg on the interface is allowed for only instance
+
+            # Existing update_machine will still do move_vm for zebra vm which
+            # have multiple interfaces but the issues may occur where pg's are
+            # not available when doing metacluster change.
+
+            # Next Steps: Extend this logic for multiple interfaces which need
+            # checking for the available pg on source & dest cluster as well
+            # as count to be same.
+
+            if recipe and len(recipe.get('interface').split()) == 1 and \
+                    recipe.get("autopg"):
+                move_vm(session, logger, dbmachine, resholder, remap_disk,
+                        allow_metacluster_change, autoip, plenaries,
+                        autopg=recipe.get("autopg"))
+            elif recipe and len(recipe.get('interface').split()) == 1 and \
+                    recipe.get("pg"):
+                move_vm(session, logger, dbmachine, resholder, remap_disk,
+                        allow_metacluster_change, autoip, plenaries,
+                        pg=recipe.get("pg"))
+                pg_used = True
+            else:
+                move_vm(session, logger, dbmachine, resholder, remap_disk,
+                        allow_metacluster_change, autoip, plenaries)
         elif remap_disk:
             update_disk_backing_stores(dbmachine, None, None, remap_disk)
 
@@ -362,22 +398,49 @@ class CommandUpdateMachine(BrokerCommand):
         if recipe:
             validate_recipe(self.config, recipe)
 
-            int_update = CommandUpdateInterfaceMachine()
-            int_update.update_interface_machine(session, logger, plenaries,
-                                                recipe.get("interface"), machine,
-                                                mac=recipe.get("mac", None),
-                                                model=recipe.get("model", None),
-                                                vendor=recipe.get("vendor", None),
-                                                boot=recipe.get("boot", None),
-                                                pg=recipe.get("pg", None),
-                                                autopg=recipe.get("autopg", None),
-                                                comments=recipe.get("comments", None),
-                                                master=recipe.get("master", None),
-                                                clear_master=recipe.get("clear_master", None),
-                                                default_route=recipe.get("default_route", None),
-                                                rename_to=recipe.get("rename_to", None),
-                                                bus_address=recipe.get("bus_address", None),
-                                                **arguments)
+            # This will handle edge cases where the port-group is not
+            # associated with a VM and will use the autopg passed inside
+            # recipe if no metacluster change is involved. 
+
+
+            old_pg = []
+            # This will check to ensure only single pg is currently being
+            # updated as multiple interface will be done in next phase
+            for dbinterface in dbmachine.interfaces:
+                old_pg.append(dbinterface.port_group)
+            if recipe.get("autopg") and len(old_pg) == 1 \
+                    and None not in old_pg:
+                new_pg = False
+            else:
+                new_pg = recipe.get("autopg")
+
+            # This will check to ensure if pg is already set and will
+            # not be set again in update_interface code.
+            if recipe.get("pg") and pg_used:
+                target_pg = None
+            else:
+                target_pg = recipe.get("pg")
+
+            if len(recipe.get('interface').split()) == 1:
+                int_update = CommandUpdateInterfaceMachine()
+                int_update.update_interface_machine(session, logger, plenaries,
+                                                    recipe.get("interface"), machine,
+                                                    mac=recipe.get("mac", None),
+                                                    model=recipe.get("model", None),
+                                                    vendor=recipe.get("vendor", None),
+                                                    boot=recipe.get("boot", None),
+                                                    pg=target_pg,
+                                                    autopg=new_pg,
+                                                    comments=recipe.get("comments", None),
+                                                    master=recipe.get("master", None),
+                                                    clear_master=recipe.get("clear_master", None),
+                                                    default_route=recipe.get("default_route", None),
+                                                    rename_to=recipe.get("rename_to", None),
+                                                    bus_address=recipe.get("bus_address", None),
+                                                    **arguments)
+            else:
+                logger.warning("Warning:Please run update_interface to change "
+                               "mutiple interfaces on the host")
 
         swap_addr = None
         old_ip = None
