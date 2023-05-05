@@ -102,8 +102,7 @@ class CommandBindFeature(BrokerCommand):
 
         if personality and dbpersonality.owner_grn != dbfeature.owner_grn \
                 and dbfeature.visibility == 'owner_only':
-            raise ArgumentError("Personality and feature owners do not "
-                                "match and feature visibility is set to 'owner_only'.")
+            self.raise_owner_grn()
 
         # Step 4: do it
         get_affected_plenaries(session, dbfeature, plenaries, **params)
@@ -145,3 +144,11 @@ class CommandBindFeature(BrokerCommand):
                                    dbdomain)
 
         add_link(session, logger, dbfeature, params)
+
+    def raise_owner_grn(self):
+        """
+        Raise AgumentError when owner_grmn do not match.
+        In a method to change the behaviour when using unbind.
+        """
+        raise ArgumentError("Personality and feature owners do not "
+                            "match and feature visibility is set to 'owner_only'.")
