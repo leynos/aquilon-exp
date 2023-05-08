@@ -2,7 +2,7 @@
 "${'fqdn": "{0.fqdn!s}'.format(record)}",
     "dns_environment": "${record.fqdn.dns_environment.name}",
 %if record.hardware_entity:
-    "primary_name_of": "${record.hardware_entity._get_class_label()}" "${record.hardware_entity.label}",
+    "primary_name_of": "${record.hardware_entity._get_class_label()} ${record.hardware_entity.label}",
 %endif
 ## The alias_cnt property can be loaded eagerly, so use it to check the
 ## presence of aliases before trying to query the alias table itself
