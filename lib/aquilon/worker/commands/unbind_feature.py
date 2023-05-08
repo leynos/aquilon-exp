@@ -43,3 +43,9 @@ class CommandUnBindFeature(CommandBindFeature):
         dbfeature.links.remove(dblink)
 
         session.delete(dblink)
+
+    def raise_owner_grn(self):
+        """
+        Overrides CommandBinFeature raise_owner_grn and do nothing:
+        Do not raise ArgumentError when using unbind.
+        """
