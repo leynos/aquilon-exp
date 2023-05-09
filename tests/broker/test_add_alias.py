@@ -192,6 +192,11 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
         self.matchoutput(out, "Target: arecord13.aqd-unittest.ms.com", cmd)
         self.matchoutput(out, "DNS Environment: internal", cmd)
 
+        command = ["show_alias",
+                   "--fqdn", "alias2host.aqd-unittest.ms.com", "--format", "json"]
+        out = self.commandtest(command)
+        self.assertIsInstance(json.loads(out)[0], dict)
+
     def test_405_verify_host_shows_alias(self):
         cmd = "show address --fqdn arecord13.aqd-unittest.ms.com"
         out = self.commandtest(cmd.split(" "))
@@ -200,6 +205,11 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
                          "alias2alias.aqd-unittest-ut-env.ms.com [environment: ut-env], "
                          "alias2host.aqd-unittest-ut-env.ms.com [environment: ut-env], "
                          "alias2host.aqd-unittest.ms.com", cmd)
+
+        command = ["show_address",
+                   "--fqdn", "arecord13.aqd-unittest.ms.com", "--format", "json"]
+        out = self.commandtest(command)
+        self.assertIsInstance(json.loads(out)[0], dict)
 
     def test_410_verify_mscom_alias(self):
         cmd = "show alias --fqdn alias.ms.com"
