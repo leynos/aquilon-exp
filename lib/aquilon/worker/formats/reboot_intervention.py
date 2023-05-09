@@ -25,6 +25,8 @@ class RebootInterventionFormatter(ResourceFormatter):
 
     suppress_name = True
 
+    template_json = "reboot_intervention.mako"
+
     def extra_details(self, rs, indent=""):
         details = []
         details.append(indent + "  Start: {0.start_date}".format(rs))

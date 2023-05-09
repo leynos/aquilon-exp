@@ -75,8 +75,8 @@
         <listitem>
             <para>
                 Specify the output format. The default is <literal>raw</literal>. Other common
-                formats are <literal>proto</literal> for Google protobuf format,
-                and <literal>csv</literal>. Check the documentation of the individual commands to see
+                formats are <literal>proto</literal> for Google protobuf format, <literal>csv</literal>
+                and <literal>json</literal>. Check the documentation of the individual commands to see
                 what formats they support.
             </para>
         </listitem>

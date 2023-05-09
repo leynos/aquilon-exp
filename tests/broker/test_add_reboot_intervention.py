@@ -17,6 +17,7 @@
 # limitations under the License.
 """Module for testing the add reboot_intervention command."""
 
+import json
 from datetime import datetime, timedelta
 import unittest
 
@@ -72,6 +73,11 @@ class TestAddRebootIntervention(TestBrokerCommand):
         command = ["show_reboot_intervention", "--all"]
         out = self.commandtest(command)
         self.searchoutput(out, "RebootIntervention$", command)
+
+        command = ["show_reboot_intervention",
+                   "--hostname=server1.aqd-unittest.ms.com", "--format", "json"]
+        out = self.commandtest(command)
+        self.assertIsInstance(json.loads(out)[0], dict)
 
     def test_11_addexisting(self):
         EXPIRY = datetime.utcnow().replace(microsecond=0) + timedelta(days=2)
