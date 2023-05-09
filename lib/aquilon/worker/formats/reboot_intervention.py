@@ -25,7 +25,11 @@ class RebootInterventionFormatter(ResourceFormatter):
 
     suppress_name = True
 
+<<<<<<< HEAD
     template_json = "reboot_intervention.mako"   
+=======
+    template_json = "reboot_intervention.mako"
+>>>>>>> 133cf5c21 (AQUILONAQD-1630 Add reboot_sched & iv json output + tests json output)
 
     def extra_details(self, rs, indent=""):
         details = []
