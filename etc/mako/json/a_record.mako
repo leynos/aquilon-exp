@@ -9,7 +9,7 @@
 %endif
     "network_environment": "${record.network.network_environment.name}",
 %if record.assignments:
-    "assigned_to": ${",".join("%s/%s" % (addr.interface.hardware_entity.label, addr.interface.name) for addr in record.assignments)},
+    "assigned_to": "${','.join('%s/%s' % (addr.interface.hardware_entity.label, addr.interface.name) for addr in record.assignments)}",
 %endif
 %if record.service_addresses:
 % for service_address in record.service_addresses:
