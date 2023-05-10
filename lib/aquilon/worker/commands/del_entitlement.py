@@ -33,7 +33,7 @@ class CommandDelEntitlement(CommandAddEntitlement):
         found = None
         for entitlement in entitlements:
             if all(v == getattr(entitlement, k)
-                    for k, v in parameters.items()):
+                    for k, v in list(parameters.items())):
                 found = entitlement
                 break
 

@@ -68,7 +68,7 @@ class CommandAddEntitlement(BrokerCommand):
         # add it again.
         for entitlement in entitlements:
             if all(v == getattr(entitlement, k)
-                    for k, v in parameters.items()):
+                    for k, v in list(parameters.items())):
                 return False
 
         # If we reach here, add the entitlement
@@ -115,12 +115,12 @@ class CommandAddEntitlement(BrokerCommand):
         def dictproduct(**kwargs):
             keys = []
             values = []
-            for k, v in kwargs.items():
+            for k, v in list(kwargs.items()):
                 if v:
                     keys.append(k)
                     values.append(v)
             for dataset in product(*values):
-                yield dict(zip(keys, dataset))
+                yield dict(list(zip(keys, dataset)))
 
         # Run the method to update the entitlements for the given dbons, with
         # each set of parameters necessary for the received to, locations and
@@ -135,7 +135,7 @@ class CommandAddEntitlement(BrokerCommand):
             updated = self._update_entitlements(dbon, mapcls, parameters)
 
             if updated:
-                params = [v for k, v in parameters.items()
+                params = [v for k, v in list(parameters.items())
                           if k in ['location', 'host_environment']]
                 plenobj = (Parameterized.get(dbon, *params)
                            if params else dbon)

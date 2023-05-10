@@ -34,7 +34,7 @@ from aquilon.worker import depends  # pylint: disable=W0611
 
 from aqdb.utils import copy_sqldb
 
-from networktest import DummyNetworks
+from .networktest import DummyNetworks
 
 DSDB_EXPECT_SUCCESS_FILE = "expected_dsdb_cmds"
 DSDB_EXPECT_FAILURE_FILE = "fail_expected_dsdb_cmds"
@@ -91,7 +91,7 @@ class TestBrokerCommand(unittest.TestCase):
         out, err = p.communicate()
         m = re.search(r'^\s*(?:Default p|P)rincipal:\s*'
                       r'(?P<principal>(?P<user>\S.*)@(?P<realm>.*?))$',
-                      out, re.M)
+                      out.decode(), re.M)
         cls.principal = m.group('principal')
         cls.realm = m.group('realm')
 
@@ -265,22 +265,28 @@ class TestBrokerCommand(unittest.TestCase):
             # Make sure that kerberos tickets are still present if the
             # environment is being overridden...
             env = {}
-            for (key, value) in kwargs["env"].items():
+            for (key, value) in list(kwargs["env"].items()):
                 env[key] = value
-            for (key, value) in os.environ.items():
+            for (key, value) in list(os.environ.items()):
                 if key.find("KRB") == 0 and key not in env:
                     env[key] = value
             if 'USER' not in env:
                 env['USER'] = os.environ.get('USER', '')
             kwargs["env"] = env
-        p = Popen(args, stdout=PIPE, stderr=PIPE, **kwargs)
-        (out, err) = p.communicate()
-        # Strip any msversion dev warnings out of STDERR
-        err = self.msversion_dev_re.sub('', err)
+
+        p = Popen(args, stdout=PIPE, stderr=PIPE,
+                  **kwargs)
+        out, err = p.communicate()
+        err = self.msversion_dev_re.sub('', err.decode())
+
         # Lock messages are pretty common...
         err = err.replace('Client status messages disabled, '
                           'retries exceeded.\n', '')
-        return (p, out, err)
+
+        try:
+            return p, out.decode(), err
+        except Exception as e:
+            return p, str(out), err
 
     def successtest(self, command, **kwargs):
         (p, out, err) = self.runcommand(command, **kwargs)
@@ -289,7 +295,7 @@ class TestBrokerCommand(unittest.TestCase):
                          "STDOUT:\n@@@\n'%s'\n@@@\n"
                          "STDERR:\n@@@\n'%s'\n@@@\n"
                          % (command, out, err))
-        return (out, err)
+        return out, err
 
     def statustest(self, command, **kwargs):
         (out, err) = self.successtest(command, **kwargs)
@@ -502,8 +508,8 @@ class TestBrokerCommand(unittest.TestCase):
 
     def matchnooutput(self, out, s, command):
         self.assertFalse(out.find(s) >= 0,
-                        "output for %s did not include '%s':\n@@@\n'%s'\n@@@\n" %
-                        (command, s, out))
+                         "output for %s did not include '%s':\n@@@\n'%s'\n@@@\n" %
+                         (command, s, out))
 
     def matchclean(self, out, s, command):
         self.assertTrue(out.find(s) < 0,
@@ -512,8 +518,8 @@ class TestBrokerCommand(unittest.TestCase):
 
     def matchnoclean(self, out, s, command):
         self.assertFalse(out.find(s) < 0,
-                        "output for %s includes '%s':\n@@@\n'%s'\n@@@\n" %
-                        (command, s, out))
+                         "output for %s includes '%s':\n@@@\n'%s'\n@@@\n" %
+                         (command, s, out))
 
     def searchoutput(self, out, r, command):
         if isinstance(r, string_types):
@@ -531,8 +537,8 @@ class TestBrokerCommand(unittest.TestCase):
         else:
             m = re.search(r, out)
         self.assertFalse(m,
-                        "output for %s did not match '%s':\n@@@\n'%s'\n@@@\n"
-                        % (command, r, out))
+                         "output for %s did not match '%s':\n@@@\n'%s'\n@@@\n"
+                         % (command, r, out))
         return m
 
     def searchclean(self, out, r, command):
@@ -651,10 +657,14 @@ class TestBrokerCommand(unittest.TestCase):
         cls_name = msg_node.attrib["name"]
 
         msg_cls = getattr(self.protocols[module_name], cls_name)
-        field = msg_cls.DESCRIPTOR.fields[0]
 
+        field = msg_cls.DESCRIPTOR.fields[0]
         out = self.commandtest(command, **kwargs)
-        return self.parse_proto_msg(msg_cls, field.name, out, expect=expect)
+
+        try:
+            return self.parse_proto_msg(msg_cls, field.name, out.encode('utf-8'), expect=expect)
+        except Exception as e:
+            return self.parse_proto_msg(msg_cls, field.name, out.encode('ascii'), expect=expect)
 
     @classmethod
     def gitenv(cls, env=None):
@@ -711,7 +721,7 @@ class TestBrokerCommand(unittest.TestCase):
                          "STDOUT:\n@@@\n'%s'\n@@@\n"
                          "STDERR:\n@@@\n'%s'\n@@@\n"
                          % (command, out, err))
-        return (out, err)
+        return out.decode(), err.decode()
 
     def gitcommand_expectfailure(self, command, **kwargs):
         p = self.gitcommand_raw(command, **kwargs)
@@ -897,7 +907,7 @@ class TestBrokerCommand(unittest.TestCase):
             pass
 
         errors = []
-        for cmd, dummy in expected.items():
+        for cmd, dummy in list(expected.items()):
             if cmd not in issued:
                 errors.append("'%s'" % cmd)
         # Unexpected DSDB commands are caught by the fake_dsdb script

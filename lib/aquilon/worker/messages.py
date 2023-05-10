@@ -132,7 +132,7 @@ class RequestStatus(object):
                 if len(self.debug_fifo) > MAX_DEBUG_MESSAGES_PER_REQUEST:
                     remove_index = self.debug_fifo.popleft()
                     self.records[remove_index] = None
-            for (subscriber, processed) in self.subscribers.items():
+            for (subscriber, processed) in list(self.subscribers.items()):
                 self._notify_subscriber(subscriber, processed)
 
     def add_subscriber(self, subscriber):

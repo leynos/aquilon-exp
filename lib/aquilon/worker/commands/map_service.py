@@ -58,7 +58,7 @@ class CommandMapService(BrokerCommand):
             dbpersona = Personality.get_unique(session, name=personality,
                                                archetype=archetype, compel=True)
 
-            for dbstage in dbpersona.stages.values():
+            for dbstage in list(dbpersona.stages.values()):
                 cm.consider(dbstage)
         elif host_environment:
             dbenv = HostEnvironment.get_instance(session, host_environment)

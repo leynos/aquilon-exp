@@ -237,7 +237,7 @@ class Parameter(Base):
                 Parameter.flatten(item, "%d" % i, path + "/" + key,
                                   flattened)
         elif isinstance(data, dict):
-            for new_key, value in data.items():
+            for new_key, value in list(data.items()):
                 Parameter.flatten(value, new_key, path + "/" + key,
                                   flattened)
         else:

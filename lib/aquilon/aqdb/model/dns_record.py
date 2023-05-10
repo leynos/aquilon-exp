@@ -222,7 +222,7 @@ class DnsRecord(Base):
                     queue.append(a)
 
         # Ensure a deterministic order of the returned values
-        return sorted(found.values(), key=lambda x: str(x.fqdn))
+        return sorted(list(found.values()), key=lambda x: str(x.fqdn))
 
     @property
     def all_address_aliases(self):

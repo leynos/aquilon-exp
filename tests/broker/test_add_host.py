@@ -24,8 +24,8 @@ if __name__ == "__main__":
     utils.import_depends()
 
 from broker.brokertest import TestBrokerCommand
-from networktest import DummyIP
-from machinetest import MachineTestMixin
+from .networktest import DummyIP
+from .machinetest import MachineTestMixin
 
 
 class TestAddHost(MachineTestMixin, TestBrokerCommand):

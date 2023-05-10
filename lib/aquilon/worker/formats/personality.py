@@ -70,7 +70,7 @@ class PersonalityStageFormatter(PersonalityFormatter):
 
         if personality.cluster_required:
             details.append(indent + "  Requires clustered hosts")
-        for service, info in persst.required_services.items():
+        for service, info in list(persst.required_services.items()):
             details.append(indent + "  Required Service: {0.name}"
                            .format(service))
             if info.host_environment:
@@ -107,7 +107,7 @@ class PersonalityStageFormatter(PersonalityFormatter):
             details.append(indent + "  Comments: {0.comments}"
                            .format(personality))
 
-        for cltype, info in persst.cluster_infos.items():
+        for cltype, info in list(persst.cluster_infos.items()):
             details.append(indent + "  Extra settings for %s clusters:" % cltype)
             if cltype == "esx":
                 details.append(indent + "    VM host capacity function: %s" %
@@ -124,7 +124,7 @@ class PersonalityStageFormatter(PersonalityFormatter):
             skeleton.stage = persst.name
 
         if indirect_attrs:
-            for dbsrv, info in persst.required_services.items():
+            for dbsrv, info in list(persst.required_services.items()):
                 srvrec = skeleton.required_services.add()
                 srvrec.service = dbsrv.name
                 if info.host_environment:
@@ -143,7 +143,7 @@ class PersonalityStageFormatter(PersonalityFormatter):
                 map.target = grn_rec.target
                 map.eonid = grn_rec.eon_id
 
-        for cltype, info in persst.cluster_infos.items():
+        for cltype, info in list(persst.cluster_infos.items()):
             if cltype == "esx":
                 skeleton.vmhost_capacity_function = info.vmhost_capacity_function
 

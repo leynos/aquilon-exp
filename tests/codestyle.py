@@ -477,7 +477,7 @@ def run():
             if args.stats:
                 stats[error['code']] += 1
 
-            print(
+            print((
                 (
                     '{path}'
                     '{colon}'
@@ -514,18 +514,18 @@ def run():
                     ),
                     text=error['text'],
                 )
-            )
+            ))
 
-        print('{}{}{} in the affected files'.format(
+        print(('{}{}{} in the affected files'.format(
             '{}: '.format(prefix) if prefix else '',
             '' if args.all else 'Introduced ',
             ', '.join('{}/{} {}(s)'.format(errors[k], tot_errors[k], n)
-                      for k, n in error_types)))
+                      for k, n in error_types))))
 
         if args.stats:
             print('Stats:')
             for k, v in sorted(stats.items()):
-                print('  - {}: {}'.format(k, v))
+                print(('  - {}: {}'.format(k, v)))
 
         return sum(errors.values())
 

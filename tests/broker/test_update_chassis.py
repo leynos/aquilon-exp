@@ -20,11 +20,11 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
-from chassistest import VerifyChassisMixin
+from .brokertest import TestBrokerCommand
+from .chassistest import VerifyChassisMixin
 
 
 class TestUpdateChassis(TestBrokerCommand, VerifyChassisMixin):

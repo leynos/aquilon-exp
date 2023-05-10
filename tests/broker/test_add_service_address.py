@@ -20,10 +20,10 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 
 class TestAddServiceAddress(TestBrokerCommand):
@@ -325,8 +325,8 @@ class TestAddServiceAddress(TestBrokerCommand):
         self.assertListEqual(
             list(service_address.aliases),
             [
-                u'testlocalvipaddress-alias1.aqd-unittest.ms.com',
-                u'testlocalvipaddress-alias2.aqd-unittest.ms.com',
+                'testlocalvipaddress-alias1.aqd-unittest.ms.com',
+                'testlocalvipaddress-alias2.aqd-unittest.ms.com',
             ],
         )
 

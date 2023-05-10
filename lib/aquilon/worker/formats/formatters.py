@@ -188,10 +188,8 @@ class ObjectFormatter(object):
     # Not using cache because it only has the lifetime of the template, and
     # because we do not have the beaker module installed.
     lookup_raw = build_mako_lookup(config, "raw",
-                                   imports=['from string import rstrip',
-                                            'from aquilon.worker.formats.formatters import shift'],
-                                   default_filters=['unicode', 'rstrip'])
-
+                                   imports=['from aquilon.worker.formats.formatters import shift'],
+                                   default_filters=['unicode'])
     lookup_json = build_mako_lookup(config, "json")
 
     # Pass embedded=False if this is the top-level object being rendered.
@@ -202,7 +200,7 @@ class ObjectFormatter(object):
         if hasattr(self, "template_raw"):
             template = self.lookup_raw.get_template(self.template_raw)
             return shift(template.render(record=result, formatter=self),
-                         indent=indent).rstrip()
+                         indent=indent)
         return indent + str(result)
 
     def csv_fields(self, result):  # pragma: no cover

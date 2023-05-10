@@ -20,13 +20,13 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
 from broker.machinetest import MachineTestMixin
 from broker.personalitytest import PersonalityTestMixin
 from broker.utils import MockHub
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 
 class TestUpdateBuilding(PersonalityTestMixin, MachineTestMixin,
@@ -356,7 +356,7 @@ class TestUpdateBuilding(PersonalityTestMixin, MachineTestMixin,
                     'environment': 'prod',
                     'staged': True},
         }
-        for personality, kwargs in personalities.items():
+        for personality, kwargs in list(personalities.items()):
             self.create_personality("aquilon", personality, **kwargs)
 
     def test_160_set_up_cluster_resource(self):

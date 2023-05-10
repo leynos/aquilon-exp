@@ -24,7 +24,7 @@ on some 'add' commands having been run first.  The same holds for 'bind'
 and 'unbind', 'map' and 'unmap', etc.
 """
 
-from __future__ import absolute_import
+
 
 import unittest
 import os

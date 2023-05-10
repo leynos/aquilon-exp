@@ -60,20 +60,23 @@ if DSDB_ENABLED:
         # sys.path for python modules when running tests
         # DSDB python client
         import ms.version
-        ms.version.addpkg("requests-kerberos", "0.11.0")
-        ms.version.addpkg("kerberos", "1.3.1-1.16-ms1-py27-64")
-        ms.version.addpkg("cryptography", "2.8-py27-64")
+        ms.version.addpkg("requests-kerberos", "0.12.0")
+        ms.version.addpkg("kerberos", "1.3.1-1.16-py37")
+        ms.version.addpkg("cryptography", "3.1-py37")
         ms.version.addpkg("enum34", "1.1.6")
-        ms.version.addpkg("dns", "1.10.0")
+        ms.version.addpkg("dnspython", "2.1.0")
         ms.version.addpkg('urllib3', '1.25.5')
         ms.version.addpkg('chardet', '3.0.4')
         ms.version.addpkg('certifi', '2019.6.16')
         ms.version.addpkg("idna", "2.8")
         ms.version.addpkg("requests", "2.26.0")
-        ms.version.addpkg('ms.dsdb', '6.0.32')
+        ms.version.addpkg('ms.dsdb', '6.0.35')
+        ms.version.addpkg('requests-gssapi', '1.0.0')
+        ms.version.addpkg('gssapi', '1.5.1-py37')
+        ms.version.addpkg('decorator', '4.3.2')
     import ms.dsdb.client
 
-# subprocess.Popen is not thread-safe in Python 2, so we need locking
+# subprocess.Popen is not thread-safe in Python, so we need locking
 _popen_lock = Lock()
 
 
@@ -134,7 +137,7 @@ def run_command(args, env=None, path="/", logger=LOGGER, loglevel=logging.INFO,
         shell_env = {}
 
     # Make sure that environment is properly kerberized.
-    for envname, envvalue in os.environ.items():
+    for envname, envvalue in list(os.environ.items()):
         # AQTEST<something> is used by the testsuite
         if envname.startswith("KRB") or envname.startswith("AQTEST"):
             shell_env[envname] = envvalue
@@ -177,16 +180,19 @@ def run_command(args, env=None, path="/", logger=LOGGER, loglevel=logging.INFO,
 
     with _popen_lock:
         p = Popen(args=command_args, stdin=proc_stdin, stdout=PIPE, stderr=PIPE,
-                  cwd=path, env=shell_env)
+                  cwd=path, env=shell_env, universal_newlines=True)
 
     # If we want to stream the command's output back to the client while the
     # command is still executing, then we have to doit ourselves. Otherwise,
     # p.communicate() does everything.
     if stream_level is None:
+        print("run_command_process", input)
         out, err = p.communicate(input=input)
         if filterre:
             out = "\n".join(line for line in out.splitlines()
                             if filterre.search(line))
+            # out = "\n".join(line for line in out.decode().splitlines()
+            #                 if filterre.search(line))
     else:
         out_thread = StreamLoggerThread(logger, stream_level, p, p.stdout,
                                         filterre=filterre, context=ctx)
@@ -248,7 +254,7 @@ def run_git(args, env=None, path=".", logger=LOGGER, loglevel=logging.INFO,
             git_args.insert(0, "git")
     else:
         git_args = ["git", args]
-
+    print("git_args", git_args)
     return run_command(git_args, env=git_env, path=path, logger=logger,
                        loglevel=loglevel, filterre=filterre,
                        stream_level=stream_level)
@@ -427,7 +433,7 @@ def dsdb_enabled(view_func):
 
 class DSDBEnabledMeta(type):
     def __new__(mcls, name, bases, body):
-        for name, obj in body.items():
+        for name, obj in list(body.items()):
             if name[:2] == name[-2:] == '__' or name in ['normalize_iface', 'getenv']:
                 # skip special method names like __init__ and helper class methods
                 continue
@@ -454,8 +460,7 @@ class DSDBEnabledMeta(type):
         return instance
 
 
-class DSDBRunner(object):
-    __metaclass__ = DSDBEnabledMeta
+class DSDBRunner(object, metaclass=DSDBEnabledMeta):
     snapshot_handlers = {}
 
     def __init__(self, logger=LOGGER):
@@ -494,7 +499,7 @@ class DSDBRunner(object):
                 if error_filter:
                     self.logger.warning(ignore_msg)
                 else:
-                    raise AquilonError("DSDB command failed: {}.".format(', '.join(args.keys())))
+                    raise AquilonError("DSDB command failed: {}.".format(', '.join(list(args.keys()))))
             if rollback:
                 self.rollback_list.append((cmd_line, rollback))
 
@@ -524,7 +529,7 @@ class DSDBRunner(object):
             self.logger.client_info("DSDB rollback completed.")
 
     def invoke_dsdb_module(self, args, verbose=False):
-        for method, attributes in args.iteritems():
+        for method, attributes in args.items():
             if verbose:
                 self.logger.client_info("DSDB: command {} "
                                         "called with arguments: {}.".format(method,
@@ -959,7 +964,7 @@ class DSDBRunner(object):
 
         # Run through all of the entries in the old snapshot and attempt
         # to match them to their corrisponding new entry.
-        for fqdn, old_ifdata in old_hwdata["by-fqdn"].items():
+        for fqdn, old_ifdata in list(old_hwdata["by-fqdn"].items()):
             # Locate the new information about this address by either
             # its FQDN or IP address.
             if fqdn in new_hwdata["by-fqdn"]:
@@ -1005,7 +1010,7 @@ class DSDBRunner(object):
 
         # For all of the recoreds remaining in new_hwdata (see above)
         # record an addtion opperation.
-        adds = new_hwdata["by-fqdn"].values()
+        adds = list(new_hwdata["by-fqdn"].values())
 
         # Add the primary address first, and delete it last. The primary address
         # is identified by having an empty ['primary'] key (this is true for the

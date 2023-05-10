@@ -20,7 +20,7 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
 from broker.brokertest import TestBrokerCommand
@@ -52,7 +52,7 @@ class TestDelParameterDefinition(TestBrokerCommand):
         self.matchclean(out, "Template: foo", command)
 
     def test_110_del_feature(self):
-        for path, params in default_param_defs.items():
+        for path, params in list(default_param_defs.items()):
             if "activation" in params:
                 continue
 

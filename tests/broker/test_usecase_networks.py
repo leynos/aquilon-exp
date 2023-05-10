@@ -20,12 +20,12 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
 from six import iteritems
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 # This test case sets up a network that look like the following:
 #

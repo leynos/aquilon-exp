@@ -38,32 +38,32 @@ from aquilon.aqdb.model import (Base, ParamDefinition, ArchetypeParamDef,
 
 def clean_params(dbstage):
     link_by_defholder = defaultdict(list)
-    print format(dbstage)
+    print(format(dbstage))
     for link in dbstage.archetype.features + dbstage.features:
         defholder = link.feature.param_def_holder
         if defholder not in dbstage.parameters:
             continue
         link_by_defholder[defholder].append(link)
 
-    for defholder, links in link_by_defholder.items():
+    for defholder, links in list(link_by_defholder.items()):
         param = dbstage.parameters[defholder]
         new_param = PersonalityParameter(value={})
-        print "  Feature: %s" % defholder.feature
+        print("  Feature: %s" % defholder.feature)
         for paramdef in defholder.param_definitions:
             path = paramdef.path
             for dblink in links:
                 value = param.get_path(dblink.feature.cfg_path + "/" + path, compel=False)
                 if value is not None:
                     new_param.set_path(path, value)
-        print "  --> Old: %r" % param.value
-        print "  --> New: %r" % new_param.value
+        print("  --> Old: %r" % param.value)
+        print("  --> New: %r" % new_param.value)
         param.value = new_param.value
 
-    for param_def_holder in dbstage.archetype.param_def_holders.values():
+    for param_def_holder in list(dbstage.archetype.param_def_holders.values()):
         if param_def_holder not in dbstage.parameters:
             continue
 
-        print "  Template: %s" % param_def_holder.template
+        print("  Template: %s" % param_def_holder.template)
         param = dbstage.parameters[param_def_holder]
         new_param = PersonalityParameter(value={})
         for paramdef in param_def_holder.param_definitions:
@@ -71,8 +71,8 @@ def clean_params(dbstage):
             value = param.get_path(path, compel=False)
             if value is not None:
                 new_param.set_path(paramdef.path, value)
-        print "  --> Old: %r" % param.value
-        print "  --> New: %r" % new_param.value
+        print("  --> Old: %r" % param.value)
+        print("  --> New: %r" % new_param.value)
         param.value = new_param.value
 
 
@@ -93,7 +93,7 @@ def main():
 
     session = db.Session()
 
-    print "Using database:", str(db.engine.url)
+    print("Using database:", str(db.engine.url))
 
     q = session.query(Feature)
     q = q.options(joinedload('param_def_holder'),
@@ -128,15 +128,15 @@ def main():
         for dbstage in q:
             clean_params(dbstage)
 
-    print "Flushing changes to the database..."
+    print("Flushing changes to the database...")
 
     session.flush()
 
     if opts.commit:
         session.commit()
     else:
-        print "**** WARNING ****"
-        print "The --commit option was not specified, changes are not persisted."
+        print("**** WARNING ****")
+        print("The --commit option was not specified, changes are not persisted.")
         session.rollback()
 
 if __name__ == '__main__':

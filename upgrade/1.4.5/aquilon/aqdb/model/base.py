@@ -83,7 +83,7 @@ class Base(object):
         for constraint in unique_constraints:
             query_args = {}
             missing = 0
-            for k in constraint.keys():
+            for k in list(constraint.keys()):
                 if k not in kwargs:
                     if args:
                         missing += 1
@@ -96,7 +96,7 @@ class Base(object):
             if missing > 1:
                 raise InternalError("Must use kwargs for get_unique since "
                                     "uniqueness constraint for %s requires "
-                                    "%s." % (cls, constraint.keys()))
+                                    "%s." % (cls, list(constraint.keys())))
             if query_args:
                 result = session.query(cls).filter_by(**query_args).all()
                 if not result:
@@ -115,7 +115,7 @@ class Base(object):
                         cls.__mapper_args__['polymorphic_identity']
             return cls.__base__.get_unique(session, *args, **kwargs)
         raise InternalError("No uniqueness constraint found for class %s "
-                            "using keys %s" % (cls, kwargs.keys()))
+                            "using keys %s" % (cls, list(kwargs.keys())))
 
 
 #Base = declarative_base(metaclass=VersionedMeta, cls=Base)

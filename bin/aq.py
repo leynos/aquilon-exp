@@ -51,9 +51,10 @@ from aquilon.client.optparser import OptParser, ParsingError
 from aquilon.python_patches import load_uuid_quickly
 
 from six.moves.urllib_parse import urlencode, quote  # pylint: disable=F0401
-from six.moves.configparser import SafeConfigParser  # pylint: disable=F0401
+from six.moves.configparser import ConfigParser  # pylint: disable=F0401
 import six.moves.http_client as httplib  # pylint: disable=F0401
 from six import iteritems
+import codecs
 
 # Stolen from aquilon.worker.formats.fomatters
 csv.register_dialect('aquilon', delimiter=',', quoting=csv.QUOTE_MINIMAL,
@@ -139,7 +140,7 @@ class CustomAction(object):
             print("Failed to find toplevel of sandbox, aborting", file=sys.stderr)
             sys.exit(1)
         # Prevent the branch being published unless the unit tests pass
-        testdir = os.path.join(sandbox_dir, 't')
+        testdir = os.path.join(sandbox_dir.decode(), 't')
         if os.path.exists(os.path.join(testdir, 'Makefile')):
             p = Popen(['/usr/bin/make', '-C', testdir, 'test',
                        'AQCMD=%s' % os.path.realpath(sys.argv[0]),
@@ -181,7 +182,7 @@ class CustomAction(object):
                       file=sys.stderr)
                 sys.exit(1)
 
-            commandOptions["bundle"] = b64encode(open(filename).read())
+            commandOptions["bundle"] = b64encode(open(filename, 'rb').read())
         finally:
             os.unlink(filename)
 
@@ -192,7 +193,7 @@ def create_sandbox(pageData, noexec=False):
         # The 'add' command may have no output if --noget was used,
         # but the 'get' command should always have something...
         return 0
-    reader = csv.reader(output, dialect='aquilon')
+    reader = csv.reader(codecs.iterdecode(output, 'utf-8'), dialect='aquilon')
     for row in reader:
         (template_king_url, sandbox_name, user_base) = row[0:3]
         break
@@ -295,7 +296,7 @@ class StatusThread(Thread):
 
         if res.status != httplib.OK:
             if self.debug:
-                print("%s: %s" % (httplib.responses[res.status], res.read()),
+                print("%s: %s" % (httplib.responses[res.status], res.read().decode()),
                       file=sys.stderr)
             sconn.close()
             return
@@ -322,7 +323,7 @@ def get_default_opts(auth_option, conf_file=None, readonly=None,
                      globalopts_aqhost=None, env_aqhost=None):
 
     allow_override = False
-    config = SafeConfigParser()
+    config = ConfigParser()
 
     if not conf_file:
         conf_file = lookup_file_path("aq.conf")
@@ -373,11 +374,11 @@ if __name__ == "__main__":
 
     for k, v in iteritems(commandOptions):
         try:
-            if isinstance(v, str) and v.decode('ascii'):
+            if isinstance(v, str) and v.isascii():
                 pass
             elif isinstance(v, list):
                 for i in v:
-                    if isinstance(i, str) and i.decode('ascii'):
+                    if isinstance(i, str) and i.isascii():
                         pass
             if (k != 'list' and isinstance(v, str)) and len(v) > 2599:
                 print("The character count in {0} is beyond the permitted "
@@ -451,11 +452,12 @@ if __name__ == "__main__":
         print("Unimplemented command ", command, file=sys.stderr)
         exit(1)
 
-    # Convert unicode options to strings
     newOptions = {}
+
     for k, v in iteritems(commandOptions):
         newOptions[str(k)] = str(v)
     commandOptions = newOptions
+
     # Should maybe have an input.xml flag on which global options
     # to include... for now it's just debug.
     if globalOptions.get("debug", None):
@@ -601,7 +603,7 @@ if __name__ == "__main__":
 
     if res.status != httplib.OK:
         print("%s: %s" % (httplib.responses.get(res.status, res.status),
-                          pageData), file=sys.stderr)
+                          pageData.decode()), file=sys.stderr)
         if res.status == httplib.MULTI_STATUS and \
            globalOptions.get('partialok'):
             sys.exit(0)
@@ -617,7 +619,7 @@ if __name__ == "__main__":
                 proc = subprocess.Popen(pageData, shell=True, stdin=sys.stdin,
                                         stdout=sys.stdout, stderr=sys.stderr)
             except OSError as e:
-                print(e, file=sys.stderr)
+                print(str(e), file=sys.stderr)
                 sys.exit(1)
 
             exit_status = proc.wait()
@@ -625,15 +627,18 @@ if __name__ == "__main__":
         noexec = not globalOptions.get('exec')
         exit_status = create_sandbox(pageData, noexec=noexec)
     else:
-        if res.getheader('content-type').startswith('text/'):
-            # TODO: honour the charset in the header, if any - not that the
-            # broker would use anything else
-            pageData = pageData.decode("utf-8")
-            sys.stdout.write(pageData)
-            # The CSV formatter adds a terminating newline, raw formatters not
-            # necessarily
-            if pageData and not pageData.endswith("\n"):
-                sys.stdout.write("\n")
+        if res.length != 0 and res.getheader('content-type').startswith('text/'):
+                # TODO: honour the charset in the header, if any - not that the
+                # broker would use anything else
+                # if isinstance(pageData, bytes):
+                #     pageData = str(pageData, "utf-8")
+                # pageData = str(pageData, "utf-8")
+                pageData = pageData.decode("utf-8")
+                sys.stdout.write(pageData)
+                # The CSV formatter adds a terminating newline, raw formatters not
+                # necessarily
+                if pageData and not pageData.endswith("\n"):
+                    sys.stdout.write("\n")
         else:
             # Non-text result - avoid buffering and charset conversion
             os.write(sys.stdout.fileno(), pageData)

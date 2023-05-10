@@ -99,7 +99,7 @@ class CommandSearchMachine(BrokerCommand):
 
         # Translate disk options to column matches
         disk_options = {}
-        for arg_name, (col_name, transform) in self.disk_option_map.items():
+        for arg_name, (col_name, transform) in list(self.disk_option_map.items()):
             val = arguments.get(arg_name, None)
             if val is not None:
                 if transform:

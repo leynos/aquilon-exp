@@ -62,7 +62,7 @@ class DSDB(object):
     def add_chassis(self, id, rack, comments=None):
         chassis_name = '{}c{}'.format(rack, id)
         dsdb_chassis = DSDBChassisData(chassis_name)
-        if chassis_name in dsdb_chassis.dsdb_chassis_data.keys():
+        if chassis_name in list(dsdb_chassis.dsdb_chassis_data.keys()):
             raise Exception('Chassis {} is already defined'.format(chassis_name))
 
     def delete_chassis(self, chassis_name):
@@ -84,8 +84,8 @@ class DSDBChassisData(object):
     """
     update_side_effect = ["ut3c1"]
     delete_side_effect = []
-    dsdb_chassis_data = {"ut3c2": [{u'rack': u'ut3',
-                                    u'comment': u'test'}]}
+    dsdb_chassis_data = {"ut3c2": [{'rack': 'ut3',
+                                    'comment': 'test'}]}
 
     def __init__(self, chassis):
         self.chassis = chassis
@@ -100,12 +100,12 @@ class DSDBRackData(object):
     used by DSDB Interface class
     if no DSDB module loaded
     """
-    dsdb_host_data = {"oy604": [{u'comp_room': u'103',
-                                 u'floor': u'1', u'column': u'04',
-                                 u'comments': u'rrackspyid:3163',
-                                 u'chassis': [u'oy604c1', u'oy604c2'],
-                                 u'rack_name': u'oy604', u'row': u'B',
-                                 u'building_name': u'oy'}],
+    dsdb_host_data = {"oy604": [{'comp_room': '103',
+                                 'floor': '1', 'column': '04',
+                                 'comments': 'rrackspyid:3163',
+                                 'chassis': ['oy604c1', 'oy604c2'],
+                                 'rack_name': 'oy604', 'row': 'B',
+                                 'building_name': 'oy'}],
                       }
     side_effect = ["ut666", "oy604"]
 

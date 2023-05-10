@@ -41,14 +41,14 @@ table = rack
 def populate(sess, *args, **kw):
 
     if len(sess.query(Rack).all()) < 1:
-        from building import Building
+        from .building import Building
 
         bldg = {}
 
         try:
             np = sess.query(Building).filter_by(name='np').one()
-        except Exception, e:
-            print e
+        except Exception as e:
+            print(e)
             sys.exit(9)
 
         rack_name='np3'
@@ -57,8 +57,8 @@ def populate(sess, *args, **kw):
         sess.add(a)
         try:
             sess.commit()
-        except Exception, e:
-            print e
+        except Exception as e:
+            print(e)
 
 
 

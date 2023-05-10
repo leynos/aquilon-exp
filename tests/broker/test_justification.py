@@ -20,7 +20,7 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
 from broker.brokertest import TestBrokerCommand
@@ -31,9 +31,7 @@ PPROD = "justify-prod"
 QPROD = "justify-qa"
 
 
-
 class TestJustification(PersonalityTestMixin, TestBrokerCommand):
-
     def test_100_setup(self):
 
         command = ["add", "feature", "--feature", "testfeature",

@@ -227,7 +227,7 @@ def hostlist_to_hosts(session, hostlist, query_options=None,
 
     def look_up_hosts():
         hosts_by_fqdn = {}
-        for dns_rec_chunk in chunk(dns_records_by_name.values(), 1000):
+        for dns_rec_chunk in chunk(list(dns_records_by_name.values()), 1000):
             q = session.query(Host)
             HWAlias = with_polymorphic(HardwareEntity, [Machine, NetworkDevice])
             q = q.join(HWAlias)

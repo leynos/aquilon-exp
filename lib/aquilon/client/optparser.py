@@ -17,7 +17,7 @@
 # limitations under the License.
 """Option parsing for the aq client."""
 
-from __future__ import print_function
+
 
 import json
 import sys
@@ -80,7 +80,7 @@ def get_term_width():
 def normalize_help(data):
     asciidata = ""
     if data.strip():
-        asciidata = data.encode()
+        asciidata = data
     if len(asciidata) == 0:
         return ""
     asciidata = re.sub(r'^\s*', '', asciidata)
@@ -250,7 +250,7 @@ class Command(Element):
         # Check dependencies and conflicts
         requires = self.getAllRequires(result)
         conflicts = self.getAllConflicts(result)
-        for item in result.keys() + optgroups:
+        for item in list(result.keys()) + optgroups:
             # If the item has requirements
             if requires.get(item):
                 for dep in requires[item]:

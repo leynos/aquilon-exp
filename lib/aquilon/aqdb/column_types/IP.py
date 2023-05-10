@@ -48,7 +48,7 @@ class SQLiteBLOBLiteral(BINARY):
 
     def literal_processor(self, dialect):
         def process(value):
-            return "X'" + hexlify(value) + "'"
+            return "X'" + hexlify(value).hex() + "'"
         return process
 
 

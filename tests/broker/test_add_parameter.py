@@ -196,16 +196,16 @@ class TestAddParameter(VerifyGrnsMixin, PersonalityTestMixin,
                    "--format", "proto"]
         out = self.protobuftest(command, expect=5)
         params = {message.path: message.value for message in out}
-
+        
         self.assertIn('espinfo/function', params)
         self.assertEqual(params['espinfo/function'], 'crash')
-
+        
         self.assertIn('espinfo/class', params)
         self.assertEqual(params['espinfo/class'], 'INFRASTRUCTURE')
-
+        
         self.assertIn('espinfo/users', params)
         self.assertEqual(params['espinfo/users'], 'someusers,otherusers')
-
+        
         self.assertIn('actions', params)
         self.assertEqual(json.loads(params['actions']), {
             "testaction": {

@@ -28,7 +28,7 @@
 #    ./aqdb_migrate sqlite:////path/aquilon.db
 #    ./aqdb_migrate postgresql://<username>@/
 
-from __future__ import print_function
+
 
 import argparse
 import os
@@ -87,7 +87,7 @@ if __name__ == '__main__':
         # The only operation on sequences that all DBs support is getting the
         # next value. Unfortunately that means we have to alter the state of the
         # source database here.
-        for seq in Base.metadata._sequences.values():
+        for seq in list(Base.metadata._sequences.values()):
             nextid = src_session.execute(seq)
             # Make sure the sequence is re-created with the right start index
             seq.drop(dest_engine, checkfirst=True)
@@ -133,7 +133,7 @@ if __name__ == '__main__':
 
             if multirow_insert:
                 data = [{col.key: getattr(row, col.key)
-                        for col in table.columns}
+                         for col in table.columns}
                         for row in rows]
 
                 dest_session.execute(table.insert().values(data))

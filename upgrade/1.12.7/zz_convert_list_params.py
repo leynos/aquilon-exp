@@ -16,7 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
+
 from collections import defaultdict
 import os, os.path
 import sys
@@ -59,7 +59,7 @@ def clean_params(dbstage):
                     value = [item.strip() for item in value.split(",")]
                 new_param.set_path(path, value, preclude=True)
 
-    for param_def_holder in dbstage.archetype.param_def_holders.values():
+    for param_def_holder in list(dbstage.archetype.param_def_holders.values()):
         for paramdef in param_def_holder.param_definitions:
             value = param.get_path(paramdef.path, compel=False)
             if value is not None:

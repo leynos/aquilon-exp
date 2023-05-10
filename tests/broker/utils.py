@@ -423,7 +423,7 @@ class MockHub(object):
 
     @staticmethod
     def random_name(length=8):
-        return ''.join(random.choice(string.lowercase) for _ in range(length))
+        return ''.join(random.choice(string.ascii_lowercase) for _ in range(length))
 
     def _verify_deletion_with_search_hub(self, singular, container):
         search_command = ['search_{}'.format(singular), '--hub', self._name]

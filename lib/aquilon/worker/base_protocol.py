@@ -43,10 +43,10 @@ def alt_repr(s):
     r = repr(s)
     if not isinstance(r, text_type):
         r = r.decode("ascii")
-    if r.startswith(u"b"):
+    if r.startswith("b"):
         r = r[1:]
-    if r.startswith(u"'"):
-        return r[1:-1].replace(u'"', u'\\"').replace(u"\\'", u"'")
+    if r.startswith("'"):
+        return r[1:-1].replace('"', '\\"').replace("\\'", "'")
     return r[1:-1]
 
 

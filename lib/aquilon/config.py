@@ -21,7 +21,7 @@ import os
 import socket
 import pwd
 import sys
-from six.moves.configparser import SafeConfigParser  # pylint: disable=F0401
+from six.moves.configparser import ConfigParser  # pylint: disable=F0401
 from six.moves.configparser import NoSectionError, NoOptionError
 
 from aquilon.exceptions_ import AquilonError
@@ -88,7 +88,7 @@ def amend_sys_path(config):
 # The ldap server and the group details have to be fetched from the 
 # broker config file
 def get_group_members():
-    config = SafeConfigParser()
+    config = ConfigParser()
     conf_file = lookup_file_path("aq.conf")
     config.read(conf_file)
 
@@ -121,11 +121,11 @@ global_defaults = {
     # scripts that want to execute stand-alone.
     "srcdir": _SRCDIR,
     "hostname": socket.getfqdn(),
-    "skip_members": get_group_members(),
+    "skip_members": get_group_members()
 }
+# print(global_defaults)
 
-
-class NewStyleClassSafeConfigParser(object, SafeConfigParser):
+class NewStyleClassSafeConfigParser(ConfigParser):
     pass
 
 
@@ -152,7 +152,7 @@ class Config(NewStyleClassSafeConfigParser):
         else:
             self.baseconfig = os.path.realpath(os.environ.get("AQDCONF",
                                                               "/etc/aqd.conf"))
-        SafeConfigParser.__init__(self, defaults)
+        ConfigParser.__init__(self, defaults, allow_no_value=True)
         src_defaults = lookup_file_path("aqd.conf.defaults")
         read_files = self.read([src_defaults, self.baseconfig])
         for file in [src_defaults, self.baseconfig]:

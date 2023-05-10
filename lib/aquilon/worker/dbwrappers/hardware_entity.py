@@ -347,7 +347,7 @@ def get_hardware(session, compel=True, hostname=None, **kwargs):
     mapper = inspect(HardwareEntity)
 
     dbhw_ent = None
-    for hw_type, submapper in mapper.polymorphic_map.items():
+    for hw_type, submapper in list(mapper.polymorphic_map.items()):
         if hw_type not in kwargs or not kwargs[hw_type]:
             continue
 

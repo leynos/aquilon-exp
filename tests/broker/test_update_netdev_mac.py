@@ -26,10 +26,10 @@ from time import sleep
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 
 # This suite replicates parts of test_poll_network_device testing update_network_device --discovered_macs.
@@ -95,7 +95,7 @@ class TestUpdateNetworkDeviceMac(TestBrokerCommand):
             # We have to add the separator colons
             port_to_mac[port].append(colon_re.sub(r"\1:", mac.lower()))
 
-        for port, addrs in port_to_mac.items():
+        for port, addrs in list(port_to_mac.items()):
             pattern = r"Port: %s\n" % port
             pattern = pattern + "".join(r"\s+MAC: %s,.*\n" % mac
                                         for mac in sorted(addrs))

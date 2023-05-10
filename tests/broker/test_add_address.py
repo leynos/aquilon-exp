@@ -26,9 +26,9 @@ if __name__ == "__main__":
 
 from ipaddress import IPv6Address, ip_address
 
-from broker.brokertest import TestBrokerCommand
-from eventstest import EventsTestMixin
-from dnstest import inaddr_ptr, in6addr_ptr
+from .brokertest import TestBrokerCommand
+from .eventstest import EventsTestMixin
+from .dnstest import inaddr_ptr, in6addr_ptr
 
 
 class TestAddAddress(EventsTestMixin, TestBrokerCommand):

@@ -131,8 +131,8 @@ class Cluster(CompileableMixin, Base):
                 return dblocation
             return getattr(dblocation, attr)
 
-        return set([filter(host.hardware_entity.location, attr)
-                   for host in self.hosts if filter(host.hardware_entity.location, attr)])
+        return set([list(filter(host.hardware_entity.location, attr))
+                   for host in self.hosts if list(filter(host.hardware_entity.location, attr))])
 
     @property
     def minimum_location(self):

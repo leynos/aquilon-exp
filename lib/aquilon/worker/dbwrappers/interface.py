@@ -756,7 +756,7 @@ def update_netdev_iftype(session, dbinterface, new_iftype):
                             "interface type %s for %s." % (dbinterface.interface_type,
                                                            new_iftype, dbinterface))
 
-    kwargs = {key: getattr(dbinterface, key) for key in inspect(dbinterface).mapper.columns.keys()
+    kwargs = {key: getattr(dbinterface, key) for key in list(inspect(dbinterface).mapper.columns.keys())
               if key not in ['id', 'interface_type']}
     try:
         new_cls(**kwargs)  # Check if new class validations would pass
@@ -765,7 +765,7 @@ def update_netdev_iftype(session, dbinterface, new_iftype):
 
     try:
         dbinterface.interface_type = new_iftype
-    except Exception, e:
+    except Exception as e:
         raise ArgumentError(e)
 
     session.flush()

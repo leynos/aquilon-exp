@@ -181,7 +181,7 @@ class QIPRefresh(object):
             name = qipinfo["SubnetAddress"]
 
         # Parse the network address/netmask
-        address = IPv4Network(u"%s/%s" % (qipinfo["SubnetAddress"],
+        address = IPv4Network("%s/%s" % (qipinfo["SubnetAddress"],
                                           qipinfo["SubnetMask"]))
 
         # Parse the list of routers
@@ -454,7 +454,7 @@ class QIPRefresh(object):
 
                 startip = min(aqnet.network_address, qipinfo.address.network_address)
                 prefixlen = min(aqnet.cidr, qipinfo.address.prefixlen)
-                supernet = IPv4Network(u"%s/%s" % (startip, prefixlen))
+                supernet = IPv4Network("%s/%s" % (startip, prefixlen))
                 # We may modify aqnet.network below, so save the original value
                 orig_net = aqnet.network
 

@@ -20,11 +20,11 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
-from consoleservertest import VerifyConsoleServerMixin
+from .brokertest import TestBrokerCommand
+from .consoleservertest import VerifyConsoleServerMixin
 
 class TestAddConsoleServer(TestBrokerCommand, VerifyConsoleServerMixin):
     def test_100_add_utcs01(self):

@@ -38,7 +38,7 @@ class CommandShowParameterPersonality(BrokerCommand):
         if style == 'proto':
             params = PersonalityProtoParameter()
 
-            for param_def_holder, param in dbstage.parameters.items():
+            for param_def_holder, param in list(dbstage.parameters.items()):
                 param_definitions = param_def_holder.param_definitions
                 for param_def in param_definitions:
                     # Backwards compatibility corner case - if the definition
@@ -70,7 +70,7 @@ class CommandShowParameterPersonality(BrokerCommand):
                                         .format(dbstage))
             return params
         else:
-            params = [param for param in dbstage.parameters.values()
+            params = [param for param in list(dbstage.parameters.values())
                       if param.value]
             if not params:
                 raise NotFoundException("No parameters found for {0:l}."

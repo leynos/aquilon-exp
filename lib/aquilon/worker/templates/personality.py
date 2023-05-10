@@ -117,7 +117,7 @@ class PlenaryPersonality(PlenaryCollection):
 
         self.append(PlenaryPersonalityBase.get_plenary(dbstage,
                                                        allow_incomplete=allow_incomplete))
-        for defholder, dbparam in dbstage.parameters.items():
+        for defholder, dbparam in list(dbstage.parameters.items()):
             if not isinstance(defholder, ArchetypeParamDef):
                 continue
             self.append(PlenaryPersonalityParameter.get_plenary(dbparam,

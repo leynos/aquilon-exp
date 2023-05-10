@@ -75,7 +75,7 @@ def parse_klist():
     log.debug("Running %s", klist)
     p = Popen([klist], stdout=PIPE, stderr=2)
     out, err = p.communicate()
-    m = re.search(r'^\s*(?:Default p|P)rincipal:\s*(\S.*)@(.*?)$', out, re.M)
+    m = re.search(r'^\s*(?:Default p|P)rincipal:\s*(\S.*)@(.*?)$', out.decode(), re.M)
     if not m:
         raise ValueError("Could not determine default principal from klist "
                          "output: %s" % out)

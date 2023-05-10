@@ -50,7 +50,7 @@ def time_dec(func):
     def wrapper(*arg):
         t = time.clock()
         res = func(*arg)
-        print func.func_name, time.clock()-t
+        print(func.__name__, time.clock()-t)
         return res
     return wrapper
 
@@ -118,9 +118,9 @@ def work(cstr, host_q, os_cache, si_cache, commit_count=25):
                     if si_cache[str(item.cfg_path)]:
                         item.service_instance_id = si_cache[str(item.cfg_path)]
                     else:
-                        print 'No service instance for %s'% (item.cfg_path)
+                        print('No service instance for %s'% (item.cfg_path))
                 else:
-                    print 'build item %s has no useable cfg_path'% (item.id)
+                    print('build item %s has no useable cfg_path'% (item.id))
         elif host.archetype.name == 'aurora':
             host.operating_system = generic_aurora_os
         elif host.archetype.name == 'windows':
@@ -131,8 +131,8 @@ def work(cstr, host_q, os_cache, si_cache, commit_count=25):
             if host.operating_system_id == None:
                 host.operating_system_id = os_cache['linux/4.0.1-x86_64']
         else:
-            print 'No useable os for host %s archetype %s' % (host.fqdn,
-                                                              host.archetype.name)
+            print('No useable os for host %s archetype %s' % (host.fqdn,
+                                                              host.archetype.name))
 
         if host.archetype.name == 'vmhost':
             #just in case, the cache up above is linux only
@@ -141,16 +141,16 @@ def work(cstr, host_q, os_cache, si_cache, commit_count=25):
         if processed % commit_count == 0:
             try:
                 sess.commit()
-            except Exception, e:
-                print e
+            except Exception as e:
+                print(e)
                 sess.rollback()
 
         if host_q.qsize() == 0:
-            print 'committing at end'
+            print('committing at end')
             try:
                 sess.commit()
-            except Exception, e:
-                print e
+            except Exception as e:
+                print(e)
                 sess.rollback()
             sess.close()
             break
@@ -173,11 +173,11 @@ class AqdbManager(SyncManager):
         self.os_cache = get_one_os_cache(self._cstr)
 
     def start(self):
-        print "starting %d workers" % self.NUMBER_OF_PROCESSES
+        print("starting %d workers" % self.NUMBER_OF_PROCESSES)
         self.workers = [Process(
             target=work, args=(self._cstr, self.host_q, self.os_cache,
                                self.si_cache))
-                        for i in xrange(self.NUMBER_OF_PROCESSES)]
+                        for i in range(self.NUMBER_OF_PROCESSES)]
         for w in self.workers:
             w.start()
 
@@ -191,10 +191,10 @@ class AqdbManager(SyncManager):
 
         #run post processing
         if post_processing(self._cstr, self.os_cache):
-            print """
+            print("""
 All hosts have an operating system, and all build items processed successfully.
 Complete the schema migration by executing the post_os_upgrade.sql script.
-"""
+""")
 
     def stop(self):
         self.host_q.put(None)
@@ -232,7 +232,7 @@ def post_processing(cstr, os_cache):
                 sess.add(host)
         try:
             sess.commit()
-        except Exception, e:
+        except Exception as e:
             sess.rollback()
             raise e
 
@@ -240,11 +240,11 @@ def post_processing(cstr, os_cache):
 
         if len(no_os_hosts) > 0:
             # Failure
-            print 'The following hosts have no OS:'
+            print('The following hosts have no OS:')
             for host in no_os_hosts:
-                print '%s: archetype %s personality %s' % (host.fqdn,
+                print('%s: archetype %s personality %s' % (host.fqdn,
                                                            host.archetype.name,
-                                                           host.personality.name)
+                                                           host.personality.name))
 
             raise ValueError('Can not proceed while hosts with no OS exist')
 
@@ -259,13 +259,13 @@ def post_processing(cstr, os_cache):
 
     if len(non_processed_build_items) > 0:
         # Failure
-        print 'The following build items are unprocessed:'
+        print('The following build items are unprocessed:')
 
         if len(non_processed_build_items) < 200:
             #every host in the DB is too much for a usable scroll back buffer
             for item in non_processed_build_items:
-                print '%s %s'% (item.host.fqdn, item.cfg_path)
-        print '%s bad build items left' %(len(non_processed_build_items))
+                print('%s %s'% (item.host.fqdn, item.cfg_path))
+        print('%s bad build items left' %(len(non_processed_build_items)))
 
         raise ValueError('Can not proceed with unprocessed build_items')
     else:
@@ -278,6 +278,6 @@ if __name__ == '__main__':
     m.start()
     end = time.time()
 
-    print 'execution time: %s seconds'% (int(end-start))
+    print('execution time: %s seconds'% (int(end-start)))
 
     sys.exit(0)

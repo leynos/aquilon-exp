@@ -20,12 +20,12 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
 from ipaddress import IPv4Network
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 
 class TestSplitMergeNetwork(TestBrokerCommand):
@@ -33,9 +33,9 @@ class TestSplitMergeNetwork(TestBrokerCommand):
     def test_100_add_test_nets(self):
         networks = [
             # Merge various sized subnets, one is missing
-            u"0.2.2.0/25", u"0.2.2.192/26",
+            "0.2.2.0/25", "0.2.2.192/26",
             # Merge various sized subnets, first is missing
-            u"0.2.3.64/26", u"0.2.3.128/25"
+            "0.2.3.64/26", "0.2.3.128/25"
         ]
         for net in networks:
             ipnet = IPv4Network(net)
@@ -141,7 +141,7 @@ class TestSplitMergeNetwork(TestBrokerCommand):
         self.noouttest(command)
 
     def test_310_show_subnets(self):
-        supernet = IPv4Network(u"0.2.2.0/24")
+        supernet = IPv4Network("0.2.2.0/24")
         idx = 2
         for subnet in supernet.subnets(new_prefix=26):
             command = ["show", "network", "--ip", subnet.network_address]

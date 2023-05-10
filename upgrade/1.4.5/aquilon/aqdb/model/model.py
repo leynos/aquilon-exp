@@ -96,7 +96,7 @@ def populate(sess, *args, **kw):
 
         try:
             sess.commit()
-        except Exception,e:
-            print e
+        except Exception as e:
+            print(e)
         finally:
             sess.close()

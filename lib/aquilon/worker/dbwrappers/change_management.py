@@ -22,6 +22,7 @@ from datetime import datetime
 import json
 import logging
 import shlex
+from functools import total_ordering
 
 from aquilon.aqdb.model import (
     AddressAlias,
@@ -99,7 +100,7 @@ from sqlalchemy.orm.query import Query
 
 cm_logger = logging.getLogger('change_management')
 
-
+@total_ordering
 class ChangeManagement(object):
     """
     Class calculate impacted environments with number objects in them
@@ -141,8 +142,18 @@ class ChangeManagement(object):
         self.username = dbuser.name
         self.role_name = dbuser.role.name
         # check if user is part of group for which change management can be skipped
-        self.is_user_exempt = self.username in self.config.get("database", 
+        self.is_user_exempt = self.username in self.config.get("database",
                                                                "skip_members")
+
+
+    def __eq__(self, other):
+        return self.impacted_objects == other.impacted_objects
+
+    def __ne__(self, other):
+        return self.impacted_objects != other.impacted_objects
+
+    def __lt__(self, other):
+        return self.impacted_objects < other.impacted_objects
 
     def consider(self, target_obj, enforce_validation=False):
         """
@@ -183,8 +194,8 @@ class ChangeManagement(object):
             return '\n\t - no affected objects in-scope for change ' \
                    'management found -'
         in_scope_list = '\n'.join('\t{}'.format(o)
-                                  for k in sorted(self.impacted_objects)
-                                  for o in sorted(self.impacted_objects[k]))
+                                  for k in (self.impacted_objects)
+                                  for o in (self.impacted_objects[k]))
         return in_scope_list
 
     def _call_handler_method(self, obj, queryset=None):
@@ -226,7 +237,7 @@ class ChangeManagement(object):
 
         # Clean final impacted env list
         self.logger.debug('Prepare impacted envs to call EDM')
-        for env, build_status_list in self.dict_of_impacted_envs.items():
+        for env, build_status_list in list(self.dict_of_impacted_envs.items()):
             self.dict_of_impacted_envs[env] = list(set(build_status_list))
         # Prepare aqd_checkedm input dict
         cm_extra_options = shlex.split(self.extra_options)
@@ -241,6 +252,7 @@ class ChangeManagement(object):
                     "enforce_validation": self.enforce_validation,
                     }
         cmd.extend(["--metadata", json.dumps(metadata)])
+        print("cmd", cmd)
         out = run_command(cmd)
         try:
             out_dict = json.loads(out)

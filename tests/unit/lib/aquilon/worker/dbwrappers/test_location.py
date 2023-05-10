@@ -80,13 +80,13 @@ class TestLocationWrapper(unittest.TestCase):
         # It should raise an argument error when no default DNS domain attached
         # to location objects of the given type found (even when one or more
         # parents of a different type have a default DNS domain set).
-        with self.assertRaisesRegexp(
+        with self.assertRaisesRegex(
                 ArgumentError, 'No default DNS domain at level "Building"'):
             location.get_default_dns_domain(loc, 'Building')
 
         # It should raise an argument error when no default DNS domain found.
         loc.parents[0].default_dns_domain = None
-        with self.assertRaisesRegexp(
+        with self.assertRaisesRegex(
                 ArgumentError,
                 'no default DNS domain configured for {}'.format(loc)):
             location.get_default_dns_domain(loc)

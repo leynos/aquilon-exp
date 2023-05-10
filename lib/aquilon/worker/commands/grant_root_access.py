@@ -38,7 +38,7 @@ class CommandGrantRootAccess(BrokerCommand):
 
         dbobj = Personality.get_unique(session, name=personality,
                                        archetype=archetype, compel=True)
-        for dbstage in dbobj.stages.values():
+        for dbstage in list(dbobj.stages.values()):
             cm = ChangeManagement(session, user, justification, reason, logger, self.command, **arguments)
             cm.consider(dbstage)
             cm.validate()
@@ -54,7 +54,7 @@ class CommandGrantRootAccess(BrokerCommand):
 
         session.flush()
 
-        plenaries.add(dbobj.stages.values())
+        plenaries.add(list(dbobj.stages.values()))
         plenaries.write()
 
         return

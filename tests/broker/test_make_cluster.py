@@ -23,12 +23,12 @@ from datetime import datetime
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
-from notificationtest import VerifyNotificationsMixin
-from clustertest import ClusterTestMixin
+from .brokertest import TestBrokerCommand
+from .notificationtest import VerifyNotificationsMixin
+from .clustertest import ClusterTestMixin
 
 
 class TestMakeCluster(VerifyNotificationsMixin, ClusterTestMixin,

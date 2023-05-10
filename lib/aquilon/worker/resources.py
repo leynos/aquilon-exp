@@ -46,6 +46,7 @@ ToDo:
 """
 
 import re
+import inspect
 from xml.etree import ElementTree
 
 from six import iteritems
@@ -90,13 +91,14 @@ class ResponsePage(resource.Resource):
         """Overriding this method to parse formatting requests out
         of the incoming resource request."""
 
+        path = path.decode()
         # A good optimization here would be to have the resource store
         # a compiled regular expression to use instead of this loop.
         for style in self.formatter.formats:
             # log.msg("Checking style: %s" % style)
             extension = "." + style
             if path.endswith(extension):
-                # log.msg("Retrieving formatted child for dynamic page: %s" % path)
+                log.msg("Retrieving formatted child for dynamic page: %s" % path)
                 request.output_format = style
                 # Chop off the extension when searching for children
                 path = path[:-len(extension)]
@@ -136,6 +138,8 @@ class ResponsePage(resource.Resource):
                 arg = arg.decode("ascii")
             except UnicodeError:
                 raise ProtocolError("Non-ASCII command parameter")
+            except AttributeError:
+                pass
 
             if not isinstance(values, list):  # pragma: no cover
                 raise ProtocolError("Expected list for %s, got %s"
@@ -149,6 +153,8 @@ class ResponsePage(resource.Resource):
             except UnicodeError:
                 raise ProtocolError("Value for parameter %s is not "
                                     "valid UTF-8" % arg)
+            except AttributeError:
+                result[arg] = values[0]
         return result
 
     def render(self, request):
@@ -170,13 +176,13 @@ class ResponsePage(resource.Resource):
             # the new.  Not sure if that matters right now.
             request.args.update(http.parse_qs(request.content.read()))
         # FIXME: This breaks HEAD and OPTIONS handling...
-        handler = self.handlers.get(request.method, None)
+        handler = self.handlers.get(request.method.decode(), None)
         if not handler:
             # FIXME: This may be broken, if it is supposed to get a useful
             # message based on available render_ methods.
             raise server.UnsupportedMethod(getattr(self, 'allowedMethods', ()))
 
-        # Retieve the instance from the handler and hook up the logger
+        # Retrieve the instance from the handler and hook up the logger
         broker_command = handler.broker_command
         request.logger.add_command_handler(broker_command.module_logger)
 
@@ -230,6 +236,7 @@ class ResponsePage(resource.Resource):
             d = d.addBoth(self.restoreContext, ctx)
         else:
             d = d.addCallback(lambda arguments: broker_command.invoke_render(**arguments))
+
         d = d.addCallback(self.finishRender, request)
         d = d.addErrback(self.logFailure, request)
         d = d.addErrback(self.wrapNonInternalError, request)
@@ -257,7 +264,7 @@ class ResponsePage(resource.Resource):
             # TODO: When disconnected, why doesn't write() fail?
             request.write(result)
         else:
-            request.setHeader('content-length', 0)
+            request.setHeader('content-length', str(0))
         # TODO: As documented in the twisted http module, should
         # instead register a notifyFinish callback to track clients
         # disconnecting.
@@ -276,7 +283,7 @@ class ResponsePage(resource.Resource):
 
     def wrapNonInternalError(self, failure, request):
         """This takes care of 'expected' problems, like NotFoundException."""
-        r = failure.trap(*ERROR_TO_CODE.keys())
+        r = failure.trap(*list(ERROR_TO_CODE.keys()))
         request.setResponseCode(ERROR_TO_CODE[r])
         formatted = self.format(failure.value, request)
         return self.finishRender(formatted, request)
@@ -479,7 +486,7 @@ class ResourcesCommandEntry(CommandEntry):
 
         """
         result = {}
-        for arg, req in self.argument_requirements.items():
+        for arg, req in list(self.argument_requirements.items()):
             # log.msg("Checking for arg %s with required=%s" % (arg, req))
             if arg not in arguments:
                 if req:
@@ -514,11 +521,13 @@ class ResourcesCommandRegistry(CommandRegistry):
         # Save the additional instance of ResourceServer and call
         # the base class to finish setting up.
         self.server = server
+
         super(ResourcesCommandRegistry, self).__init__()
 
     def new_entry(self, fullname, method, path, name, trigger):
         # Create a new instance of ResourcesCommandEntry.  It's add_option
         # and add_format methods will get called to populate the entry.
+        # print("Resource", ResourcesCommandEntry(fullname, method, path, name, trigger))
         return ResourcesCommandEntry(fullname, method, path, name, trigger)
 
     def add_entry(self, entry):

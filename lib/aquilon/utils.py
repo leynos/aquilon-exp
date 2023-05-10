@@ -18,7 +18,7 @@
     Useful subroutines that don't fit in any place to particularly for aquilon.
 """
 
-from __future__ import print_function
+
 
 import errno
 import gzip

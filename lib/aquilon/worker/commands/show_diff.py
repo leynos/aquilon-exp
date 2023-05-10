@@ -54,7 +54,7 @@ class CommandShowDiff(BrokerCommand):
         """ pouplate data we are interesetd in seeing as part of diff """
         dbpersona = dbstage.personality
 
-        for param_def_holder, parameter in dbstage.parameters.items():
+        for param_def_holder, parameter in list(dbstage.parameters.items()):
             if isinstance(param_def_holder, ArchetypeParamDef):
                 desc = "Parameters for template %s" % param_def_holder.template
             else:
@@ -67,7 +67,7 @@ class CommandShowDiff(BrokerCommand):
 
         # process required_services
         services = {srv.name: link.host_environment.name if link.host_environment else None
-                    for srv, link in dbstage.required_services.items()}
+                    for srv, link in list(dbstage.required_services.items())}
         ret["Required Services"][dtype] = services
 
         # service maps

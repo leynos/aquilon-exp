@@ -215,15 +215,15 @@ class PersonalityStage(Base):
         new = self.__class__(name=name)
 
         with session.no_autoflush:
-            for defholder, param in self.parameters.items():
+            for defholder, param in list(self.parameters.items()):
                 new.parameters[defholder] = param.copy()
             new.features.extend(link.copy() for link in self.features)
-            for dbsrv, info in self.required_services.items():
+            for dbsrv, info in list(self.required_services.items()):
                 new.required_services[dbsrv] = info.copy()
 
             new.grns.extend(grn_link.copy() for grn_link in self.grns)
 
-            for cluster_type, info in self.cluster_infos.items():
+            for cluster_type, info in list(self.cluster_infos.items()):
                 new.cluster_infos[cluster_type] = info.copy()
 
             q = session.query(StaticRoute)

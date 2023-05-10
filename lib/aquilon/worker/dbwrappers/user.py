@@ -157,7 +157,7 @@ class UserSync(object):
             for dbuser in userset & set(personality.root_users):
                 personality.root_users.remove(dbuser)
 
-            updated_plenaries.update(personality.stages.values())
+            updated_plenaries.update(list(personality.stages.values()))
 
         # Check for any entitlement for the given users
         q = self._session.query(Entitlement)
@@ -169,7 +169,7 @@ class UserSync(object):
             elif entit.cluster_id:
                 updated_plenaries.add(entit.cluster)
             elif entit.personality_id:
-                updated_plenaries.add(entit.personality.stages.values())
+                updated_plenaries.add(list(entit.personality.stages.values()))
             elif entit.archetype_id:
                 updated_plenaries.add(entit.archetype)
             elif entit.target_eon_id:
@@ -258,7 +258,8 @@ class UserSync(object):
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            bufsize=1
+            bufsize=1,
+            universal_newlines=True
         )
 
         # Yield each line found on the standard output
@@ -281,7 +282,7 @@ class UserSync(object):
         for row in reader:
             # Try to convert the fields that need conversion
             try:
-                for k, v in self._convert_fields.items():
+                for k, v in list(self._convert_fields.items()):
                     row[k] = v(row.get(k))
             except Exception as e:
                 self._logger.info('{}, skipping: {}.'.format(str(e), row))
@@ -356,7 +357,7 @@ class UserSync(object):
         # that each user we have seen in the received list has been removed
         # from here, meaning all that is left is to be removed from the
         # database
-        self._delete_gone(users['name'].values())
+        self._delete_gone(list(users['name'].values()))
 
         self._session.flush()
 

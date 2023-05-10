@@ -28,13 +28,15 @@ from subprocess import call
 import sys
 import unittest
 
+from unittest import defaultTestLoader
+
 try:
     # noinspection PyUnresolvedReferences
     import ms.version
 except ImportError:
     pass
 else:
-    ms.version.addpkg('mock', '1.0.1')
+    ms.version.addpkg('mock', '3.0.5')
 
 # noinspection SpellCheckingInspection
 BINDIR = os.path.dirname(os.path.realpath(__file__))
@@ -43,7 +45,6 @@ default_config_file = os.path.join(BINDIR, 'unittest.conf')
 SRCDIR = os.path.join(BINDIR, '..')
 sys.path.append(os.path.join(SRCDIR, "lib"))
 sys.path.append(os.path.join(SRCDIR, "bin"))
-
 
 
 # The below import fixes 'ImportError: No module named twisted.python'.
@@ -73,74 +74,19 @@ def parse_args(args=sys.argv):
     return parser.parse_args()
 
 
-class AquilonTestProgram(unittest.TestProgram):
-    def _do_discovery(self, argv, Loader=None):
-        if Loader is None:
-            Loader = lambda: self.testLoader  # NOQA
+class AquilonTestProgram(unittest.TestCase):
+    # def __init__(self, opts):
+    #     self.opts = opts
 
-        # handle command line args for test discovery
-        self.progName = '%s discover' % self.progName
-        import optparse
-        parser = optparse.OptionParser()
-        parser.prog = self.progName
-        parser.add_option('-g', '--config', dest='config',
-                          default='',
-                          help='Supply an alternative config file')
-        parser.add_option('--no-interactive', dest='interactive',
-                          action='store_false', default=True,
-                          help='automatically send yes to queries')
-        parser.add_option('-v', '--verbose', dest='verbose', default=False,
-                          help='Verbose output', action='store_true')
-        if self.failfast != False:
-            parser.add_option('-f', '--failfast', dest='failfast',
-                              default=False,
-                              help='Stop on first fail or error',
-                              action='store_true')
-        if self.catchbreak != False:
-            parser.add_option('-c', '--catch', dest='catchbreak',
-                              default=False,
-                              help='Catch ctrl-C and display results so far',
-                              action='store_true')
-        if self.buffer != False:
-            parser.add_option('-b', '--buffer', dest='buffer', default=False,
-                              help='Buffer stdout and stderr during tests',
-                              action='store_true')
-        parser.add_option('-s', '--start-directory', dest='start', default='.',
-                          help="Directory to start discovery ('.' default)")
-        parser.add_option('-p', '--pattern', dest='pattern',
-                          default='test*.py',
-                          help="Pattern to match tests ('test*.py' default)")
-        parser.add_option('-t', '--top-level-directory', dest='top',
-                          default=None,
-                          help='Top level directory of project (defaults to '
-                               'start directory)')
-
-        options, args = parser.parse_args(argv)
-        if len(args) > 3:
-            self.usageExit()
-
-        for name, value in zip(('start', 'pattern', 'top'), args):
-            setattr(options, name, value)
-
-        # only set options from the parsing here
-        # if they weren't set explicitly in the constructor
-        if self.failfast is None:
-            self.failfast = options.failfast
-        if self.catchbreak is None:
-            self.catchbreak = options.catchbreak
-        if self.buffer is None:
-            self.buffer = options.buffer
-
-        if options.verbose:
-            self.verbosity = 2
-
-        start_dir = options.start
-        pattern = options.pattern
-        top_level_dir = options.top
-
-        loader = Loader()
-        self.test = loader.discover(start_dir, pattern, top_level_dir)
-
+    def run_test(self):
+        loader = unittest.TestLoader()
+        tests = loader.discover((os.path.realpath(os.path.join(BINDIR, 'unit'))), 'test_*.py')
+        testRunner = unittest.runner.TextTestRunner(failfast=True)
+        # if self.opts.failfast:
+        #     testRunner = unittest.runner.TextTestRunner(failfast=True)
+        # else:
+        #     testRunner = unittest.runner.TextTestRunner()
+        testRunner.run(tests)
 
 def force_yes(msg):
     print(msg, file=sys.stderr)
@@ -171,10 +117,15 @@ def load_config(opts, srcdir):
 
 
 if __name__ == '__main__':
+    '''Working
+    loader = unittest.TestLoader()
+    tests = loader.discover((os.path.realpath(os.path.join(BINDIR, 'unit'))), 'test_*.py')
+    testRunner = unittest.runner.TextTestRunner()
+    testRunner.run(tests)
+    '''
     opts = parse_args()
     config = load_config(opts, SRCDIR)
+    unit_test = AquilonTestProgram()
+    unit_test.run_test()
+    # runner.runTests()
 
-    sys.argv.insert(1, 'discover')
-    sys.argv.insert(2, '-s')
-    sys.argv.insert(3, os.path.realpath(os.path.join(BINDIR, 'unit')))
-    AquilonTestProgram()

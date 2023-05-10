@@ -155,7 +155,7 @@ class HostClusterMember(Base):
                     backref=backref('_cluster', uselist=False, cascade='all'))
 
     def __init__(self, **kw):
-        if kw.has_key('cluster'):
+        if 'cluster' in kw:
             """
                 when we append to the association proxy, there's no metacluster
                 argument which prevents this from being checked.

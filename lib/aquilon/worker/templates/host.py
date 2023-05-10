@@ -431,7 +431,7 @@ class PlenaryHostObject(ObjectPlenary):
             pan_append(lines, "/metadata/features", path)
             lines.append("")
 
-        for dbinterface in sorted(iface_features.keys(),
+        for dbinterface in sorted(list(iface_features.keys()),
                                   key=attrgetter('name')):
             pan_variable(lines, "CURRENT_INTERFACE", dbinterface)
             for dbfeature in sorted(iface_features[dbinterface],

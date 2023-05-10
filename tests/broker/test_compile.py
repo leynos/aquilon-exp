@@ -32,11 +32,11 @@ from six.moves.cPickle import Pickler, Unpickler  # pylint: disable=F0401
 from six import itervalues
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
-from notificationtest import VerifyNotificationsMixin
+from .brokertest import TestBrokerCommand
+from .notificationtest import VerifyNotificationsMixin
 
 
 class TestCompile(VerifyNotificationsMixin, TestBrokerCommand):

@@ -25,6 +25,7 @@ except ImportError:
     # noinspection PyUnresolvedReferences
     import mock
 
+import operator
 from aquilon.exceptions_ import ArgumentError
 from aquilon.worker.dbwrappers import change_management
 
@@ -43,7 +44,7 @@ class TestCommandUnderChangeManagement(unittest.TestCase):
     def test_validate_does_not_output_in_scope_objects_if_not_cm_check(
             self, a_mock):
         a_mock.return_value = None
-        expected_objects = sorted([object() for _ in range(3)])
+        expected_objects = [object() for _ in range(3)]
         # noinspection PyArgumentList
         cm_instance = change_management.ChangeManagement()
         cm_instance.impacted_objects = {'ESX Cluster': expected_objects[:]}
@@ -60,7 +61,7 @@ class TestCommandUnderChangeManagement(unittest.TestCase):
     def test_validate_outputs_in_scope_objects_if_cm_check(
             self, a_mock):
         a_mock.return_value = None
-        expected_objects = sorted([object() for _ in range(3)])
+        expected_objects = [object() for _ in range(3)]
         # noinspection PyArgumentList
         cm_instance = change_management.ChangeManagement()
         cm_instance.impacted_objects = {'ESX Cluster': expected_objects[:]}
@@ -76,7 +77,7 @@ class TestCommandUnderChangeManagement(unittest.TestCase):
     def test_validate_does_not_output_in_scope_objects_if_skip_aqd_check(
             self, a_mock):
         a_mock.return_value = None
-        expected_objects = sorted([object() for _ in range(3)])
+        expected_objects = [object() for _ in range(3)]
         # noinspection PyArgumentList
         cm_instance = change_management.ChangeManagement()
         cm_instance.impacted_objects = {'ESX Cluster': expected_objects[:]}
@@ -88,13 +89,13 @@ class TestCommandUnderChangeManagement(unittest.TestCase):
             with contextlib.redirect_stdout(buf):
                 cm_instance.validate()
             self.assertIn('''self.logger.debug('"Status": "Approved"')''',
-                              buf.getvalue())
+                          buf.getvalue())
 
     @mock.patch.object(change_management.ChangeManagement, '__init__')
     def test_validate_does_not_output_in_scope_objects_if_skip_aqd_check2(
             self, a_mock):
         a_mock.return_value = None
-        expected_objects = sorted([object() for _ in range(3)])
+        expected_objects = [object() for _ in range(3)]
         # noinspection PyArgumentList
         cm_instance = change_management.ChangeManagement()
         cm_instance.impacted_objects = {'ESX Cluster': expected_objects[:]}
@@ -194,7 +195,7 @@ class TestCommandUnderChangeManagement(unittest.TestCase):
         with mock.patch.object(change_management, 'cm_logger') as mock_logger:
             mock_cm.log_change_management_validation(metadata, [], {})
         # Test.
-        mock_logger.info.assert_called_once('')
+        mock_logger.info.assert_called_once()
         logged = mock_logger.info.call_args[0][0]
         result = json.loads(logged)
         self.assertEqual(set(result['impacted_eonids']), expected_eonids)

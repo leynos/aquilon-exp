@@ -99,14 +99,14 @@ class CommandPXESwitchList(BrokerCommand):
             raise ArgumentError("Invalid hosts in list:\n%s" %
                                 "\n".join(failed))
 
-        for (si, hostlist) in hosts_per_instance.items():
+        for (si, hostlist) in list(hosts_per_instance.items()):
             # create temporary file, point aii-installfe at that file.
             groupargs = args[:]
             with NamedTemporaryFile() as tmpfile:
                 tmpfile.writelines(x.fqdn + "\n" for x in hostlist)
                 tmpfile.flush()
 
-                for (option, mapped) in self._option_map.items():
+                for (option, mapped) in list(self._option_map.items()):
                     if arguments[option]:
                         groupargs.append(mapped)
                         groupargs.append(tmpfile.name)

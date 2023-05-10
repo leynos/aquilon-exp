@@ -270,7 +270,7 @@ def table_coverage_check():
         else:
             seen[tbl] = 0
     for tbl in seen:
-        print "Table %s is missing from this script" % tbl
+        print("Table %s is missing from this script" % tbl)
 
 
 def write_schema_group_png(group):
@@ -301,7 +301,7 @@ def write_schema_html():
 
 table_coverage_check()
 
-for group in model_group:
-    write_schema_group_png(group)
+# for group in model_group:
+#     write_schema_group_png(group)
 
 write_schema_html()

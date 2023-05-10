@@ -70,6 +70,7 @@ class ChunkedHTTPResponse(HTTPResponse):
 
         # we read the whole chunk, get another next time
         self._safe_read(2)      # toss the CRLF at the end of the chunk
+
         return value
 
 

@@ -25,18 +25,24 @@ except ImportError:
 else:
     import sys
 
-    ms.version.addpkg('lxml', '3.2.5')
+    # ms.version.addpkg('lxml', '4.5.1-2.9.3-py37')
+    ms.version.addpkg('lxml', '4.5.1-2.9.3')
     ms.version.addpkg('six', '1.15.0')
-    ms.version.addpkg("ms.directory", "3.2.0")
-    ms.version.addpkg("decorator", "4.4.2")
+    ms.version.addpkg("requests-kerberos", "0.12.0")
     ms.version.addpkg("pykerberos", "1.2.1-1.16")
-    ms.version.addpkg("winkerberos", "0.7.0")
-    ms.version.addpkg("pyasn1", "0.4.8")
-    ms.version.addpkg("ldap3", "2.7")
-    ms.version.addpkg("setuptools", "41.0.1")
-    ms.version.addpkg("kerberos", "1.1.5-ms3")
+    ms.version.addpkg("urllib3", "1.25.9")
+    ms.version.addpkg("chardet", "3.0.4")
+    ms.version.addpkg("certifi", "2020.6.20")
+    ms.version.addpkg("cffi", "1.13.2-py37")
+    ms.version.addpkg("idna", "2.10")
+    ms.version.addpkg("cryptography", "3.1")
+    ms.version.addpkg("requests", "2.23.0")
+    ms.version.addpkg("ms.netkrb", "2.1a")
+    ms.version.addpkg("kerberos", "1.3.1-1.16")
+    ms.version.addpkg("setuptools", "45.0.0")
 
-    if sys.platform == "sunos5":
+
+if sys.platform == "sunos5":
         # ctypes is missing from the default Python build on Solaris, due to
         # http://bugs.python.org/issue2552. It is available as a separate package
         # though.

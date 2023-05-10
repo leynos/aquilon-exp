@@ -67,7 +67,7 @@ def main():
 
             try:
                 # Show that something is happening...
-                print "Flushing {0:l}".format(holder)
+                print("Flushing {0:l}".format(holder))
 
                 if isinstance(holder, Host):
                     PlenaryHost(holder).write(locked=True)

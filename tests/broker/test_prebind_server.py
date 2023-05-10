@@ -24,10 +24,10 @@ import re
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 instance_servers = {
     "aqd": {
@@ -73,8 +73,8 @@ class TestPrebindServer(TestBrokerCommand):
 
     def test_100_bind_servers(self):
         server_provides = defaultdict(lambda: defaultdict(list))
-        for service, instances in instance_servers.items():
-            for instance, servers in instances.items():
+        for service, instances in list(instance_servers.items()):
+            for instance, servers in list(instances.items()):
                 for server in servers:
                     command = ["bind_server", "--hostname", server,
                                "--service", service, "--instance", instance] + self.valid_just_tcm
@@ -106,10 +106,10 @@ class TestPrebindServer(TestBrokerCommand):
                                   r'\s*\);',
                                   command)
 
-        for server, services in server_provides.items():
+        for server, services in list(server_provides.items()):
             command = ["show_host", "--hostname", server]
             out = self.commandtest(command)
-            for service, instances in services.items():
+            for service, instances in list(services.items()):
                 for instance in instances:
                     self.matchoutput(out, "Provides Service: %s Instance: %s" %
                                      (service, instance),

@@ -106,7 +106,7 @@ class CommandUpdatePersonality(BrokerCommand):
         if (cluster_required is not None or config_override is not None or
                 host_environment or grn or eon_id or
                 leave_existing is not None or comments is not None):
-            for ver in dbpersona.stages.values():
+            for ver in list(dbpersona.stages.values()):
                 cm.consider(ver)
         else:
             cm.consider(dbstage)
@@ -147,12 +147,12 @@ class CommandUpdatePersonality(BrokerCommand):
                                        "allow_host_build_status")):
                 statuses_allowed_grn_change = [s.strip().lower() for s in
                                                self.config.get(
-                                                "grn_change_restrictions",
-                                                "allow_host_build_status")
-                                               .split(",")]
+                                                   "grn_change_restrictions",
+                                                   "allow_host_build_status")
+                                                   .split(",")]
             q = session.query(HostLifecycle)
             q = q.filter(HostLifecycle.name.notin_(
-                                statuses_allowed_grn_change))
+                statuses_allowed_grn_change))
             status_ids_restricted_grn_change = [r.id for r in q.distinct()]
 
             vendors_allowed_grn_change = []
@@ -162,7 +162,7 @@ class CommandUpdatePersonality(BrokerCommand):
                                               self.config.get(
                                                   "grn_change_restrictions",
                                                   "allow_vendors")
-                                              .split(",")]
+                                                  .split(",")]
 
             # Hosts which inherit the ownership from the personality need to be
             # updated
@@ -179,11 +179,11 @@ class CommandUpdatePersonality(BrokerCommand):
             q = q.join(Model)
             q = q.join(Vendor)
             q = q.filter(Vendor.name.notin_(
-                                vendors_allowed_grn_change))
+                vendors_allowed_grn_change))
 
             if (
-               dbpersona.archetype.is_grn_change_restricted() and
-               q.count() > 0):
+                    dbpersona.archetype.is_grn_change_restricted() and
+                    q.count() > 0):
                 raise ArgumentError("Changing grn of {0} from {1} to {2} not "
                                     "allowed because it would change the "
                                     "effective grn of {3} of its hosts.  This"
@@ -228,7 +228,7 @@ class CommandUpdatePersonality(BrokerCommand):
                 raise ArgumentError("Failed to evaluate the function: %s" % err)
             if not isinstance(capacity, dict):
                 raise ArgumentError("The function should return a dictonary.")
-            for name, value in capacity.items():
+            for name, value in list(capacity.items()):
                 if not isinstance(name, str) or (not isinstance(value, int) and
                                                  not isinstance(value, float)):
                     raise ArgumentError("The function should return a dictionary "
@@ -244,7 +244,7 @@ class CommandUpdatePersonality(BrokerCommand):
         elif vmhost_capacity_function == "":
             dbstage.cluster_infos["esx"].vmhost_capacity_function = None
 
-        plenaries.add(dbpersona.stages.values())
+        plenaries.add(list(dbpersona.stages.values()))
 
         session.flush()
 

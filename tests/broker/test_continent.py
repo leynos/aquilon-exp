@@ -20,10 +20,10 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 continents = {'af': ('Africa', 'ln'),
               'as': ('Asia', 'hk'),
@@ -35,7 +35,7 @@ continents = {'af': ('Africa', 'ln'),
 
 class TestContinent(TestBrokerCommand):
     def test_add_continents(self):
-        for continent, params in continents.items():
+        for continent, params in list(continents.items()):
             self.noouttest(["add_continent", "--continent", continent,
                             "--fullname", params[0], "--hub", params[1]])
 

@@ -20,10 +20,10 @@
 import unittest
 
 if __name__ == '__main__':
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 DOMAIN = 'aqd-unittest.ms.com'
 NAME = 'dnstest1.%s' % DOMAIN
