@@ -16,7 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Module for testing the add reboot_schedule command."""
-
+import json
 import unittest
 
 if __name__ == "__main__":
@@ -53,6 +53,11 @@ class TestAddRebootSchedule(TestBrokerCommand):
         self.matchoutput(out, "Week: All", command)
         self.matchoutput(out, "Day: Sat", command)
         self.matchoutput(out, "Time: 08:00", command)
+
+        command = ["show_reboot_schedule",
+                   "--hostname=server1.aqd-unittest.ms.com", "--format", "json"]
+        out = self.commandtest(command)
+        self.assertIsInstance(json.loads(out)[0], dict)
 
     def test_120_cat_resource(self):
         command = ["cat", "--reboot_schedule",

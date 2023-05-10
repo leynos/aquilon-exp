@@ -5346,6 +5346,9 @@
         <optgroup>
             <option name="dns_environment" type="string">The name of the environment the address is in (defaults to 'internal')</option>
             <option name="network_environment" type="string">Name of the environment</option>
+            <option name="format" short="f" type="string">
+                Specify output format as raw (default), csv or json.
+            </option>
         </optgroup>
         <transport method="get" path="address/%(fqdn)s"/>
     </command>
@@ -5521,6 +5524,9 @@
         </optgroup>
         <optgroup>
             <option name="dns_environment" type="string">The name of the environment the alias is in (defaults to 'internal')</option>
+            <option name="format" short="f" type="string">
+                Specify output format as raw (default), csv or json.
+            </option>
         </optgroup>
         <transport method="get" path="alias/%(fqdn)s"/>
     </command>
@@ -5758,6 +5764,11 @@
             <option name="hostname" type="string">Hostname</option>
             <option name="all" type="flag">List all schedules</option>
         </optgroup>
+        <optgroup>
+            <option name="format" short="f" type="string">
+                Specify output format as raw (default), proto or json.
+            </option>
+        </optgroup>
         <transport method="get" path="resource/reboot_schedule/reboot_schedule"/>
         <format name="proto">
             <message_class name="ResourceList" module="aqdsystems_pb2"/>
@@ -5769,6 +5780,11 @@
         <optgroup mandatory="True" fields="one">
             <option name="cluster" type="string">Cluster name</option>
             <option name="hostname" type="string">Hostname</option>
+        </optgroup>
+        <optgroup>
+            <option name="format" short="f" type="string">
+                Specify output format as raw (default), proto or json.
+            </option>
         </optgroup>
         <transport method="get" path="find/resource/reboot_schedule/reboot_schedule"/>
         <format name="proto">
@@ -5827,6 +5843,11 @@
             <option name="cluster" type="string">Cluster name</option>
             <option name="hostname" type="string">Hostname</option>
             <option name="all" type="flag">Show all interventions</option>
+        </optgroup>
+        <optgroup>
+            <option name="format" short="f" type="string">
+                Specify output format as raw (default) or json.
+            </option>
         </optgroup>
         <transport method="get" path="resource/reboot_intervention"/>
         <format name="proto" >
