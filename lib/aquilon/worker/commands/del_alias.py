@@ -54,6 +54,7 @@ class CommandDelAlias(BrokerCommand):
 
         session.flush()
 
+        dsdb_runner = None
         if dbdns_env.is_default and domain == "ms.com" and not target_is_restricted:
             dsdb_runner = DSDBRunner(logger=logger)
             dsdb_runner.del_alias(fqdn, old_target_fqdn, old_comments)
@@ -65,10 +66,8 @@ class CommandDelAlias(BrokerCommand):
                 if ib_services.assert_dns_environment(dbdns_rec.fqdn.dns_environment.name):
                     ib_services.del_dns_alias(str(dbdns_rec))
             except (ArgumentError, RequestException) as e:
-                logger.warning("Error calling Infoblox del_dns_alias"
-                               ": {0}".format(str(e)))
+                logger.warning("Error calling Infoblox del_dns_alias: {0}".format(str(e)))
                 logger.warning("Rolling back DSDB transaction ...")
-                dsdb_runner.rollback()
+                if dsdb_runner:
+                    dsdb_runner.rollback()
                 raise e
-
-        return

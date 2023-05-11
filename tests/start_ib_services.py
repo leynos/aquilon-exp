@@ -21,8 +21,9 @@ FIXTURES = dict()
 logging.basicConfig()
 LOGGER = logging.getLogger('ib-services')
 HOST_PATH = re.compile(r'^/hosts/ipv4addr/((\d+\.){3}\d+)$')
-DNS_PATH = re.compile(r'/dns/a_ptr')
+DNS_A_PTR_PATH = re.compile(r'/dns/a_ptr')
 DNS_DELETE_A_PTR = re.compile(r'^/dns/a_ptr/(.*?)/((\d+\.){3}\d+)?delete_ptr=(true|false)$')
+DNS_ALIAS_PATH = re.compile(r'/dns/alias')
 PORT = 8900
 QUERIES_NETWORK_BY_IP_PATH = re.compile(r'^/queries/network_by_ip/((\d+\.){3}\d+)$')
 QUERIES_NEXT_AVAILABLE_IPS_PATH = re.compile(r'^/queries/next_available_ips/((\d+\.){3}\d+/\d+)(\?.*)$')
@@ -111,11 +112,12 @@ class IBServicesRequestHandler(SimpleHTTPRequestHandler, object):
                 response_code = httplib.CREATED
             # Default, validation error (invalid mac address, badly formatted JSON, etc)
             else:
+                LOGGER.warning("Mock ib-services not configured for host {}".format(hostname))
                 response_code = httplib.UNPROCESSABLE_ENTITY
             LOGGER.info("Responding with HTTP {0}".format(response_code))
             self.send_response(response_code)
 
-        if DNS_PATH.match(self.path):
+        if DNS_A_PTR_PATH.match(self.path) or DNS_ALIAS_PATH.match(self.path):
             LOGGER.info("Received POST request: {0}".format(self.path))
             content_length = int(self.headers.getheader('content-length', 0))
             body = json.loads(self.rfile.read(content_length))
