@@ -19,7 +19,7 @@
 from sqlalchemy.orm import subqueryload
 
 from aquilon.exceptions_ import ArgumentError
-from aquilon.aqdb.model import NetworkDevice, Model, Archetype, Chassis, NetworkDeviceChassisSlot
+from aquilon.aqdb.model import NetworkDevice, Model, Archetype, Chassis, NetworkDeviceChassisSlot, ARecord
 from aquilon.aqdb.model.network import get_net_id_from_ip
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import grab_address
@@ -28,9 +28,13 @@ from aquilon.worker.dbwrappers.interface import (get_or_create_interface,
                                                  assign_address,
                                                  check_netdev_iftype)
 from aquilon.worker.dbwrappers.host import create_host
-from aquilon.worker.processes import DSDBRunner
+from aquilon.worker.processes import DSDBRunner, IBServices
 from aquilon.worker.templates.switchdata import PlenarySwitchData
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from requests import RequestException
+
+# The render function unhelpfully shadows this function
+f_type = type
 
 
 class CommandAddNetworkDevice(BrokerCommand):
@@ -136,4 +140,11 @@ class CommandAddNetworkDevice(BrokerCommand):
             dsdb_runner.update_host(dbnetdev, None)
             dsdb_runner.commit_or_rollback("Could not add network device to DSDB")
 
-        return
+            if f_type(dbdns_rec) == ARecord and self.config.infoblox_feature_enabled("add_network_device"):
+                try:
+                    IBServices().add_a_ptr(str(dbdns_rec.fqdn), ip)
+                except (ArgumentError, RequestException) as e:
+                    logger.warning("Error calling Infoblox add_a_ptr: {0}".format(str(e)))
+                    logger.warning("Rolling back DSDB transaction ...")
+                    dsdb_runner.rollback()
+                    raise e

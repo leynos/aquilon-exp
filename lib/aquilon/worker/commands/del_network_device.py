@@ -17,13 +17,15 @@
 """Contains the logic for `aq del network_device`."""
 
 from aquilon.aqdb.model import NetworkDevice
+from aquilon.exceptions_ import ArgumentError
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.hardware_entity import check_only_primary_ip
 from aquilon.worker.dbwrappers.host import remove_host
-from aquilon.worker.processes import DSDBRunner
+from aquilon.worker.processes import DSDBRunner, IBServices
 from aquilon.worker.templates.switchdata import PlenarySwitchData
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from requests import RequestException
 
 
 class CommandDelNetworkDevice(BrokerCommand):
@@ -65,6 +67,13 @@ class CommandDelNetworkDevice(BrokerCommand):
         with plenaries.transaction():
             dsdb_runner = DSDBRunner(logger=logger)
             dsdb_runner.update_host(None, oldinfo)
-            dsdb_runner.commit_or_rollback("Could not remove network device "
-                                           "from DSDB")
-        return
+            dsdb_runner.commit_or_rollback("Could not remove network device from DSDB")
+
+            if dbdns_rec and self.config.infoblox_feature_enabled("del_network_device"):
+                try:
+                    IBServices().delete_a_ptr(str(dbdns_rec.fqdn), dbdns_rec.ip)
+                except (ArgumentError,RequestException) as e:
+                    logger.warning("Error calling Infoblox delete_a_ptr: {0}".format(str(e)))
+                    logger.warning("Rolling back DSDB transaction ...")
+                    dsdb_runner.rollback()
+                    raise e

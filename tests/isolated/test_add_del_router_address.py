@@ -1,8 +1,8 @@
 # This must come first as it includes dependencies
-import sys
-
 import bootstrap_tests
+
 import logging
+import sys
 import unittest
 from isolated import BaseIsolatedTest
 
@@ -12,6 +12,9 @@ LOGGER = logging.getLogger(__name__)
 class TestAddDelRouterAddress(BaseIsolatedTest):
     FQDN = "ut3gd1r04-v110-hsrp.aqd-unittest.ms.com"
     IP = "8.6.8.20"
+
+    def setUp(self):
+        BaseIsolatedTest.IB_SERVICES_CALLBACKS.clear()
 
     def assert_create_a_ptr(self):
         self.assertIn("POST", BaseIsolatedTest.IB_SERVICES_CALLBACKS,
@@ -23,7 +26,6 @@ class TestAddDelRouterAddress(BaseIsolatedTest):
 
     def test_100_add_router_address(self):
         LOGGER.info("Running add_router_address to invoke DSDB and IB broker")
-        BaseIsolatedTest.IB_SERVICES_CALLBACKS.clear()
         command = ["add", "router_address", "--fqdn", TestAddDelRouterAddress.FQDN, "--ip", TestAddDelRouterAddress.IP]
         self.statustest(command)
         self.assert_create_a_ptr()

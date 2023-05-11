@@ -5,6 +5,8 @@ from ipaddress import IPv4Address
 
 import logging
 import unittest
+
+import start_ib_services
 from aquilon.worker.processes import IBServices
 from isolated import BaseIsolatedTest
 
@@ -18,6 +20,7 @@ class TestBrokersStart(BaseIsolatedTest):
         self.default_payload = {
             'hostname': 'ut3gd1r03.aqd-unittest.ms.com'
         }
+        start_ib_services.add_fixture_create_host("allow_hostnames", self.default_payload["hostname"])
 
     def test_aq_broker_success(self):
         LOGGER.info("Testing the aqd broker by running aqd status")

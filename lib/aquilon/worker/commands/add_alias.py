@@ -80,8 +80,8 @@ class CommandAddAlias(BrokerCommand):
 
         session.flush()
 
-        if dbdns_env.is_default and dbfqdn.dns_domain.name == "ms.com" and \
-           not dbtarget.dns_domain.restricted:
+        dsdb_runner = None
+        if dbdns_env.is_default and dbfqdn.dns_domain.name == "ms.com" and not dbtarget.dns_domain.restricted:
             dsdb_runner = DSDBRunner(logger=logger)
             dsdb_runner.add_alias(fqdn, target, comments)
             dsdb_runner.commit_or_rollback("Could not add alias to DSDB")
@@ -95,7 +95,6 @@ class CommandAddAlias(BrokerCommand):
             except (ArgumentError, RequestException) as e:
                 logger.warning("Error calling Infoblox add_dns_alias: {0}".format(str(e)))
                 logger.warning("Rolling back DSDB transaction ...")
-                dsdb_runner.rollback()
+                if dsdb_runner:
+                    dsdb_runner.rollback()
                 raise e
-
-        return
