@@ -128,6 +128,7 @@ class CommandUpdateAlias(BrokerCommand):
 
         session.flush()
 
+        dsdb_runner = None
         if dbdns_env.is_default and dbalias.fqdn.dns_domain.name == "ms.com"\
                 and not dbalias.target.dns_domain.restricted:
             dsdb_runner = DSDBRunner(logger=logger)
@@ -145,7 +146,8 @@ class CommandUpdateAlias(BrokerCommand):
                     ib_services.update_dns_alias(str(dbalias.fqdn), str(dbalias.target), ttl)
             except (ArgumentError, RequestException) as e:
                 logger.warning("Error calling Infoblox update_dns_alias: {0}".format(str(e)))
-                logger.warning("Rolling back DSDB transaction ...")
-                dsdb_runner.rollback()
+                if dsdb_runner:
+                    logger.warning("Rolling back DSDB transaction ...")
+                    dsdb_runner.rollback()
                 raise e
         return
