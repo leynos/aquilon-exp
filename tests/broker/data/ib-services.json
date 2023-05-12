@@ -25,5 +25,11 @@
     "success": [],
     "not_found": [],
     "fail": []
+  },
+
+  "del_dns_alias": {
+    "success": [],
+    "not_found": [],
+    "fail": []
   }
 }

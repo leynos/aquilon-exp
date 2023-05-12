@@ -94,7 +94,7 @@ class CommandAddAlias(BrokerCommand):
                     ib_services.add_dns_alias(str(db_record.fqdn), str(db_record.target))
             except (ArgumentError, RequestException) as e:
                 logger.warning("Error calling Infoblox add_dns_alias: {0}".format(str(e)))
-                logger.warning("Rolling back DSDB transaction ...")
                 if dsdb_runner:
+                    logger.warning("Rolling back DSDB transaction ...")
                     dsdb_runner.rollback()
                 raise e

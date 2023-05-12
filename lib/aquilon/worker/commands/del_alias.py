@@ -73,7 +73,7 @@ class CommandDelAlias(BrokerCommand):
                     ib_services.del_dns_alias(str(dbdns_rec))
             except (ArgumentError, RequestException) as e:
                 logger.warning("Error calling Infoblox del_dns_alias: {0}".format(str(e)))
-                logger.warning("Rolling back DSDB transaction ...")
                 if dsdb_runner:
+                    logger.warning("Rolling back DSDB transaction ...")
                     dsdb_runner.rollback()
                 raise e
