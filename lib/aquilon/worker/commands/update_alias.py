@@ -67,6 +67,7 @@ class CommandUpdateAlias(BrokerCommand):
         elif clear_grn:
             dbalias.owner_grn = None
 
+        old_target = None
         if target or target_environment:
             if target == fqdn:
                 raise ArgumentError("Cannot alias {0} to itself"
@@ -146,7 +147,7 @@ class CommandUpdateAlias(BrokerCommand):
             try:
                 ib_services = IBServices()
                 if ib_services.assert_dns_environment(dbalias.fqdn.dns_environment.name) and \
-                        ib_services.assert_dns_environment(old_target.dns_environment.name) and \
+                        (not old_target or ib_services.assert_dns_environment(old_target.dns_environment.name)) and \
                         ib_services.assert_dns_environment(dbalias.target.dns_environment.name):
                     ib_services.update_dns_alias(str(dbalias.fqdn), str(dbalias.target), ttl)
             except (ArgumentError, RequestException) as e:
