@@ -74,10 +74,10 @@ class CommandAddRouterAddress(BrokerCommand):
                                                comments=comments))
         session.flush()
 
-        with plenaries.transaction():
-            # TODO: update the templates of Zebra hosts on the network
-            plenaries.add(dbnetwork)
+        # TODO: update the templates of Zebra hosts on the network
+        plenaries.add(dbnetwork)
 
+        with plenaries.transaction():
             if self.config.infoblox_feature_enabled("add_router_address"):
                 try:
                     IBServices().add_a_ptr(str(dbdns_rec.fqdn), ip)

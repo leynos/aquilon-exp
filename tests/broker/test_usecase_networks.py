@@ -353,7 +353,6 @@ class TestUsecaseNetworks(TestBrokerCommand):
             sec_router_if = net_attrs[1][1]
             _sec_router_ip = config['devices'][sec_router]['interfaces'][sec_router_if]
             sec_router_ip = self.net[_sec_router_ip['net']][_sec_router_ip['ipidx']]
-
             command = ["cat", "--networkip", str(net.ip)]
             out = self.commandtest(command)
 
@@ -542,4 +541,3 @@ class TestUsecaseNetworks(TestBrokerCommand):
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestUsecaseNetworks)
     unittest.TextTestRunner(verbosity=2).run(suite)
-
