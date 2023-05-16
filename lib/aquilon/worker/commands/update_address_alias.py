@@ -21,6 +21,9 @@ from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.grn import lookup_grn
 from aquilon.exceptions_ import ArgumentError
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from aquilon.worker.processes import IBServices
+
+from requests import RequestException
 
 
 class CommandUpdateAddressAlias(BrokerCommand):
@@ -77,6 +80,17 @@ class CommandUpdateAddressAlias(BrokerCommand):
                 dbaddr_alias.comments = comments
 
         cm.validate()
+
+        if self.config.infoblox_feature_enabled('update_address_alias') and ttl:
+            try:
+                ib_services = IBServices()
+                for dns_rec in dbdns_records:
+                    if ib_services.assert_dns_environment(dns_rec.fqdn.dns_environment.name):
+                        ib_services.update_a_ptr(str(dns_rec), dns_rec.target_ip, ttl=ttl, update_ptr=False)
+            except (ArgumentError, RequestException) as e:
+                logger.warning("Error calling Infoblox update_a_ptr: {0}".format(str(e)))
+                raise e
+
 
         if exporter:
             exporter.update(dbfqdn)

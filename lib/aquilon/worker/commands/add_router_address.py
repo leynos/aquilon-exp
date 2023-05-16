@@ -22,6 +22,8 @@ from aquilon.worker.broker import BrokerCommand
 from aquilon.aqdb.model import (RouterAddress, Building)
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.dbwrappers.dns import grab_address
+from aquilon.worker.processes import IBServices
+from requests import RequestException
 
 
 class CommandAddRouterAddress(BrokerCommand):
@@ -74,6 +76,12 @@ class CommandAddRouterAddress(BrokerCommand):
 
         # TODO: update the templates of Zebra hosts on the network
         plenaries.add(dbnetwork)
-        plenaries.write()
 
-        return
+        with plenaries.transaction():
+            if self.config.infoblox_feature_enabled("add_router_address"):
+                try:
+                    IBServices().add_a_ptr(str(dbdns_rec.fqdn), ip)
+                except (ArgumentError,RequestException) as e:
+                    logger.warning("Error calling Infoblox add_a_ptr: {0}".format(str(e)))
+                    logger.warning("Rolling back DSDB transaction ...")
+                    raise e

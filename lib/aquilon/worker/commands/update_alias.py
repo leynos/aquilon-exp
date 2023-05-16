@@ -22,8 +22,10 @@ from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import (create_target_if_needed,
                                            delete_target_if_needed)
 from aquilon.worker.dbwrappers.grn import lookup_grn
-from aquilon.worker.processes import DSDBRunner
+from aquilon.worker.processes import DSDBRunner, IBServices
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+
+from requests import RequestException
 
 
 class CommandUpdateAlias(BrokerCommand):
@@ -60,6 +62,7 @@ class CommandUpdateAlias(BrokerCommand):
         elif clear_grn:
             dbalias.owner_grn = None
 
+        old_target = None
         if target or target_environment:
             if target == fqdn:
                 raise ArgumentError("Cannot alias {0} to itself"
@@ -126,6 +129,7 @@ class CommandUpdateAlias(BrokerCommand):
 
         session.flush()
 
+        dsdb_runner = None
         if dbdns_env.is_default and dbalias.fqdn.dns_domain.name == "ms.com"\
                 and not dbalias.target.dns_domain.restricted:
             dsdb_runner = DSDBRunner(logger=logger)
@@ -134,4 +138,17 @@ class CommandUpdateAlias(BrokerCommand):
                                      old_comments)
             dsdb_runner.commit_or_rollback("Could not update alias in DSDB")
 
+        if self.config.infoblox_feature_enabled("update_alias"):
+            try:
+                ib_services = IBServices()
+                if ib_services.assert_dns_environment(dbalias.fqdn.dns_environment.name) and \
+                        (not old_target or ib_services.assert_dns_environment(old_target.dns_environment.name)) and \
+                        ib_services.assert_dns_environment(dbalias.target.dns_environment.name):
+                    ib_services.update_dns_alias(str(dbalias.fqdn), str(dbalias.target), ttl)
+            except (ArgumentError, RequestException) as e:
+                logger.warning("Error calling Infoblox update_dns_alias: {0}".format(str(e)))
+                if dsdb_runner:
+                    logger.warning("Rolling back DSDB transaction ...")
+                    dsdb_runner.rollback()
+                raise e
         return

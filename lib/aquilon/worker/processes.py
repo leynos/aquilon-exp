@@ -34,13 +34,15 @@ import types
 
 from six import iteritems
 
-from ipaddress import IPv4Address, IPv4Network
+from ipaddress import IPv4Address, IPv4Network, IPv6Address
 from mako.lookup import TemplateLookup
 from requests import Session
 from requests.adapters import HTTPAdapter, Retry
 from requests_kerberos import HTTPKerberosAuth, DISABLED
 from twisted.python import context
 from twisted.python.log import callWithContext, ILogContext
+from urllib import urlencode
+from urlparse import urlparse, urlunparse
 from sqlalchemy.inspection import inspect
 
 from aquilon.exceptions_ import (ProcessException, AquilonError, ArgumentError,
@@ -445,12 +447,13 @@ class DSDBEnabledMeta(type):
         if DSDB_ENABLED:
             if instance.dsdb_use_testdb:
                 os.environ['DSDB_USE_TESTDB'] = "1"
+                os.environ["DSDB_BROKER_URL"] = "http://dsdb.webfarm-qa.ms.com"
 
             # a timeout of zero in the broker config means "no timeout";  for ms.dsdb,
             # zero means immediate timeout (i.e. non-blocking operation).
             use_timeout = config.lookup_tool_timeout('dsdb') or None
 
-            instance.dsdbclient = ms.dsdb.client.DSDB(plant='prod',
+            instance.dsdbclient = ms.dsdb.client.DSDB(plant="prod",
                                                       timeout=use_timeout)
         return instance
 
@@ -474,6 +477,16 @@ class IBServices(object):
         if not isinstance(network, IPv4Network):
             raise ArgumentError("Network address should be an IPv4Network object")
 
+    def assert_dns_environment(self, environment):
+        if environment == 'internal':
+            return True
+        else:
+            LOGGER.warning('DNS environment {} has not been integrated with Infoblox yet'.format(environment))
+
+    def generate_url_from_params(self, url, params):
+        parse = urlparse(url)._replace(query=urlencode(params))
+        return urlunparse(parse)
+
     def host_url(self, ip):
         return self.ib_service_url + "/hosts/ipv4addr/" + str(ip)
 
@@ -486,6 +499,144 @@ class IBServices(object):
         response = self.session.post(url, json=payload, timeout=IB_SERVICES_TIMEOUT)
         if response.status_code == httplib.CREATED:
             LOGGER.info("Host added to Infoblox")
+        else:
+            raise ArgumentError(response.text)
+
+    @with_timer
+    def delete_host(self, ip):
+        self.assert_ip(ip)
+
+        url = self.host_url(ip)
+        response = self.session.delete(url, timeout=IB_SERVICES_TIMEOUT)
+        if response.status_code == httplib.NO_CONTENT:
+            LOGGER.info("Host removed from Infoblox")
+            return True
+        if response.status_code == httplib.NOT_FOUND:
+            LOGGER.info("Host does not exist in Infoblox")
+            return False
+        else:
+            raise ArgumentError(response.text)
+
+    @with_timer
+    def remove_host_dns_entries(self, ip):
+        self.assert_ip(ip)
+
+        url = self.ib_service_url + "/legacy/aq/remove-dns-entries/" + str(ip)
+        response = self.session.delete(url, timeout=IB_SERVICES_TIMEOUT)
+        if response.status_code == httplib.NO_CONTENT:
+            LOGGER.info("Remove dns entries for {} successful".format(ip))
+        else:
+            raise ArgumentError(response.text)
+
+    def build_a_ptr_payload(self, name, ip, assign_ptr_to_fqdn, ttl):
+        payload = dict()
+        if name:
+            payload["name"] = name
+        if ip:
+            self.assert_ip(ip)
+            payload["address"] = str(ip)
+        if assign_ptr_to_fqdn:
+            payload["assign_ptr_to_fqdn"] = assign_ptr_to_fqdn
+        if ttl:
+            payload["ttl"] = ttl
+        return payload
+
+    @with_timer
+    def add_a_ptr(self, name, ip, assign_ptr_to_fqdn=None, ttl=None, create_ptr=True):
+        # fixme
+        if isinstance(ip, IPv6Address):
+            LOGGER.warning("add_a_ptr does not yet support IPv6Address {}".format(str(ip)))
+            return
+        self.assert_ip(ip)
+
+        payload = self.build_a_ptr_payload(name, ip, assign_ptr_to_fqdn, ttl)
+        payload['create_ptr'] = create_ptr
+        url = self.ib_service_url + "/dns/a_ptr"
+        LOGGER.info("Invoking {} with payload: {}".format(url, payload))
+        response = self.session.post(url, json=payload, timeout=IB_SERVICES_TIMEOUT)
+        if response.status_code == httplib.CREATED:
+            LOGGER.info("A/PTR added to Infoblox")
+        else:
+            # BAD_REQUEST is returned if there is an error creating the A/PTR records
+            raise ArgumentError(response.text)
+
+    @with_timer
+    def update_a_ptr(self, name, ip, new_ip=None, assign_ptr_to_fqdn=None, ttl=None, update_ptr=True):
+        # fixme
+        if isinstance(ip, IPv6Address):
+            LOGGER.warning("update_a_ptr does not yet support IPv6Address {}".format(str(ip)))
+            return
+        self.assert_ip(ip)
+
+        assert new_ip or assign_ptr_to_fqdn or ttl, "new_ip, assign_ptr_to_fqdn and ttl all None"
+
+        payload = self.build_a_ptr_payload(None, new_ip, assign_ptr_to_fqdn, ttl)
+        payload["create_if_doesnt_exist"] = True
+        payload['update_ptr'] = update_ptr
+        url = self.ib_service_url + "/dns/a_ptr/{}/{}".format(name, ip)
+        LOGGER.info("Invoking {} with payload: {}".format(url, payload))
+        response = self.session.patch(url, json=payload, timeout=IB_SERVICES_TIMEOUT)
+        if response.status_code == httplib.NO_CONTENT:
+            LOGGER.info("A/PTR updated in Infoblox")
+        else:
+            # BAD_REQUEST is returned if there is an error updating the A/PTR records
+            raise ArgumentError(response.text)
+
+    @with_timer
+    def delete_a_ptr(self, name, ip, delete_ptr=True):
+        # fixme
+        if isinstance(ip, IPv6Address):
+            LOGGER.warning("update_a_ptr does not yet support IPv6Address {}".format(str(ip)))
+            return
+        self.assert_ip(ip)
+
+        params = {'delete_ptr': str(delete_ptr).lower()}
+        url = self.ib_service_url + "/dns/a_ptr/{}/{}".format(str(name), ip)
+        url = self.generate_url_from_params(url, params)
+        response = self.session.delete(url, timeout=IB_SERVICES_TIMEOUT)
+        if response.status_code == httplib.NO_CONTENT:
+            LOGGER.info("Matching A records removed from Infoblox")
+            LOGGER.info("Matching PTR records removed from Infoblox") if delete_ptr else None
+            return True
+        else:
+            # BAD_REQUEST is returned if there is an error deleting A/PTR records
+            raise ArgumentError(response.text)
+
+    @with_timer
+    def add_dns_alias(self, name, target):
+        url = self.ib_service_url + '/dns/aliases/'
+        payload = {
+            'name': name,
+            'target': target
+        }
+        LOGGER.info("Invoking {} with payload: {}".format(url, payload))
+        response = self.session.post(url=url, json=payload, timeout=IB_SERVICES_TIMEOUT)
+        if response.status_code == httplib.CREATED:
+            LOGGER.info("DNS alias added to Infoblox")
+        else:
+            # BAD_REQUEST is returned if there is an error creating the alias in Infoblox grids
+            raise ArgumentError(response.text)
+
+    @with_timer
+    def del_dns_alias(self, name):
+        url = self.ib_service_url + '/dns/aliases/' + name
+        response = self.session.delete(url=url, timeout=IB_SERVICES_TIMEOUT)
+        if response.status_code == httplib.NO_CONTENT:
+            LOGGER.info('Matching CNAME removed from Infoblox')
+        else:
+            raise ArgumentError(response.text)
+
+    @with_timer
+    def update_dns_alias(self, name, new_target, ttl):
+        payload = {'target': new_target}
+        if ttl is not None:
+            payload['ttl'] = ttl
+        url = '{}/dns/aliases/{}'.format(self.ib_service_url, name)
+        LOGGER.info("Invoking {} with payload: {}".format(url, payload))
+
+        response = self.session.patch(url=url, json=payload, timeout=IB_SERVICES_TIMEOUT)
+        if response.status_code == httplib.NO_CONTENT:
+            LOGGER.info('CNAME has been updated in Infoblox')
         else:
             raise ArgumentError(response.text)
 
@@ -1100,6 +1251,7 @@ class DSDBRunner(object):
         return fields
 
     def show_chassis(self, chassis):
+        self.logger.info("Invoking show_chassis {}".format(chassis))
         chassis_data = self.dsdbclient.show_chassis(chassis_name=chassis).results()
         fields = {}
         if len(chassis_data) > 1:

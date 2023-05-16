@@ -225,7 +225,7 @@ enable = False
 timeout = 180
 # url of Infoblox API.
 url = https://ib-services.na.ms.com
-activities = add_interface_address
+#activities = add_address,update_address,del_address,update_chassis,update_console_server,update_network_device,add_chassis,del_chassis
 
 [change_management]
 # The contents of --justification will not be validated externally

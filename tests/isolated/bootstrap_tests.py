@@ -1,13 +1,16 @@
+import os
+import sys
+import shutil
+
+SRC_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+sys.path.append(os.path.join(SRC_DIR, "tests"))
+sys.path.append(os.path.join(SRC_DIR, "lib"))
+
+import depends  # NOQA pylint: disable=W0611
 # These must come first - do not allow this to be reordered.
 import aquilon.aqdb.depends  # NOQA pylint: disable=W0611
 import aquilon.worker.depends  # NOQA pylint: disable=W0611
-# noinspection PyUnresolvedReferences
-import depends  # NOQA pylint: disable=W0611
 
-import os
-import shutil
-import sys
-import threading
 from aquilon.config import Config
 from broker.brokertest import TestBrokerCommand
 from broker.test_ib_services_start import TestIBServicesStart

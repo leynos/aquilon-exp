@@ -26,8 +26,8 @@ from aquilon.worker.dbwrappers.interface import (get_or_create_interface,
                                                  check_ip_restrictions,
                                                  assign_address)
 from aquilon.worker.dbwrappers.location import get_location
-from aquilon.worker.processes import DSDBRunner
-from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from aquilon.worker.processes import DSDBRunner, IBServices
+from requests import RequestException
 
 
 class CommandAddConsoleServer(BrokerCommand):
@@ -79,4 +79,12 @@ class CommandAddConsoleServer(BrokerCommand):
             dsdb_runner.update_host(dbcons, None)
             dsdb_runner.commit_or_rollback("Could not add console server to DSDB")
 
-        return
+            # Oddly the code above assumes ip is optional but it's a required field.
+            if self.config.infoblox_feature_enabled("add_console_server"):
+                try:
+                    IBServices().add_a_ptr(str(dbcons.primary_name.fqdn), ip)
+                except (ArgumentError,RequestException) as e:
+                    logger.warning("Error calling Infoblox add_a_ptr: {0}".format(str(e)))
+                    logger.warning("Rolling back DSDB transaction ...")
+                    dsdb_runner.rollback()
+                    raise e

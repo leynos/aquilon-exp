@@ -191,7 +191,7 @@ def start_xtn(session, xtn_id, username, command, is_readonly, details, ignore):
                                       value=sanitized_string(item)))
         else:
             session.add(XtnDetail(xtn_id=xtn_id, name=key,
-                                  value=sanitized_string(value)))
+                                  value=sanitized_string(value)[:2599]))
 
     try:
         session.commit()

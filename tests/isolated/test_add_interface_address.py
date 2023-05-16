@@ -1,39 +1,24 @@
 # This must come first as it includes dependencies
-import bootstrap_tests
-from broker.brokertest import TestBrokerCommand
-
-import logging
 import sys
+
+import bootstrap_tests
+import logging
 import unittest
-from start_ib_services import add_fixture_get_network_by_ip, add_fixture_get_next_ip, add_callback
+from isolated import BaseIsolatedTest
+from start_ib_services import add_fixture_get_network_by_ip, add_fixture_get_next_ip, add_fixture_delete_host, \
+    add_fixture_create_host
 
 LOGGER = logging.getLogger(__name__)
 
 
-class TestAddInterfaceAddress(TestBrokerCommand):
-
-    IB_SERVICES_CALLBACKS = {}
-
-    @classmethod
-    def setUpClass(cls):
-        bootstrap_tests.setup_logger()
-        bootstrap_tests.start_brokers()
-
-        def ib_proxy_callback(data):
-            if data["path"].startswith("/hosts/ipv4addr/"):
-                cls.IB_SERVICES_CALLBACKS[data["method"]] = data["path"]
-        add_callback(ib_proxy_callback)
-
-    @classmethod
-    def tearDownClass(cls):
-        bootstrap_tests.stop_brokers()
+class TestAddInterfaceAddress(BaseIsolatedTest):
 
     def assert_create_host(self):
-        self.assertIn("POST", TestAddInterfaceAddress.IB_SERVICES_CALLBACKS,
+        self.assertIn("POST", BaseIsolatedTest.IB_SERVICES_CALLBACKS,
                       "The ib-services POST /host/ipv4addr endpoint was not invoked")
 
     def assert_delete_host(self):
-        self.assertIn("DELETE", TestAddInterfaceAddress.IB_SERVICES_CALLBACKS,
+        self.assertIn("DELETE", BaseIsolatedTest.IB_SERVICES_CALLBACKS,
                       "The ib-services DELETE /host/ipv4addr endpoint was not invoked")
 
     def test_100_add_address_success(self):
@@ -49,7 +34,8 @@ class TestAddInterfaceAddress(TestBrokerCommand):
         fqdn = "unittest20-e1.aqd-unittest.ms.com"
         self.dsdb_expect_add(fqdn, ip, "eth1", ip.mac,
                              primary="unittest20.aqd-unittest.ms.com")
-        TestAddInterfaceAddress.IB_SERVICES_CALLBACKS.clear()
+        add_fixture_create_host("allow_hostnames", fqdn)
+        BaseIsolatedTest.IB_SERVICES_CALLBACKS.clear()
         command = ["add", "interface", "address", "--machine", "ut3c5n2",
                    "--interface", "eth1", "--fqdn", fqdn, "--ip", ip]
         self.statustest(command)
@@ -60,12 +46,13 @@ class TestAddInterfaceAddress(TestBrokerCommand):
         LOGGER.info("Running del_interface_address to invoke DSDB and IB broker")
         ip = self.net["zebra_eth1"].usable[0]
         self.dsdb_expect_delete(ip)
+        add_fixture_delete_host("success", str(ip))
         command = ["del", "interface", "address", "--machine", "ut3c5n2",
                    "--interface", "eth1", "--ip", ip]
         self.statustest(command)
         self.dsdb_verify()
         self.check_plenary_contents("hostdata", "unittest20.aqd-unittest.ms.com", clean=str(ip))
-        #self.assert_delete_host()
+        self.assert_delete_host()
 
     def test_200_add_address_ib_failure_expect_dsdb_and_plenary_rollback(self):
         """
@@ -79,15 +66,15 @@ class TestAddInterfaceAddress(TestBrokerCommand):
         self.dsdb_expect_add(fqdn, ip, "eth1", ip.mac,
                              primary="unittest20.aqd-unittest.ms.com")
         self.dsdb_expect_delete(ip)
-        TestAddInterfaceAddress.IB_SERVICES_CALLBACKS.clear()
+        add_fixture_create_host("deny_hostnames", fqdn)
+        BaseIsolatedTest.IB_SERVICES_CALLBACKS.clear()
         command = ["add", "interface", "address", "--machine", "ut3c5n2",
                    "--interface", "eth1", "--fqdn", fqdn, "--ip", ip]
         out = self.badrequesttest(command)
-        self.matchoutput(out, "Error calling Infoblox create_host", command)
+        self.matchoutput(out, "Error calling Infoblox add_a_ptr", command)
         self.dsdb_verify()
         self.check_plenary_contents("hostdata", "unittest20.aqd-unittest.ms.com", clean=str(ip))
         self.assert_create_host()
-        #self.assert_delete_host()
 
     def test_300_add_address_ipfromip_success(self):
         add_fixture_get_network_by_ip("4.2.12.60", "4.2.12.64/26")
@@ -98,9 +85,10 @@ class TestAddInterfaceAddress(TestBrokerCommand):
                     "in the IP 4.2.12.69 being assigned.")
         ip = self.net["zebra_eth1"].usable[0]
         fqdn = "unittest20-e1.aqd-unittest.ms.com"
+        add_fixture_create_host("allow_hostnames", fqdn)
         self.dsdb_expect_add(fqdn, ip, "eth1", ip.mac,
                              primary="unittest20.aqd-unittest.ms.com")
-        TestAddInterfaceAddress.IB_SERVICES_CALLBACKS.clear()
+        BaseIsolatedTest.IB_SERVICES_CALLBACKS.clear()
         command = ["add", "interface", "address", "--machine", "ut3c5n2",
                    "--interface", "eth1", "--fqdn", fqdn, "--ipfromip", "4.2.12.64"]
         self.statustest(command)
@@ -110,12 +98,13 @@ class TestAddInterfaceAddress(TestBrokerCommand):
 
         LOGGER.info("Running del_interface_address to invoke DSDB and IB broker")
         self.dsdb_expect_delete(ip)
+        add_fixture_delete_host("success", str(ip))
         command = ["del", "interface", "address", "--machine", "ut3c5n2",
                    "--interface", "eth1", "--ip", "4.2.12.69"]
         self.statustest(command)
         self.dsdb_verify()
         self.check_plenary_contents("hostdata", "unittest20.aqd-unittest.ms.com", clean=str(ip))
-        #self.assert_delete_host()
+        self.assert_delete_host()
 
 
 if __name__ == '__main__':

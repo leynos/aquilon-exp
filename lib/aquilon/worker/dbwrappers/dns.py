@@ -43,6 +43,7 @@ from aquilon.aqdb.model.dns_domain import parse_fqdn
 from aquilon.aqdb.model.network import get_net_id_from_ip
 from aquilon.worker.dbwrappers.grn import lookup_grn
 from aquilon.worker.dbwrappers.interface import check_ip_restrictions
+from aquilon.worker.processes import IBServices
 
 from sqlalchemy.orm import (
     joinedload,
@@ -51,6 +52,7 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql import or_
+from requests import RequestException
 
 
 def delete_dns_record(dbdns_rec, locked=False, verify_assignments=False, exporter=None):
@@ -574,6 +576,19 @@ def add_address_alias(session, logger, config, dbsrcfqdn, dbtargetfqdn,
                         owner_grn=dbgrn, comments=comments,
                         require_grn=False)
     session.add(dbaa)
+
+    # create only an A-record in Infoblox.
+    # PTR record is not required as it has already been created when the target (which is in fact another A-record)
+    # was created.
+    if config.infoblox_feature_enabled('add_address_alias'):
+        try:
+            ib_services = IBServices()
+            if ib_services.assert_dns_environment(dbsrcfqdn.dns_environment.name) and \
+                    ib_services.assert_dns_environment(dbtargetfqdn.dns_environment.name):
+                IBServices().add_a_ptr(dbsrcfqdn.fqdn, dbaa.target_ip, ttl, create_ptr=False)
+        except (ArgumentError, RequestException) as e:
+            logger.warning("Error calling Infoblox add_a_ptr: {0}".format(str(e)))
+            raise e
 
     if exporter:
         other_recs = [dr for dr in dbsrcfqdn.dns_records

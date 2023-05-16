@@ -24,8 +24,9 @@ from aquilon.worker.dbwrappers.dns import (set_reverse_ptr,
                                            delete_target_if_needed,
                                            update_address)
 from aquilon.worker.dbwrappers.grn import lookup_grn
-from aquilon.worker.processes import DSDBRunner
+from aquilon.worker.processes import DSDBRunner, IBServices
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from requests import RequestException
 
 
 class CommandUpdateAddress(BrokerCommand):
@@ -83,8 +84,8 @@ class CommandUpdateAddress(BrokerCommand):
 
         session.flush()
 
-        if dbdns_env.is_default and (dbdns_rec.ip != old_ip or
-                                     dbdns_rec.comments != old_comments):
+        dsdb_runner = None
+        if dbdns_env.is_default and (dbdns_rec.ip != old_ip or dbdns_rec.comments != old_comments):
             dsdb_runner = DSDBRunner(logger=logger)
             dsdb_runner.update_host_details(dbdns_rec.fqdn, new_ip=dbdns_rec.ip,
                                             old_ip=old_ip,
@@ -92,4 +93,33 @@ class CommandUpdateAddress(BrokerCommand):
                                             old_comments=old_comments)
             dsdb_runner.commit_or_rollback()
 
-        return
+        if self.config.infoblox_feature_enabled("update_address") and (ip or reverse_ptr or clear_ttl or ttl):
+            try:
+                #logger.warning("{} {} {} {}".format(ip, reverse_ptr, clear_ttl, ttl))
+                a_fqdn = str(dbdns_rec.fqdn)
+                IBServices().update_a_ptr(a_fqdn, old_ip, ip if ip else None, reverse_ptr, -1 if clear_ttl else ttl)
+                if ip:
+                    for address_alias in dbdns_rec.address_aliases:
+                        alias_fqdn = str(address_alias.fqdn)
+                        alias_target = str(address_alias.target)
+                        if alias_target == a_fqdn:
+                            logger.debug("Updating AddressAlias {} -> {} in IB with new IP address {}".format(
+                                alias_fqdn, alias_target, ip)
+                            )
+                            """
+                            We can't guarantee IB will know about the address alias at this stage, because the
+                            address alias calls are not wired into Infoblox. In reality, they should all exist in
+                            Infoblox due to the DNS sync tool, but if an address alias was only just created and has
+                            not been synced by the batch process, it won't exist right now.
+
+                            That said, the PATCH /dns/a_ptr currently returns a 204 if no records are found that match,
+                            so any failure (a 400) should invoke a rollback to DSDB, but won't roll back the
+                            update_a_ptr change on the A record.
+                            """
+                            IBServices().update_a_ptr(alias_fqdn, old_ip, dbdns_rec.ip, ttl=-1 if clear_ttl else ttl)
+            except (ArgumentError,RequestException) as e:
+                logger.warning("Error calling Infoblox update_a_ptr: {0}".format(str(e)))
+                if dsdb_runner:
+                    logger.warning("Rolling back DSDB transaction ...")
+                    dsdb_runner.rollback()
+                raise e

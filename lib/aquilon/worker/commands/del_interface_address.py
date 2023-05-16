@@ -16,6 +16,8 @@
 # limitations under the License.
 """Contains the logic for `aq del interface address`."""
 
+import logging
+
 from aquilon.worker.broker import BrokerCommand
 from aquilon.exceptions_ import ArgumentError
 from aquilon.aqdb.model import (Interface, AddressAssignment, DnsDomain, Fqdn,
@@ -23,9 +25,13 @@ from aquilon.aqdb.model import (Interface, AddressAssignment, DnsDomain, Fqdn,
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.hardware_entity import get_hardware
 from aquilon.worker.dbwrappers.service_instance import check_no_provided_service
-from aquilon.worker.processes import DSDBRunner
+from aquilon.worker.processes import DSDBRunner, IBServices
 from aquilon.utils import first_of
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from requests.exceptions import RequestException
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 class CommandDelInterfaceAddress(BrokerCommand):
@@ -130,5 +136,32 @@ class CommandDelInterfaceAddress(BrokerCommand):
             else:
                 dsdb_runner.update_host(dbhw_ent, oldinfo)
                 dsdb_runner.commit_or_rollback("Could not add host to DSDB")
+
+            if self.config.infoblox_feature_enabled("del_interface_address"):
+                """
+                This is more complicated because we don't know if a host object exists in Infoblox even if the interface
+                has a mac, as it may not have been created yet. But if it doesn't exist, the redundant DNS (A/PTR) 
+                still needs removing - which will exist where the interface has no MAC by virtue of being created 
+                through add_address, or the legacy DNS sync tool.
+                """
+                try:
+                    del_a_ptr = True
+                    if dbinterface.mac:
+                        invoking = "delete_host"
+                        if not IBServices().delete_host(ip):
+                            LOGGER.info("The host {} was not present in Infoblox, will attempt to "
+                                        "remove A/PTR records")
+                        else:
+                            del_a_ptr = False
+
+                    if del_a_ptr:
+                        invoking = "delete_a_ptr"
+                        for dns_rec in addr.dns_records:
+                            IBServices().delete_a_ptr(dns_rec, ip)
+                except (ArgumentError,RequestException) as e:
+                    logger.warning("Error calling Infoblox {0}: {1}".format(invoking, str(e)))
+                    logger.warning("Rolling back DSDB transaction ...")
+                    dsdb_runner.rollback()
+                    raise e
 
         return

@@ -8,11 +8,17 @@ This is an evolution of the unit tests under tests/broker which are linked and r
 
 ## Running individual tests
 
-Use unittest:
+To run individual tests:
 
 ```
 export AQDCONF=tests/unittest.conf
-python -m unittest tests/isolated/test_add_interface_address.py
+python tests/isolated/test_add_interface_address.py TestAddInterfaceAddress.test_300_add_address_ipfromip_success
+```
+
+Or to run all tests using unittest:
+
+```
+python -m unittest discover -s tests/isolated
 ```
 
 # Connecting to an isolated database
@@ -26,3 +32,11 @@ and using the aq command to connect to the local broker:
 
 aq status --aqport 6902 --aqservice $USER
 
+
+# Setting up yourself as aqd_admin
+
+Most of the AQ commands excercised by the test requires aqd_admin role. This can be configured by running the following command.
+
+```commandline
+/ms/dist/aquilon/PROJ/aqd/$AQVER/sbin/aqdb_set_role --debug --role aqd_admin
+```
