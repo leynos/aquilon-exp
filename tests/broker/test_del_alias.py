@@ -76,21 +76,29 @@ class TestDelAlias(EventsTestMixin, TestBrokerCommand):
         self.dsdb_verify()
         self.events_verify()
 
-    def test_230_del_alias2diff_environment(self):
+    def test_230_del_alias2diff_environment_fail(self):
         command = ["del", "alias", "--fqdn", "alias2alias.aqd-unittest-ut-env.ms.com",
                    "--dns_environment", "ut-env"]
+        out = self.badrequesttest(command)
+        self.matchoutput(out, "Please provide valid "
+                              "justification number",
+                         command)
+
+    def test_231_del_alias2diff_environment(self):
+        command = ["del", "alias", "--fqdn", "alias2alias.aqd-unittest-ut-env.ms.com",
+                   "--dns_environment", "ut-env"] + self.valid_just_sn
         self.noouttest(command)
 
     def test_235_del_alias2diff_environment(self):
         self.event_del_dns('alias2host.aqd-unittest-ut-env.ms.com', dns_environment='ut-env')
         command = ["del", "alias", "--fqdn", "alias2host.aqd-unittest-ut-env.ms.com",
-                   "--dns_environment", "ut-env"]
+                   "--dns_environment", "ut-env"] + self.valid_just_sn
         self.noouttest(command)
         self.events_verify()
 
     def test_238_del_alias2diff_environment(self):
         command = ["del", "alias", "--fqdn", "alias13.aqd-unittest.ms.com",
-                   "--dns_environment", "ut-env"]
+                   "--dns_environment", "ut-env"] + self.valid_just_sn
         self.noouttest(command)
 
     def test_300_del_restrict1(self):
