@@ -98,7 +98,7 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
                          "restricted, aliases are not allowed.",
                          cmd)
 
-    def test_150_add_alias2diff_environment(self):
+    def test_150_add_alias2diff_environment_fail(self):
         self.event_add_dns(
             fqdn='alias2host.aqd-unittest-ut-env.ms.com',
             dns_environment='ut-env',
@@ -114,6 +114,27 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
                '--dns_environment', 'ut-env',
                '--target', 'arecord13.aqd-unittest.ms.com',
                '--target_environment', 'internal']
+        out = self.badrequesttest(cmd)
+        self.matchoutput(out, "Please provide valid "
+                              "justification number",
+                         cmd)
+
+    def test_151_add_alias2diff_environment(self):
+        self.event_add_dns(
+            fqdn='alias2host.aqd-unittest-ut-env.ms.com',
+            dns_environment='ut-env',
+            dns_records=[
+                {
+                    'target': 'arecord13.aqd-unittest.ms.com',
+                    'targetEnvironmentName': 'internal',
+                    'rrtype': 'CNAME'
+                },
+            ],
+        )
+        cmd = ['add', 'alias', '--fqdn', 'alias2host.aqd-unittest-ut-env.ms.com',
+               '--dns_environment', 'ut-env',
+               '--target', 'arecord13.aqd-unittest.ms.com',
+               '--target_environment', 'internal'] + self.valid_just_sn
         self.noouttest(cmd)
         self.events_verify()
 
@@ -121,14 +142,14 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
         cmd = ['add', 'alias', '--fqdn', 'alias2alias.aqd-unittest-ut-env.ms.com',
                '--dns_environment', 'ut-env',
                '--target', 'alias2host.aqd-unittest-ut-env.ms.com',
-               '--target_environment', 'ut-env']
+               '--target_environment', 'ut-env'] + self.valid_just_sn
         self.noouttest(cmd)
 
     def test_160_add_alias_with_fqdn_in_diff_environment(self):
         cmd = ['add', 'alias', '--fqdn', 'alias13.aqd-unittest.ms.com',
                '--dns_environment', 'ut-env',
                '--target', 'arecord13.aqd-unittest.ms.com',
-               '--target_environment', 'internal']
+               '--target_environment', 'internal'] + self.valid_just_sn
         self.noouttest(cmd)
 
     def test_200_autocreate_target(self):

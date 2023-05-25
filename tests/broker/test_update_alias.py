@@ -263,12 +263,24 @@ class TestUpdateAlias(EventsTestMixin, TestBrokerCommand):
                          "match between old and new DNS domains"
                          .format(fqdn), cmd)
 
-    def test_500_repoint2diff_environment(self):
+    def test_500_repoint2diff_environment_fail(self):
         command = ["update", "alias",
                    "--fqdn", "alias2host.aqd-unittest-ut-env.ms.com",
                    "--dns_environment", "ut-env",
                    "--target", "alias13.aqd-unittest.ms.com",
                    "--target_environment", "ut-env"]
+        out = self.badrequesttest(command)
+        self.matchoutput(out, "Please provide valid "
+                              "justification number",
+                         command)
+
+    def test_500_repoint2diff_environment(self):
+        command = ["update", "alias",
+                   "--fqdn", "alias2host.aqd-unittest-ut-env.ms.com",
+                   "--dns_environment", "ut-env",
+                   "--target", "alias13.aqd-unittest.ms.com",
+                   "--target_environment", "ut-env"] \
+                  + self.valid_just_sn
         self.noouttest(command)
 
     def test_505_verify_alias_repoint2diff_environment(self):

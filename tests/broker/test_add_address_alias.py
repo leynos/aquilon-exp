@@ -29,16 +29,25 @@ from brokertest import TestBrokerCommand
 
 class TestAddAddressAlias(TestBrokerCommand):
 
-    def test_100_add_addralias(self):
+    def test_100_add_addralias_fail(self):
         command = ["add", "address", "alias",
                    "--fqdn", "addralias1.aqd-unittest.ms.com",
                    "--target", "arecord13.aqd-unittest.ms.com"]
+        out = self.badoptiontest(command)
+        self.matchoutput(out, "Not all mandatory options specified!", command)
+
+    def test_101_add_addralias(self):
+        command = ["add", "address", "alias",
+                   "--fqdn", "addralias1.aqd-unittest.ms.com",
+                   "--target", "arecord13.aqd-unittest.ms.com"] \
+                  + self.valid_just_sn
         self.noouttest(command)
 
     def test_110_add_addralias_dupliate(self):
         command = ["add", "address", "alias",
                    "--fqdn", "addralias1.aqd-unittest.ms.com",
-                   "--target", "arecord13.aqd-unittest.ms.com"]
+                   "--target", "arecord13.aqd-unittest.ms.com"] \
+                  + self.valid_just_sn
         out = self.badrequesttest(command)
         self.matchoutput(out,
                          "Address Alias addralias1.aqd-unittest.ms.com "
@@ -79,7 +88,8 @@ class TestAddAddressAlias(TestBrokerCommand):
                    "--target", "arecord14.aqd-unittest.ms.com",
                    "--dns_environment", "internal",
                    "--ttl", "1800",
-                   "--comments", "Some address alias comments"]
+                   "--comments", "Some address alias comments"] \
+                  + self.valid_just_sn
         self.noouttest(command)
 
     def test_200_add_new_addralias_with_comment2(self):
@@ -87,7 +97,8 @@ class TestAddAddressAlias(TestBrokerCommand):
                    "--fqdn", "addralias1.aqd-unittest.ms.com",
                    "--target", "arecord15.aqd-unittest.ms.com",
                    "--target_environment", "internal",
-                   "--comments", "Some other address alias comments"]
+                   "--comments", "Some other address alias comments"] \
+                  + self.valid_just_sn
         self.noouttest(command)
 
     def test_250_verify_addralias(self):
@@ -188,7 +199,8 @@ class TestAddAddressAlias(TestBrokerCommand):
     def test_300_add_restricted(self):
         command = ["add", "address", "alias",
                    "--fqdn", "addralias1.restrict.aqd-unittest.ms.com",
-                   "--target", "arecord14.aqd-unittest.ms.com"]
+                   "--target", "arecord14.aqd-unittest.ms.com"] \
+                  + self.valid_just_sn
         out = self.badrequesttest(command)
         self.matchoutput(out,
                          "DNS Domain restrict.aqd-unittest.ms.com is "
@@ -198,7 +210,8 @@ class TestAddAddressAlias(TestBrokerCommand):
         command = ["add", "address", "alias",
                    "--fqdn", "addralias1.ms.com",
                    "--target", "arecord13.aqd-unittest.ms.com",
-                   "--dns_environment", "internal"]
+                   "--dns_environment", "internal"] \
+                  + self.valid_just_sn
         out = self.badrequesttest(command)
         self.matchoutput(out,
                          "Address Alias record in DNS domain ms.com, DNS "
@@ -208,7 +221,8 @@ class TestAddAddressAlias(TestBrokerCommand):
     def test_500_add_invalid_target(self):
         command = ["add", "address", "alias",
                    "--fqdn", "addralias2.aqd-unittest.ms.com",
-                   "--target", "addralias1.aqd-unittest.ms.com"]
+                   "--target", "addralias1.aqd-unittest.ms.com"] \
+                  + self.valid_just_sn
         out = self.badrequesttest(command)
         self.matchoutput(out,
                          "The target of each Address Alias record must resolve "
@@ -219,7 +233,8 @@ class TestAddAddressAlias(TestBrokerCommand):
                    "--fqdn", "addralias1.aqd-unittest-ut-env.ms.com",
                    "--dns_environment", "ut-env",
                    "--target", "arecord13.aqd-unittest.ms.com",
-                   "--target_environment", "internal"]
+                   "--target_environment", "internal"] \
+                  + self.valid_just_sn
         self.noouttest(command)
 
     def test_650_verify_cross_environment(self):
@@ -278,7 +293,8 @@ class TestAddAddressAlias(TestBrokerCommand):
         command = ["add", "address", "alias",
                    "--fqdn", "addralias3.aqd-unittest.ms.com",
                    "--target", "arecord13.aqd-unittest.ms.com",
-                   "--grn", "grn:/ms/ei/aquilon/aqd"]
+                   "--grn", "grn:/ms/ei/aquilon/aqd"] \
+                  + self.valid_just_sn
         self.noouttest(command)
 
     def test_805_verify_grn(self):
@@ -293,7 +309,8 @@ class TestAddAddressAlias(TestBrokerCommand):
     def test_810_implicit_grn(self):
         command = ["add", "address", "alias",
                    "--fqdn", "addralias3.aqd-unittest.ms.com",
-                   "--target", "arecord14.aqd-unittest.ms.com"]
+                   "--target", "arecord14.aqd-unittest.ms.com"] \
+                  + self.valid_just_sn
         self.noouttest(command)
 
     def test_815_verify_implicit_grn(self):
@@ -309,7 +326,7 @@ class TestAddAddressAlias(TestBrokerCommand):
         command = ["add", "address", "alias",
                    "--fqdn", "addralias4.aqd-unittest.ms.com",
                    "--target", "arecord13.aqd-unittest.ms.com",
-                   "--eon_id", "3"]
+                   "--eon_id", "3"] + self.valid_just_sn
         self.noouttest(command)
 
     def test_825_verify_eon_id(self):
@@ -325,7 +342,7 @@ class TestAddAddressAlias(TestBrokerCommand):
         command = ["add", "address", "alias",
                    "--fqdn", "addralias4.aqd-unittest.ms.com",
                    "--target", "arecord14.aqd-unittest.ms.com",
-                   "--eon_id", "2"]
+                   "--eon_id", "2"] + self.valid_just_sn
         out = self.badrequesttest(command)
         self.matchoutput(out,
                          "Fqdn addralias4.aqd-unittest.ms.com with target "
@@ -337,7 +354,8 @@ class TestAddAddressAlias(TestBrokerCommand):
         command = ["add", "address", "alias",
                    "--fqdn", "bad-addralias.aqd-unittest.ms.com",
                    "--target", "unittest00.one-nyp.ms.com",
-                   "--grn", "grn:/ms/ei/aquilon/unittest"]
+                   "--grn", "grn:/ms/ei/aquilon/unittest"] \
+                  + self.valid_just_sn
         out = self.badrequesttest(command)
         self.matchoutput(out,
                          "Address Alias bad-addralias.aqd-unittest.ms.com "
@@ -352,7 +370,8 @@ class TestAddAddressAlias(TestBrokerCommand):
         command = ["add", "address", "alias",
                    "--fqdn", "bad-addralias.aqd-unittest.ms.com",
                    "--target", "zebra2.aqd-unittest.ms.com",
-                   "--grn", "grn:/ms/ei/aquilon/unittest"]
+                   "--grn", "grn:/ms/ei/aquilon/unittest"] \
+                  + self.valid_just_sn
         out = self.badrequesttest(command)
         self.matchoutput(out,
                          "Address Alias bad-addralias.aqd-unittest.ms.com "
@@ -367,7 +386,8 @@ class TestAddAddressAlias(TestBrokerCommand):
         command = ["add", "address", "alias",
                    "--fqdn", "bad-addralias.aqd-unittest.ms.com",
                    "--target", "unittest20-e1.aqd-unittest.ms.com",
-                   "--grn", "grn:/ms/ei/aquilon/unittest"]
+                   "--grn", "grn:/ms/ei/aquilon/unittest"] \
+                  + self.valid_just_sn
         out = self.badrequesttest(command)
         self.matchoutput(out,
                          "Address Alias bad-addralias.aqd-unittest.ms.com "
