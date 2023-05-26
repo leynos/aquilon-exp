@@ -29,12 +29,22 @@ from brokertest import TestBrokerCommand
 
 class TestUpdateAddressAlias(TestBrokerCommand):
 
-    def test_100_update_to_add_comment(self):
+    def test_100_update_to_add_comment_fail(self):
         command = ["update", "address", "alias",
                    "--fqdn", "addralias1.aqd-unittest.ms.com",
                    "--target", "arecord13.aqd-unittest.ms.com",
                    "--ttl", "900",
                    "--comments", "New address alias comments"]
+        out = self.badoptiontest(command)
+        self.matchoutput(out, "Not all mandatory options specified!", command)
+
+    def test_101_update_to_add_comment(self):
+        command = ["update", "address", "alias",
+                   "--fqdn", "addralias1.aqd-unittest.ms.com",
+                   "--target", "arecord13.aqd-unittest.ms.com",
+                   "--ttl", "900",
+                   "--comments", "New address alias comments"] \
+                  + self.valid_just_sn
         self.noouttest(command)
 
     def test_120_verify_add_comment(self):
@@ -68,7 +78,8 @@ class TestUpdateAddressAlias(TestBrokerCommand):
         command = ["update", "address", "alias",
                    "--fqdn", "addralias1.aqd-unittest.ms.com",
                    "--target", "arecord14.aqd-unittest.ms.com",
-                   "--comments", "New other address alias comments"]
+                   "--comments", "New other address alias comments"] \
+                  + self.valid_just_sn
         self.noouttest(command)
 
     def test_140_verify_update_to_change_comment(self):
@@ -101,7 +112,7 @@ class TestUpdateAddressAlias(TestBrokerCommand):
         command = ["update", "address", "alias",
                    "--fqdn", "addralias1.aqd-unittest.ms.com",
                    "--target", "arecord14.aqd-unittest.ms.com",
-                   "--comments", ""]
+                   "--comments", ""] + self.valid_just_sn
         self.noouttest(command)
 
     def test_160_verify_update_to_no_comment(self):
@@ -141,7 +152,7 @@ class TestUpdateAddressAlias(TestBrokerCommand):
         command = ["update", "address", "alias",
                    "--fqdn", "addralias1.aqd-unittest.ms.com",
                    "--target", "arecord14.aqd-unittest.ms.com",
-                   "--clear_ttl"]
+                   "--clear_ttl"] + self.valid_just_sn
         self.noouttest(command)
 
     def test_175_verify_update_to_no_ttl(self):
@@ -155,7 +166,8 @@ class TestUpdateAddressAlias(TestBrokerCommand):
         command = ["update", "address", "alias",
                    "--fqdn", "nonexistent.aqd-unittest.ms.com",
                    "--target", "arecord14.aqd-unittest.ms.com",
-                   "--comments", "nonexistent alias"]
+                   "--comments", "nonexistent alias"] \
+                  + self.valid_just_sn
         out = self.notfoundtest(command)
         self.matchoutput(out,
                          "Fqdn nonexistent, DNS environment internal, "
@@ -166,7 +178,8 @@ class TestUpdateAddressAlias(TestBrokerCommand):
         command = ["update", "address", "alias",
                    "--fqdn", "arecord13.aqd-unittest.ms.com",
                    "--target", "arecord14.aqd-unittest.ms.com",
-                   "--comments", "nonexistent alias"]
+                   "--comments", "nonexistent alias"] \
+                  + self.valid_just_sn
         out = self.notfoundtest(command)
         self.matchoutput(out,
                          "Address Alias arecord13.aqd-unittest.ms.com, "
@@ -177,7 +190,8 @@ class TestUpdateAddressAlias(TestBrokerCommand):
         command = ["update", "address", "alias",
                    "--fqdn", "addralias1.aqd-unittest.ms.com",
                    "--target", "nonexistent.aqd-unittest.ms.com",
-                   "--comments", "nonexistent target"]
+                   "--comments", "nonexistent target"] \
+                  + self.valid_just_sn
         out = self.notfoundtest(command)
         self.matchoutput(out,
                          "Fqdn nonexistent, DNS environment internal, "
@@ -187,7 +201,8 @@ class TestUpdateAddressAlias(TestBrokerCommand):
     def test_300_update_grn(self):
         command = ["update", "address", "alias",
                    "--fqdn", "addralias3.aqd-unittest.ms.com",
-                   "--grn", "grn:/ms/ei/aquilon/unittest"]
+                   "--grn", "grn:/ms/ei/aquilon/unittest"] \
+                  + self.valid_just_sn
         self.noouttest(command)
 
     def test_305_verify_grn(self):
@@ -210,7 +225,7 @@ class TestUpdateAddressAlias(TestBrokerCommand):
     def test_310_clear_grn(self):
         command = ["update", "address", "alias",
                    "--fqdn", "addralias3.aqd-unittest.ms.com",
-                   "--clear_grn"]
+                   "--clear_grn"] + self.valid_just_sn
         self.noouttest(command)
 
     def test_315_verify_clear_grn(self):
@@ -229,7 +244,7 @@ class TestUpdateAddressAlias(TestBrokerCommand):
     def test_320_update_eon_id(self):
         command = ["update", "address", "alias",
                    "--fqdn", "addralias3.aqd-unittest.ms.com",
-                   "--eon_id", "2"]
+                   "--eon_id", "2"] + self.valid_just_sn
         self.noouttest(command)
 
     def test_325_verify_eon_id(self):
@@ -253,7 +268,7 @@ class TestUpdateAddressAlias(TestBrokerCommand):
         command = ["update", "address", "alias",
                    "--fqdn", "addralias3.aqd-unittest.ms.com",
                    "--target", "arecord14.aqd-unittest.ms.com",
-                   "--eon_id", "2"]
+                   "--eon_id", "2"] + self.valid_just_sn
         out = self.badoptiontest(command)
         self.matchoutput(out,
                          "Option or option group eon_id conflicts with target",
