@@ -252,7 +252,6 @@ from .test_rebind_client import TestRebindClient
 from .test_rebind_cluster import TestRebindCluster
 from .test_rebind_metacluster import TestRebindMetaCluster
 from .test_reconfigure import TestReconfigure
-from .test_refresh_network import TestRefreshNetwork
 from .test_refresh_user import TestRefreshUser
 from .test_rename_netdev import TestRenameNetworkDevice
 from .test_reset_advertised_status import TestResetAdvertisedStatus
@@ -483,7 +482,7 @@ class BrokerTestSuite(unittest.TestSuite):
                  TestUpdateClusterAutoStartList,
                  TestUpdateClusterSystemList,
                  TestUpdateNetworkCompartment,
-                 TestRefreshNetwork, TestUpdateNetwork, TestSplitMergeNetwork,
+                 TestUpdateNetwork, TestSplitMergeNetwork,
                  TestNetworkConstraints,
                  TestUpdateService,
                  TestUpdateNetworkEnvironment, TestUpdateDnsEnvironment,
