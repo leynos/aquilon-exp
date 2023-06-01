@@ -30,7 +30,6 @@ from aquilon.aqdb.model import (Base, HardwareEntity, HostLifecycle, Grn,
                                 OperatingSystem, CompileableMixin)
 
 from aquilon.aqdb.column_types import AqStr
-import sys
 from aquilon.config import Config
 
 from aquilon.exceptions_ import ArgumentError
@@ -89,9 +88,9 @@ class Host(CompileableMixin, Base):
     # Optionally check if grn change restrictions apply to this host
     @validates('owner_grn')
     def validate_owner_grn(self, key, grn):
-        effective_owner_grn = self.effective_owner_grn
 
         pers_stage = self.personality_stage
+        effective_owner_grn = self.effective_owner_grn
 
         # There are a number of conditions where we never want to
         # validate grn change restrictions, ie:
@@ -188,8 +187,6 @@ class Host(CompileableMixin, Base):
 
     @property
     def effective_owner_grn(self):
-        print(f"Perso Stage: {self.personality_stage}", file=sys.stderr)
-        print(f"owner grn: {self.owner_grn}", file=sys.stderr)
         if self.owner_grn:
             return self.owner_grn
         else:
@@ -197,7 +194,6 @@ class Host(CompileableMixin, Base):
 
     @validates('personality_stage')
     def validate_personality_stage(self, key, stage):
-        print(f"validate_personality_stage: {stage}", file=sys.stderr)
         if (
           self.validate_grn_changes is False or
           self.archetype.is_grn_change_restricted() is False or

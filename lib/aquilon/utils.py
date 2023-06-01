@@ -192,7 +192,8 @@ def force_list(label, value):
     seen = set()
     items = []              # preserve the order
     for x in lines:
-        if not x or x.startswith("#"):
+        # bytes?
+        if not x or x.startswith(b"#"):
             pass
         elif x in seen:
             raise ArgumentError("Provided list contains duplicate "

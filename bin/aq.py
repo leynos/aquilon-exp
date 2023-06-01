@@ -312,6 +312,15 @@ def is_readonly(command):
     return command.startswith(('show_', 'search_', 'dump_'))
 
 
+def not_ascii(argument):
+    """
+    Exit if command line contains non-ascii value.
+    """
+    print(f"Non-ascii characters detected on command options."
+          f"Only ASCII characters are allowed for --{argument}")
+    sys.exit(0)
+
+
 def get_default_opts(auth_option, conf_file=None, readonly=None,
                      globalopts_aqhost=None, env_aqhost=None):
 
@@ -366,21 +375,16 @@ if __name__ == "__main__":
         sys.exit(1)
 
     for k, v in commandOptions.items():
-        try:
-            if isinstance(v, str) and v.isascii():
-                pass
-            elif isinstance(v, list):
-                for i in v:
-                    if isinstance(i, str) and i.isascii():
-                        pass
-            if (k != 'list' and isinstance(v, str)) and len(v) > 2599:
-                print("The character count in {} is beyond the permitted "
-                      "value. Please specify argument value less "
-                      "than 2600".format(k))
-                sys.exit(0)
-        except UnicodeDecodeError as e:
-            print("Non-ascii characters detected on command options."
-                  "Only ASCII characters are allowed for --%s" %k)
+        if isinstance(v, str) and not v.isascii():
+            not_ascii(k)
+        elif isinstance(v, list):
+            for i in v:
+                if isinstance(i, str) and not i.isascii():
+                    not_ascii(k)
+        if (k != 'list' and isinstance(v, str)) and len(v) > 2599:
+            print("The character count in {} is beyond the permitted "
+                  "value. Please specify argument value less "
+                  "than 2600".format(k))
             sys.exit(0)
 
     # if a client config file is specified on command line
