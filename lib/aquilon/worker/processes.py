@@ -171,7 +171,7 @@ def run_command(args, env=None, path="/", logger=LOGGER, loglevel=logging.INFO,
 
     if input:
         proc_stdin = PIPE
-        logger.info("command `{}` stdin: {}".format(simple_command, input))
+        logger.info(f"command `{simple_command}` stdin: {input}")
     else:
         proc_stdin = None
 
@@ -220,7 +220,7 @@ def run_command(args, env=None, path="/", logger=LOGGER, loglevel=logging.INFO,
         retcode = None
         signal_num = -p.returncode
     if err:
-        logger.log(loglevel, "command `{}` stderr: {}".format(simple_command, err))
+        logger.log(loglevel, f"command `{simple_command}` stderr: {err}")
     if p.returncode == 124:
         raise ProcessException(command=simple_command, out=out, err=err,
                                code=retcode, signalNum=signal_num,
@@ -288,7 +288,7 @@ def cache_version(config, logger=LOGGER):
         config.set("broker", "version", "Unknown")
 
 
-class GitRepo(object):
+class GitRepo:
     """
     Git repository wrapper
 
@@ -441,12 +441,12 @@ class DSDBEnabledMeta(type):
                 # decorate all functions
                 # class variables, classmethods and staticmethods are not decorated
                 body[name] = dsdb_enabled(obj)
-        return super(DSDBEnabledMeta, mcls).__new__(mcls, name, bases, body)
+        return super().__new__(mcls, name, bases, body)
 
     def __call__(cls, *args, **kwargs):
         # create a new instance for this class
         # add in `dsdbclient` attribute
-        instance = super(DSDBEnabledMeta, cls).__call__(*args, **kwargs)
+        instance = super().__call__(*args, **kwargs)
         if DSDB_ENABLED:
             if instance.dsdb_use_testdb:
                 os.environ['DSDB_USE_TESTDB'] = "1"
@@ -460,7 +460,7 @@ class DSDBEnabledMeta(type):
         return instance
 
 
-class DSDBRunner(object, metaclass=DSDBEnabledMeta):
+class DSDBRunner(metaclass=DSDBEnabledMeta):
     snapshot_handlers = {}
 
     def __init__(self, logger=LOGGER):
@@ -696,7 +696,7 @@ class DSDBRunner(object, metaclass=DSDBEnabledMeta):
                                                   'comments': dbrack.comments}}
         # Ignoring DSDB failures for updates now, as many racks do not exist in DSDB
         self.add_action(dsdb_client_command_dict, dsdb_client_rollback_dict, cmd_line=False, error_filter=True,
-                        ignore_msg="Delete rack {} in DSDB failed, proceeding in AQDB.".format(dbrack.name))
+                        ignore_msg=f"Delete rack {dbrack.name} in DSDB failed, proceeding in AQDB.")
 
     def add_chassis(self, dbchassis):
         try:
@@ -729,7 +729,7 @@ class DSDBRunner(object, metaclass=DSDBEnabledMeta):
                                                      'comments': dbchassis.comments}}
         # Ignoring DSDB failures for updates now, as many racks do not exist in DSDB
         self.add_action(dsdb_client_command_dict, dsdb_client_rollback_dict, cmd_line=False, error_filter=True,
-                        ignore_msg="Delete chassis {} in DSDB failed, proceeding in AQDB.".format(dbchassis.label))
+                        ignore_msg=f"Delete chassis {dbchassis.label} in DSDB failed, proceeding in AQDB.")
 
     def add_host_details(self, fqdn, ip, iface=None, mac=None, primary=None,
                          comments=None, **_):
@@ -991,7 +991,7 @@ class DSDBRunner(object, metaclass=DSDBEnabledMeta):
             kwargs = {p + k: v
                       for (p, d) in [('old_', old_ifdata),
                                      ('new_', new_ifdata)]
-                      for k, v in iteritems(d)}
+                      for k, v in d.items()}
 
             if (old_ifdata['ip'] != new_ifdata['ip'] or
                         old_ifdata['mac'] != new_ifdata['mac'] or
@@ -1079,7 +1079,7 @@ class DSDBRunner(object, metaclass=DSDBEnabledMeta):
                       "comments": chassis_data[0].get("comments", "")}
 
         if not fields:
-            raise ValueError("Chassis {} is not found in DSDB.".format(chassis))
+            raise ValueError(f"Chassis {chassis} is not found in DSDB.")
         return fields
 
     def show_host(self, hostname):

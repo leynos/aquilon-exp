@@ -27,7 +27,7 @@ from difflib import unified_diff
 from textwrap import dedent
 
 from lxml import etree
-from six import string_types
+from google.protobuf.message import DecodeError
 
 from aquilon.config import Config, lookup_file_path
 from aquilon.worker import depends  # pylint: disable=W0611
@@ -46,6 +46,9 @@ CM_FORMAT = "Failed to parse justification, no valid TCM or SN ticket found."
 CM_EDM = "Executing an emergency change without a justification, EDM has not be called."
 CM_WARN = 'Continuing with execution; however in the future this operation will fail.'
 
+import logging
+
+logger = logging.getLogger(__name__)
 
 class TestBrokerCommand(unittest.TestCase):
 
@@ -233,7 +236,7 @@ class TestBrokerCommand(unittest.TestCase):
         :param file:
         :return:
         """
-        with open(file, "r") as f:
+        with open(file) as f:
             for line in f:
                 pass
         self.assertTrue(bool(line.strip()), "Last line is empty")
@@ -274,8 +277,7 @@ class TestBrokerCommand(unittest.TestCase):
                 env['USER'] = os.environ.get('USER', '')
             kwargs["env"] = env
 
-        p = Popen(args, stdout=PIPE, stderr=PIPE,
-                  **kwargs)
+        p = Popen(args, stdout=PIPE, stderr=PIPE, text=False, **kwargs)
         out, err = p.communicate()
         err = self.msversion_dev_re.sub('', err.decode())
 
@@ -285,6 +287,8 @@ class TestBrokerCommand(unittest.TestCase):
 
         try:
             return p, out.decode(), err
+        except (DecodeError, UnicodeDecodeError):
+            return p, out.decode("ISO-8859-1"), err
         except Exception as e:
             return p, str(out), err
 
@@ -453,7 +457,7 @@ class TestBrokerCommand(unittest.TestCase):
                          "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n" %
                          (command, out))
         self.assertTrue(
-            "Command {} is deprecated".format(command[0]) in err_splited[0],
+            f"Command {command[0]} is deprecated" in err_splited[0],
             "'Command {} is deprecated' not in {}".format(command[0],
                                                           err_splited[0]))
         self.assertTrue(err_splited[1].startswith("Not Implemented"),
@@ -522,7 +526,7 @@ class TestBrokerCommand(unittest.TestCase):
                          (command, s, out))
 
     def searchoutput(self, out, r, command):
-        if isinstance(r, string_types):
+        if isinstance(r, str):
             m = re.search(r, out, re.MULTILINE)
         else:
             m = re.search(r, out)
@@ -532,7 +536,7 @@ class TestBrokerCommand(unittest.TestCase):
         return m
 
     def searchnooutput(self, out, r, command):
-        if isinstance(r, string_types):
+        if isinstance(r, str):
             m = re.search(r, out, re.MULTILINE)
         else:
             m = re.search(r, out)
@@ -542,7 +546,7 @@ class TestBrokerCommand(unittest.TestCase):
         return m
 
     def searchclean(self, out, r, command):
-        if isinstance(r, string_types):
+        if isinstance(r, str):
             m = re.search(r, out, re.MULTILINE)
         else:
             m = re.search(r, out)
@@ -572,7 +576,7 @@ class TestBrokerCommand(unittest.TestCase):
         unmatched = []
         for s in sl:
             s = dedent(s).strip()
-            m = re.search('^{}$'.format(re.escape(s)), out, re.MULTILINE)
+            m = re.search(f'^{re.escape(s)}$', out, re.MULTILINE)
             if not m:
                 unmatched.append(s)
             else:
@@ -584,7 +588,7 @@ class TestBrokerCommand(unittest.TestCase):
         self.assertFalse(unmatched,
                          'Unmatched blocks for {}:\n{}{}'.format(
                              command, '\n--\n'.join(unmatched),
-                             '\n>>> Leftover output:\n{}'.format(out)
+                             f'\n>>> Leftover output:\n{out}'
                              if bool(out) else ''))
 
         if match_all:
@@ -599,7 +603,7 @@ class TestBrokerCommand(unittest.TestCase):
         matched = []
         for s in sl:
             s = dedent(s).strip()
-            m = re.search('^{}$'.format(re.escape(s)), out, re.MULTILINE)
+            m = re.search(f'^{re.escape(s)}$', out, re.MULTILINE)
             if m:
                 matched.append(s)
                 out = out[:max(0, m.start() - 1)] + out[m.end():]
@@ -610,7 +614,7 @@ class TestBrokerCommand(unittest.TestCase):
         self.assertFalse(matched,
                          'Matched blocks for {}:\n{}{}'.format(
                              command, '\n--\n'.join(matched),
-                             '\n>>> Leftover output:\n{}'.format(out)
+                             f'\n>>> Leftover output:\n{out}'
                              if bool(out) else ''))
 
     def parse_proto_msg(self, listclass, attr, msg, expect=None):
@@ -660,11 +664,10 @@ class TestBrokerCommand(unittest.TestCase):
 
         field = msg_cls.DESCRIPTOR.fields[0]
         out = self.commandtest(command, **kwargs)
-
         try:
-            return self.parse_proto_msg(msg_cls, field.name, out.encode('utf-8'), expect=expect)
-        except Exception as e:
-            return self.parse_proto_msg(msg_cls, field.name, out.encode('ascii'), expect=expect)
+            return self.parse_proto_msg(msg_cls, field.name, out.encode("utf-8"), expect=expect)
+        except DecodeError:
+            return self.parse_proto_msg(msg_cls, field.name, out.encode("ISO-8859-1"), expect=expect)
 
     @classmethod
     def gitenv(cls, env=None):
@@ -887,10 +890,10 @@ class TestBrokerCommand(unittest.TestCase):
         for filename in [DSDB_EXPECT_SUCCESS_FILE, DSDB_EXPECT_FAILURE_FILE]:
             expected_name = os.path.join(self.dsdb_coverage_dir, filename)
             try:
-                with open(expected_name, "r") as fp:
+                with open(expected_name) as fp:
                     for line in fp:
                         expected[line.rstrip("\n")] = True
-            except IOError:
+            except OSError:
                 pass
 
         # This is likely a logic error in the test
@@ -900,10 +903,10 @@ class TestBrokerCommand(unittest.TestCase):
 
         issued = {}
         try:
-            with open(issued_name, "r") as fp:
+            with open(issued_name) as fp:
                 for line in fp:
                     issued[line.rstrip("\n")] = True
-        except IOError:
+        except OSError:
             pass
 
         errors = []
@@ -960,7 +963,7 @@ class TestBrokerCommand(unittest.TestCase):
 
     def demote_current_user(self, role="nobody"):
         command = ["permission", "--role", role,
-                   "--principal", "%s@%s" % (self.user, self.realm)] + self.valid_just_sn
+                   "--principal", "{}@{}".format(self.user, self.realm)] + self.valid_just_sn
         self.noouttest(command)
 
     def promote_current_user(self):
@@ -976,7 +979,7 @@ class TestBrokerCommand(unittest.TestCase):
                          (out, err))
 
     def assertTruedeprecation(self, depr_str, testfunc):
-        with open(self.config.get("broker", "logfile"), "r") as logfile:
+        with open(self.config.get("broker", "logfile")) as logfile:
             # Let's seek to the end of it, matching only against the relevant part.
             logfile.seek(0, 2)
             # Now call the function that should generate the deprecation warning
@@ -985,4 +988,4 @@ class TestBrokerCommand(unittest.TestCase):
 
     @staticmethod
     def dynname(ip, domain="aqd-unittest.ms.com"):
-        return "dynamic-%s.%s" % (str(ip).replace(".", "-"), domain)
+        return "dynamic-{}.{}".format(str(ip).replace(".", "-"), domain)

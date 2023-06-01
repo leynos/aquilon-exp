@@ -4,7 +4,7 @@ train_version: 1.0
 
 tools:
    - msde/git/2.9.5
-   - python/core/3.7.5
+   - python/core/3.7.9
    - msde/msdlbuild/prod
 
 
@@ -45,6 +45,4 @@ test_types:
             cp ../install/common/test-results/UNIT/xml/test.xml ../install/common/test-results/INTEGRATION/coveragepy/xml/
             PYLINTHOME=../run/.pylint.d tests/pylint --msg-template='{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}' lib/aquilon/ bin/*.py sbin/*.py > ../install/common/test-results/pylint.out || /bin/true
             # In the past, commits did not have the codestyle.py file available; let's use the flake8 checker directly
-            module unload python/core/2.7.18-64
-            module load python/core/3.4.4
             ./tests/codestyle.py --all > ../install/common/test-results/flake8.out || /bin/true

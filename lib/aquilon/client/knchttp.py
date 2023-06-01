@@ -19,18 +19,18 @@ import subprocess
 import os
 from threading import Lock
 
-from six.moves.http_client import NotConnected  # pylint: disable=F0401
+from http.client import NotConnected  # pylint: disable=F0401
 
-from aquilon.client.chunked import ChunkedHTTPConnection
+from urllib3.connection import HTTPConnection
 
 # subprocess.Popen() is not thread safe in Python, so we need locking. We only
 # care about two connections racing to launch knc, so a local lock here is fine.
 _popen_lock = Lock()
 
 
-class ProcessWrapper(object):
+class ProcessWrapper:
 
-    class _closedsocket(object):
+    class _closedsocket:
         def __getattr__(self, name):
             raise OSError(9, 'Bad file descriptor')
 
@@ -62,14 +62,17 @@ class ProcessWrapper(object):
 
         return self._stdout.read(len)
 
+    def settimeout(self, timeout):
+        """To fix AttributeError: '_io.FileIO' object has no attribute 'settimeout'"""
+
     def __getattr__(self, attr):
         return getattr(self._stdout, attr)
 
 
-class WrappedHTTPConnection(ChunkedHTTPConnection):
+class WrappedHTTPConnection(HTTPConnection):
 
-    def __init__(self, executable, host, port, service=None, strict=None):
-        ChunkedHTTPConnection.__init__(self, host, port, strict)
+    def __init__(self, executable, host, port, service=None):
+        super().__init__(host, port)
         self.executable = executable
         self.service = service
 
@@ -105,7 +108,7 @@ class KNCHTTPConnection(WrappedHTTPConnection):
 
     def __init__(self, host, port, service, strict=None):
         if os.path.exists(self.__class__.KNC_PATH):
-            os.environ['PATH'] = "%s:%s" % (self.__class__.KNC_PATH,
+            os.environ['PATH'] = "{}:{}".format(self.__class__.KNC_PATH,
                                             os.environ.get('PATH', ''))
-        WrappedHTTPConnection.__init__(self, self.__class__.KNC_BIN,
-                                       host, port, service, strict)
+        super().__init__(self.__class__.KNC_BIN,
+                         host, port, service)

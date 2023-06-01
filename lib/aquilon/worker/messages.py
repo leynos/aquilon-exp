@@ -21,8 +21,6 @@ from collections import deque
 from logging import DEBUG
 import uuid
 
-from six import iteritems
-
 from twisted.internet import reactor
 
 from aquilon.exceptions_ import InternalError
@@ -37,7 +35,7 @@ from aquilon.exceptions_ import InternalError
 MAX_DEBUG_MESSAGES_PER_REQUEST = 10000
 
 
-class RequestStatus(object):
+class RequestStatus:
     """Store status information for each incoming request.
 
     Each request will get one of these objects to write status
@@ -88,7 +86,7 @@ class RequestStatus(object):
             user = 'nobody'
 
         massaged = []
-        for key, value in iteritems(kwargs):
+        for key, value in kwargs.items():
             # Skip ignored and empty arguments
             if key in ignored:
                 continue
@@ -113,10 +111,9 @@ class RequestStatus(object):
 
             if key == 'style' and value == 'raw':
                 continue
-            massaged.append(" --%s=%s" % (key, value_str))
+            massaged.append(" --{}={}".format(key, value_str))
 
-        description = '[%s] %s: aq %s%s' % (self.auditid, user, command,
-                                            "".join(massaged))
+        description = '[{}] {}: aq {}{}'.format(self.auditid, user, command, "".join(massaged))
         self.user = user
         self.command = command
         self.description = description
@@ -132,7 +129,7 @@ class RequestStatus(object):
                 if len(self.debug_fifo) > MAX_DEBUG_MESSAGES_PER_REQUEST:
                     remove_index = self.debug_fifo.popleft()
                     self.records[remove_index] = None
-            for (subscriber, processed) in list(self.subscribers.items()):
+            for subscriber, processed in self.subscribers.items():
                 self._notify_subscriber(subscriber, processed)
 
     def add_subscriber(self, subscriber):
@@ -171,7 +168,7 @@ class RequestStatus(object):
                 subscriber.finish()
 
 
-class StatusCatalog(object):
+class StatusCatalog:
     """Global store for all StatusRequest objects."""
 
     __shared_state = {}
@@ -250,7 +247,7 @@ class StatusCatalog(object):
             pass
 
 
-class StatusSubscriber(object):
+class StatusSubscriber:
     """Objects that want to be notified of new records should subclass this."""
 
     def __init__(self):

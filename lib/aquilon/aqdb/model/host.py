@@ -30,7 +30,7 @@ from aquilon.aqdb.model import (Base, HardwareEntity, HostLifecycle, Grn,
                                 OperatingSystem, CompileableMixin)
 
 from aquilon.aqdb.column_types import AqStr
-
+import sys
 from aquilon.config import Config
 
 from aquilon.exceptions_ import ArgumentError
@@ -90,6 +90,7 @@ class Host(CompileableMixin, Base):
     @validates('owner_grn')
     def validate_owner_grn(self, key, grn):
         effective_owner_grn = self.effective_owner_grn
+
         pers_stage = self.personality_stage
 
         # There are a number of conditions where we never want to
@@ -155,9 +156,9 @@ class Host(CompileableMixin, Base):
            vendors_allowed_grn_change:
             return grn
 
-        raise ArgumentError("Changing {0} ({1}, {2}, {3}) to {4} from {5} is "
+        raise ArgumentError("Changing {} ({}, {}, {}) to {} from {} is "
                             "not allowed because it would change the host "
-                            "effective grn (host {6} has {7}).  This change "
+                            "effective grn (host {} has {}).  This change "
                             "requires a complete disk wipe of the affected "
                             "host(s).".format(
                                 self, self.archetype,
@@ -187,6 +188,8 @@ class Host(CompileableMixin, Base):
 
     @property
     def effective_owner_grn(self):
+        print(f"Perso Stage: {self.personality_stage}", file=sys.stderr)
+        print(f"owner grn: {self.owner_grn}", file=sys.stderr)
         if self.owner_grn:
             return self.owner_grn
         else:
@@ -194,7 +197,7 @@ class Host(CompileableMixin, Base):
 
     @validates('personality_stage')
     def validate_personality_stage(self, key, stage):
-
+        print(f"validate_personality_stage: {stage}", file=sys.stderr)
         if (
           self.validate_grn_changes is False or
           self.archetype.is_grn_change_restricted() is False or
@@ -228,9 +231,9 @@ class Host(CompileableMixin, Base):
         if stage.owner_eon_id in eon_ids_allowed_grn_change:
             return stage
 
-        raise ArgumentError("Changing to {0} ({1}) from {2} is not allowed "
-                            "because it would change the effective grn of {3},"
-                            " {4}, {5}, {6}.  This change requires a complete "
+        raise ArgumentError("Changing to {} ({}) from {} is not allowed "
+                            "because it would change the effective grn of {},"
+                            " {}, {}, {}.  This change requires a complete "
                             "disk wipe of the affect host(s)".format(
                                 stage, stage.owner_grn,
                                 self.personality_stage,
@@ -242,14 +245,14 @@ class Host(CompileableMixin, Base):
     def required_services(self):
         # Order matters in case the same key is present in both
         rqs = {dbsrv: None for dbsrv in self.operating_system.required_services}
-        rqs.update(super(Host, self).required_services)
+        rqs.update(super().required_services)
         return rqs
 
     def __init__(self, *args, **kwargs):
 
         # validate_grn_changes will be false when creating a new host
         self.validate_grn_changes = kwargs.pop('validate_grn_changes', True)
-        super(Host, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     @reconstructor
     def setup(self):

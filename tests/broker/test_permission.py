@@ -257,7 +257,6 @@ class TestPermission(TestBrokerCommand):
         command = ["permission", "--principal", "{}@some.test.realm".format(self.user),
                    "--role", "nobody", "--createrealm", "--createuser"] + self.valid_just_sn
         err = self.statustest(command)
-        print("err", err)
         self.matchoutput(err, "Realm some.test.realm did not exist, creating.", command)
         self.matchoutput(err, "User {}@some.test.realm did not exist, creating.".format(self.user),
                          command)

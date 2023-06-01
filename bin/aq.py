@@ -23,7 +23,6 @@ connect directly.
 
 '''
 
-from __future__ import print_function
 
 import sys
 import os
@@ -46,22 +45,23 @@ from aquilon.client.ldap_search import check_ldap_filter
 from aquilon.config import lookup_file_path, get_username
 from aquilon.exceptions_ import AquilonError
 from aquilon.client.knchttp import KNCHTTPConnection
-from aquilon.client.chunked import ChunkedHTTPConnection
 from aquilon.client.optparser import OptParser, ParsingError
 from aquilon.python_patches import load_uuid_quickly
 
-from six.moves.urllib_parse import urlencode, quote  # pylint: disable=F0401
-from six.moves.configparser import ConfigParser  # pylint: disable=F0401
-import six.moves.http_client as httplib  # pylint: disable=F0401
-from six import iteritems
+from urllib.parse import urlencode, quote  # pylint: disable=F0401
+from configparser import ConfigParser  # pylint: disable=F0401
+import http.client as httplib  # pylint: disable=F0401
 import codecs
+
+from urllib3.connection import HTTPConnection
+from urllib3.exceptions import HTTPError
 
 # Stolen from aquilon.worker.formats.fomatters
 csv.register_dialect('aquilon', delimiter=',', quoting=csv.QUOTE_MINIMAL,
                      doublequote=True, lineterminator='\n')
 
 
-class RESTResource(object):
+class RESTResource:
     def __init__(self, httpconnection, uri):
         self.httpconnection = httpconnection
         self.uri = uri
@@ -84,13 +84,13 @@ class RESTResource(object):
         headers = {}
         if mimeType:
             headers['Content-Type'] = mimeType
-        self.httpconnection.request(method, self.uri, data, headers)
+        self.httpconnection.request(method, self.uri, data, headers, preload_content=False)
 
     def getresponse(self):
         return self.httpconnection.getresponse()
 
 
-class CustomAction(object):
+class CustomAction:
     """Any custom code that needs to be written to run before contacting
     the server can go here for now.
 
@@ -225,7 +225,7 @@ def create_sandbox(pageData, noexec=False):
         p_clone = subprocess.Popen(cmd_clone, cwd=user_base, stdin=None,
                                    stdout=1, stderr=2)
     except OSError as e:
-        print("Could not execute %s: %s" % (cmd_clone, e), file=sys.stderr)
+        print("Could not execute {}: {}".format(cmd_clone, e), file=sys.stderr)
         return 1
     exit_clone = p_clone.wait()
     if exit_clone == 0:
@@ -238,7 +238,7 @@ def create_sandbox(pageData, noexec=False):
         p_prepare = subprocess.Popen(cmd_prepare, cwd=user_base, stdin=None,
                                      stdout=1, stderr=2)
     except OSError as e:
-        print("Could not execute %s: %s" % (cmd_prepare, e), file=sys.stderr)
+        print("Could not execute {}: {}".format(cmd_prepare, e), file=sys.stderr)
         return 1
     exit_prepare = p_prepare.wait()
     if exit_prepare == 0:
@@ -268,7 +268,7 @@ class StatusThread(Thread):
     def run(self):
         try:
             self.show_request()
-        except:
+        except Exception:
             # Weird stuff can happen in threads.  Just ignore it.
             pass
 
@@ -280,43 +280,36 @@ class StatusThread(Thread):
         if self.authuser:
             sconn = KNCHTTPConnection(self.host, self.port, self.authuser)
         else:
-            sconn = ChunkedHTTPConnection(self.host, self.port)
+            sconn = HTTPConnection(self.host, self.port)
         parameters = ""
         if self.debug:
             parameters = "?debug=True"
             sconn.set_debuglevel(10)
         if self.auditid:
-            uri = "/status/auditid/%s%s" % (self.auditid, parameters)
+            uri = "/status/auditid/{}{}".format(self.auditid, parameters)
         else:
-            uri = "/status/requestid/%s%s" % (self.requestid, parameters)
+            uri = "/status/requestid/{}{}".format(self.requestid, parameters)
         RESTResource(sconn, uri).get()
         # handle failed requests
         res = sconn.getresponse()
         self.response_status = res.status
-
         if res.status != httplib.OK:
             if self.debug:
-                print("%s: %s" % (httplib.responses[res.status], res.read().decode()),
+                print("{}: {}".format(httplib.responses[res.status], res.read().decode()),
                       file=sys.stderr)
             sconn.close()
             return
-
-        while res.fp:
-            pageData = res.read_chunk()
-            if pageData:
-                self.outstream.write(pageData)
+        for chunk in res.stream():
+            self.outstream.write(chunk.decode())
         sconn.close()
-        return
 
 
 def quoteOptions(options):
-    return "&".join(quote(k) + "=" + quote(v) for k, v in iteritems(options))
+    return "&".join(quote(k) + "=" + quote(v) for k, v in options.items())
 
 
 def is_readonly(command):
-    return (command.startswith('show_') or
-            command.startswith('search_') or
-            command.startswith('dump_'))
+    return command.startswith(('show_', 'search_', 'dump_'))
 
 
 def get_default_opts(auth_option, conf_file=None, readonly=None,
@@ -367,12 +360,12 @@ if __name__ == "__main__":
         (command, transport, commandOptions, globalOptions) = \
             parser.parse(sys.argv[1:])
     except ParsingError as e:
-        print('%s: %s' % (sys.argv[0], e.error), file=sys.stderr)
+        print('{}: {}'.format(sys.argv[0], e.error), file=sys.stderr)
         print('%s: Try --help for usage details.' % (sys.argv[0]),
               file=sys.stderr)
         sys.exit(1)
 
-    for k, v in iteritems(commandOptions):
+    for k, v in commandOptions.items():
         try:
             if isinstance(v, str) and v.isascii():
                 pass
@@ -381,7 +374,7 @@ if __name__ == "__main__":
                     if isinstance(i, str) and i.isascii():
                         pass
             if (k != 'list' and isinstance(v, str)) and len(v) > 2599:
-                print("The character count in {0} is beyond the permitted "
+                print("The character count in {} is beyond the permitted "
                       "value. Please specify argument value less "
                       "than 2600".format(k))
                 sys.exit(0)
@@ -454,7 +447,7 @@ if __name__ == "__main__":
 
     newOptions = {}
 
-    for k, v in iteritems(commandOptions):
+    for k, v in commandOptions.items():
         newOptions[str(k)] = str(v)
     commandOptions = newOptions
 
@@ -468,7 +461,7 @@ if __name__ == "__main__":
 
     # Quote options so that they can be safely included in the URI
     cleanOptions = {}
-    for k, v in iteritems(commandOptions):
+    for k, v in commandOptions.items():
         # urllib.quote() does not escape '/' by default. We have to turn off
         # this behavior because otherwise a parameter containing '/' would
         # confuse the URL parsing logic on the server side.
@@ -502,7 +495,7 @@ if __name__ == "__main__":
     if authuser:
         conn = KNCHTTPConnection(host, port, authuser)
     else:
-        conn = ChunkedHTTPConnection(host, port)
+        conn = HTTPConnection(host, port)
 
     if globalOptions.get('debug'):
         conn.set_debuglevel(10)
@@ -576,7 +569,7 @@ if __name__ == "__main__":
 
         res = conn.getresponse()
 
-    except (httplib.HTTPException, socket.error) as e:
+    except (HTTPError, OSError) as e:
         # noauth connections
         if not hasattr(conn, "getError"):
             print("Error: %s" % e, file=sys.stderr)
@@ -584,7 +577,7 @@ if __name__ == "__main__":
         # KNC connections
         msg = conn.getError()
         host_failed = "Failed to connect to %s" % host
-        port_failed = "%s port %s" % (host_failed, port)
+        port_failed = "{} port {}".format(host_failed, port)
         if msg.find(b'Connection refused') >= 0:
             print("%s: Connection refused." % port_failed, file=sys.stderr)
         elif msg.find(b'Connection timed out') >= 0:
@@ -592,7 +585,7 @@ if __name__ == "__main__":
         elif msg.find(b'Unknown host') >= 0:
             print("%s: Unknown host." % host_failed, file=sys.stderr)
         else:
-            print("Error: %s: %s" % (repr(e), msg), file=sys.stderr)
+            print("Error: {}: {}".format(repr(e), msg), file=sys.stderr)
         sys.exit(1)
 
     pageData = res.read()
@@ -602,7 +595,7 @@ if __name__ == "__main__":
         status_thread.join(5)
 
     if res.status != httplib.OK:
-        print("%s: %s" % (httplib.responses.get(res.status, res.status),
+        print("{}: {}".format(httplib.responses.get(res.status, res.status),
                           pageData.decode()), file=sys.stderr)
         if res.status == httplib.MULTI_STATUS and \
            globalOptions.get('partialok'):
@@ -627,7 +620,7 @@ if __name__ == "__main__":
         noexec = not globalOptions.get('exec')
         exit_status = create_sandbox(pageData, noexec=noexec)
     else:
-        if res.length != 0 and res.getheader('content-type').startswith('text/'):
+        if int(res.headers.get("Content-Length", 0)) > 0 and res.headers.get("Content-Type", "").startswith('text/'):
                 # TODO: honour the charset in the header, if any - not that the
                 # broker would use anything else
                 # if isinstance(pageData, bytes):

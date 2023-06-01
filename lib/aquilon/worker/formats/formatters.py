@@ -141,8 +141,7 @@ class ResponseFormatter(object):
         field_name = container.DESCRIPTOR.fields[0].name
         ObjectFormatter.redirect_proto(result, getattr(container, field_name),
                                        embedded=False)
-        # TODO: there seems to be no official MIME type for protobuf yet
-        request.setHeader("Content-Type", "application/octet-stream")
+        request.setHeader("Content-Type", "application/x-protobuf")
         return container.SerializeToString()
 
     def format_json(self, result, request):

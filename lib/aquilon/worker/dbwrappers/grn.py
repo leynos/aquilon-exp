@@ -20,7 +20,7 @@ import os.path
 from csv import DictReader
 
 try:
-    import cdb
+    import cdblib.compat as cdb
 except ImportError:
     _has_cdb = False
 else:
@@ -43,7 +43,7 @@ def lookup_autoupdate(datadir, session, logger, grn, eon_id):
 
     cdb_file = cdb.init(name)  # pylint: disable=E1101
     # Tell pep8 not to warn about .has_key()
-    if key.encode("ascii") not in cdb_file:  # noqa
+    if key not in cdb_file.keys():  # noqa
         return None
 
     # We found a GRN which is not in the DB. Pefrorm a full refresh, because it
