@@ -38,7 +38,7 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
                           network_environment='internal',
                           reverse_dns_environment=None):
         # Determine the IP type
-        ip = ip_address(unicode(ip))
+        ip = ip_address(ip)
         if isinstance(ip, IPv6Address):
             inaddr = in6addr_ptr
             rrtype = 'AAAA'
