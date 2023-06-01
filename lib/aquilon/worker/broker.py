@@ -41,6 +41,7 @@ from aquilon.worker.templates.base import Plenary, PlenaryCollection
 from aquilon.worker.templates.domain import TemplateDomain
 from aquilon.worker.services import Chooser
 from aquilon.worker.dbwrappers.branch import sync_domain
+import logging
 
 # Things we don't need cluttering up the transaction details table
 _IGNORED_AUDIT_ARGS = ('requestid', 'bundle', 'debug', 'session', 'dbuser')
@@ -61,6 +62,8 @@ def get_code_for_error_class(e):
 
 
 class BrokerCommand(object):
+    module_logger = logging.getLogger(__name__)
+
     """ The basis for each command module under commands.
 
     Several class-level lists and flags are defined here that can be
