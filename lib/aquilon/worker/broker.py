@@ -61,13 +61,7 @@ def get_code_for_error_class(e):
     return ERROR_TO_CODE.get(e, http.INTERNAL_SERVER_ERROR)
 
 
-<<<<<<< HEAD
 class BrokerCommand:
-=======
-class BrokerCommand(object):
-    module_logger = logging.getLogger(__name__)
-
->>>>>>> e8dedd3df (Prevent html error message in the aq client)
     """ The basis for each command module under commands.
 
     Several class-level lists and flags are defined here that can be
@@ -75,7 +69,7 @@ class BrokerCommand(object):
     in __init__, though, so check the docstrings.
 
     """
-
+    module_logger = logging.getLogger(__name__)
     required_parameters = []
     """ This will generally be overridden in the command class.
 

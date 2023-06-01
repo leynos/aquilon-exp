@@ -28,7 +28,7 @@ else:
     ms.version.addpkg('ipaddress', '1.0.23')
     ms.version.addpkg('dateutil', '2.8.1')
     ms.version.addpkg('pure-cdb', '3.1.0')
-    ms.version.addpkg('six', '1.15.0')
+    ms.version.addpkg('six', '1.16.0')
     ms.version.addpkg('jsonschema', '3.2.0')
     ms.version.addpkg('importlib-metadata', '4.9.0')
     ms.version.addpkg('zipp', '3.0.0')
