@@ -26,7 +26,7 @@ class RebootScheduleFormatter(ResourceFormatter):
     suppress_name = True
 
     template_json = "reboot_schedule.mako"
-    
+
     def extra_details(self, rs, indent=""):
         details = []
         details.append(indent + "  Week: {0.week}".format(rs))
