@@ -44,11 +44,7 @@ for f in os.listdir(_thisdir):
     if os.path.isfile(full) and f.endswith('.py') and f != '__init__.py':
         moduleshort = f[:-3]
         modulename = __name__ + '.' + moduleshort
-        try:
-            mymodule = __import__(modulename, fromlist=["BrokerCommand"])
-        except Exception as e:  # pragma: no cover
-            log.msg("Error importing %s: %s" % (modulename, format_exc()))
-            continue
+        mymodule = __import__(modulename, fromlist=["BrokerCommand"])
         if not hasattr(mymodule, "BrokerCommand"):  # pragma: no cover
             continue
         # This is just convenient... don't have to import the 'real'
