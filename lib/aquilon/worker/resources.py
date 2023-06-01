@@ -46,17 +46,14 @@ ToDo:
 """
 
 import re
-import inspect
-from xml.etree import ElementTree
 
-from six import iteritems
+from urllib.parse import parse_qs
 
 from twisted.web import server, resource, http
 from twisted.internet import defer, threads
 from twisted.python import log, context
 from twisted.python.log import ILogContext
 
-from aquilon.config import lookup_file_path
 from aquilon.aqdb.types import StringEnum
 from aquilon.exceptions_ import ArgumentError, ProtocolError
 from aquilon.worker.formats.formatters import ResponseFormatter
@@ -132,15 +129,7 @@ class ResponsePage(resource.Resource):
 
     def extractArguments(self, request):
         result = {}
-        for arg, values in iteritems(request.args):
-            try:
-                # Parameter names should be plain ASCII
-                arg = arg.decode("ascii")
-            except UnicodeError:
-                raise ProtocolError("Non-ASCII command parameter")
-            except AttributeError:
-                pass
-
+        for arg, values in request.args.items():
             if not isinstance(values, list):  # pragma: no cover
                 raise ProtocolError("Expected list for %s, got %s"
                                     % (arg, type(values)))
@@ -148,13 +137,8 @@ class ResponsePage(resource.Resource):
                 raise ProtocolError("Too many values specified for %s"
                                     % arg)
 
-            try:
-                result[arg] = values[0].decode("utf-8")
-            except UnicodeError:
-                raise ProtocolError("Value for parameter %s is not "
-                                    "valid UTF-8" % arg)
-            except AttributeError:
-                result[arg] = values[0]
+            result[arg.decode() if isinstance(arg, bytes) else arg] = values[0].decode()\
+                if isinstance(values[0], bytes) else values[0]
         return result
 
     def render(self, request):
@@ -174,7 +158,7 @@ class ResponsePage(resource.Resource):
             # Since these are both lists, there is a theoretical case where
             # one might want to merge the lists, instead of overwriting with
             # the new.  Not sure if that matters right now.
-            request.args.update(http.parse_qs(request.content.read()))
+            request.args.update(parse_qs(request.content.read().decode()))
         # FIXME: This breaks HEAD and OPTIONS handling...
         handler = self.handlers.get(request.method.decode(), None)
         if not handler:
@@ -188,11 +172,7 @@ class ResponsePage(resource.Resource):
 
         # Process requestid early, so we can keep track of the request even if
         # parsing the rest of the arguments fail
-        if b"requestid" in request.args:
-            requestid = force_uuid("--requestid",
-                                   request.args[b"requestid"][0].decode("ascii"))
-        else:
-            requestid = None
+        requestid = force_uuid("--requestid", request.args["requestid"][0]) if request.args.get("requestid") else None
 
         # For the show_request command, requestid is the UUID of the command we
         # want to monitor and not the UUID of this command. As a result,
@@ -392,7 +372,7 @@ class ResourcesCommandEntry(CommandEntry):
     }
 
     def __init__(self, fullname, method, path, name, trigger):
-        super(ResourcesCommandEntry, self).__init__(fullname, method, path, name, trigger)
+        super().__init__(fullname, method, path, name, trigger)
 
         # Locate the instance of the BrokerCommand
         # See commands/__init__.py for more info here...
@@ -521,8 +501,7 @@ class ResourcesCommandRegistry(CommandRegistry):
         # Save the additional instance of ResourceServer and call
         # the base class to finish setting up.
         self.server = server
-
-        super(ResourcesCommandRegistry, self).__init__()
+        super().__init__()
 
     def new_entry(self, fullname, method, path, name, trigger):
         # Create a new instance of ResourcesCommandEntry.  It's add_option

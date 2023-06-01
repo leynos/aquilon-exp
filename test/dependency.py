@@ -25,9 +25,8 @@ else:
     ms.version.addpkg("mock", "3.0.5")
     ms.version.addpkg("setuptools", "45.0.0")
     ms.version.addpkg("six", "1.14.0")
-    ms.version.addpkg("protobuf", "3.10.0")
     ms.version.addpkg("zope.interface", "4.6.0")
-    ms.version.addpkg('sqlalchemy', '1.3.8-py37')
+    ms.version.addpkg('sqlalchemy', '1.3.23')
     ms.version.addpkg('cx_Oracle', '7.2.3-12.2.0.1.0-py37')
     ms.version.addpkg('psycopg2', '2.8.5-11.4.0-py37')
     ms.version.addpkg('ms.modulecmd', '1.1.1')
@@ -43,7 +42,7 @@ else:
     ms.version.addpkg('prettytable', '1.0.1')
     ms.version.addpkg('attrs', '20.3.0')
     ms.version.addpkg('pyrsistent', '0.15.7-py37')
-    ms.version.addpkg('twisted', '20.3.0-py37')
+    ms.version.addpkg('twisted', '21.2.0')
     ms.version.addpkg('incremental', '16.10.1')
     ms.version.addpkg('Automat', '20.2.0')
     ms.version.addpkg('hyperlink', '20.0.1')
@@ -62,7 +61,8 @@ else:
     ms.version.addpkg('jsonschema', '3.2.0')
     ms.version.addpkg('attrs', '20.3.0')
     ms.version.addpkg('pyrsistent', '0.15.7-py37')
-    # ms.version.addpkg('protobuf', '3.6.1-ms1')
-    ms.version.addpkg('protobuf', '3.10.0')
+    ms.version.addpkg('protobuf', '3.17.3')
+    #ms.version.addpkg('protobuf', '3.10.0')
+
 
 

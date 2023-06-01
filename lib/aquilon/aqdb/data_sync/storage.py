@@ -21,7 +21,7 @@ from operator import itemgetter
 import re
 
 try:
-    import cdb
+    import cdblib.compat as cdb
 except ImportError:
     _has_cdb = False
 else:

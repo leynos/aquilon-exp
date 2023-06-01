@@ -60,7 +60,7 @@ def get_code_for_error_class(e):
     return ERROR_TO_CODE.get(e, http.INTERNAL_SERVER_ERROR)
 
 
-class BrokerCommand(object):
+class BrokerCommand:
     """ The basis for each command module under commands.
 
     Several class-level lists and flags are defined here that can be
@@ -169,9 +169,7 @@ class BrokerCommand(object):
         self.command = self.action
 
         # Simplify the initialization of common command categories
-        if self.action.startswith("show") or \
-           self.action.startswith("search") or \
-           self.action.startswith("cat"):
+        if self.action.startswith(("show", "search", "cat")):
             self.requires_readonly = True
 
         if not self.defer_to_thread:
@@ -431,7 +429,7 @@ class BrokerCommand(object):
         if not user:
             user = "anonymous"
 
-        logger.info("User %s invoked deprecated command %s" % (user,
+        logger.info("User {} invoked deprecated command {}".format(user,
                                                                cls.__name__))
         logger.client_info(msg)
 
@@ -447,7 +445,7 @@ class BrokerCommand(object):
         # are still in use.
         logger.info("User %s used deprecated option %s of command %s" %
                     (user, option, cls.__name__))
-        logger.client_info("The --%s option is deprecated.  %s" % (option, msg))
+        logger.client_info("The --{} option is deprecated.  {}".format(option, msg))
 
     @classmethod
     def require_one_of(cls, *args, **kwargs):

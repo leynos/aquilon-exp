@@ -27,7 +27,7 @@ except ImportError:
     pass
 else:
     # ms.version.addpkg('twisted', '18.9.0-py37')
-    ms.version.addpkg('twisted', '20.3.0-py37')
+    ms.version.addpkg('twisted', '21.2.0')
     ms.version.addpkg("Automat", "0.7.0")
     ms.version.addpkg("PyHamcrest", "1.9.0")
     ms.version.addpkg("attrs", "19.3.0")

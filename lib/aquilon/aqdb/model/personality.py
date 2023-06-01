@@ -80,7 +80,7 @@ class Personality(Base):
 
     def __init__(self, name=None, **kwargs):
         name = AqStr.normalize(name)
-        super(Personality, self).__init__(name=name, **kwargs)
+        super().__init__(name=name, **kwargs)
 
     @property
     def is_cluster(self):
@@ -97,8 +97,8 @@ class Personality(Base):
                                 "|".join(env_mapper.polymorphic_map) +
                                 ")$", name, re.IGNORECASE)
         if persona_env and (persona_env.group(1) != host_environment):
-            raise ArgumentError("Environment value in personality name '{0}' "
-                                "does not match the host environment '{1}'"
+            raise ArgumentError("Environment value in personality name '{}' "
+                                "does not match the host environment '{}'"
                                 .format(name, host_environment))
 
     @staticmethod
@@ -110,7 +110,7 @@ class Personality(Base):
     def force_existing_stage(self, stage):
         self.force_valid_stage(stage)
         if stage not in self.stages:
-            raise NotFoundException("{0} does not have stage {1!s}."
+            raise NotFoundException("{} does not have stage {!s}."
                                     .format(self, stage))
 
     def default_stage(self, stage=None):
@@ -119,7 +119,7 @@ class Personality(Base):
         """
         if stage:
             if not self.staged:
-                raise ArgumentError("{0} is not staged.".format(self))
+                raise ArgumentError(f"{self} is not staged.")
         else:
             stage = "current"
 
@@ -132,7 +132,7 @@ class Personality(Base):
         """
         if stage:
             if not self.staged:
-                raise ArgumentError("{0} is not staged.".format(self))
+                raise ArgumentError(f"{self} is not staged.")
             self.force_existing_stage(stage)
             return self.stages[stage]
         else:
@@ -241,7 +241,7 @@ class PersonalityStage(Base):
         # TODO: can we just ask this information from SQLAlchemy?
         self.created_implicitly = False
 
-        super(PersonalityStage, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     @reconstructor
     def setup(self):

@@ -49,7 +49,7 @@ class MockHubEngine(TestBrokerCommand, MachineTestMixin):
     pass
 
 
-class MockHub(object):
+class MockHub:
     # Examples of usage from inside a test defined in an instance of
     # TestBrokerCommand (or its subclass):
     #
@@ -106,7 +106,7 @@ class MockHub(object):
             # noinspection PyTypeChecker
             self._engine = copy.copy(engine)  # type: MockHubEngine
             self._engine.__class__ = type(
-                '{}ModifiedByMockHub'.format(engine.__class__.__name__),
+                f'{engine.__class__.__name__}ModifiedByMockHub',
                 (engine.__class__, MachineTestMixin), {})
         else:
             # noinspection PyTypeChecker
@@ -197,7 +197,7 @@ class MockHub(object):
         # Return a default DNS domain for a building.
         result = None
         if building not in self.buildings:
-            raise ValueError('Building {} not found.'.format(building))
+            raise ValueError(f'Building {building} not found.')
         out, _ = self._engine.successtest(['show_building',
                                            '--building', building])
         found = re.search(r'Default DNS Domain: (\S+)\s+', out)
@@ -216,11 +216,11 @@ class MockHub(object):
         next_available = 1
         while next_available in assigned_numbers:
             next_available += 1
-        return '{}{}.{}'.format(prefix, next_available, dns_domain)
+        return f'{prefix}{next_available}.{dns_domain}'
 
     def add_dns_domain(self, fqdn, restricted=True):
         if fqdn in self.dns_domains:
-            raise ValueError('DNS domain {} already exists.'.format(fqdn))
+            raise ValueError(f'DNS domain {fqdn} already exists.')
         command = ['add_dns_domain', '--dns_domain', fqdn,
                    '--justification', 'tcm=123456789']
         if restricted:
@@ -260,7 +260,7 @@ class MockHub(object):
         self.addresses[fqdn] = {'ip': ip}
 
     def delete_address(self, fqdn, ip):
-        self._engine.dsdb_expect('delete_host -ip_address {}'.format(ip))
+        self._engine.dsdb_expect(f'delete_host -ip_address {ip}')
         command = ['del_address', '--fqdn', fqdn,
                    '--ip', ip]
         self._engine.noouttest(command + self._engine.valid_just_tcm)
@@ -309,7 +309,7 @@ class MockHub(object):
     def add_network(self, name=None, location_type='hub', location=None):
         name = self.get_or_create_name(name)
         if name in self.networks:
-            raise ValueError('Network {} already exists.'.format(name))
+            raise ValueError(f'Network {name} already exists.')
         if location_type == 'hub':
             location = self._name
         elif location_type == 'continent':
@@ -339,7 +339,7 @@ class MockHub(object):
     def add_archetype(self, name=None, cluster_type=None):
         name = self.get_or_create_name(name)
         if name in self.archetypes:
-            raise ValueError('Archetype {} already exists.'.format(name))
+            raise ValueError(f'Archetype {name} already exists.')
         command = ['add_archetype', '--archetype', name]
         if cluster_type:
             command += ['--cluster_type', cluster_type]
@@ -377,7 +377,7 @@ class MockHub(object):
         self._engine.successtest(command)
         self._engine.check_plenary_exists(
             archetype,
-            'personality', '{}+next'.format(name),
+            'personality', f'{name}+next',
             'config')
         if promote:
             self._engine.successtest(['promote', '--personality', name,
@@ -407,7 +407,7 @@ class MockHub(object):
     def add_organisation(self, name=None):
         name = self.get_or_create_name(name)
         if name in self.organisations:
-            raise ValueError('Organisation {} already exists.'.format(name))
+            raise ValueError(f'Organisation {name} already exists.')
         self._engine.noouttest(['add_organization', '--organization', name])
         self.organisations.append(name)
         return name
@@ -415,7 +415,7 @@ class MockHub(object):
     def add_domain(self, name=None):
         name = self.get_or_create_name(name)
         if name in self.domains:
-            raise ValueError('Domain {} already exists.'.format(name))
+            raise ValueError(f'Domain {name} already exists.')
         self._engine.noouttest(['add_domain', '--domain', name]
                                + self._engine.valid_just_tcm)
         self.domains.append(name)
@@ -426,7 +426,7 @@ class MockHub(object):
         return ''.join(random.choice(string.ascii_lowercase) for _ in range(length))
 
     def _verify_deletion_with_search_hub(self, singular, container):
-        search_command = ['search_{}'.format(singular), '--hub', self._name]
+        search_command = [f'search_{singular}', '--hub', self._name]
         out, _ = self._engine.successtest(search_command)
         found = set(out.split())
         for item in container:
@@ -485,7 +485,7 @@ class MockHub(object):
         self.machines = {}
 
     def _verify_deletion_with_show_all(self, singular, container, csv_index=1):
-        out, _ = self._engine.successtest(['show_{}'.format(singular), '--all',
+        out, _ = self._engine.successtest([f'show_{singular}', '--all',
                                            '--format', 'csv'])
         found = {line.split(',')[csv_index]
                  for line in out.split() if line.count(',') >= csv_index}
@@ -496,16 +496,16 @@ class MockHub(object):
                     ' {item})'.format(singular=singular, item=item))
 
     def _exists_according_to_show_all(self, singular, name, csv_index=1):
-        out, _ = self._engine.successtest(['show_{}'.format(singular), '--all',
+        out, _ = self._engine.successtest([f'show_{singular}', '--all',
                                            '--format', 'csv'])
         found = {line.split(',')[csv_index]
                  for line in out.split() if line.count(',') >= csv_index}
         return name in found
 
     def _exists_according_to_show(self, singular, name=None, *args):
-        command = ['show_{}'.format(singular)]
+        command = [f'show_{singular}']
         if name:
-            command.extend(['--{}'.format(singular), name])
+            command.extend([f'--{singular}', name])
         if args:
             command.extend(list(args))
         try:
@@ -534,7 +534,7 @@ class MockHub(object):
 
     def delete_cities(self, verify=False):
         for city in self.cities:
-            self._engine.dsdb_expect('delete_city_aq -city {}'.format(city))
+            self._engine.dsdb_expect(f'delete_city_aq -city {city}')
             self._engine.successtest(['del_city', '--city', city,
                                      '--force_if_orphaned'])
             self._engine.dsdb_verify()
@@ -593,7 +593,7 @@ class MockHub(object):
             if verify:
                 self._exists_according_to_show('os', None, arguments)
                 raise RuntimeError(
-                    'At least one OS has not been deleted ({}).'.format(os))
+                    f'At least one OS has not been deleted ({os}).')
         self.operating_systems = []
 
     def delete_personalities(self, verify=False):
@@ -727,7 +727,7 @@ class MockHub(object):
 
     def create(self, name=None):
         if self._name is not None:
-            raise ValueError('Hub {} already exists.'.format(self._name))
+            raise ValueError(f'Hub {self._name} already exists.')
         if name is None:
             name = self.random_name()
         # Add the default organisation if it does not exist.
@@ -742,7 +742,7 @@ class MockHub(object):
     def add_continent(self, name=None):
         name = self.get_or_create_name(name)
         if name in self.continents:
-            raise ValueError('Continent {} already exists.'.format(name))
+            raise ValueError(f'Continent {name} already exists.')
         self._engine.noouttest(['add_continent', '--continent', name,
                                '--hub', self._name])
         self.continents.append(name)
@@ -807,7 +807,7 @@ class MockHub(object):
     def add_country(self, name=None, continent=None):
         name = self.get_or_create_name(name)
         if name in self.countries:
-            raise ValueError('Country {} already exists.'.format(name))
+            raise ValueError(f'Country {name} already exists.')
         continent = self.get_or_create_continent(continent)
         self._engine.noouttest(['add_country', '--country', name,
                                '--continent', continent])
@@ -824,7 +824,7 @@ class MockHub(object):
     def add_city(self, name=None, country=None):
         name = self.get_or_create_name(name)
         if name in self.cities:
-            raise ValueError('City {} already exists.'.format(name))
+            raise ValueError(f'City {name} already exists.')
         country = self.get_or_create_country(country)
         self._engine.dsdb_expect('add_city_aq -city_symbol {name} '
                                  '-country_symbol {country} '
@@ -847,14 +847,14 @@ class MockHub(object):
     def add_building(self, name=None, city=None):
         name = self.get_or_create_name(name)
         if name in self.buildings:
-            raise ValueError('Building {} already exists.'.format(name))
-        address = '{}address'.format(name)
+            raise ValueError(f'Building {name} already exists.')
+        address = f'{name}address'
         city = self.get_or_create_city(city)
         self._engine.dsdb_expect(
             'add_building_aq -building_name {name} -city {city} -building_addr'
             ' {address}'.format(name=name, city=city, address=address))
         self._engine.noouttest(['add_building', '--building', name,
-                                '--address', '{}'.format(address),
+                                '--address', f'{address}',
                                 '--city', city])
         self._engine.dsdb_verify()
         self.buildings.append(name)
@@ -870,7 +870,7 @@ class MockHub(object):
     def add_desk(self, name=None, building=None):
         name = self.get_or_create_name(name)
         if name in self.desks:
-            raise ValueError('Desk {} already exists.'.format(name))
+            raise ValueError(f'Desk {name} already exists.')
         building = self.get_or_create_building(building)
         self._engine.noouttest(['add_desk', '--desk', name,
                                '--building', building])
@@ -888,7 +888,7 @@ class MockHub(object):
                     network=None, net_index=None, net_index_limit=10**5):
         name = self.get_or_create_name(name)
         if name in self.machines:
-            raise ValueError('Machine {} already exists.'.format(name))
+            raise ValueError(f'Machine {name} already exists.')
         # The following does create a new desk in the given building but does
         # not ensure that a pre-existing desk is contained in the given
         # building.
@@ -970,7 +970,7 @@ class MockHub(object):
         else:
             name = prefix.lower().strip()
         if name in self.hosts:
-            raise ValueError('Host {} already exists.'.format(name))
+            raise ValueError(f'Host {name} already exists.')
 
         if machine:
             machine = self.get_or_create_machine(machine,
