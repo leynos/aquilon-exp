@@ -70,7 +70,7 @@ if DSDB_ENABLED:
         ms.version.addpkg('certifi', '2019.6.16')
         ms.version.addpkg("idna", "2.8")
         ms.version.addpkg("requests", "2.26.0")
-        ms.version.addpkg('ms.dsdb', '6.0.35')
+        ms.version.addpkg('ms.dsdb', '6.0.39')
         ms.version.addpkg('requests-gssapi', '1.0.0')
         ms.version.addpkg('gssapi', '1.5.1-py37')
         ms.version.addpkg('decorator', '4.3.2')

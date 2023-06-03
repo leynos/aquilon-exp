@@ -456,10 +456,10 @@ class MockHub:
                 net = self.networks[self.machines[machine]['network']]['net']
                 ips.append(net.usable[self.machines[machine]['net_index']])
         for i in range(len(hosts)):
-            self._engine.successtest(['change_status', '--hostname', hosts[i],
+            self._engine.successtest(['change_status', '--hostname', list(hosts)[i],
                                       '--buildstatus', 'decommissioned'])
             self._engine.dsdb_expect_delete(ip=ips[i])
-            self._engine.successtest(['del_host', '--hostname', hosts[i]])
+            self._engine.successtest(['del_host', '--hostname', list(hosts)[i]])
             self._engine.dsdb_verify()
         # Verify if all the hosts in self.hosts have been deleted.
         if verify:
@@ -707,7 +707,7 @@ class MockHub:
             self._verify_deletion_with_show_all(
                 'dns_domain', self.dns_domains, 0)
         # Delete networks.
-        for net in self.networks.keys():
+        for net in list(self.networks):
             self.delete_network(net)
         if verify:
             self._verify_deletion_with_show_all(
