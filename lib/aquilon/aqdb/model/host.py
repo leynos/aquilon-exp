@@ -89,8 +89,8 @@ class Host(CompileableMixin, Base):
     @validates('owner_grn')
     def validate_owner_grn(self, key, grn):
 
-        pers_stage = self.personality_stage
         effective_owner_grn = self.effective_owner_grn
+        pers_stage = self.personality_stage
 
         # There are a number of conditions where we never want to
         # validate grn change restrictions, ie:
