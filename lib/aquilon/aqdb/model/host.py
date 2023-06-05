@@ -89,8 +89,6 @@ class Host(CompileableMixin, Base):
     # Optionally check if grn change restrictions apply to this host
     @validates('owner_grn')
     def validate_owner_grn(self, key, grn):
-        effective_owner_grn = self.effective_owner_grn
-        pers_stage = self.personality_stage
 
         # There are a number of conditions where we never want to
         # validate grn change restrictions, ie:
@@ -104,6 +102,7 @@ class Host(CompileableMixin, Base):
             return grn
 
         # When the host effective grn is not changing
+        effective_owner_grn = self.effective_owner_grn
         if effective_owner_grn == grn:
             return grn
 
@@ -112,6 +111,7 @@ class Host(CompileableMixin, Base):
             return grn
 
         # When clearing grn without changing the host effective grn
+        pers_stage = self.personality_stage
         if (grn is None and self.owner_grn is not None and
            effective_owner_grn.eon_id == pers_stage.owner_grn.eon_id):
             return grn
