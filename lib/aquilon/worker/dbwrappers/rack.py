@@ -27,7 +27,11 @@ from aquilon.worker.dbwrappers.location import get_location
 
 _config = Config()
 
-DSDB_ID_REGEX = re.compile(_config.get("site", "dsdb_name_regex")) if _config.has_value("site", "dsdb_name_regex") else None
+DSDB_ID_REGEX = (
+    re.compile(_config.get("site", "dsdb_name_regex"))
+    if _config.has_value("site", "dsdb_name_regex")
+    else None
+)
 
 
 def get_or_create_rack(session, rackrow, rackcolumn, building=None,
@@ -45,7 +49,6 @@ def get_or_create_rack(session, rackrow, rackcolumn, building=None,
         rackrow = str(rackrow).strip().lower()
     if rackcolumn is not None:
         rackcolumn = str(rackcolumn).strip().lower()
-
     if force_rackid is not None:
         if DSDB_ID_REGEX:
             if not force_rackid.startswith(dbbuilding.name):
@@ -76,14 +79,13 @@ def get_or_create_rack(session, rackrow, rackcolumn, building=None,
                                 "column %s does not match given column %s." %
                                 (dbrack.name, dbrack.rack_column, rackcolumn))
         if preclude:
-            raise ArgumentError("{0} already exists.".format(dbrack))
+            raise ArgumentError(f"{dbrack} already exists.")
         return dbrack
     except NoResultFound:
         pass
 
     if fullname is None:
         fullname = rack_name
-
     dbrack = Rack(name=rack_name, fullname=fullname, parent=dblocation, uri=uri,
                   rack_row=rackrow, rack_column=rackcolumn, comments=comments)
     session.add(dbrack, dbbuilding)

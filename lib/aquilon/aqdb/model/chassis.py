@@ -32,7 +32,11 @@ _TN = 'chassis'
 
 _config = Config()
 
-DSDB_ID_REGEX = re.compile(_config.get("site", "dsdb_name_regex")) if _config.has_value("site", "dsdb_name_regex") else None
+DSDB_ID_REGEX = (
+    re.compile(_config.get("site", "dsdb_name_regex"))
+    if _config.has_value("site", "dsdb_name_regex")
+    else None
+)
 
 
 class Chassis(HardwareEntity):
@@ -50,11 +54,11 @@ class Chassis(HardwareEntity):
         # Only enforced if site/dsdb_id_regex config option set
         if DSDB_ID_REGEX:
             m = DSDB_ID_REGEX.search(label)
-            if not m or not m.group('loc') == '{}c'.format(self.location.name):
+            if not m or m.group('loc') != f'{self.location.name}c':
                 raise ArgumentError("Invalid chassis name '{}'. Correct name format: "
                                     "rack ID + 'c' + numeric chassis ID (integer without leading 0).".format(label))
         else:
-            super(Chassis, self).check_label(label)
+            super().check_label(label)
 
     @property
     def machine_slots(self):

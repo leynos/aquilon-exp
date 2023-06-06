@@ -180,13 +180,12 @@ def run_command(args, env=None, path="/", logger=LOGGER, loglevel=logging.INFO,
 
     with _popen_lock:
         p = Popen(args=command_args, stdin=proc_stdin, stdout=PIPE, stderr=PIPE,
-                  cwd=path, env=shell_env, universal_newlines=True)
+                  cwd=path, env=shell_env, text=True)
 
     # If we want to stream the command's output back to the client while the
     # command is still executing, then we have to doit ourselves. Otherwise,
     # p.communicate() does everything.
     if stream_level is None:
-        print("run_command_process", input)
         out, err = p.communicate(input=input)
         if filterre:
             out = "\n".join(line for line in out.splitlines()
@@ -254,7 +253,6 @@ def run_git(args, env=None, path=".", logger=LOGGER, loglevel=logging.INFO,
             git_args.insert(0, "git")
     else:
         git_args = ["git", args]
-    print("git_args", git_args)
     return run_command(git_args, env=git_env, path=path, logger=logger,
                        loglevel=loglevel, filterre=filterre,
                        stream_level=stream_level)
