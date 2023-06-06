@@ -38,4 +38,4 @@ class CommandAddRack(BrokerCommand):
         dsdb_runner.commit_or_rollback()
         self.audit_result(session, 'rackid', dbrack.name, **args)
 
-        return dbrack.name
+        return dbrack.name.encode()

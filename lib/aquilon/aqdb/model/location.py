@@ -248,7 +248,7 @@ Location.parents = relation(Location,
                             primaryjoin=Location.id == LocationLink.child_id,
                             secondaryjoin=Location.id == LocationLink.parent_id,
                             order_by=[desc(LocationLink.distance)],
-                            viewonly=True,
+                            viewonly=True, sync_backref=False,
                             backref=backref('children',
                                             order_by=[LocationLink.distance],
                                             viewonly=True))
@@ -259,4 +259,4 @@ Location.parent = relation(Location, uselist=False,
                            primaryjoin=and_(Location.id == LocationLink.child_id,
                                             LocationLink.distance == 1),
                            secondaryjoin=Location.id == LocationLink.parent_id,
-                           viewonly=True)
+                           viewonly=True, sync_backref=False)

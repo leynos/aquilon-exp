@@ -101,7 +101,6 @@ def get_locations(session, query_options=None, compel=False,
 
     # If we did not find any location, either raise an exception (compel)
     # or return None (single_location) or an empty list.
-    print("location_args", location_args)
     if not location_args:
         if compel:
             raise ArgumentError("Please specify a location parameter.")

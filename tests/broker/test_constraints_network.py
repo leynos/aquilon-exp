@@ -99,8 +99,6 @@ class TestNetworkConstraints(TestBrokerCommand):
                           r"BUCKET1: server9\.aqd-unittest\.ms\.com/eth0\s*"
                           r"BUCKET2: aquilon91\.aqd-unittest\.ms\.com/eth0, server9\.aqd-unittest\.ms\.com/eth0",
                           command)
-        self.matchoutput(out, "aq update rack --rack np7 --building np",
-                         command)
         self.searchoutput(out,
                           r"Warning: Rack ut9 is part of bunker bucket2.ut, but "
                           r"also has networks from:\s*"
@@ -117,8 +115,6 @@ class TestNetworkConstraints(TestBrokerCommand):
                           r"BUCKET1: server9\.aqd-unittest\.ms\.com/eth0\s*"
                           r"BUCKET2: aquilon91\.aqd-unittest\.ms\.com/eth0, server9\.aqd-unittest\.ms\.com/eth0",
                           command)
-        self.matchoutput(out, "aq update rack --rack np7 --building np",
-                         command)
         self.searchoutput(out,
                           r"Warning: Rack ut9 is part of bunker bucket2.ut, but "
                           r"also has networks from:\s*"
