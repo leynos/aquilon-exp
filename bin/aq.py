@@ -300,7 +300,6 @@ class StatusThread(Thread):
             sconn.close()
             return
         for chunk in res.stream():
-            print(chunk)
             self.outstream.write(chunk.decode())
         sconn.close()
 
