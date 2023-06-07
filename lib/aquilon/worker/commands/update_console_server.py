@@ -20,10 +20,11 @@ from aquilon.exceptions_ import ArgumentError
 from aquilon.aqdb.types import ConsoleServerType
 from aquilon.aqdb.model import ConsoleServer, Model
 from aquilon.worker.broker import BrokerCommand
+from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.dbwrappers.hardware_entity import update_primary_ip
 from aquilon.worker.dbwrappers.location import get_location
-from aquilon.worker.processes import DSDBRunner, IBServices
-from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from aquilon.worker.ib_services import IBServices
+from aquilon.worker.processes import DSDBRunner
 from requests import RequestException
 
 

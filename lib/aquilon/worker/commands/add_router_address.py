@@ -22,7 +22,7 @@ from aquilon.worker.broker import BrokerCommand
 from aquilon.aqdb.model import (RouterAddress, Building)
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.dbwrappers.dns import grab_address
-from aquilon.worker.processes import IBServices
+from aquilon.worker.ib_services import IBServices
 from requests import RequestException
 
 

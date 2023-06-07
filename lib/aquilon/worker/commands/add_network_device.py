@@ -28,7 +28,8 @@ from aquilon.worker.dbwrappers.interface import (get_or_create_interface,
                                                  assign_address,
                                                  check_netdev_iftype)
 from aquilon.worker.dbwrappers.host import create_host
-from aquilon.worker.processes import DSDBRunner, IBServices
+from aquilon.worker.ib_services import IBServices
+from aquilon.worker.processes import DSDBRunner
 from aquilon.worker.templates.switchdata import PlenarySwitchData
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from requests import RequestException

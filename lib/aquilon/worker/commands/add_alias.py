@@ -21,8 +21,9 @@ from aquilon.aqdb.model import DnsRecord, Alias, Fqdn, DnsEnvironment
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import create_target_if_needed
 from aquilon.worker.dbwrappers.grn import lookup_grn
-from aquilon.worker.processes import DSDBRunner, IBServices
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from aquilon.worker.ib_services import IBServices
+from aquilon.worker.processes import DSDBRunner
 
 from requests import RequestException
 
