@@ -21,7 +21,7 @@ from aquilon.aqdb.model import Fqdn, AddressAlias
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
-from aquilon.worker.processes import IBServices
+from aquilon.worker.ib_services import IBServices
 
 from requests import RequestException
 

@@ -22,7 +22,8 @@ from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.hardware_entity import check_only_primary_ip
 from aquilon.worker.dbwrappers.host import remove_host
-from aquilon.worker.processes import DSDBRunner, IBServices
+from aquilon.worker.ib_services import IBServices
+from aquilon.worker.processes import DSDBRunner
 from aquilon.worker.templates.switchdata import PlenarySwitchData
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from requests import RequestException

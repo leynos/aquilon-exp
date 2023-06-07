@@ -29,7 +29,10 @@ from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.resources import get_resource_holder
 from aquilon.worker.dbwrappers.service_instance import check_no_provided_service
+from aquilon.worker.ib_services import IBServiceGroup
+from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
+from requests import RequestException
 
 
 class CommandDelServiceAddress(BrokerCommand):
@@ -60,6 +63,7 @@ class CommandDelServiceAddress(BrokerCommand):
         check_no_provided_service(dbsrv)
 
         dsdb_runner = DSDBRunner(logger=logger)
+        ibg = IBServiceGroup()
 
         plenaries.add(holder.holder_object)
         plenaries.add(dbsrv)
@@ -88,9 +92,19 @@ class CommandDelServiceAddress(BrokerCommand):
                         continue
 
                     delete_dns_record(rr, exporter=exporter)
+                    # TODO: see todo below
+                    ibg.add(
+                        lambda: IBServices().del_dns_alias(str(rr.fqdn)),
+                        lambda: IBServices().add_dns_alias(str(rr.fqdn), (rr.target)))
                     break
 
             delete_dns_record(dbdns_rec, exporter=exporter)
+            # delete_dns_records deletes not only dbdns_rec.fqdn
+            # but also dbdns_rec.target and dbdns_rec.reverse_ptr
+            # so do i need to do that in ib too ?
+            ibg.add(
+                lambda: IBServices().del_dns_alias(str(dbdns_rec.fqdn)),
+                lambda: IBServices().add_dns_alias(str(dbdns_rec.fqdn), str(dbdns_rec.target)))
 
         session.flush()
 
@@ -98,6 +112,13 @@ class CommandDelServiceAddress(BrokerCommand):
             if (not dbdns_rec.service_addresses and
                     dbdns_rec.network.is_internal):
                 dsdb_runner.delete_host_details(old_fqdn, old_ip)
+                ibg.add(lambda: IBServices().delete_a_ptr(old_fqdn, old_ip))
             dsdb_runner.commit_or_rollback("Could not delete host from DSDB")
+            try:
+                ibg.commit_or_rollback()
+            except (ArgumentError, RequestException) as e:
+                dsdb_runner.rollback()
+                raise e
 
+        ibg.commit_or_rollback()
         return

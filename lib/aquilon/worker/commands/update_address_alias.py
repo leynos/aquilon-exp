@@ -21,7 +21,7 @@ from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.grn import lookup_grn
 from aquilon.exceptions_ import ArgumentError
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
-from aquilon.worker.processes import IBServices
+from aquilon.worker.ib_services import IBServices
 
 from requests import RequestException
 

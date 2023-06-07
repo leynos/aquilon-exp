@@ -27,11 +27,14 @@ from aquilon.aqdb.model import (
 from aquilon.aqdb.model.network import get_net_id_from_ip
 from aquilon.exceptions_ import ArgumentError
 from aquilon.worker.broker import BrokerCommand
+from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.dbwrappers.dns import update_address
 from aquilon.worker.dbwrappers.interface import get_interfaces
 from aquilon.worker.dbwrappers.resources import get_resource_holder
+from aquilon.worker.ib_services import IBServiceGroup
+from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
-from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from requests import RequestException
 
 
 class CommandUpdateServiceAddress(BrokerCommand):
@@ -61,6 +64,7 @@ class CommandUpdateServiceAddress(BrokerCommand):
 
         toplevel_holder = holder.toplevel_holder_object
         old_ip = dbsrv.dns_record.ip
+        ibs_args = {'name': str(dbsrv.dns_record.fqdn), 'ip': old_ip}
         old_comments = dbsrv.comments
 
         if interfaces is not None:
@@ -78,6 +82,7 @@ class CommandUpdateServiceAddress(BrokerCommand):
                                                                  network_environment)
             dbnetwork = get_net_id_from_ip(session, ip, dbnet_env)
             update_address(session, dbsrv.dns_record, ip, dbnetwork)
+            ibs_args['new_ip'] = ip
 
         if comments is not None:
             dbsrv.comments = comments
@@ -92,6 +97,7 @@ class CommandUpdateServiceAddress(BrokerCommand):
                                     "for host-based service addresses.")
             if map_to_primary:
                 dbsrv.dns_record.reverse_ptr = toplevel_holder.hardware_entity.primary_name.fqdn
+                ibs_args['assign_ptr_to_fqdn'] = str(dbsrv.dns_record.reverse_ptr)
             else:
                 dbsrv.dns_record.reverse_ptr = None
 
@@ -110,9 +116,15 @@ class CommandUpdateServiceAddress(BrokerCommand):
 
             if sibling_ssn:
                 dbsrv.dns_record.reverse_ptr = sibling_ssn.fqdn
+                ibs_args['assign_ptr_to_fqdn'] = str(sibling_ssn.fqdn)
             else:
                 raise ArgumentError("--map_to_shared_name specified, but no "
                                     "shared service name")
+
+        ibg = IBServiceGroup()
+
+        if (len(ibs_args.keys()) > 2):
+            ibg.add(lambda: IBServices().update_a_ptr(**ibs_args))
 
         session.flush()
 
@@ -128,8 +140,21 @@ class CommandUpdateServiceAddress(BrokerCommand):
                                                     new_comments=dbsrv.comments,
                                                     old_comments=old_comments)
                     dsdb_runner.commit_or_rollback()
+                    # note that this code path is only executed when
+                    # either `ip` or `comments` have changed and the
+                    # dns record network is internal
+                    try:
+                        ibg.commit_or_rollback()
+                    except (ArgumentError, RequestException) as e:
+                        dsdb_runner.rollback()
+                        raise e
             except:
                 plenaries.restore_stash()
                 raise
+
+        # this is necessary if for instance someone calls
+        # `aq update service address --map_to_primary` or any other such
+        # combination that does not trigger the commit_or_rollback call above
+        ibg.commit_or_rollback()
 
         return

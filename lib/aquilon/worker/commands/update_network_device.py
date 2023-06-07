@@ -28,7 +28,8 @@ from aquilon.worker.dbwrappers.hardware_entity import (update_primary_ip,
 from aquilon.worker.dbwrappers.observed_mac import (
     update_or_create_observed_mac)
 from aquilon.worker.dbwrappers.network_device import discover_network_device
-from aquilon.worker.processes import DSDBRunner, IBServices
+from aquilon.worker.ib_services import IBServices
+from aquilon.worker.processes import DSDBRunner
 from aquilon.worker.templates import PlenarySwitchData
 from aquilon.utils import validate_json
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
