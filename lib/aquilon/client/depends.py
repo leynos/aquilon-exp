@@ -26,7 +26,7 @@ else:
     import sys
 
     ms.version.addpkg('lxml', '3.2.5')
-    ms.version.addpkg('six', '1.15.0')
+    ms.version.addpkg('six', '1.16.0')
     ms.version.addpkg("ms.directory", "3.2.0")
     ms.version.addpkg("decorator", "4.4.2")
     ms.version.addpkg("pykerberos", "1.2.1-1.16")
@@ -34,7 +34,8 @@ else:
     ms.version.addpkg("pyasn1", "0.4.8")
     ms.version.addpkg("ldap3", "2.7")
     ms.version.addpkg("setuptools", "41.0.1")
-    ms.version.addpkg("kerberos", "1.1.5-ms3")
+    ms.version.addpkg("kerberos", "1.3.1-1.16")
+
 
     if sys.platform == "sunos5":
         # ctypes is missing from the default Python build on Solaris, due to
