@@ -25,6 +25,6 @@ else:
     ms.version.addpkg('coverage', '3.6')
     ms.version.addpkg('lxml', '3.2.5')
     ms.version.addpkg('ipaddress', '1.0.6')
-    ms.version.addpkg('dateutil', '1.5')
-    ms.version.addpkg('six', '1.9.0')
+    ms.version.addpkg('dateutil', '2.8.1')
+    ms.version.addpkg('six', '1.16.0')
     ms.version.addpkg('jsonschema', '2.3.0')
