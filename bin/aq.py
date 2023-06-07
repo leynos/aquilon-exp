@@ -225,7 +225,7 @@ def create_sandbox(pageData, noexec=False):
         p_clone = subprocess.Popen(cmd_clone, cwd=user_base, stdin=None,
                                    stdout=1, stderr=2)
     except OSError as e:
-        print("Could not execute {}: {}".format(cmd_clone, e), file=sys.stderr)
+        print(f"Could not execute {cmd_clone}: {e}", file=sys.stderr)
         return 1
     exit_clone = p_clone.wait()
     if exit_clone == 0:
@@ -238,7 +238,7 @@ def create_sandbox(pageData, noexec=False):
         p_prepare = subprocess.Popen(cmd_prepare, cwd=user_base, stdin=None,
                                      stdout=1, stderr=2)
     except OSError as e:
-        print("Could not execute {}: {}".format(cmd_prepare, e), file=sys.stderr)
+        print(f"Could not execute {cmd_prepare}: {e}", file=sys.stderr)
         return 1
     exit_prepare = p_prepare.wait()
     if exit_prepare == 0:
@@ -286,20 +286,21 @@ class StatusThread(Thread):
             parameters = "?debug=True"
             sconn.set_debuglevel(10)
         if self.auditid:
-            uri = "/status/auditid/{}{}".format(self.auditid, parameters)
+            uri = f"/status/auditid/{self.auditid}{parameters}"
         else:
-            uri = "/status/requestid/{}{}".format(self.requestid, parameters)
+            uri = f"/status/requestid/{self.requestid}{parameters}"
         RESTResource(sconn, uri).get()
         # handle failed requests
         res = sconn.getresponse()
         self.response_status = res.status
         if res.status != httplib.OK:
             if self.debug:
-                print("{}: {}".format(httplib.responses[res.status], res.read().decode()),
+                print(f"{httplib.responses[res.status]}: {res.read().decode()}",
                       file=sys.stderr)
             sconn.close()
             return
         for chunk in res.stream():
+            print(chunk)
             self.outstream.write(chunk.decode())
         sconn.close()
 
@@ -369,7 +370,7 @@ if __name__ == "__main__":
         (command, transport, commandOptions, globalOptions) = \
             parser.parse(sys.argv[1:])
     except ParsingError as e:
-        print('{}: {}'.format(sys.argv[0], e.error), file=sys.stderr)
+        print(f'{sys.argv[0]}: {e.error}', file=sys.stderr)
         print('%s: Try --help for usage details.' % (sys.argv[0]),
               file=sys.stderr)
         sys.exit(1)
@@ -581,7 +582,7 @@ if __name__ == "__main__":
         # KNC connections
         msg = conn.getError()
         host_failed = "Failed to connect to %s" % host
-        port_failed = "{} port {}".format(host_failed, port)
+        port_failed = f"{host_failed} port {port}"
         if msg.find(b'Connection refused') >= 0:
             print("%s: Connection refused." % port_failed, file=sys.stderr)
         elif msg.find(b'Connection timed out') >= 0:
@@ -589,7 +590,7 @@ if __name__ == "__main__":
         elif msg.find(b'Unknown host') >= 0:
             print("%s: Unknown host." % host_failed, file=sys.stderr)
         else:
-            print("Error: {}: {}".format(repr(e), msg), file=sys.stderr)
+            print(f"Error: {repr(e)}: {msg}", file=sys.stderr)
         sys.exit(1)
 
     pageData = res.read()
@@ -605,7 +606,6 @@ if __name__ == "__main__":
            globalOptions.get('partialok'):
             sys.exit(0)
         sys.exit(res.status // 100)
-
     exit_status = 0
 
     if transport.expect == 'command':
