@@ -19,6 +19,8 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_add_address, ib_expect_del_address, ib_expect_del_alias
+
 if __name__ == "__main__":
     import utils
     utils.import_depends()
@@ -218,6 +220,7 @@ class TestCluster(TestBrokerCommand):
         command = ["add", "service", "address", "--resourcegroup", "testnextip", "--service_address",
                    service_addr, "--name", "test", "--ipfromtype", "vip"]
         self.dsdb_expect_add(service_addr, ip)
+        ib_expect_add_address(service_addr, str(ip))
         self.successtest(command)
         command = ["show", "service", "address", "--name", "test",
                    "--resourcegroup", "testnextip"]
@@ -228,14 +231,19 @@ class TestCluster(TestBrokerCommand):
         self.matchoutput(out, "Address: {} [{}]".format(service_addr, ip),
                          command)
         self.dsdb_verify()
+        #self.ib_verify()
 
     def test_133_ipfromtype_resourcegroup_restore(self):
         ip1 = self.net["np_bucket2_vip"].usable[0]
         self.dsdb_expect_delete(ip1)
+        # TODO: odd, should the 'cname fqdn' and 'a-record fqdn' be the same ?
+        ib_expect_del_alias("testresgr.ms.com")
+        ib_expect_del_address("testresgr.ms.com", str(ip1))
         command = ["del", "service", "address", "--name", "test",
                    "--resourcegroup", "testnextip"]
         self.successtest(command)
         self.dsdb_verify()
+        #self.ib_verify()
         command = ["del", "resourcegroup", "--resourcegroup", "testnextip", "--cluster", "utecl1"]
         self.successtest(command)
 

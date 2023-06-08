@@ -5,21 +5,44 @@ import threading
 import time
 import unittest
 
-from start_ib_services import run_server, PORT, IBServicesRequestHandler, UnitTestIBServicesRequestHandler
+from mock_ib_services import run_server, PORT
 
-if __name__ == "__main__":
-    import utils
-    utils.import_depends()
+try:
+    from http_client import HTTPConnection
+except ImportError:
+    from httplib import HTTPConnection
+
+try:
+    import ms.version
+except ImportError:
+    pass
+else:
+    ms.version.addpkg("coloredlogs", "14.0")
+    ms.version.addpkg("humanfriendly", "8.1")
+import coloredlogs
 
 LOGGER = logging.getLogger(__name__)
+LOG_FORMAT = '%(asctime)s %(levelname).1s [%(threadName)s] [%(module)s:%(funcName)s:%(lineno)d] %(message)s'
 
 
 class TestIBServicesStart(unittest.TestCase):
-    HANDLER = IBServicesRequestHandler
+
+    @classmethod
+    def setUpClass(cls):
+        level = logging.INFO
+        HTTPConnection.debuglevel = 1
+        requests_log = logging.getLogger("requests.packages.urllib3")
+        requests_log.setLevel(level)
+        requests_log.propagate = True
+        coloredlogs.install(
+            logger=logging.getLogger(),
+            fmt=LOG_FORMAT,
+            level=level
+        )
 
     def test_ibservices_start(self):
-        LOGGER.info("Starting ib services proxy in thread with HTTP handler {}".format(TestIBServicesStart.HANDLER))
-        ibs_broker = threading.Thread(target=run_server, args=(TestIBServicesStart.HANDLER,))
+        LOGGER.info("Starting ib services proxy in thread")
+        ibs_broker = threading.Thread(target=run_server)
         ibs_broker.daemon = True
         ibs_broker.start()
 
@@ -39,11 +62,3 @@ class TestIBServicesStart(unittest.TestCase):
             sys.exit(1)
 
         return ibs_broker
-
-
-class TestIBServicesStartForUnits(TestIBServicesStart):
-    """ Start the IB services mock broker with no functionality beyond reporting success for all invocations """
-
-    @classmethod
-    def setUpClass(cls):
-        TestIBServicesStart.HANDLER = UnitTestIBServicesRequestHandler

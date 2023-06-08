@@ -19,6 +19,8 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_add_address
+
 if __name__ == "__main__":
     import utils
     utils.import_depends()
@@ -98,14 +100,16 @@ class TestAddChassis(TestBrokerCommand, VerifyChassisMixin):
     def test_121_add_ut9_chassis(self):
         for i in range(1, 8):
             ip = self.net["ut9_chassis"].usable[i]
-            self.dsdb_expect_add("ut9c%d.aqd-unittest.ms.com" % i,
-                                 ip, "oa", ip.mac)
+            hostname = "ut9c%d.aqd-unittest.ms.com" % i
+            ib_expect_add_address(hostname, str(ip))
+            self.dsdb_expect_add(hostname, ip, "oa", ip.mac)
             command = ["add", "chassis",
-                       "--chassis", "ut9c%d.aqd-unittest.ms.com" % i,
+                       "--chassis", hostname,
                        "--rack", "ut9", "--model", "c-class",
                        "--ip", ip, "--mac", ip.mac, "--interface", "oa"]
             self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_122_add_chassis_wrong_name_format(self):
         command = ["add_chassis", "--chassis", "testchassis.aqd-unittest.ms.com",

@@ -66,10 +66,6 @@ class IBServices(object):
         if not isinstance(ip, IPv4Address):
             raise ArgumentError("IP address should be an IPv4Address object")
 
-    def assert_network(self, network):
-        if not isinstance(network, IPv4Network):
-            raise ArgumentError("Network address should be an IPv4Network object")
-
     def assert_dns_environment(self, environment):
         if environment == 'internal':
             return True
@@ -82,33 +78,6 @@ class IBServices(object):
 
     def host_url(self, ip):
         return self.ib_service_url + "/hosts/ipv4addr/" + str(ip)
-
-    @with_timer
-    def create_host(self, ip, payload):
-        self.assert_ip(ip)
-
-        url = self.host_url(ip)
-        LOGGER.info("Invoking {} with payload: {}".format(url, payload))
-        response = self.session.post(url, json=payload, timeout=IB_SERVICES_TIMEOUT)
-        if response.status_code == httplib.CREATED:
-            LOGGER.info("Host added to Infoblox")
-        else:
-            raise ArgumentError(response.text)
-
-    @with_timer
-    def delete_host(self, ip):
-        self.assert_ip(ip)
-
-        url = self.host_url(ip)
-        response = self.session.delete(url, timeout=IB_SERVICES_TIMEOUT)
-        if response.status_code == httplib.NO_CONTENT:
-            LOGGER.info("Host removed from Infoblox")
-            return True
-        if response.status_code == httplib.NOT_FOUND:
-            LOGGER.info("Host does not exist in Infoblox")
-            return False
-        else:
-            raise ArgumentError(response.text)
 
     @with_timer
     def remove_host_dns_entries(self, ip):
@@ -196,12 +165,14 @@ class IBServices(object):
             raise ArgumentError(response.text)
 
     @with_timer
-    def add_dns_alias(self, name, target):
-        url = self.ib_service_url + '/dns/aliases/'
+    def add_dns_alias(self, name, target, ttl=None):
+        url = self.ib_service_url + '/dns/aliases'
         payload = {
             'name': name,
             'target': target
         }
+        if ttl:
+            payload["ttl"] = ttl
         LOGGER.info("Invoking {} with payload: {}".format(url, payload))
         response = self.session.post(url=url, json=payload, timeout=IB_SERVICES_TIMEOUT)
         if response.status_code == httplib.CREATED:

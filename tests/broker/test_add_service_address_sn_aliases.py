@@ -20,6 +20,8 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_add_address
+
 if __name__ == "__main__":
     import utils
     utils.import_depends()
@@ -78,12 +80,14 @@ class TestAddServiceAddressSNAliases(TestBrokerCommand):
         # address alias creation
         ip = self.net['np_bucket2_vip'].usable[2]
         service_addr = 'utvcs1sa1.aqd-unittest.ms.com'
+        ib_expect_add_address("utvcs1pn1.aqd-unittest.ms.com", str(ip), create_ptr=False)
         self.dsdb_expect_add(service_addr, ip)
         command = ['add_service_address', '--resourcegroup=utvcs1ifset',
                    '--name=utvcs1sa1', '--service_address', service_addr,
                    '--ip', ip, '--map_to_shared_name']
         self.successtest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_020_mapped_to_shared_name_noaa(self):
         # create a service address mapped to the shared-name without

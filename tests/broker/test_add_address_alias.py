@@ -20,6 +20,8 @@
 import unittest
 import json
 
+from mock_ib_services import ib_expect_add_address
+
 if __name__ == '__main__':
     import utils
     utils.import_depends()
@@ -30,10 +32,12 @@ from brokertest import TestBrokerCommand
 class TestAddAddressAlias(TestBrokerCommand):
 
     def test_100_add_addralias(self):
+        ib_expect_add_address("addralias1.aqd-unittest.ms.com", "4.2.1.18", create_ptr=False)
         command = ["add", "address", "alias",
                    "--fqdn", "addralias1.aqd-unittest.ms.com",
                    "--target", "arecord13.aqd-unittest.ms.com"]
         self.noouttest(command)
+        self.ib_verify()
 
     def test_110_add_addralias_dupliate(self):
         command = ["add", "address", "alias",
@@ -74,6 +78,7 @@ class TestAddAddressAlias(TestBrokerCommand):
         self.assertEqual(json.loads(out), expected)
 
     def test_200_add_new_addralias_with_comment_and_ttl(self):
+        ib_expect_add_address("addralias1.aqd-unittest.ms.com", "4.2.1.19", ttl=1800, create_ptr=False)
         command = ["add", "address", "alias",
                    "--fqdn", "addralias1.aqd-unittest.ms.com",
                    "--target", "arecord14.aqd-unittest.ms.com",
@@ -81,14 +86,17 @@ class TestAddAddressAlias(TestBrokerCommand):
                    "--ttl", "1800",
                    "--comments", "Some address alias comments"]
         self.noouttest(command)
+        self.ib_verify()
 
     def test_200_add_new_addralias_with_comment2(self):
+        ib_expect_add_address("addralias1.aqd-unittest.ms.com", "4.2.1.20", create_ptr=False)
         command = ["add", "address", "alias",
                    "--fqdn", "addralias1.aqd-unittest.ms.com",
                    "--target", "arecord15.aqd-unittest.ms.com",
                    "--target_environment", "internal",
                    "--comments", "Some other address alias comments"]
         self.noouttest(command)
+        self.ib_verify()
 
     def test_250_verify_addralias(self):
         command = ["search", "dns",
@@ -275,11 +283,13 @@ class TestAddAddressAlias(TestBrokerCommand):
         self.assertEqual(json.loads(out), expected)
 
     def test_800_grn(self):
+        ib_expect_add_address("addralias3.aqd-unittest.ms.com", "4.2.1.18", create_ptr=False)
         command = ["add", "address", "alias",
                    "--fqdn", "addralias3.aqd-unittest.ms.com",
                    "--target", "arecord13.aqd-unittest.ms.com",
                    "--grn", "grn:/ms/ei/aquilon/aqd"]
         self.noouttest(command)
+        self.ib_verify()
 
     def test_805_verify_grn(self):
         command = ["search", "dns", "--fullinfo",
@@ -291,10 +301,12 @@ class TestAddAddressAlias(TestBrokerCommand):
                          command)
 
     def test_810_implicit_grn(self):
+        ib_expect_add_address("addralias3.aqd-unittest.ms.com", "4.2.1.19", create_ptr=False)
         command = ["add", "address", "alias",
                    "--fqdn", "addralias3.aqd-unittest.ms.com",
                    "--target", "arecord14.aqd-unittest.ms.com"]
         self.noouttest(command)
+        self.ib_verify()
 
     def test_815_verify_implicit_grn(self):
         command = ["search", "dns", "--fullinfo",
@@ -306,11 +318,13 @@ class TestAddAddressAlias(TestBrokerCommand):
                          command)
 
     def test_820_eon_id(self):
+        ib_expect_add_address("addralias4.aqd-unittest.ms.com", "4.2.1.18", create_ptr=False)
         command = ["add", "address", "alias",
                    "--fqdn", "addralias4.aqd-unittest.ms.com",
                    "--target", "arecord13.aqd-unittest.ms.com",
                    "--eon_id", "3"]
         self.noouttest(command)
+        self.ib_verify()
 
     def test_825_verify_eon_id(self):
         command = ["search", "dns", "--fullinfo",

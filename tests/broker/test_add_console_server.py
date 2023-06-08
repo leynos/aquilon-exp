@@ -19,6 +19,8 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_add_address
+
 if __name__ == "__main__":
     import utils
     utils.import_depends()
@@ -28,14 +30,17 @@ from consoleservertest import VerifyConsoleServerMixin
 
 class TestAddConsoleServer(TestBrokerCommand, VerifyConsoleServerMixin):
     def test_100_add_utcs01(self):
+        hostname = "utcs01.aqd-unittest.ms.com"
         ip = self.net["ut9_conservers"].usable[1]
-        self.dsdb_expect_add("utcs01.aqd-unittest.ms.com", ip, "mgmt", ip.mac, comments="Some console server comments")
-        command = ["add", "console_server", "--console_server", "utcs01.aqd-unittest.ms.com",
+        ib_expect_add_address(hostname, str(ip))
+        self.dsdb_expect_add(hostname, ip, "mgmt", ip.mac, comments="Some console server comments")
+        command = ["add", "console_server", "--console_server", hostname,
                    "--rack", "ut9", "--model", "utconserver",
                    "--serial", "ABC12345", "--comments", "Some console server comments",
                    "--ip", ip, "--mac", ip.mac]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_105_verify_utcs01(self):
         ip = self.net["ut9_conservers"].usable[1]
@@ -69,15 +74,17 @@ class TestAddConsoleServer(TestBrokerCommand, VerifyConsoleServerMixin):
 
     def test_120_add_more_console_server(self):
         for i in range(2, 8):
+            hostname = "ut9csa%d.aqd-unittest.ms.com" % i
             ip = self.net["ut9_conservers"].usable[i]
-            self.dsdb_expect_add("ut9csa%d.aqd-unittest.ms.com" % i,
-                                 ip, "mgmt", ip.mac)
+            ib_expect_add_address(hostname, str(ip))
+            self.dsdb_expect_add(hostname, ip, "mgmt", ip.mac)
             command = ["add", "console_server",
-                       "--console_server", "ut9csa%d.aqd-unittest.ms.com" % i,
+                       "--console_server", hostname,
                        "--rack", "ut9", "--model", "utconserver",
                        "--ip", ip, "--mac", ip.mac]
             self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_125_verify_ut9_console_server(self):
         for i in range(2, 6):

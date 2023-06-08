@@ -201,10 +201,8 @@ class CommandAddInterfaceAddress(BrokerCommand):
 
             if self.config.infoblox_feature_enabled("add_interface_address"):
                 try:
-                    if dbinterface.mac:
-                        IBServices().create_host(ip, payload = {"hostname": fqdn, "mac_address":str(dbinterface.mac) })
-                    else:
-                        IBServices().add_a_ptr(fqdn, ip)
+                    # TODO: Enable DHCP in Infoblox
+                    IBServices().add_a_ptr(fqdn, ip)
                 except (ArgumentError, RequestException) as e:
                     logger.warning("Error calling Infoblox add_a_ptr: {0}".format(str(e)))
                     logger.warning("Rolling back DSDB transaction ...")

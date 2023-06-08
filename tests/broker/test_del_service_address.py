@@ -19,6 +19,8 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_del_address, ib_expect_del_alias
+
 if __name__ == "__main__":
     import utils
     utils.import_depends()
@@ -29,12 +31,16 @@ from brokertest import TestBrokerCommand
 class TestDelServiceAddress(TestBrokerCommand):
 
     def test_100_delzebra2(self):
+        fqdn = "unittest20.aqd-unittest.ms.com"
         ip = self.net["zebra_vip"].usable[14]
         self.dsdb_expect_delete(ip)
+        ib_expect_del_alias("zebra2.aqd-unittest.ms.com")
+        ib_expect_del_address("zebra2.aqd-unittest.ms.com", str(ip))
         command = ["del", "service", "address", "--name", "zebra2",
-                   "--hostname", "unittest20.aqd-unittest.ms.com"]
+                   "--hostname", fqdn]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_110_delzebra2again(self):
         command = ["del", "service", "address", "--name", "zebra2",
@@ -45,6 +51,7 @@ class TestDelServiceAddress(TestBrokerCommand):
                          "unittest20.aqd-unittest.ms.com not found.",
                          command)
         self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
     def test_120_verifyzebra2(self):
         command = ["show", "address", "--fqdn", "zebra2.aqd-unittest.ms.com"]
@@ -55,11 +62,14 @@ class TestDelServiceAddress(TestBrokerCommand):
     def test_130_delzebra3(self):
         ip = self.net["zebra_vip"].usable[13]
         self.dsdb_expect_delete(ip)
+        ib_expect_del_alias("zebra3.aqd-unittest.ms.com")
+        ib_expect_del_address("zebra3.aqd-unittest.ms.com", str(ip))
         command = ["del", "service", "address",
                    "--hostname", "unittest20.aqd-unittest.ms.com",
                    "--name", "zebra3"]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_150_delzebra3again(self):
         command = ["del", "service", "address", "--name", "zebra3",
@@ -70,6 +80,7 @@ class TestDelServiceAddress(TestBrokerCommand):
                          "unittest20.aqd-unittest.ms.com not found.",
                          command)
         self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
     def test_160_failhostname(self):
         command = ["del", "service", "address", "--name", "hostname",
@@ -77,13 +88,18 @@ class TestDelServiceAddress(TestBrokerCommand):
         out = self.badrequesttest(command)
         self.matchoutput(out, "The primary address of the host cannot be "
                          "deleted.", command)
+        self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
     def test_170_del_extserviceaddress(self):
         # check that removing an external service address does not invoke DSDB
+        # TODO in this case we are sending a DELETE alias but not a DELETE A record, is that correct ?
+        ib_expect_del_alias("external-unittest20.aqd-unittest.ms.com")
         command = ["del_service_address", "--hostname", "unittest20.aqd-unittest.ms.com",
                    "--name", "et-unittest20"]
         self.noouttest(command)
         self.dsdb_verify(empty=True)
+        self.ib_verify(empty=False)
 
 
 if __name__ == '__main__':
