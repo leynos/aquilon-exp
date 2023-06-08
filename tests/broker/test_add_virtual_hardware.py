@@ -21,6 +21,8 @@ from itertools import chain
 import json
 import unittest
 
+from mock_ib_services import ib_expect_add_address, ib_expect_del_address
+
 if __name__ == "__main__":
     import utils
     utils.import_depends()
@@ -611,6 +613,7 @@ class TestAddVirtualHardware(EventsTestMixin, TestBrokerCommand):
             else:
                 port = i - 12
                 machine = "ut12s02p%d" % port
+            ib_expect_add_address(hostname, str(net.usable[i - 1]))
             self.dsdb_expect_add(hostname, net.usable[i - 1],
                                  "eth1", net.usable[i - 1].mac,
                                  "evh%d.aqd-unittest.ms.com" % (i + 50))
@@ -618,6 +621,7 @@ class TestAddVirtualHardware(EventsTestMixin, TestBrokerCommand):
                        "--machine", machine, "--interface", "eth1", "--autoip"]
             self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_245_verify_utmc4_aux(self):
         command = ["show", "network", "--hosts",
@@ -842,6 +846,8 @@ class TestAddVirtualHardware(EventsTestMixin, TestBrokerCommand):
                         "--interface", "eth0", "--automac", "--autopg"])
 
         # Consume available IP addresses
+        ib_expect_add_address("evm40-ip1.aqd-unittest.ms.com", str(self.net["autopg1"].usable[0]))
+        ib_expect_add_address("evm40-ip2.aqd-unittest.ms.com", str(self.net["autopg1"].usable[1]))
         self.dsdb_expect_add("evm40-ip1.aqd-unittest.ms.com",
                              self.net["autopg1"].usable[0], "eth0_ip1")
         self.dsdb_expect_add("evm40-ip2.aqd-unittest.ms.com",
@@ -853,6 +859,7 @@ class TestAddVirtualHardware(EventsTestMixin, TestBrokerCommand):
                         "--interface", "eth0", "--label", "ip2", "--autoip",
                         "--fqdn", "evm40-ip2.aqd-unittest.ms.com"])
         self.dsdb_verify()
+        self.ib_verify()
 
         # All IPs gone, this should fail
         command = ["add", "interface", "--machine", "evm41",
@@ -864,6 +871,8 @@ class TestAddVirtualHardware(EventsTestMixin, TestBrokerCommand):
                          command)
 
         # Free up the IP addresses
+        ib_expect_del_address("evm40-ip1.aqd-unittest.ms.com", str(self.net["autopg1"].usable[0]))
+        ib_expect_del_address("evm40-ip2.aqd-unittest.ms.com", str(self.net["autopg1"].usable[1]))
         self.dsdb_expect_delete(self.net["autopg1"].usable[0])
         self.dsdb_expect_delete(self.net["autopg1"].usable[1])
         self.noouttest(["del_interface_address", "--machine", "evm40",
@@ -871,6 +880,7 @@ class TestAddVirtualHardware(EventsTestMixin, TestBrokerCommand):
         self.noouttest(["del_interface_address", "--machine", "evm40",
                         "--interface", "eth0", "--label", "ip2"])
         self.dsdb_verify()
+        self.ib_verify()
 
         # There's just one pg, so this should fail
         command = ["add_interface", "--machine", "evm40",

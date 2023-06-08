@@ -19,6 +19,7 @@
 from collections import defaultdict
 import json
 from eventstest import EventsTestMixin
+from mock_ib_services import ib_expect_add_address, ib_expect_del_address
 
 
 class MachineData(object):
@@ -363,6 +364,7 @@ class MachineTestMixin(EventsTestMixin):
                 comments = orig_kwargs["eth0_comments"]
             else:
                 comments = machdef.comments
+            # terrible, referring to functions only available via multiple-inheritance of TestBrokerCommand
             self.dsdb_expect_add(hostname, ip, "eth0", ip.mac, comments=comments)
             command.extend(["--ip", ip])
 
@@ -379,13 +381,16 @@ class MachineTestMixin(EventsTestMixin):
                 params["fqdn"] = fqdn
                 kwargs[nic_name + "_fqdn"] = fqdn
 
+            ib_expect_add_address(fqdn, str(params["ip"]))
             self.dsdb_expect_add(fqdn, params["ip"], nic_name, params["mac"],
                                  primary=hostname)
             self.statustest(["add_interface_address", "--machine", machine,
                              "--interface", nic_name, "--ip", params["ip"],
                              "--fqdn", fqdn])
 
+        # terrible, referring to functions only available via multiple-inheritance of TestBrokerCommand
         self.dsdb_verify()
+        self.ib_verify()
 
         if manager_iface:
             command = ["add_manager", "--hostname", hostname,
@@ -421,6 +426,7 @@ class MachineTestMixin(EventsTestMixin):
         for nic_name in interfaces:
             nic_ip = kwargs.get(nic_name + "_ip", None)
             if nic_ip and nic_ip != ip:
+                ib_expect_del_address(machine, str(nic_ip))
                 self.dsdb_expect_delete(nic_ip)
                 if justification:
                     command = ["del_interface_address", "--machine", machine,
@@ -430,6 +436,7 @@ class MachineTestMixin(EventsTestMixin):
                     self.statustest(["del_interface_address", "--machine", machine,
                                      "--interface", nic_name, "--ip", nic_ip])
                 self.dsdb_verify()
+                self.ib_verify()
 
         self.dsdb_expect_delete(ip)
         if justification:
@@ -438,6 +445,7 @@ class MachineTestMixin(EventsTestMixin):
         else:
             self.statustest(["del_host", "--hostname", hostname])
         if manager_ip:
+            ib_expect_del_address(hostname, str(manager_ip))
             self.dsdb_expect_delete(manager_ip)
             short, domain = hostname.split(".", 1)
             if justification:
@@ -449,3 +457,4 @@ class MachineTestMixin(EventsTestMixin):
                             (short, domain)])
         self.noouttest(["del_machine", "--machine", machine])
         self.dsdb_verify()
+        self.ib_verify()

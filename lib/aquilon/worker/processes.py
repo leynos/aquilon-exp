@@ -448,6 +448,7 @@ class DSDBEnabledMeta(type):
                                                       timeout=use_timeout)
         return instance
 
+
 class DSDBRunner(object):
     __metaclass__ = DSDBEnabledMeta
     snapshot_handlers = {}

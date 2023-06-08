@@ -20,6 +20,8 @@
 import unittest
 import json
 
+from mock_ib_services import ib_expect_add_alias, ib_expect_del_alias
+
 if __name__ == '__main__':
     from broker import utils
     utils.import_depends()
@@ -41,10 +43,12 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
                 },
             ],
         )
+        ib_expect_add_alias('alias2host.aqd-unittest.ms.com', 'arecord13.aqd-unittest.ms.com')
         cmd = ['add', 'alias', '--fqdn', 'alias2host.aqd-unittest.ms.com',
                '--target', 'arecord13.aqd-unittest.ms.com']
         self.noouttest(cmd)
         self.events_verify()
+        self.ib_verify()
 
     def test_105_add_aliasduplicate(self):
         cmd = ['add', 'alias', '--fqdn', 'alias2host.aqd-unittest.ms.com',
@@ -68,6 +72,7 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
         cmd = ['add', 'alias', '--fqdn', 'alias.ms.com',
                '--target', 'arecord13.aqd-unittest.ms.com',
                '--comments', 'Some alias comments']
+        ib_expect_add_alias('alias.ms.com', 'arecord13.aqd-unittest.ms.com')
         self.dsdb_expect("add_host_alias "
                          "-host_name arecord13.aqd-unittest.ms.com "
                          "-alias_name alias.ms.com "
@@ -75,6 +80,7 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
         self.noouttest(cmd)
         self.dsdb_verify()
         self.events_verify()
+        self.ib_verify()
 
     def test_120_conflict_a_record(self):
         cmd = ['add', 'alias', '--fqdn', 'arecord14.aqd-unittest.ms.com',
@@ -153,6 +159,7 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
         self.noouttest(cmd)
 
     def test_200_autocreate_target(self):
+        ib_expect_add_alias('restrict1.aqd-unittest.ms.com', 'target.restrict.aqd-unittest.ms.com')
         cmd = ["add", "alias", "--fqdn", "restrict1.aqd-unittest.ms.com",
                "--target", "target.restrict.aqd-unittest.ms.com"]
         out = self.statustest(cmd)
@@ -160,6 +167,7 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
                          "WARNING: Will create a reference to "
                          "target.restrict.aqd-unittest.ms.com, but ",
                          cmd)
+        self.ib_verify()
 
     def test_201_verify_autocreate(self):
         cmd = ["search", "dns", "--fullinfo",
@@ -191,11 +199,14 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
         self.assertEqual(json.loads(out), expected)
 
     def test_210_autocreate_second_alias(self):
+        ib_expect_add_alias('restrict2.aqd-unittest.ms.com', 'target.restrict.aqd-unittest.ms.com')
         cmd = ["add", "alias", "--fqdn", "restrict2.aqd-unittest.ms.com",
                "--target", "target.restrict.aqd-unittest.ms.com"]
         self.noouttest(cmd)
+        self.ib_verify()
 
     def test_220_restricted_alias_no_dsdb(self):
+        ib_expect_add_alias('restrict.ms.com', 'no-dsdb.restrict.aqd-unittest.ms.com')
         cmd = ["add", "alias", "--fqdn", "restrict.ms.com",
                "--target", "no-dsdb.restrict.aqd-unittest.ms.com"]
         out = self.statustest(cmd)
@@ -204,6 +215,7 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
                          "no-dsdb.restrict.aqd-unittest.ms.com, but ",
                          cmd)
         self.dsdb_verify(empty=True)
+        self.ib_verify()
 
     def test_400_verify_alias2host(self):
         cmd = "show alias --fqdn alias2host.aqd-unittest.ms.com"
@@ -256,19 +268,25 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
         self.matchoutput(out, "DNS Environment: ut-env", cmd)
 
     def test_500_add_alias2alias(self):
+        ib_expect_add_alias('alias2alias.aqd-unittest.ms.com', 'alias2host.aqd-unittest.ms.com', ttl=60)
         cmd = ['add', 'alias', '--fqdn', 'alias2alias.aqd-unittest.ms.com',
                '--target', 'alias2host.aqd-unittest.ms.com', '--ttl', 60]
         self.noouttest(cmd)
+        self.ib_verify()
 
     def test_510_add_alias3alias(self):
+        ib_expect_add_alias('alias3alias.aqd-unittest.ms.com', 'alias2alias.aqd-unittest.ms.com')
         cmd = ['add', 'alias', '--fqdn', 'alias3alias.aqd-unittest.ms.com',
                '--target', 'alias2alias.aqd-unittest.ms.com']
         self.noouttest(cmd)
+        self.ib_verify()
 
     def test_520_add_alias4alias(self):
+        ib_expect_add_alias('alias4alias.aqd-unittest.ms.com', 'alias3alias.aqd-unittest.ms.com')
         cmd = ['add', 'alias', '--fqdn', 'alias4alias.aqd-unittest.ms.com',
                '--target', 'alias3alias.aqd-unittest.ms.com']
         self.noouttest(cmd)
+        self.ib_verify()
 
     def test_530_add_alias5alias_fail(self):
         cmd = ['add', 'alias', '--fqdn', 'alias5alias.aqd-unittest.ms.com',
@@ -303,13 +321,17 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
 
     def test_700_show_alias_host(self):
         ip = self.net["zebra_eth0"].usable[0]
+        ib_expect_add_alias('alias0.aqd-unittest.ms.com', 'unittest20-e0.aqd-unittest.ms.com')
         command = ["add", "alias", "--fqdn", "alias0.aqd-unittest.ms.com",
                    "--target", "unittest20-e0.aqd-unittest.ms.com"]
         out = self.commandtest(command)
+        self.ib_verify()
 
+        ib_expect_add_alias('alias01.aqd-unittest.ms.com', 'alias0.aqd-unittest.ms.com')
         command = ["add", "alias", "--fqdn", "alias01.aqd-unittest.ms.com",
                    "--target", "alias0.aqd-unittest.ms.com"]
         out = self.commandtest(command)
+        self.ib_verify()
 
         command = ["show", "host", "--hostname", "unittest20.aqd-unittest.ms.com"]
         out = self.commandtest(command)
@@ -330,21 +352,29 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
         self.assertEqual(interfaces["eth0"].ip, str(ip))
         self.assertEqual(interfaces["eth0"].fqdn, 'unittest20-e0.aqd-unittest.ms.com')
 
+        ib_expect_del_alias('alias01.aqd-unittest.ms.com')
         command = ["del", "alias", "--fqdn", "alias01.aqd-unittest.ms.com"]
         out = self.commandtest(command)
+        self.ib_verify()
 
+        ib_expect_del_alias('alias0.aqd-unittest.ms.com')
         command = ["del", "alias", "--fqdn", "alias0.aqd-unittest.ms.com"]
         out = self.commandtest(command)
+        self.ib_verify()
 
     def test_710_show_alias_host(self):
         ip = self.net["zebra_eth1"].usable[3]
+        ib_expect_add_alias('alias1.aqd-unittest.ms.com', "unittest20-e1-1.aqd-unittest.ms.com")
         command = ["add", "alias", "--fqdn", "alias1.aqd-unittest.ms.com",
                    "--target", "unittest20-e1-1.aqd-unittest.ms.com"]
         out = self.commandtest(command)
+        self.ib_verify()
 
+        ib_expect_add_alias('alias11.aqd-unittest.ms.com', "alias1.aqd-unittest.ms.com")
         command = ["add", "alias", "--fqdn", "alias11.aqd-unittest.ms.com",
                    "--target", "alias1.aqd-unittest.ms.com"]
         out = self.commandtest(command)
+        self.ib_verify()
 
         command = ["show", "host", "--hostname", "unittest20.aqd-unittest.ms.com"]
         out = self.commandtest(command)
@@ -365,18 +395,24 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
         self.assertEqual(interfaces["eth1:e1"].ip, str(ip))
         self.assertEqual(interfaces["eth1:e1"].fqdn, 'unittest20-e1-1.aqd-unittest.ms.com')
 
+        ib_expect_del_alias('alias11.aqd-unittest.ms.com')
         command = ["del", "alias", "--fqdn", "alias11.aqd-unittest.ms.com"]
         out = self.commandtest(command)
+        self.ib_verify()
 
+        ib_expect_del_alias('alias1.aqd-unittest.ms.com')
         command = ["del", "alias", "--fqdn", "alias1.aqd-unittest.ms.com"]
         out = self.commandtest(command)
+        self.ib_verify()
 
     def test_800_grn(self):
+        ib_expect_add_alias('alias2host-grn.aqd-unittest.ms.com', "arecord50.aqd-unittest.ms.com")
         command = ["add", "alias",
                    "--fqdn", "alias2host-grn.aqd-unittest.ms.com",
                    "--target", "arecord50.aqd-unittest.ms.com",
                    "--grn", "grn:/ms/ei/aquilon/aqd"]
         self.noouttest(command)
+        self.ib_verify()
 
     def test_805_verify_grn(self):
         command = ["search", "dns", "--fullinfo",
@@ -402,11 +438,13 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
         self.assertEqual(json.loads(out), expected)
 
     def test_810_eon_id(self):
+        ib_expect_add_alias('alias2host-eon-id.aqd-unittest.ms.com', "arecord51.aqd-unittest.ms.com")
         command = ["add", "alias",
                    "--fqdn", "alias2host-eon-id.aqd-unittest.ms.com",
                    "--target", "arecord51.aqd-unittest.ms.com",
                    "--eon_id", "3"]
         self.noouttest(command)
+        self.ib_verify()
 
     def test_815_verify_eon_id(self):
         command = ["search", "dns", "--fullinfo",

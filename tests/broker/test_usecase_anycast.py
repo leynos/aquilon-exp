@@ -19,6 +19,8 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_add_address, ib_expect_del_address, ib_expect_del_alias
+
 if __name__ == "__main__":
     import utils
     utils.import_depends()
@@ -68,6 +70,7 @@ class TestUsecaseAnycast(MachineTestMixin, TestBrokerCommand):
 
     def test_300_add_service_address(self):
         self.dsdb_expect_add(anycast['sa_fqdn'], anycast['sa_ip'](self))
+        ib_expect_add_address(anycast['sa_fqdn'], str(anycast['sa_ip'](self)))
         for server in anycast['servers']:
             command = ["add", "service", "address",
                        "--hostname", server,
@@ -78,6 +81,7 @@ class TestUsecaseAnycast(MachineTestMixin, TestBrokerCommand):
                        "--shared"]
             self.statustest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_400_bind_server(self):
         for server in anycast['servers']:
@@ -121,6 +125,8 @@ class TestUsecaseAnycast(MachineTestMixin, TestBrokerCommand):
 
     def test_700_del_service_address(self):
         self.dsdb_expect_delete(anycast['sa_ip'](self))
+        ib_expect_del_alias("anycast.aqd-unittest.ms.com")
+        ib_expect_del_address("anycast.aqd-unittest.ms.com", str(anycast['sa_ip'](self)))
         for server in anycast['servers']:
             command = ["del", "service", "address",
                        "--hostname", server,
@@ -148,4 +154,3 @@ class TestUsecaseAnycast(MachineTestMixin, TestBrokerCommand):
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestUsecaseAnycast)
     unittest.TextTestRunner(verbosity=2).run(suite)
-
