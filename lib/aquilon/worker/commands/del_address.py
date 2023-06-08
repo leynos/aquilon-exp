@@ -24,9 +24,10 @@ from aquilon.aqdb.model import ARecord, DynamicStub
 from aquilon.aqdb.model.dns_domain import parse_fqdn
 from aquilon.aqdb.model.network_environment import get_net_dns_env
 from aquilon.exceptions_ import ArgumentError, NotFoundException
-from aquilon.worker.processes import DSDBRunner, IBServices
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from aquilon.worker.ib_services import IBServices
+from aquilon.worker.processes import DSDBRunner
 from requests import RequestException
 
 

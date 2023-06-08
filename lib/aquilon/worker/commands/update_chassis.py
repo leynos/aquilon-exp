@@ -19,6 +19,7 @@
 from aquilon.aqdb.types import ChassisType
 from aquilon.aqdb.model import Model, Chassis, ARecord
 from aquilon.worker.broker import BrokerCommand
+from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.dbwrappers.grn import lookup_grn
 from aquilon.worker.dbwrappers.hardware_entity import (
     get_default_chassis_grn_eonid,
@@ -26,8 +27,8 @@ from aquilon.worker.dbwrappers.hardware_entity import (
 )
 from aquilon.worker.dbwrappers.location import get_location
 from aquilon.exceptions_ import ArgumentError, NotFoundException
-from aquilon.worker.processes import DSDBRunner, IBServices
-from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from aquilon.worker.ib_services import IBServices
+from aquilon.worker.processes import DSDBRunner
 from requests import RequestException
 
 

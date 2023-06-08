@@ -24,7 +24,8 @@ from aquilon.worker.dbwrappers.interface import (get_or_create_interface,
                                                  check_ip_restrictions,
                                                  assign_address)
 from aquilon.worker.dbwrappers.hardware_entity import get_or_create_chassis
-from aquilon.worker.processes import DSDBRunner, IBServices
+from aquilon.worker.ib_services import IBServices
+from aquilon.worker.processes import DSDBRunner
 from requests import RequestException
 
 

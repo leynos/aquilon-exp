@@ -20,12 +20,13 @@ from aquilon.aqdb.model import ARecord
 from aquilon.aqdb.model.network import get_net_id_from_ip
 from aquilon.aqdb.model.network_environment import get_net_dns_env
 from aquilon.worker.broker import BrokerCommand
+from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.dbwrappers.dns import (set_reverse_ptr,
                                            delete_target_if_needed,
                                            update_address)
 from aquilon.worker.dbwrappers.grn import lookup_grn
-from aquilon.worker.processes import DSDBRunner, IBServices
-from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from aquilon.worker.ib_services import IBServices
+from aquilon.worker.processes import DSDBRunner
 from requests import RequestException
 
 

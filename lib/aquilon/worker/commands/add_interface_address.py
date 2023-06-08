@@ -26,9 +26,10 @@ from aquilon.worker.dbwrappers.hardware_entity import get_hardware
 from aquilon.worker.dbwrappers.interface import (generate_ip,
                                                  assign_address)
 from aquilon.aqdb.model.network import get_net_id_from_ip
-from aquilon.worker.processes import DSDBRunner, IBServices
 from aquilon.worker.dbwrappers.location import get_default_dns_domain
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from aquilon.worker.ib_services import IBServices
+from aquilon.worker.processes import DSDBRunner
 from requests import RequestException
 
 

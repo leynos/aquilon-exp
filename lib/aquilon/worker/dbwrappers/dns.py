@@ -43,7 +43,7 @@ from aquilon.aqdb.model.dns_domain import parse_fqdn
 from aquilon.aqdb.model.network import get_net_id_from_ip
 from aquilon.worker.dbwrappers.grn import lookup_grn
 from aquilon.worker.dbwrappers.interface import check_ip_restrictions
-from aquilon.worker.processes import IBServices
+from aquilon.worker.ib_services import IBServices
 
 from sqlalchemy.orm import (
     joinedload,

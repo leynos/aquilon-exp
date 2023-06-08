@@ -22,12 +22,13 @@ from aquilon.worker.broker import BrokerCommand
 from aquilon.exceptions_ import ArgumentError
 from aquilon.aqdb.model import (Interface, AddressAssignment, DnsDomain, Fqdn,
                                 ARecord, NetworkEnvironment)
+from aquilon.utils import first_of
+from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.hardware_entity import get_hardware
 from aquilon.worker.dbwrappers.service_instance import check_no_provided_service
-from aquilon.worker.processes import DSDBRunner, IBServices
-from aquilon.utils import first_of
-from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from aquilon.worker.ib_services import IBServices
+from aquilon.worker.processes import DSDBRunner
 from requests.exceptions import RequestException
 
 

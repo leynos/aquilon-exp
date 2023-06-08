@@ -23,8 +23,9 @@ from aquilon.worker.dbwrappers.dns import (grab_address,
                                            set_reverse_ptr)
 from aquilon.worker.dbwrappers.grn import lookup_grn
 from aquilon.worker.dbwrappers.interface import generate_ip
-from aquilon.worker.processes import DSDBRunner, IBServices
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from aquilon.worker.ib_services import IBServices
+from aquilon.worker.processes import DSDBRunner
 from requests import RequestException
 
 
