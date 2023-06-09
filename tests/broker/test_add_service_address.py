@@ -19,6 +19,8 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_add_address, ib_expect_add_alias, ib_expect_del_alias, ib_expect_del_address
+
 if __name__ == "__main__":
     import utils
     utils.import_depends()
@@ -44,6 +46,7 @@ class TestAddServiceAddress(TestBrokerCommand):
         # Use an address that is smaller than the primary IP to verify that the
         # primary IP is not removed
         ip = self.net["zebra_vip"].usable[14]
+        ib_expect_add_address("zebra2.aqd-unittest.ms.com", str(ip))
         self.dsdb_expect_add("zebra2.aqd-unittest.ms.com", ip)
         command = ["add", "service", "address",
                    "--hostname", "unittest20.aqd-unittest.ms.com",
@@ -56,6 +59,7 @@ class TestAddServiceAddress(TestBrokerCommand):
                          "following required services",
                          command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_210_verifyzebra2(self):
         ip = self.net["zebra_vip"].usable[14]
@@ -97,6 +101,8 @@ class TestAddServiceAddress(TestBrokerCommand):
 
     def test_300_addzebra3(self):
         zebra3_ip = self.net["zebra_vip"].usable[13]
+        ib_expect_add_address("zebra3.aqd-unittest.ms.com", str(zebra3_ip),
+                              reverse_ptr="unittest20.aqd-unittest.ms.com")
         self.dsdb_expect_add("zebra3.aqd-unittest.ms.com", zebra3_ip,
                              comments="Some service address comments")
         command = ["add", "service", "address",
@@ -111,6 +117,7 @@ class TestAddServiceAddress(TestBrokerCommand):
                          "following required services",
                          command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_310_verifyzebra3dns(self):
         command = ["show", "fqdn", "--fqdn", "zebra3.aqd-unittest.ms.com"]
@@ -204,16 +211,20 @@ class TestAddServiceAddress(TestBrokerCommand):
         self.successtest(command)
 
     def test_605_addunittest20eth2addr(self):
+        fqdn = "unittest20-e2.aqd-unittest.ms.com"
+        ip = "192.168.5.24"
+        ib_expect_add_address(fqdn, ip)
         command = ["add_interface_address", "--machine", "ut3c5n2",
                    "--interface", "eth2", "--network_environment", "excx",
-                   "--fqdn", "unittest20-e2.aqd-unittest.ms.com",
-                   "--ip", "192.168.5.24"]
+                   "--fqdn", fqdn, "--ip", ip]
         self.statustest(command)
         # External IP addresses should not be added to DSDB
-        self.dsdb_verify(empty=True)
+        self.dsdb_verify(empty=True)#
+        self.ib_verify()
 
     def test_610_add_extserviceaddress(self):
         # check that adding an external service address does not invoke DSDB
+        ib_expect_add_address("external-unittest20.aqd-unittest.ms.com", "192.168.5.25")
         command = ["add_service_address", "--ip", "192.168.5.25",
                    "--hostname", "unittest20.aqd-unittest.ms.com",
                    "--interfaces", "eth2", "--name", "et-unittest20",
@@ -226,6 +237,7 @@ class TestAddServiceAddress(TestBrokerCommand):
                          command)
         # External IP service addresses should not be added to DSDB
         self.dsdb_verify(empty=True)
+        self.ib_verify()
 
     def test_620_add_service_address_ipfromtype_vip_setup(self):
         ip = self.net["np_bucket2_vip"].network_address
@@ -245,10 +257,12 @@ class TestAddServiceAddress(TestBrokerCommand):
         # Test nextip generation for VIP serviceaddreses
         ip = self.net["np_bucket2_vip"].usable[0]
         service_addr = "testaddress.ms.com"
+        ib_expect_add_address(service_addr, str(ip))
         self.dsdb_expect_add(service_addr, ip)
         command = ["add", "service", "address", "--hostname", "aquilon67.aqd-unittest.ms.com",
                    "--service_address", service_addr, "--name", "test", "--ipfromtype", "vip"]
         self.successtest(command)
+        self.ib_verify()
         command = ["show", "service", "address", "--name", "test",
                    "--hostname", "aquilon67.aqd-unittest.ms.com"]
         out = self.commandtest(command)
@@ -278,10 +292,12 @@ class TestAddServiceAddress(TestBrokerCommand):
         # Test nextip generation for localvip serviceaddreses
         ip = self.net["ut_bucket2_localvip"].usable[1]
         service_addr = "testlocalvipaddress.ms.com"
+        ib_expect_add_address(service_addr, str(ip))
         self.dsdb_expect_add(service_addr, ip)
         command = ["add", "service", "address", "--hostname", "aquilon67.aqd-unittest.ms.com",
                    "--service_address", service_addr, "--name", "test2", "--ipfromtype", "localvip"]
         self.successtest(command)
+        self.ib_verify()
         command = ["show", "service", "address", "--name", "test2",
                    "--hostname", "aquilon67.aqd-unittest.ms.com"]
         out = self.commandtest(command)
@@ -292,18 +308,23 @@ class TestAddServiceAddress(TestBrokerCommand):
                          command)
 
     def test_636_add_service_address_aliases(self):
+        alias_hostname = "testlocalvipaddress.ms.com"
+        ib_expect_add_alias("testlocalvipaddress-alias1.aqd-unittest.ms.com", alias_hostname)
         command = [
             'add', 'alias',
             '--fqdn', 'testlocalvipaddress-alias1.aqd-unittest.ms.com',
-            '--target', 'testlocalvipaddress.ms.com',
+            '--target', alias_hostname,
         ]
         self.successtest(command)
+        self.ib_verify()
+        ib_expect_add_alias("testlocalvipaddress-alias2.aqd-unittest.ms.com", alias_hostname)
         command = [
             'add', 'alias',
             '--fqdn', 'testlocalvipaddress-alias2.aqd-unittest.ms.com',
-            '--target', 'testlocalvipaddress.ms.com',
+            '--target', alias_hostname,
         ]
         self.successtest(command)
+        self.ib_verify()
 
     def test_637_verify_service_address_aliases(self):
         command = ['show', 'service', 'address', '--name', 'test2',
@@ -331,16 +352,20 @@ class TestAddServiceAddress(TestBrokerCommand):
         )
 
     def test_638_del_service_address_aliases(self):
+        ib_expect_del_alias('testlocalvipaddress-alias1.aqd-unittest.ms.com')
         command = [
             'del', 'alias',
             '--fqdn', 'testlocalvipaddress-alias1.aqd-unittest.ms.com',
         ]
         self.successtest(command)
+        self.ib_verify()
+        ib_expect_del_alias('testlocalvipaddress-alias2.aqd-unittest.ms.com')
         command = [
             'del', 'alias',
             '--fqdn', 'testlocalvipaddress-alias2.aqd-unittest.ms.com',
         ]
         self.successtest(command)
+        self.ib_verify()
 
     def test_640_add_service_address_ipfromtype_not_bunker(self):
         # Test nextip generation limited to bunkers only
@@ -353,16 +378,22 @@ class TestAddServiceAddress(TestBrokerCommand):
     def test_645_test_del_ipfromtype_test(self):
         ip1 = self.net["np_bucket2_vip"].usable[0]
         ip2 = self.net["ut_bucket2_localvip"].usable[1]
+        ib_expect_del_alias("testaddress.ms.com")
+        ib_expect_del_address("testaddress.ms.com", str(ip1))
         self.dsdb_expect_delete(ip1)
         command = ["del", "service", "address", "--hostname", "aquilon67.aqd-unittest.ms.com",
                    "--name", "test"]
         self.successtest(command)
         self.dsdb_verify()
+        self.ib_verify()
+        ib_expect_del_alias("testlocalvipaddress.ms.com")
+        ib_expect_del_address("testlocalvipaddress.ms.com", str(ip2))
         self.dsdb_expect_delete(ip2)
         command = ["del", "service", "address", "--hostname", "aquilon67.aqd-unittest.ms.com",
                    "--name", "test2"]
         self.successtest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_700_default_dns_domain_from_fails_with_correct_message(self):
         # Command add_service_address should print a correct message from

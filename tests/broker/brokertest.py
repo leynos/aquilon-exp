@@ -18,23 +18,21 @@
 """Basic module for running tests on broker commands."""
 
 import logging
-import pwd
 import os
+import pwd
+import re
 import sys
 import unittest
-from subprocess import Popen, PIPE
-import re
 from difflib import unified_diff
+from subprocess import Popen, PIPE
 from textwrap import dedent
 
+from aquilon.config import Config, lookup_file_path
 from lxml import etree
 from six import string_types
-
-from aquilon.config import Config, lookup_file_path
-from aquilon.worker import depends  # pylint: disable=W0611
+from mock_ib_services import http_monitor
 
 from aqdb.utils import copy_sqldb
-
 from networktest import DummyNetworks
 
 DSDB_EXPECT_SUCCESS_FILE = "expected_dsdb_cmds"
@@ -150,6 +148,8 @@ class TestBrokerCommand(unittest.TestCase):
                 os.remove(path)
             except OSError:
                 pass
+
+        http_monitor.reset()
 
     def tearDown(self):
         if not os.environ.get("AQD_UNITTEST_FAILFAST"):
@@ -279,7 +279,7 @@ class TestBrokerCommand(unittest.TestCase):
             if 'USER' not in env:
                 env['USER'] = os.environ.get('USER', '')
             kwargs["env"] = env
-        LOGGER.info("Running command {}".format(args))
+        LOGGER.debug("Running command {}".format(args))
         p = Popen(args, stdout=PIPE, stderr=PIPE, **kwargs)
         (out, err) = p.communicate()
         if err:
@@ -810,7 +810,7 @@ class TestBrokerCommand(unittest.TestCase):
                 fp.write("\n")
 
     def dsdb_expect_add(self, hostname, ip, interface=None, mac=None,
-                        primary=None, comments=None, fail=False):
+                        primary=None, comments=None, use_grn=True, fail=False):
         command = ["add_host", "-host_name", hostname,
                    "-ip_address", str(ip), "-status", "aq"]
         if interface:
@@ -820,9 +820,9 @@ class TestBrokerCommand(unittest.TestCase):
             command.extend(["-ethernet_address", str(mac)])
         if primary:
             command.extend(["-primary_host_name", primary])
-        else:
+        elif use_grn:
             command.extend(["-manager_grn",
-                           self.config.get('dsdb', 'manager_grn')])
+                           self.config.get('broker', 'manager_grn')])
         if comments:
             command.extend(["-comments", comments])
 
@@ -984,3 +984,11 @@ class TestBrokerCommand(unittest.TestCase):
     @staticmethod
     def dynname(ip, domain="aqd-unittest.ms.com"):
         return "dynamic-%s.%s" % (str(ip).replace(".", "-"), domain)
+
+    def ib_verify(self, empty=False):
+        if empty and http_monitor.invoked_without_expected_test:
+            self.fail("ib-services invoked when no HTTP requests were expected")
+        if http_monitor.expects:
+            self.fail("Expected HTTP requests to ib-services have not been consumed:\n{}".format(
+                "\n".join([str(payload) for payload in http_monitor.expects])
+            ))

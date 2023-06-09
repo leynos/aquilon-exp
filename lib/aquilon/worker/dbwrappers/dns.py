@@ -585,7 +585,7 @@ def add_address_alias(session, logger, config, dbsrcfqdn, dbtargetfqdn,
             ib_services = IBServices()
             if ib_services.assert_dns_environment(dbsrcfqdn.dns_environment.name) and \
                     ib_services.assert_dns_environment(dbtargetfqdn.dns_environment.name):
-                IBServices().add_a_ptr(dbsrcfqdn.fqdn, dbaa.target_ip, ttl, create_ptr=False)
+                IBServices().add_a_ptr(dbsrcfqdn.fqdn, dbaa.target_ip, ttl=ttl, create_ptr=False)
         except (ArgumentError, RequestException) as e:
             logger.warning("Error calling Infoblox add_a_ptr: {0}".format(str(e)))
             raise e

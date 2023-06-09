@@ -19,6 +19,8 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_add_address, ib_expect_del_address
+
 if __name__ == "__main__":
     import utils
     utils.import_depends()
@@ -50,14 +52,18 @@ class TestSplitMergeNetwork(TestBrokerCommand):
 
     def test_110_add_dns_records(self):
         self.dsdb_expect_add("merge1.aqd-unittest.ms.com", "0.2.2.200")
+        ib_expect_add_address("merge1.aqd-unittest.ms.com", "0.2.2.200")
         self.noouttest(["add", "address", "--ip", "0.2.2.200",
                         "--fqdn", "merge1.aqd-unittest.ms.com",
                         "--grn=grn:/ms/ei/aquilon/unittest"] + self.valid_just_tcm)
+        self.ib_verify()
         self.dsdb_expect_add("merge2.aqd-unittest.ms.com", "0.2.3.192")
+        ib_expect_add_address("merge2.aqd-unittest.ms.com", "0.2.3.192")
         self.noouttest(["add", "address", "--ip", "0.2.3.192",
                         "--fqdn", "merge2.aqd-unittest.ms.com",
                         "--grn=grn:/ms/ei/aquilon/unittest"] + self.valid_just_tcm)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_120_add_routers(self):
         self.noouttest(["add", "router", "address", "--ip", "0.2.2.1",
@@ -179,13 +185,20 @@ class TestSplitMergeNetwork(TestBrokerCommand):
                          "in the DNS: 0.2.3.192", command)
 
     def test_900_clean_dns(self):
+        fqdn = "merge1.aqd-unittest.ms.com"
         self.dsdb_expect_delete("0.2.2.200")
+        ib_expect_del_address(fqdn, "0.2.2.200")
         self.noouttest(["del", "address", "--ip", "0.2.2.200",
-                        "--fqdn", "merge1.aqd-unittest.ms.com"] + self.valid_just_tcm)
+                        "--fqdn", fqdn] + self.valid_just_tcm)
+        self.ib_verify()
+
+        fqdn = "merge2.aqd-unittest.ms.com"
         self.dsdb_expect_delete("0.2.3.192")
+        ib_expect_del_address(fqdn, "0.2.3.192")
         self.noouttest(["del", "address", "--ip", "0.2.3.192",
-                        "--fqdn", "merge2.aqd-unittest.ms.com"] + self.valid_just_tcm)
+                        "--fqdn", fqdn] + self.valid_just_tcm)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_910_clean_nets(self):
         self.noouttest(["del", "network", "--ip", "0.2.2.0"])

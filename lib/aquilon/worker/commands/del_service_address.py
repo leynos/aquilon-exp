@@ -94,8 +94,10 @@ class CommandDelServiceAddress(BrokerCommand):
                     delete_dns_record(rr, exporter=exporter)
                     # TODO: see todo below
                     ibg.add(
-                        lambda: IBServices().del_dns_alias(str(rr.fqdn)),
-                        lambda: IBServices().add_dns_alias(str(rr.fqdn), (rr.target)))
+                        lambda: IBServices().del_dns_alias(str(rr.fqdn))
+                    )
+                        # .target is None
+                        #lambda: IBServices().add_dns_alias(str(rr.fqdn), (rr.target)))
                     break
 
             delete_dns_record(dbdns_rec, exporter=exporter)
@@ -103,8 +105,10 @@ class CommandDelServiceAddress(BrokerCommand):
             # but also dbdns_rec.target and dbdns_rec.reverse_ptr
             # so do i need to do that in ib too ?
             ibg.add(
-                lambda: IBServices().del_dns_alias(str(dbdns_rec.fqdn)),
-                lambda: IBServices().add_dns_alias(str(dbdns_rec.fqdn), str(dbdns_rec.target)))
+                lambda: IBServices().del_dns_alias(str(dbdns_rec.fqdn))
+            )
+                # .target is None
+                #lambda: IBServices().add_dns_alias(str(dbdns_rec.fqdn), str(dbdns_rec.target)))
 
         session.flush()
 

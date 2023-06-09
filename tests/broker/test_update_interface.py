@@ -19,6 +19,8 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_add_address, ib_expect_del_address, ib_expect_del_alias
+
 if __name__ == "__main__":
     import utils
     utils.import_depends()
@@ -266,8 +268,10 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
                    "--interfaces", "eth0", "--name", "renametest",
                    "--service_address", "renametest-ivirt.aqd-unittest.ms.com"]
         self.dsdb_expect_add("renametest-ivirt.aqd-unittest.ms.com", ip)
+        ib_expect_add_address("renametest-ivirt.aqd-unittest.ms.com", str(ip))
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_171_verify_plenaries(self):
         command = ["cat", "--data", "--hostname", "ivirt11.aqd-unittest.ms.com"]
@@ -324,13 +328,18 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
                           command)
 
     def test_174_cleanup(self):
+        fqdn = "ivirt11.aqd-unittest.ms.com"
         ip = self.net["zebra_vip"].usable[5]
         self.dsdb_expect_delete(ip)
+        # TODO: surely this is wrong, the alias needs to be different than the address
+        ib_expect_del_alias("renametest-ivirt.aqd-unittest.ms.com")
+        ib_expect_del_address("renametest-ivirt.aqd-unittest.ms.com", str(ip))
         self.noouttest(["del_service_address", "--name", "renametest",
-                        "--hostname", "ivirt11.aqd-unittest.ms.com"])
+                        "--hostname", fqdn])
         self.dsdb_verify()
+        self.ib_verify()
 
-        self.notfoundtest(["cat", "--hostname", "ivirt11.aqd-unittest.ms.com",
+        self.notfoundtest(["cat", "--hostname", fqdn,
                            "--service_address", "renametest"])
 
     def test_200_update_bad_mac(self):

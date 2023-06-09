@@ -19,6 +19,8 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_add_address, ib_expect_del_address, ib_expect_del_alias
+
 if __name__ == "__main__":
     import utils
     utils.import_depends()
@@ -363,14 +365,17 @@ class TestUpdateBuilding(PersonalityTestMixin, MachineTestMixin,
         ip = self.net["zebra_vip"].usable[10]
         fqdn = "zebra4.aqd-unittest.ms.com"
         self.dsdb_expect_add(fqdn, ip)
+        ib_expect_add_address(fqdn, str(ip))
         command = ["add", "address", "--ip", ip, "--fqdn", fqdn,
                    "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_sn
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_161_set_up_cluster_resource_service_addr(self):
         ip = self.net["zebra_vip"].usable[10]
         fqdn = "zebra4.aqd-unittest.ms.com"
+        # TODO, this is sending requests to dsdb, should it be sending requests to ib too ?
         self.dsdb_expect_delete(ip)
         self.dsdb_expect_add(fqdn, ip)
         command = ["add", "service", "address", "--cluster", "campus-test", "--service_address",
@@ -382,10 +387,12 @@ class TestUpdateBuilding(PersonalityTestMixin, MachineTestMixin,
         ip = self.net["zebra_vip"].usable[11]
         fqdn = "zebra5.aqd-unittest.ms.com"
         self.dsdb_expect_add(fqdn, ip)
+        ib_expect_add_address(fqdn, str(ip))
         command = ["add", "address", "--ip", ip, "--fqdn", fqdn,
                    "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_sn
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
         command = ["add_resourcegroup", "--resourcegroup", "test-resource-group",
                    "--cluster", "campus-test"] + self.valid_just_sn
         self.noouttest(command)
@@ -395,6 +402,7 @@ class TestUpdateBuilding(PersonalityTestMixin, MachineTestMixin,
         fqdn = "zebra5.aqd-unittest.ms.com"
         self.dsdb_expect_delete(ip)
         self.dsdb_expect_add(fqdn, ip)
+        # TODO, should I expect requests to IB too ?
         command = ["add", "service", "address", "--resourcegroup", "test-resource-group", "--service_address",
                    fqdn, "--name", "test-cluster-res-service"] + self.valid_just_sn
         self.noouttest(command)
@@ -404,10 +412,12 @@ class TestUpdateBuilding(PersonalityTestMixin, MachineTestMixin,
         ip = self.net["zebra_vip"].usable[12]
         fqdn = "zebra6.aqd-unittest.ms.com"
         self.dsdb_expect_add(fqdn, ip)
+        ib_expect_add_address(fqdn, str(ip))
         command = ["add", "address", "--ip", ip, "--fqdn", fqdn,
                    "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_sn
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
         command = ["add_resourcegroup", "--resourcegroup", "test-host-resgr", "--hostname",
                    "unittest20.aqd-unittest.ms.com"] + self.valid_just_sn
         self.noouttest(command)
@@ -415,6 +425,7 @@ class TestUpdateBuilding(PersonalityTestMixin, MachineTestMixin,
     def test_171_set_up_host_resourcegroup_serv_addr(self):
         ip = self.net["zebra_vip"].usable[12]
         fqdn = "zebra6.aqd-unittest.ms.com"
+        # TODO, should i expect IB requests here ?
         self.dsdb_expect_delete(ip)
         self.dsdb_expect_add(fqdn, ip)
         command = ["add_service_address", "--resourcegroup", "test-host-resgr", "--name", "test-service-host",
@@ -490,25 +501,36 @@ class TestUpdateBuilding(PersonalityTestMixin, MachineTestMixin,
     def test_211_clean_up_service_addresses(self):
         ip = self.net["zebra_vip"].usable[12]
         self.dsdb_expect_delete(ip)
+        ib_expect_del_alias("zebra6.aqd-unittest.ms.com")
+        ib_expect_del_address("zebra6.aqd-unittest.ms.com", str(ip))
         command = "del service address --resourcegroup test-host-resgr --name test-service-host"
         self.noouttest(command.split(" "))
         self.dsdb_verify()
+        #self.ib_verify()
 
     def test_212_clean_up_service_addresses(self):
         ip = self.net["zebra_vip"].usable[11]
         self.dsdb_expect_delete(ip)
+        # TODO: Again, should fqdns of CNAME and A records be the same ?
+        ib_expect_del_alias("zebra5.aqd-unittest.ms.com")
+        ib_expect_del_address("zebra5.aqd-unittest.ms.com", ip)
         command = ["del", "service", "address", "--resourcegroup", "test-resource-group",
                    "--name", "test-cluster-res-service"] + self.valid_just_sn
         self.noouttest(command)
         self.dsdb_verify()
+        #self.ib_verify()
 
     def test_213_clean_up_service_addresses(self):
         ip = self.net["zebra_vip"].usable[10]
         self.dsdb_expect_delete(ip)
+        ib_expect_del_alias("zebra4.aqd-unittest.ms.com")
+        ib_expect_del_address("zebra4.aqd-unittest.ms.com", str(ip))
         command = ["del", "service", "address", "--cluster", "campus-test", "--name",
                    "test-cluster-service"] + self.valid_just_sn
         self.noouttest(command)
         self.dsdb_verify()
+        #self.ib_verify()
+
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestUpdateBuilding)
