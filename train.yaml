@@ -43,7 +43,7 @@ test_types:
          test:
          - script: |
                mkdir -p ../install/common/test-results/UNIT/xml/
-               python test/test_xmlrunner.py
+               AQDCONF=tests/unittest.conf python test/test_xmlrunner.py
                ./tests/jenkinstest.sh
                cp tests/aqdtests.log ../install/common/test-results/aqdtests.log
                cp -R /var/tmp/$USER/run/quattor/logs/ ../install/common/test-results/quattor-logs

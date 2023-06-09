@@ -859,29 +859,6 @@
         </format>
     </command>
 
-    <command name="refresh_network">
-        Refresh aqdb network information from dsdb.
-        <p/>
-        Generally this command is called with the --all option but can be
-        restricted to a single building for speed.  A dryrun option is
-        provided to see what would change.
-        <p/>
-        Using the incremental option will cause every change to be committed
-        to the database individually.  This is recommended for automated
-        usage but is off by default for interactive use as it is slower.
-        <optgroup mandatory="True" fields="one">
-            <option name="building" type="string">Building name</option>
-            <option name="all" type="flag">All locations</option>
-        </optgroup>
-        <optgroup>
-            <option name="dryrun" type="boolean" conflicts="incremental">Report what will change</option>
-            <option name="incremental" type="boolean" conflicts="dryrun">Commit every change as it is decided</option>
-            <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
-            <option name="reason" type="string">Human readable description of why the operation was performed</option>
-        </optgroup>
-        <transport method="post" path="command/refresh_network"/>
-    </command>
-
     <command name="add_cpu">
         Add a new CPU type to the database.
         <optgroup mandatory="True" fields="all">
@@ -5460,6 +5437,7 @@
         <optgroup mandatory="True" fields="all">
             <option name="fqdn" type="string">A fully qualified domain name</option>
             <option name="target" type="string">The target of the A-Record</option>
+            <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
         </optgroup>
         <optgroup>
             <option name="ttl" type="int">TTL</option>
@@ -5470,7 +5448,6 @@
               <option name="grn" type="string">GRN as string</option>
               <option name="eon_id" type="int">Numeric EON ID</option>
             </optgroup>
-            <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
             <option name="reason" type="string">Human readable description of why the operation was performed</option>
             <option name="cm_check" type="flag">Do a dry-run, and report the objects in-scope for change-management.</option>
         </optgroup>
@@ -5481,12 +5458,12 @@
         Delete DNS address aliases.
         <optgroup mandatory="True" fields="all">
             <option name="fqdn" type="string">The fully qualified domain name</option>
+            <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
         </optgroup>
         <optgroup>
             <option name="target" type="string">The target of the A-Record</option>
             <option name="dns_environment" type="string">The name of the environment the address is in (defaults to 'internal')</option>
             <option name="target_environment" type="string">The name of the environment the target is in (defaults to be the same as the alias environment)</option>
-            <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
             <option name="reason" type="string">Human readable description of why the operation was performed</option>
             <option name="cm_check" type="flag">Do a dry-run, and report the objects in-scope for change-management.</option>
         </optgroup>
@@ -5497,6 +5474,7 @@
         Update DNS address aliases.
         <optgroup mandatory="True" fields="all">
             <option name="fqdn" type="string">The fully qualified domain name</option>
+            <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
         </optgroup>
         <optgroup>
             <option name="target" type="string">The target of the A-Record</option>
@@ -5510,7 +5488,6 @@
               <option name="eon_id" type="int" conflicts="target">Numeric EON ID</option>
               <option name="clear_grn" type="flag" conflicts="grn eon_id target">Clear GRN value</option>
             </optgroup>
-            <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
             <option name="reason" type="string">Human readable description of why the operation was performed</option>
             <option name="cm_check" type="flag">Do a dry-run, and report the objects in-scope for change-management.</option>
         </optgroup>

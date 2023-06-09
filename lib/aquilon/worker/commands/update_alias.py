@@ -48,6 +48,11 @@ class CommandUpdateAlias(BrokerCommand):
         dbalias = Alias.get_unique(session, fqdn=fqdn,
                                    dns_environment=dbdns_env, compel=True)
 
+        if dns_environment is not None and dns_environment != 'internal' \
+                and justification is None:
+            raise ArgumentError("Please provide valid justification "
+                                "number")
+
         # Validate ChangeManagement
         cm = ChangeManagement(session, user, justification, reason, logger, self.command, **arguments)
         cm.consider(dbalias.target)
