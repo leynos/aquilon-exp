@@ -26,6 +26,7 @@ if __name__ == '__main__':
 
 from brokertest import TestBrokerCommand
 from eventstest import EventsTestMixin
+from mock_ib_services import ib_expect_del_alias
 
 
 class TestDelAlias(EventsTestMixin, TestBrokerCommand):
@@ -44,22 +45,30 @@ class TestDelAlias(EventsTestMixin, TestBrokerCommand):
                          command)
 
     def test_200_del_alias4alias(self):
+        ib_expect_del_alias("alias4alias.aqd-unittest.ms.com")
         command = ["del", "alias", "--fqdn", "alias4alias.aqd-unittest.ms.com"]
         self.noouttest(command)
+        self.ib_verify()
 
     def test_201_del_alias3alias(self):
+        ib_expect_del_alias("alias3alias.aqd-unittest.ms.com")
         command = ["del", "alias", "--fqdn", "alias3alias.aqd-unittest.ms.com"]
         self.noouttest(command)
+        self.ib_verify()
 
     def test_202_del_alias2alias(self):
+        ib_expect_del_alias("alias2alias.aqd-unittest.ms.com")
         command = ["del", "alias", "--fqdn", "alias2alias.aqd-unittest.ms.com"]
         self.noouttest(command)
+        self.ib_verify()
 
     def test_210_del_alias2host(self):
         self.event_del_dns('alias2host.aqd-unittest.ms.com')
+        ib_expect_del_alias("alias2host.aqd-unittest.ms.com")
         command = ["del", "alias", "--fqdn", "alias2host.aqd-unittest.ms.com"]
         self.noouttest(command)
         self.events_verify()
+        self.ib_verify()
 
     def test_220_del_mscom_alias(self):
         self.event_del_dns('alias.ms.com')
@@ -67,6 +76,7 @@ class TestDelAlias(EventsTestMixin, TestBrokerCommand):
         dsdb_command = "delete_host_alias -alias_name alias.ms.com"
         errstr = "Alias alias.ms.com doesn't exist"
         self.dsdb_expect(dsdb_command, True, errstr)
+        ib_expect_del_alias("alias.ms.com")
 
         command = ["del", "alias", "--fqdn", "alias.ms.com"]
         err = self.statustest(command)
@@ -75,6 +85,7 @@ class TestDelAlias(EventsTestMixin, TestBrokerCommand):
                          command)
         self.dsdb_verify()
         self.events_verify()
+        self.ib_verify()
 
     def test_230_del_alias2diff_environment_fail(self):
         command = ["del", "alias", "--fqdn", "alias2alias.aqd-unittest-ut-env.ms.com",
@@ -88,6 +99,7 @@ class TestDelAlias(EventsTestMixin, TestBrokerCommand):
         command = ["del", "alias", "--fqdn", "alias2alias.aqd-unittest-ut-env.ms.com",
                    "--dns_environment", "ut-env"] + self.valid_just_sn
         self.noouttest(command)
+        self.ib_verify()
 
     def test_235_del_alias2diff_environment(self):
         self.event_del_dns('alias2host.aqd-unittest-ut-env.ms.com', dns_environment='ut-env')
@@ -95,15 +107,20 @@ class TestDelAlias(EventsTestMixin, TestBrokerCommand):
                    "--dns_environment", "ut-env"] + self.valid_just_sn
         self.noouttest(command)
         self.events_verify()
+        self.ib_verify()
 
     def test_238_del_alias2diff_environment(self):
         command = ["del", "alias", "--fqdn", "alias13.aqd-unittest.ms.com",
                    "--dns_environment", "ut-env"] + self.valid_just_sn
         self.noouttest(command)
+        self.ib_verify()
 
     def test_300_del_restrict1(self):
+        # TODO, I think in the infoblox-aqdeng branch we don't send restricted domain aliases to IB ?
+        ib_expect_del_alias("restrict1.aqd-unittest.ms.com")
         command = ["del", "alias", "--fqdn", "restrict1.aqd-unittest.ms.com"]
         self.noouttest(command)
+        self.ib_verify()
 
     def test_301_verify_target(self):
         # There was a second alias, so the target must still exist
@@ -131,8 +148,10 @@ class TestDelAlias(EventsTestMixin, TestBrokerCommand):
         self.assertEqual(json.loads(out), expected)
 
     def test_310_del_autotarget(self):
+        ib_expect_del_alias("restrict2.aqd-unittest.ms.com")
         command = ["del", "alias", "--fqdn", "restrict2.aqd-unittest.ms.com"]
         self.noouttest(command)
+        self.ib_verify()
 
     def test_311_verify_target_gone(self):
         command = ["search", "dns", "--fullinfo",
@@ -140,27 +159,37 @@ class TestDelAlias(EventsTestMixin, TestBrokerCommand):
         self.notfoundtest(command)
 
     def test_320_restricted_alias_no_dsdb(self):
+        # TODO, this one is not going to dsdb, does it go to IB ?
+        ib_expect_del_alias("restrict.ms.com")
         command = ["del", "alias", "--fqdn", "restrict.ms.com"]
         self.noouttest(command)
         self.dsdb_verify(empty=True)
+        self.ib_verify()
 
     def test_330_del_srv_alases(self):
+        ib_expect_del_alias("srv-alias.one-nyp.ms.com")
         self.noouttest(["del_alias", "--fqdn", "srv-alias.one-nyp.ms.com"])
+        ib_expect_del_alias("srv-alias2.one-nyp.ms.com")
         self.noouttest(["del_alias", "--fqdn", "srv-alias2.one-nyp.ms.com"])
+        self.ib_verify()
 
     def test_400_del_alias_added_with_grn(self):
+        ib_expect_del_alias("alias2host-grn.aqd-unittest.ms.com")
         command = ["del", "alias", "--fqdn", "alias2host-grn.aqd-unittest.ms.com"]
         self.noouttest(command)
         self.dsdb_verify(empty=True)
+        self.ib_verify()
 
     def test_405_verify_alias_with_grn_gone(self):
         command = ["search", "dns", "--fqdn", "alias2host-grn.aqd-unittest.ms.com"]
         self.notfoundtest(command)
 
     def test_410_del_alias_added_with_eon_id(self):
+        ib_expect_del_alias("alias2host-eon-id.aqd-unittest.ms.com")
         command = ["del", "alias", "--fqdn", "alias2host-eon-id.aqd-unittest.ms.com"]
         self.noouttest(command)
         self.dsdb_verify(empty=True)
+        self.ib_verify()
 
     def test_415_verify_alias_with_eon_id_gone(self):
         command = ["search", "dns", "--fqdn", "alias2host-eon-id.aqd-unittest.ms.com"]

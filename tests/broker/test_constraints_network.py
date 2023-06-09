@@ -23,6 +23,8 @@ if __name__ == "__main__":
     utils.import_depends()
 
 from brokertest import TestBrokerCommand
+from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_del_address
 
 
 class TestNetworkConstraints(TestBrokerCommand):
@@ -39,6 +41,7 @@ class TestNetworkConstraints(TestBrokerCommand):
         self.dsdb_expect_add("mismatch1.aqd-unittest.ms.com", ip,
                              "eth0_bunkertest",
                              primary="aquilon61.aqd-unittest.ms.com")
+        ib_expect_add_address("mismatch1.aqd-unittest.ms.com", str(ip))
         command = ["add_interface_address",
                    "--machine", "aquilon61.aqd-unittest.ms.com",
                    "--interface", "eth0", "--label", "bunkertest",
@@ -50,6 +53,7 @@ class TestNetworkConstraints(TestBrokerCommand):
                          "is not bunkerized." % (net.name, net),
                          command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_120_mismatch_2(self):
         # Rack and network has different bunkers
@@ -58,6 +62,7 @@ class TestNetworkConstraints(TestBrokerCommand):
         self.dsdb_expect_add("mismatch2.aqd-unittest.ms.com", ip,
                              "eth0_bunkertest",
                              primary="aquilon62.aqd-unittest.ms.com")
+        ib_expect_add_address("mismatch2.aqd-unittest.ms.com", str(ip))
         command = ["add_interface_address",
                    "--machine", "aquilon62.aqd-unittest.ms.com",
                    "--interface", "eth0", "--label", "bunkertest",
@@ -69,6 +74,7 @@ class TestNetworkConstraints(TestBrokerCommand):
                          "bunker bucket1.ut." % (net.name, net),
                          command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_130_mismatch_3(self):
         # Network is bunkerized, rack is not
@@ -77,6 +83,7 @@ class TestNetworkConstraints(TestBrokerCommand):
         self.dsdb_expect_add("mismatch3.aqd-unittest.ms.com", ip,
                              "eth0_bunkertest",
                              primary="server9.aqd-unittest.ms.com")
+        ib_expect_add_address("mismatch3.aqd-unittest.ms.com", str(ip))
         command = ["add_interface_address",
                    "--machine", "server9.aqd-unittest.ms.com",
                    "--interface", "eth0", "--label", "bunkertest",
@@ -89,6 +96,7 @@ class TestNetworkConstraints(TestBrokerCommand):
                          "a bunker." % (net.name, net),
                          command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_200_show_bunker_violations(self):
         command = ["show_bunker_violations"]
@@ -127,31 +135,37 @@ class TestNetworkConstraints(TestBrokerCommand):
         net = self.net["bunker_mismatch1"]
         ip = net.usable[0]
         self.dsdb_expect_delete(ip)
+        ib_expect_del_address("mismatch1.aqd-unittest.ms.com", str(ip))
         command = ["del_interface_address",
                    "--machine", "aquilon61.aqd-unittest.ms.com",
                    "--interface", "eth0", "--label", "bunkertest"]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_300_mismatch2_cleanup(self):
         net = self.net["bunker_mismatch2"]
         ip = net.usable[0]
         self.dsdb_expect_delete(ip)
+        ib_expect_del_address("mismatch2.aqd-unittest.ms.com", str(ip))
         command = ["del_interface_address",
                    "--machine", "aquilon62.aqd-unittest.ms.com",
                    "--interface", "eth0", "--label", "bunkertest"]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_300_mismatch3_cleanup(self):
         net = self.net["bunker_mismatch2"]
         ip = net.usable[1]
         self.dsdb_expect_delete(ip)
+        ib_expect_del_address("mismatch3.aqd-unittest.ms.com", str(ip))
         command = ["del_interface_address",
                    "--machine", "server9.aqd-unittest.ms.com",
                    "--interface", "eth0", "--label", "bunkertest"]
         self.statustest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_310_network_cleanup(self):
         self.net.dispose_network(self, "bunker_mismatch1")

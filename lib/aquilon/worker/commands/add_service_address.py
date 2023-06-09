@@ -268,7 +268,7 @@ class CommandAddServiceAddress(BrokerCommand):
                               dbtargetfqdn=dbdns_rec.fqdn,
                               ttl=None, grn=None, eon_id=None,
                               comments=None, exporter=exporter,
-                              flush_session=True)
+                              flush_session=True, sync_ib=False)
             ibg.add(
                 lambda: IBServices().add_dns_alias(str(sibling_ssn.fqdn), str(dbdns_rec.fqdn)),
                 lambda: IBServices().del_dns_alias(str(sibling_ssn.fqdn)))

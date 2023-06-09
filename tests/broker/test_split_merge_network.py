@@ -19,7 +19,6 @@
 
 import unittest
 
-from mock_ib_services import ib_expect_add_address, ib_expect_del_address
 
 if __name__ == "__main__":
     import utils
@@ -28,6 +27,8 @@ if __name__ == "__main__":
 from ipaddress import IPv4Network
 
 from brokertest import TestBrokerCommand
+from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_del_address
 
 
 class TestSplitMergeNetwork(TestBrokerCommand):
@@ -66,12 +67,16 @@ class TestSplitMergeNetwork(TestBrokerCommand):
         self.ib_verify()
 
     def test_120_add_routers(self):
+        ib_expect_add_address("rtr1-merge1.aqd-unittest.ms.com", "0.2.2.1")
         self.noouttest(["add", "router", "address", "--ip", "0.2.2.1",
                         "--fqdn", "rtr1-merge1.aqd-unittest.ms.com"])
+        ib_expect_add_address("rtr2-merge1.aqd-unittest.ms.com", "0.2.2.193")
         self.noouttest(["add", "router", "address", "--ip", "0.2.2.193",
                         "--fqdn", "rtr2-merge1.aqd-unittest.ms.com"])
+        ib_expect_add_address("rtr1-merge2.aqd-unittest.ms.com", "0.2.3.129")
         self.noouttest(["add", "router", "address", "--ip", "0.2.3.129",
                         "--fqdn", "rtr1-merge2.aqd-unittest.ms.com"])
+        self.ib_verify()
 
     def test_200_merge1(self):
         command = ["merge", "network", "--ip", "0.2.2.0",

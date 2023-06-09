@@ -78,7 +78,7 @@ class CommandAddRouterAddress(BrokerCommand):
         plenaries.add(dbnetwork)
 
         with plenaries.transaction():
-            if self.config.infoblox_feature_enabled("add_router_address"):
+            if newly_created and self.config.infoblox_feature_enabled("add_router_address"):
                 try:
                     IBServices().add_a_ptr(str(dbdns_rec.fqdn), ip)
                 except (ArgumentError,RequestException) as e:

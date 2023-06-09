@@ -107,7 +107,7 @@ def ib_expect_add_address(fqdn, ip, reverse_ptr=None, create_ptr=True, ttl=None,
 
 
 def ib_expect_update_address(fqdn, original_ip, new_ip=None, reverse_ptr=None,
-                             new_ttl=None, response_code=204, response_body="",
+                             new_ttl=None, response_code=204, response_body="", update_ptr=True,
                              fail = False):
     if fail:
         response_code = 400
@@ -116,7 +116,7 @@ def ib_expect_update_address(fqdn, original_ip, new_ip=None, reverse_ptr=None,
         payload["address"] = new_ip
     if reverse_ptr is not None:
         payload["assign_ptr_to_fqdn"] = reverse_ptr
-    payload["update_ptr"] = True
+    payload["update_ptr"] = update_ptr
     if new_ttl:
         payload["ttl"] = new_ttl
 
@@ -150,10 +150,14 @@ def ib_expect_add_alias(fqdn, target, ttl=None, response_code=201, response_body
     http_monitor.expect(test_case)
 
 
-def ib_expect_update_alias(fqdn, target, response_code=204, response_body="", fail=False):
+def ib_expect_update_alias(fqdn, target=None, ttl=None, response_code=204, response_body="", fail=False):
     if fail:
         response_code = 400
-    payload = {"target": target}
+    payload = {}
+    if target:
+        payload["target"] = target
+    if ttl:
+        payload["ttl"] = ttl
     test_case = ib_test_case(
         "PATCH",
         "/dns/aliases/{}".format(fqdn),

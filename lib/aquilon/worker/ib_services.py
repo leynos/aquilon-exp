@@ -191,8 +191,11 @@ class IBServices(object):
             raise ArgumentError(response.text)
 
     @with_timer
-    def update_dns_alias(self, name, new_target, ttl):
-        payload = {'target': new_target}
+    def update_dns_alias(self, name, new_target=None, ttl=None):
+
+        payload = {}
+        if new_target is not None:
+            payload['target'] = new_target
         if ttl is not None:
             payload['ttl'] = ttl
         url = '{}/dns/aliases/{}'.format(self.ib_service_url, name)
