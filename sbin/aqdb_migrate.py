@@ -45,7 +45,7 @@ if LIBDIR not in sys.path:
 
 from aquilon.aqdb import depends  # pylint: disable=W0611
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select, and_, func, join
 from sqlalchemy.orm import sessionmaker, configure_mappers
 from sqlalchemy.sql import text
 
@@ -67,6 +67,10 @@ if __name__ == '__main__':
                         action='store_true',
                         dest='verbose',
                         help='show queries (metadata bind.echo = True)')
+    parser.add_argument('-s', '--start_time',
+                        help='Start Date and Time in format ("2023-01-01 00:00:00")')
+    parser.add_argument('-e', '--end_time',
+                        help='End Date and Time in format ("2023-01-31 00:00:00")')
     parser.add_argument('dsn', metavar='DSN',
                         help='DSN of the target backend (driver://user[:password]@host[:port]/database)')
     opts = parser.parse_args()
@@ -82,16 +86,16 @@ if __name__ == '__main__':
     dest_engine = create_engine(opts.dsn, convert_unicode=True, echo=opts.verbose)
     dest_session = sessionmaker(bind=dest_engine)()
 
-    if db.engine.dialect.supports_sequences and \
-       dest_engine.dialect.supports_sequences:
-        # The only operation on sequences that all DBs support is getting the
-        # next value. Unfortunately that means we have to alter the state of the
-        # source database here.
-        for seq in Base.metadata._sequences.values():
-            nextid = src_session.execute(seq)
-            # Make sure the sequence is re-created with the right start index
-            seq.drop(dest_engine, checkfirst=True)
-            seq.start = nextid
+    # if db.engine.dialect.supports_sequences and \
+    #    dest_engine.dialect.supports_sequences:
+    #     # The only operation on sequences that all DBs support is getting the
+    #     # next value. Unfortunately that means we have to alter the state of the
+    #     # source database here.
+    #     for seq in Base.metadata._sequences.values():
+    #         nextid = src_session.execute(seq)
+    #         # Make sure the sequence is re-created with the right start index
+    #         seq.drop(dest_engine, checkfirst=True)
+    #         seq.start = nextid
 
     # Avoid auto-populating tables as that would interfere with the copying
     Base.populate_table_on_create = False
@@ -99,7 +103,10 @@ if __name__ == '__main__':
     # Need to call this explicitely to make the __extra_table_args__ hack work
     configure_mappers()
 
-    Base.metadata.create_all(dest_engine, checkfirst=True)
+    Base.metadata.create_all(dest_engine, checkfirst=True,
+                             tables=[Base.metadata.tables['xtn'],
+                                     Base.metadata.tables['xtn_detail'],
+                                     Base.metadata.tables['xtn_end']])
 
     if dest_engine.dialect.name == 'postgresql':
         dest_session.execute(text('SET CONSTRAINTS ALL DEFERRED'))
@@ -115,36 +122,65 @@ if __name__ == '__main__':
     # Oracle does not like EINTR
     signal.siginterrupt(signal.SIGALRM, False)
 
-    multirow_insert = db.engine.dialect.supports_multivalues_insert
+    # multirow_insert = db.engine.dialect.supports_multivalues_insert
 
     for table in Base.metadata.sorted_tables:
-        total = src_session.execute(table.count()).scalar()
-        print('Processing %s (%d rows)' % (table, total), end=' ')
-        sys.stdout.flush()
-        cnt = 0
+        if str(table) == 'xtn_detail' or str(table) == 'xtn_end' or str(table) == 'xtn':
+            total = src_session.execute(table.count()).scalar()
+            print('Processing %s (%d rows)' % (table, total), end=' ')
+            sys.stdout.flush()
+            cnt = 0
 
-        signal.setitimer(signal.ITIMER_REAL, 5, 5)
-        for rows in chunk(src_session.execute(table.select()), 1000):
-            cnt = cnt + len(rows)
-            if signalled:
-                print("... %d" % cnt, end=' ')
-                sys.stdout.flush()
-                signalled = 0
+            signal.setitimer(signal.ITIMER_REAL, 5, 5)
+            if str(table) == 'xtn':
+                for rows in \
+                        chunk(src_session.execute(select([table],
+                                                         and_(func.date(table.c.start_time) >= opts.start_time,
+                                                              func.date(table.c.start_time) <= opts.end_time))).
+                                      fetchall(), 1000):
+                    cnt = cnt + len(rows)
+                    if signalled:
+                        print("... %d" % cnt, end=' ')
+                        sys.stdout.flush()
+                        signalled = 0
 
-            if multirow_insert:
-                data = [{col.key: getattr(row, col.key)
-                        for col in table.columns}
-                        for row in rows]
+                    # Oracle doesn't support multi row insert
+                    # if multirow_insert:
+                    #     data = [{col.key: getattr(row, col.key)
+                    #              for col in table.columns}
+                    #             for row in rows]
+                    #
+                    #     dest_session.execute(table.insert().values(data))
+                    for row in rows:
+                        data = {col.key: getattr(row, col.key) for col in table.columns}
 
-                dest_session.execute(table.insert().values(data))
+                        dest_session.execute(table.insert().values(data))
+
             else:
-                for row in rows:
-                    data = {col.key: getattr(row, col.key) for col in table.columns}
+                for rows in chunk(src_session.execute(select([table]).select_from(
+                        Base.metadata.tables['xtn'].join(table,
+                                                         table.c.xtn_id == Base.metadata.tables['xtn'].c.id)).where
+                                                          ((func.date(Base.metadata.tables['xtn'].c.start_time) >=
+                                                            opts.start_time) &
+                                                           (func.date(Base.metadata.tables[
+                                                                          'xtn'].c.start_time) <= opts.end_time))),
+                                  1000):
+                    cnt = cnt + len(rows)
+                    if signalled:
+                        print("... %d" % cnt, end=' ')
+                        sys.stdout.flush()
+                        signalled = 0
 
-                    dest_session.execute(table.insert().values(data))
+                    for row in rows:
+                        if str(table) == 'xtn_detail':
+                            data = {col.key: str(getattr(row, col.key)) for col in table.columns}
+                        else:
+                            data = {col.key: getattr(row, col.key) for col in table.columns}
+                        dest_session.execute(table.insert().values(data))
 
-        signal.setitimer(signal.ITIMER_REAL, 0)
-        dest_session.flush()
-        print()
+
+            signal.setitimer(signal.ITIMER_REAL, 0)
+            dest_session.flush()
+            print()
 
     dest_session.commit()
