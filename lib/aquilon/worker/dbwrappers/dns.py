@@ -531,7 +531,7 @@ def set_reverse_ptr(session, logger, dbdns_rec, reverse_ptr):
 
 def add_address_alias(session, logger, config, dbsrcfqdn, dbtargetfqdn,
                       ttl, grn, eon_id, comments, exporter=None,
-                      flush_session=False):
+                      flush_session=False, sync_ib=True):
     """Add an address-alias record (from source and target FQDN DB objects).
 
     Does not allow the addition of an address-alias into 'ms.com' in the
@@ -580,12 +580,12 @@ def add_address_alias(session, logger, config, dbsrcfqdn, dbtargetfqdn,
     # create only an A-record in Infoblox.
     # PTR record is not required as it has already been created when the target (which is in fact another A-record)
     # was created.
-    if config.infoblox_feature_enabled('add_address_alias'):
+    if config.infoblox_feature_enabled('add_address_alias') and sync_ib:
         try:
             ib_services = IBServices()
             if ib_services.assert_dns_environment(dbsrcfqdn.dns_environment.name) and \
                     ib_services.assert_dns_environment(dbtargetfqdn.dns_environment.name):
-                IBServices().add_a_ptr(dbsrcfqdn.fqdn, dbaa.target_ip, ttl=ttl, create_ptr=False)
+                ib_services.add_a_ptr(dbsrcfqdn.fqdn, dbaa.target_ip, ttl=ttl, create_ptr=False)
         except (ArgumentError, RequestException) as e:
             logger.warning("Error calling Infoblox add_a_ptr: {0}".format(str(e)))
             raise e

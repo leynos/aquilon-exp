@@ -7,6 +7,7 @@ tools:
    - python/core/2.7.18-64
    - msde/msdlbuild/prod
 
+
 build_types:
    - build_type:
           name: release
@@ -23,7 +24,7 @@ test_types:
          test: mkdir -p ../install/common/test-results/UNIT/xml/; python test/test_xmlrunner.py
     - test_type:
          name: all
-         test: set -o pipefail; #./tests/runtests.py --config=./tests/unittest.conf --no-interactive | tee ./tests/aqdtests.log
+         test: set -o pipefail; ./tests/runtests.py --config=./tests/unittest.conf --no-interactive | tee ./tests/aqdtests.log
     - test_type:
          name: failfast
          test: set -o pipefail; ./tests/runtests.py --config=./tests/unittest.conf --failfast --no-interactive --coverage | tee ./tests/aqdtests.log
@@ -32,15 +33,7 @@ test_types:
          test: ./tests/restarttests.sh
     - test_type:
          name: jenkins
-         test:
-         - script: |
-               echo "Disabled for purposes of merge"
-               mkdir -p ../install/common/test-results/INTEGRATION/coveragepy/xml/
-               touch ../install/common/test-results/INTEGRATION/coveragepy/xml/coverage-test.xml
-               touch ../install/common/test-results/INTEGRATION/coveragepy/xml/test.xml
-    - test_type:
-         name: jenkins_
-         test:
+         test: 
          - script: |
                mkdir -p ../install/common/test-results/UNIT/xml/
                AQDCONF=tests/unittest.conf python test/test_xmlrunner.py

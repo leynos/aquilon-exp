@@ -199,7 +199,7 @@ class CommandAddInterfaceAddress(BrokerCommand):
                 dsdb_runner.update_host(dbhw_ent, oldinfo)
                 dsdb_runner.commit_or_rollback("Could not add host to DSDB")
 
-            if self.config.infoblox_feature_enabled("add_interface_address"):
+            if newly_created and self.config.infoblox_feature_enabled("add_interface_address"):
                 try:
                     # TODO: Enable DHCP in Infoblox
                     IBServices().add_a_ptr(fqdn, ip)

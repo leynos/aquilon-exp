@@ -20,7 +20,8 @@
 import unittest
 import json
 
-from mock_ib_services import ib_expect_add_alias, ib_expect_del_alias
+from mock_ib_services import ib_expect_add_alias
+from mock_ib_services import ib_expect_del_alias
 
 if __name__ == '__main__':
     from broker import utils

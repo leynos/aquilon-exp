@@ -19,8 +19,6 @@
 
 import unittest
 
-from mock_ib_services import ib_expect_del_address, ib_expect_add_address
-
 if __name__ == "__main__":
     import utils
     utils.import_depends()
@@ -139,14 +137,12 @@ class TestAddAquilonHost(EventsTestMixin, TestBrokerCommand):
         # will get fixed up
         ip = self.net["zebra_eth1"].usable[0]
         fqdn = "unittest20-e1.aqd-unittest.ms.com"
-        ib_expect_add_address(fqdn, str(ip))
         self.dsdb_expect_delete(ip)
         self.dsdb_expect_add(fqdn, ip, "eth1", ip.mac)
         command = ["add", "interface", "address", "--machine", "ut3c5n2",
                    "--interface", "eth1", "--fqdn", fqdn]
         self.noouttest(command)
         self.dsdb_verify()
-        self.ib_verify()
 
     def test_132_add_unittest20_good(self):
         ip = self.net["zebra_vip"].usable[2]

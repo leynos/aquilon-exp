@@ -32,7 +32,6 @@ from brokertest import TestBrokerCommand
 class TestAddAddressAlias(TestBrokerCommand):
 
     def test_100_add_addralias(self):
-        ib_expect_add_address("addralias1.aqd-unittest.ms.com", "4.2.1.18", create_ptr=False)
         command = ["add", "address", "alias",
                    "--fqdn", "addralias1.aqd-unittest.ms.com",
                    "--target", "arecord13.aqd-unittest.ms.com"]
@@ -40,6 +39,7 @@ class TestAddAddressAlias(TestBrokerCommand):
         self.matchoutput(out, "Not all mandatory options specified!", command)
 
     def test_101_add_addralias(self):
+        ib_expect_add_address("addralias1.aqd-unittest.ms.com", "4.2.1.18", create_ptr=False)
         command = ["add", "address", "alias",
                    "--fqdn", "addralias1.aqd-unittest.ms.com",
                    "--target", "arecord13.aqd-unittest.ms.com"] \

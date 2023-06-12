@@ -25,6 +25,7 @@ if __name__ == "__main__":
     utils.import_depends()
 
 from brokertest import TestBrokerCommand
+from mock_ib_services import ib_expect_del_address
 
 
 class TestDel10GigHardware(TestBrokerCommand):
@@ -53,17 +54,20 @@ class TestDel10GigHardware(TestBrokerCommand):
     def test_300_delaux(self):
         for i in range(1, 25):
             hostname = "evh%d-e1.aqd-unittest.ms.com" % (i + 50)
+            ip = self.net["vm_storage_net"].usable[i - 1]
             if i < 13:
                 port = i
                 machine = "ut11s01p%d" % port
             else:
                 port = i - 12
                 machine = "ut12s02p%d" % port
-            self.dsdb_expect_delete(self.net["vm_storage_net"].usable[i - 1])
+            ib_expect_del_address(hostname, str(ip))
+            self.dsdb_expect_delete(ip)
             command = ["del_interface_address", "--fqdn", hostname,
                        "--machine", machine, "--interface", "eth1"]
             self.statustest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_700_delmachines(self):
         for i in chain(range(0, 8), range(9, 16)):

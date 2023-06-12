@@ -99,9 +99,8 @@ class TestUpdateServiceAddress(TestBrokerCommand):
                                 comments="New service address comments")
 
         #  TODO: could this be optimised to send one single request to IB ?
-        ib_expect_update_address("zebra3.aqd-unittest.ms.com", original_ip="4.2.12.146", new_ip=str(new_ip))
-        ib_expect_update_address("zebra3.aqd-unittest.ms.com", original_ip=str(new_ip), reverse_ptr=None,
-                                 original_ptr="unittest20.aqd-unittest.ms.com")
+        ib_expect_update_address("zebra3.aqd-unittest.ms.com", original_ip="4.2.12.146", new_ip=str(new_ip),
+                                 reverse_ptr=None)
         self.noouttest(["update_service_address",
                         "--hostname", "unittest20.aqd-unittest.ms.com",
                         "--name", "zebra3", "--ip", new_ip,
@@ -143,9 +142,8 @@ class TestUpdateServiceAddress(TestBrokerCommand):
         new_ip = self.net["zebra_vip"].usable[13]
         zebra3_ip = self.net["zebra_vip"].usable[6]
         self.dsdb_expect_update("zebra3.aqd-unittest.ms.com", ip=new_ip)
-        ib_expect_update_address("zebra3.aqd-unittest.ms.com", original_ip=str(zebra3_ip), new_ip=str(new_ip))
-        ib_expect_update_address("zebra3.aqd-unittest.ms.com", original_ip=str(new_ip),
-                                 reverse_ptr="unittest20.aqd-unittest.ms.com", original_ptr=None)
+        ib_expect_update_address("zebra3.aqd-unittest.ms.com", original_ip=str(zebra3_ip), new_ip=str(new_ip),
+                                 reverse_ptr="unittest20.aqd-unittest.ms.com")
         self.noouttest(["update_service_address",
                         "--hostname", "unittest20.aqd-unittest.ms.com",
                         "--name", "zebra3", "--ip", new_ip,

@@ -101,6 +101,7 @@ class TestUpdateAddress(TestBrokerCommand):
         ip = self.net["unknown0"].usable[-1]
         self.dsdb_expect_update("arecord15.aqd-unittest.ms.com", ip=ip)
         ib_expect_update_address("arecord15.aqd-unittest.ms.com", original_ip="4.2.1.20", new_ip=str(ip))
+        ib_expect_update_address("addralias1.aqd-unittest.ms.com", original_ip="4.2.1.20", new_ip=str(ip))
         command = ["update", "address",
                    "--fqdn", "arecord15.aqd-unittest.ms.com", "--ip", ip] + self.valid_just_tcm
         self.noouttest(command)
@@ -118,6 +119,7 @@ class TestUpdateAddress(TestBrokerCommand):
         ip = self.net["unknown0"].usable[15]
         self.dsdb_expect_update("arecord15.aqd-unittest.ms.com", ip=ip)
         ib_expect_update_address("arecord15.aqd-unittest.ms.com", original_ip="4.2.1.62", new_ip=str(ip))
+        ib_expect_update_address("addralias1.aqd-unittest.ms.com", original_ip="4.2.1.62", new_ip=str(ip))
         command = ["update", "address",
                    "--fqdn", "arecord15.aqd-unittest.ms.com", "--ip", ip] + self.valid_just_tcm
         self.noouttest(command)
@@ -318,7 +320,7 @@ class TestUpdateAddress(TestBrokerCommand):
     def test_300_update_no_ttl(self):
         fqdn = "arecord40.aqd-unittest.ms.com"
         ip = "4.2.1.45"
-        ib_expect_update_address(fqdn, ip, new_ttl=None, original_ttl=300)
+        ib_expect_update_address(fqdn, ip, new_ttl=-1)
         command = ["update", "address",
                    "--fqdn", "arecord40.aqd-unittest.ms.com",
                    "--clear_ttl"] + self.valid_just_tcm
@@ -334,7 +336,7 @@ class TestUpdateAddress(TestBrokerCommand):
     def test_330_update_new_ttl(self):
         fqdn = "arecord40.aqd-unittest.ms.com"
         ip = "4.2.1.45"
-        ib_expect_update_address(fqdn, ip, new_ttl=600, original_ttl=None)
+        ib_expect_update_address(fqdn, ip, new_ttl=600)
         command = ["update", "address",
                    "--fqdn", fqdn,
                    "--ttl", "600"] + self.valid_just_tcm

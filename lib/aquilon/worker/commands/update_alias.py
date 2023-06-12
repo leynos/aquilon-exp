@@ -150,7 +150,13 @@ class CommandUpdateAlias(BrokerCommand):
                 if ib_services.assert_dns_environment(dbalias.fqdn.dns_environment.name) and \
                         (not old_target or ib_services.assert_dns_environment(old_target.dns_environment.name)) and \
                         ib_services.assert_dns_environment(dbalias.target.dns_environment.name):
-                    ib_services.update_dns_alias(str(dbalias.fqdn), str(dbalias.target), ttl)
+
+                    #  Not all update commands require an update in IB, ie, changing the grn doesn't
+                    if (clear_ttl or ttl or old_target is not None):
+                        ib_services.update_dns_alias(
+                            str(dbalias.fqdn),
+                            new_target=str(dbalias.target) if old_target is not None else None,
+                            ttl=-1 if clear_ttl else ttl)
             except (ArgumentError, RequestException) as e:
                 logger.warning("Error calling Infoblox update_dns_alias: {0}".format(str(e)))
                 if dsdb_runner:

@@ -19,7 +19,9 @@
 
 import unittest
 
-from mock_ib_services import ib_expect_add_address, ib_expect_del_address, ib_expect_del_alias
+from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_del_alias
 
 if __name__ == "__main__":
     import utils
@@ -147,8 +149,11 @@ class TestUsecaseAnycast(MachineTestMixin, TestBrokerCommand):
         eth0_ip = self.net["unknown0"].usable[39]
         eth1_ip = self.net["unknown1"].usable[38]
         ip = self.net["zebra_vip"].usable[3]
+        ib_expect_del_address("infra3-e0.aqd-unittest.ms.com", str(eth0_ip))
+        ib_expect_del_address("infra3-e1.aqd-unittest.ms.com", str(eth1_ip))
         self.delete_host("infra3.aqd-unittest.ms.com", ip, "ut3c5n15",
-                         eth0_ip=eth0_ip, eth1_ip=eth1_ip)
+                         eth0_ip=eth0_ip, eth1_ip=eth1_ip, sync_ib=False)
+        self.ib_verify()
 
 
 if __name__ == '__main__':

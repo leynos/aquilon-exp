@@ -25,6 +25,7 @@ if __name__ == "__main__":
 
 from brokertest import TestBrokerCommand
 from machinetest import MachineTestMixin
+from mock_ib_services import ib_expect_add_address
 
 from .test_build_clusters import config, host_fqdn, reset_config
 

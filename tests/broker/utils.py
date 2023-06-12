@@ -24,8 +24,11 @@ import string
 
 from broker.brokertest import TestBrokerCommand
 from broker.machinetest import MachineTestMixin
-from mock_ib_services import ib_expect_add_address, ib_expect_update_address, ib_expect_del_address, \
-    ib_expect_add_alias, ib_expect_del_alias
+from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_add_alias
+from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_del_alias
+from mock_ib_services import ib_expect_update_address
 
 
 def import_depends():
@@ -786,7 +789,6 @@ class MockHub(object):
             self.delete_alias(fqdn)
         # Delete Addresses
         for fqdn in self.addresses.keys():
-            ib_expect_del_address(fqdn, str(self.addresses[fqdn]['ip']))
             self.delete_address(fqdn, self.addresses[fqdn]['ip'])
         # Delete DNS domains.
         for dns_domain in self.dns_domains[:]:

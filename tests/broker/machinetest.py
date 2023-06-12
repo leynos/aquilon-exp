@@ -19,7 +19,8 @@
 from collections import defaultdict
 import json
 from eventstest import EventsTestMixin
-from mock_ib_services import ib_expect_add_address, ib_expect_del_address
+from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_del_address
 
 
 class MachineData(object):
@@ -419,14 +420,15 @@ class MachineTestMixin(EventsTestMixin):
         return show_cmd, show_out
 
     def delete_host(self, hostname, ip, machine, interfaces=None,
-                    manager_ip=None, justification=None, **kwargs):
+                    manager_ip=None, justification=None, sync_ib=True, **kwargs):
         if not interfaces:
             interfaces = guess_interfaces(kwargs, eth0_default=False)
 
         for nic_name in interfaces:
             nic_ip = kwargs.get(nic_name + "_ip", None)
             if nic_ip and nic_ip != ip:
-                ib_expect_del_address(machine, str(nic_ip))
+                if sync_ib:
+                    ib_expect_del_address(machine, str(nic_ip))
                 self.dsdb_expect_delete(nic_ip)
                 if justification:
                     command = ["del_interface_address", "--machine", machine,
@@ -436,7 +438,8 @@ class MachineTestMixin(EventsTestMixin):
                     self.statustest(["del_interface_address", "--machine", machine,
                                      "--interface", nic_name, "--ip", nic_ip])
                 self.dsdb_verify()
-                self.ib_verify()
+                if sync_ib:
+                    self.ib_verify()
 
         self.dsdb_expect_delete(ip)
         if justification:
@@ -445,7 +448,8 @@ class MachineTestMixin(EventsTestMixin):
         else:
             self.statustest(["del_host", "--hostname", hostname])
         if manager_ip:
-            ib_expect_del_address(hostname, str(manager_ip))
+            if sync_ib:
+                ib_expect_del_address(hostname, str(manager_ip))
             self.dsdb_expect_delete(manager_ip)
             short, domain = hostname.split(".", 1)
             if justification:
