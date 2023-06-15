@@ -21,7 +21,8 @@ import os.path
 
 import unittest
 
-from mock_ib_services import ib_expect_add_address, ib_expect_del_address, ib_expect_del_alias
+from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_del_address
 
 if __name__ == "__main__":
     import utils
@@ -199,7 +200,6 @@ class TestUsecaseDatabase(TestBrokerCommand):
             self.check_plenary_exists(*path)
 
         self.dsdb_expect_delete(self.net["unknown0"].usable[25])
-        ib_expect_del_alias("nydb1nydb1.aqd-unittest.ms.com")
         ib_expect_del_address("nydb1nydb1.aqd-unittest.ms.com", str(self.net["unknown0"].usable[25]))
         command = ["del_service_address", "--cluster=nydb1",
                    "--name", "nydb1nydb1"]

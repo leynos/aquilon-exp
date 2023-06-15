@@ -100,6 +100,7 @@ class CommandUpdateServiceAddress(BrokerCommand):
                 ibs_args['assign_ptr_to_fqdn'] = str(dbsrv.dns_record.reverse_ptr)
             else:
                 dbsrv.dns_record.reverse_ptr = None
+                ibs_args['assign_ptr_to_fqdn'] = None
 
         if map_to_shared_name:
             # if the holder is a resource-group that has a SharedServiceName
@@ -155,6 +156,7 @@ class CommandUpdateServiceAddress(BrokerCommand):
         # this is necessary if for instance someone calls
         # `aq update service address --map_to_primary` or any other such
         # combination that does not trigger the commit_or_rollback call above
+        # TODO, should this check if the network is internal ?
         ibg.commit_or_rollback()
 
         return

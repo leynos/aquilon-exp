@@ -20,7 +20,7 @@
 
 import unittest
 
-from mock_ib_services import ib_expect_del_address, ib_expect_del_alias
+from mock_ib_services import ib_expect_del_address
 
 if __name__ == "__main__":
     import utils
@@ -34,8 +34,7 @@ class TestDelServiceAddressSNAliases(TestBrokerCommand):
     def test_010_remove_sa_aa(self):
         ip = self.net['np_bucket2_vip'].usable[2]
         self.dsdb_expect_delete(ip)
-        ib_expect_del_alias("utvcs1pn1.aqd-unittest.ms.com")
-        ib_expect_del_alias("utvcs1sa1.aqd-unittest.ms.com")
+        ib_expect_del_address("utvcs1pn1.aqd-unittest.ms.com", str(ip))
         ib_expect_del_address("utvcs1sa1.aqd-unittest.ms.com", str(ip))
         command = ['del_service_address', '--resourcegroup=utvcs1ifset',
                    '--name=utvcs1sa1']
@@ -45,7 +44,6 @@ class TestDelServiceAddressSNAliases(TestBrokerCommand):
 
     def test_010_remove_sa_noaa(self):
         ip = self.net['np_bucket2_vip'].usable[3]
-        ib_expect_del_alias("utvcs1sa2.aqd-unittest.ms.com")
         ib_expect_del_address("utvcs1sa2.aqd-unittest.ms.com", str(ip))
         self.dsdb_expect_delete(ip)
         command = ['del_service_address', '--resourcegroup=utvcs1ifset2',

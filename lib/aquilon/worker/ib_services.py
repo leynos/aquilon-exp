@@ -62,9 +62,8 @@ class IBServices(object):
         retries = Retry(total=3, status_forcelist=(500, 501, 502, 503, 504))
         self.session.mount(self.ib_service_url, HTTPAdapter(max_retries=retries))
 
-    def assert_ip(self, ip):
-        if not isinstance(ip, IPv4Address):
-            raise ArgumentError("IP address should be an IPv4Address object")
+    def _raise_error(self, msg):
+        raise ArgumentError("Infoblox request failed: " + msg)
 
     def assert_dns_environment(self, environment):
         if environment == 'internal':
@@ -81,21 +80,22 @@ class IBServices(object):
 
     @with_timer
     def remove_host_dns_entries(self, ip):
-        self.assert_ip(ip)
+        if not isinstance(ip, IPv4Address):
+            LOGGER.warning("remove_host_dns_entries only supports IPv4Address {}".format(str(ip)))
+            return
 
         url = self.ib_service_url + "/legacy/aq/remove-dns-entries/" + str(ip)
         response = self.session.delete(url, timeout=IB_SERVICES_TIMEOUT)
         if response.status_code == httplib.NO_CONTENT:
             LOGGER.info("Remove dns entries for {} successful".format(ip))
         else:
-            raise ArgumentError(response.text)
+            self._raise_error(response.text)
 
     def build_a_ptr_payload(self, name, ip, assign_ptr_to_fqdn, ttl):
         payload = dict()
         if name:
             payload["name"] = name
         if ip:
-            self.assert_ip(ip)
             payload["address"] = str(ip)
         if assign_ptr_to_fqdn:
             payload["assign_ptr_to_fqdn"] = assign_ptr_to_fqdn
@@ -109,7 +109,6 @@ class IBServices(object):
         if not isinstance(ip, IPv4Address):
             LOGGER.warning("add_a_ptr only supports IPv4Address {}".format(str(ip)))
             return
-        self.assert_ip(ip)
 
         payload = self.build_a_ptr_payload(name, ip, assign_ptr_to_fqdn, ttl)
         payload['create_ptr'] = create_ptr
@@ -120,7 +119,7 @@ class IBServices(object):
             LOGGER.info("A/PTR added to Infoblox")
         else:
             # BAD_REQUEST is returned if there is an error creating the A/PTR records
-            raise ArgumentError(response.text)
+            self._raise_error(response.text)
 
     @with_timer
     def update_a_ptr(self, name, ip, new_ip=None, assign_ptr_to_fqdn=None, ttl=None, update_ptr=True):
@@ -128,9 +127,9 @@ class IBServices(object):
         if not isinstance(ip, IPv4Address):
             LOGGER.warning("update_a_ptr only supports IPv4Address {}".format(str(ip)))
             return
-        self.assert_ip(ip)
 
-        assert new_ip or assign_ptr_to_fqdn or ttl, "new_ip, assign_ptr_to_fqdn and ttl all None"
+        assert new_ip or (assign_ptr_to_fqdn or update_ptr) or ttl, \
+            "new_ip, ttl, assign_ptr_to_fqdn and update_ptr all None"
 
         payload = self.build_a_ptr_payload(None, new_ip, assign_ptr_to_fqdn, ttl)
         payload["create_if_doesnt_exist"] = True
@@ -142,7 +141,7 @@ class IBServices(object):
             LOGGER.info("A/PTR updated in Infoblox")
         else:
             # BAD_REQUEST is returned if there is an error updating the A/PTR records
-            raise ArgumentError(response.text)
+            self._raise_error(response.text)
 
     @with_timer
     def delete_a_ptr(self, name, ip, delete_ptr=True):
@@ -150,7 +149,6 @@ class IBServices(object):
         if not isinstance(ip, IPv4Address):
             LOGGER.warning("update_a_ptr only supports IPv4Address {}".format(str(ip)))
             return
-        self.assert_ip(ip)
 
         params = {'delete_ptr': str(delete_ptr).lower()}
         url = self.ib_service_url + "/dns/a_ptr/{}/{}".format(str(name), ip)
@@ -162,7 +160,7 @@ class IBServices(object):
             return True
         else:
             # BAD_REQUEST is returned if there is an error deleting A/PTR records
-            raise ArgumentError(response.text)
+            self._raise_error(response.text)
 
     @with_timer
     def add_dns_alias(self, name, target, ttl=None):
@@ -179,7 +177,7 @@ class IBServices(object):
             LOGGER.info("DNS alias added to Infoblox")
         else:
             # BAD_REQUEST is returned if there is an error creating the alias in Infoblox grids
-            raise ArgumentError(response.text)
+            self._raise_error(response.text)
 
     @with_timer
     def del_dns_alias(self, name):
@@ -188,7 +186,7 @@ class IBServices(object):
         if response.status_code == httplib.NO_CONTENT:
             LOGGER.info('Matching CNAME removed from Infoblox')
         else:
-            raise ArgumentError(response.text)
+            self._raise_error(response.text)
 
     @with_timer
     def update_dns_alias(self, name, new_target=None, ttl=None):
@@ -205,4 +203,4 @@ class IBServices(object):
         if response.status_code == httplib.NO_CONTENT:
             LOGGER.info('CNAME has been updated in Infoblox')
         else:
-            raise ArgumentError(response.text)
+            self._raise_error(response.text)
