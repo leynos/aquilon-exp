@@ -28,7 +28,6 @@ import re
 from subprocess import Popen
 import textwrap
 
-from six.moves import range  # pylint: disable=F0401
 from lxml import etree
 
 # The code is not exactly pretty. If you want to improve it, here are some
@@ -196,7 +195,7 @@ class ParsingError(Exception):
         return "Parsing Error: " + self.error
 
 
-class Element(object):
+class Element:
 
     def __init__(self, node):
         self.node = node
@@ -206,7 +205,7 @@ class Element(object):
             self.name = ""
 
     def __repr__(self):
-        return "<%s %s>" % (self.__class__.__name__, self.name)
+        return "<{} {}>".format(self.__class__.__name__, self.name)
 
     def check(self, options):
         return None, False
@@ -460,13 +459,13 @@ class OptGroup(Element):
             else:
                 help = "Requires %s of these options:\n" % self.fields
         else:
-            name = ' "{}"'.format(self.name) if self.name else ''
+            name = f' "{self.name}"' if self.name else ''
             if self.fields == 'all':
-                help = "Optional{}, but must use all or none:\n".format(name)
+                help = f"Optional{name}, but must use all or none:\n"
             elif self.fields == 'one':
-                help = "Optional{}, use at most one:\n".format(name)
+                help = f"Optional{name}, use at most one:\n"
             else:
-                help = "Optional{}:\n".format(name)
+                help = f"Optional{name}:\n"
 
         whitespace = " " * (4 * (indentlevel))
         res = whitespace + help
@@ -559,7 +558,7 @@ class Option(Element):
             option_value = getattr(options, self.name)
             return {self.name: option_value}, option_value is not None
         elif self.mandatory:
-            raise ParsingError('Option {} is missing'.format(self.name))
+            raise ParsingError(f'Option {self.name} is missing')
         return {}, False
 
     def genOptions(self, parser):
@@ -567,7 +566,7 @@ class Option(Element):
             return
         names = ["--" + self.name]
         if self.altnames:
-            names.extend('--{}'.format(name) for name in self.altnames)
+            names.extend(f'--{name}' for name in self.altnames)
         if self.short:
             names.append("-" + self.short)
 
@@ -628,7 +627,7 @@ class Option(Element):
             if self.reverse == "no" + self.name:
                 return "--[no]" + self.name
             else:
-                return "--%s|--%s" % (self.name, self.reverse)
+                return "--{}|--{}".format(self.name, self.reverse)
         elif self.type in ["flag"]:
             return "--" + self.name
         else:
@@ -660,7 +659,7 @@ class Transport(Element):
         self.custom = "custom" in node.attrib and node.attrib["custom"] or None
 
 
-class OptParser(object):
+class OptParser:
 
     def __init__(self, filename):
         handle = open(filename)
@@ -734,14 +733,14 @@ class OptParser(object):
 
         # The previous code used OptParser.error() which exits with return code
         # 2, but now we don't have the parser created yet
-        print("%s\n\nError: %s" % ("\n".join(helpmsg), errmsg), file=sys.stderr)
+        print("{}\n\nError: {}".format("\n".join(helpmsg), errmsg), file=sys.stderr)
         sys.exit(2)
 
     def handle_command(self, cmd_node, global_node, options):
         glb = Command(global_node)
         cmd = Command(cmd_node)
 
-        prog = "%s %s" % (cmdName(), cmd.name)
+        prog = "{} {}".format(cmdName(), cmd.name)
         self.parser = CustomParser(cmd, conflict_handler='resolve', prog=prog)
         self.parser.add_option('--help', '-h', action='help', default=False)
 
