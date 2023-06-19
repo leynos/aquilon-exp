@@ -186,13 +186,10 @@ class StatusCatalog:
 
     def get_request_status(self, auditid=None, requestid=None):
         """Retrieve a previously created RequestStatus."""
-        status = None
         if auditid is not None:
-            auditid = str(auditid)
-            status = self.status_by_auditid.get(auditid)
-        if not status and requestid in self.status_by_requestid:
-            status = self.status_by_requestid.get(requestid)
-        return status
+            return self.status_by_auditid.get(str(auditid))
+        if requestid in self.status_by_requestid:
+            return self.status_by_requestid.get(requestid)
 
     def subscribe_or_wait(self, writer, requestid):
         status = self.get_request_status(requestid=requestid)
@@ -211,7 +208,7 @@ class StatusCatalog:
         self.status_by_auditid[auditid] = status
         return status
 
-    def store_requestid(self, status, requestid):
+    def store_requestid(self, status, requestid=None):
         if not requestid:
             requestid = uuid.uuid4()
         with status.lock:
