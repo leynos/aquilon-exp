@@ -1,26 +1,12 @@
 from aquilon.config import Config
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ArgumentError, ProcessError
 from aquilon.utils import with_timer
-import httplib
-from ipaddress import IPv4Address
-from ipaddress import IPv4Network
 import logging
-from requests.adapters import HTTPAdapter
-from requests.adapters import Retry
-from requests import RequestException
-from requests import Session
-from requests_kerberos import DISABLED
-from requests_kerberos import HTTPKerberosAuth
+from requests.adapters import HTTPAdapter, Retry
+from requests import RequestException, Session
+from requests_kerberos import DISABLED, HTTPKerberosAuth
 from urllib import urlencode
-from urlparse import urlparse
-from urlparse import urlunparse
-
-LOGGER = logging.getLogger(__name__)
-config = Config()
-
-IB_SERVICES_URL = config.get("ib-services", "url")
-IB_SERVICES_TIMEOUT = float(config.get("ib-services", "timeout"))
-CA_CHAIN = config.get("ib-services", "ca_chain")
+from urlparse import urlparse, urlunparse
 
 
 class IBServiceGroup(object):
@@ -29,74 +15,63 @@ class IBServiceGroup(object):
     def __init__(self):
         self.functions = []
 
-    def add(self, f, r=None):
-        self.functions.append((f, r))
+    def add(self, action, rollback=None):
+        self.functions.append((action, rollback))
         return self
 
     def commit_or_rollback(self):
         rollbacks = []
         try:
             # Iterate through the functions, pull off any rollbacks.
-            for (f, r) in self.functions:
-                if r:
-                    rollbacks.append(r)
-                f()
+            for (action, rollback) in self.functions:
+                if rollback:
+                    rollbacks.append(rollback)
+                action()
             self.functions = []
         except (ArgumentError, RequestException) as e:
-            LOGGER.warning("Error calling Infoblox service: {0}".format(str(e)))
             # Reverse the rollbacks to start from the last, and run them.
             rollbacks.reverse()
-            for f in rollbacks:
-                f()
+            for rollback in rollbacks:
+                rollback()
             raise e
 
 
 class IBServices(object):
+    """An interface to the IB Services API, an Infoblox wrapper"""
 
-    def __init__(self):
-        self.ib_service_url = IB_SERVICES_URL
+    config = Config()
+
+    enabled = config.getboolean("ib-services", "enable")
+    urls = re.split("\s*,\s*", self.config.get("ib-services", "urls"))
+    timeout = float(config.get("ib-services", "timeout"))
+    ca_chain = config.get("ib-services", "ca_chain")
+    eonid = config.get("broker", "aqd_eonid")
+
+    def __init__(self, logger):
+        self.log = logger
+
         self.session = Session()
-        if CA_CHAIN:
-            self.session.auth = HTTPKerberosAuth(mutual_authentication=DISABLED, force_preemptive=True)
-            self.session.verify = CA_CHAIN
-        retries = Retry(total=3, status_forcelist=(500, 501, 502, 503, 504))
-        self.session.mount(self.ib_service_url, HTTPAdapter(max_retries=retries))
-
-    def assert_ip(self, ip):
-        if not isinstance(ip, IPv4Address):
-            raise ArgumentError("IP address should be an IPv4Address object")
+        self.session.auth = HTTPKerberosAuth(mutual_authentication=DISABLED, force_preemptive=True)
+        self.session.verify = self.ca_chain
+        retries = Retry(total=1, status_forcelist=(500, 501, 502, 503, 504))
+        self.session.mount("https://", HTTPAdapter(max_retries=retries))
 
     def assert_dns_environment(self, environment):
-        if environment == 'internal':
+        if environment == "internal":
             return True
         else:
-            LOGGER.warning('DNS environment {} has not been integrated with Infoblox yet'.format(environment))
+            log.warning("DNS environment {} has not been integrated with Infoblox yet".format(environment))
 
-    def generate_url_from_params(self, url, params):
+    def _generate_url_from_params(self, url, params):
         parse = urlparse(url)._replace(query=urlencode(params))
         return urlunparse(parse)
 
-    def host_url(self, ip):
-        return self.ib_service_url + "/hosts/ipv4addr/" + str(ip)
-
-    @with_timer
-    def remove_host_dns_entries(self, ip):
-        self.assert_ip(ip)
-
-        url = self.ib_service_url + "/legacy/aq/remove-dns-entries/" + str(ip)
-        response = self.session.delete(url, timeout=IB_SERVICES_TIMEOUT)
-        if response.status_code == httplib.NO_CONTENT:
-            LOGGER.info("Remove dns entries for {} successful".format(ip))
-        else:
-            raise ArgumentError(response.text)
-
-    def build_a_ptr_payload(self, name, ip, assign_ptr_to_fqdn, ttl):
+    def _build_a_ptr_payload(self, name, ip, assign_ptr_to_fqdn, ttl):
         payload = dict()
         if name:
             payload["name"] = name
         if ip:
-            self.assert_ip(ip)
-            payload["address"] = str(ip)
+            payload["address"] = ip
         if assign_ptr_to_fqdn:
             payload["assign_ptr_to_fqdn"] = assign_ptr_to_fqdn
         if ttl:
@@ -105,104 +80,117 @@ class IBServices(object):
 
     @with_timer
     def add_a_ptr(self, name, ip, assign_ptr_to_fqdn=None, ttl=None, create_ptr=True):
-        # fixme
-        if not isinstance(ip, IPv4Address):
-            LOGGER.warning("add_a_ptr only supports IPv4Address {}".format(str(ip)))
-            return
-        self.assert_ip(ip)
+        payload = self._build_a_ptr_payload(name, ip, assign_ptr_to_fqdn, ttl)
+        payload["create_ptr"] = create_ptr
+        url = "/dns/a_ptr"
 
-        payload = self.build_a_ptr_payload(name, ip, assign_ptr_to_fqdn, ttl)
-        payload['create_ptr'] = create_ptr
-        url = self.ib_service_url + "/dns/a_ptr"
-        LOGGER.info("Invoking {} with payload: {}".format(url, payload))
-        response = self.session.post(url, json=payload, timeout=IB_SERVICES_TIMEOUT)
-        if response.status_code == httplib.CREATED:
-            LOGGER.info("A/PTR added to Infoblox")
-        else:
-            # BAD_REQUEST is returned if there is an error creating the A/PTR records
-            raise ArgumentError(response.text)
+        self._http_request("post", url, payload)
 
     @with_timer
     def update_a_ptr(self, name, ip, new_ip=None, assign_ptr_to_fqdn=None, ttl=None, update_ptr=True):
-        # fixme
-        if not isinstance(ip, IPv4Address):
-            LOGGER.warning("update_a_ptr only supports IPv4Address {}".format(str(ip)))
-            return
-        self.assert_ip(ip)
-
         assert new_ip or assign_ptr_to_fqdn or ttl, "new_ip, assign_ptr_to_fqdn and ttl all None"
 
-        payload = self.build_a_ptr_payload(None, new_ip, assign_ptr_to_fqdn, ttl)
+        payload = self._build_a_ptr_payload(None, new_ip, assign_ptr_to_fqdn, ttl)
         payload["create_if_doesnt_exist"] = True
-        payload['update_ptr'] = update_ptr
-        url = self.ib_service_url + "/dns/a_ptr/{}/{}".format(name, ip)
-        LOGGER.info("Invoking {} with payload: {}".format(url, payload))
-        response = self.session.patch(url, json=payload, timeout=IB_SERVICES_TIMEOUT)
-        if response.status_code == httplib.NO_CONTENT:
-            LOGGER.info("A/PTR updated in Infoblox")
-        else:
-            # BAD_REQUEST is returned if there is an error updating the A/PTR records
-            raise ArgumentError(response.text)
+        payload["update_ptr"] = update_ptr
+        url = "/dns/a_ptr/{}/{}".format(name, ip)
+
+        self._http_request("patch", url, payload)
 
     @with_timer
     def delete_a_ptr(self, name, ip, delete_ptr=True):
-        # fixme
-        if not isinstance(ip, IPv4Address):
-            LOGGER.warning("update_a_ptr only supports IPv4Address {}".format(str(ip)))
-            return
-        self.assert_ip(ip)
+        params = {"delete_ptr": delete_ptr.lower()}
+        url = "/dns/a_ptr/{}/{}".format(name, ip)
+        url = self._generate_url_from_params(url, params)
 
-        params = {'delete_ptr': str(delete_ptr).lower()}
-        url = self.ib_service_url + "/dns/a_ptr/{}/{}".format(str(name), ip)
-        url = self.generate_url_from_params(url, params)
-        response = self.session.delete(url, timeout=IB_SERVICES_TIMEOUT)
-        if response.status_code == httplib.NO_CONTENT:
-            LOGGER.info("Matching A records removed from Infoblox")
-            LOGGER.info("Matching PTR records removed from Infoblox") if delete_ptr else None
-            return True
-        else:
-            # BAD_REQUEST is returned if there is an error deleting A/PTR records
-            raise ArgumentError(response.text)
+        self._http_request("delete", url)
 
     @with_timer
     def add_dns_alias(self, name, target, ttl=None):
-        url = self.ib_service_url + '/dns/aliases'
+        url = "/dns/aliases"
         payload = {
-            'name': name,
-            'target': target
+            "name": name,
+            "target": target
         }
         if ttl:
             payload["ttl"] = ttl
-        LOGGER.info("Invoking {} with payload: {}".format(url, payload))
-        response = self.session.post(url=url, json=payload, timeout=IB_SERVICES_TIMEOUT)
-        if response.status_code == httplib.CREATED:
-            LOGGER.info("DNS alias added to Infoblox")
-        else:
-            # BAD_REQUEST is returned if there is an error creating the alias in Infoblox grids
-            raise ArgumentError(response.text)
+
+        self._http_request("post", url, payload)
 
     @with_timer
     def del_dns_alias(self, name):
-        url = self.ib_service_url + '/dns/aliases/' + name
-        response = self.session.delete(url=url, timeout=IB_SERVICES_TIMEOUT)
-        if response.status_code == httplib.NO_CONTENT:
-            LOGGER.info('Matching CNAME removed from Infoblox')
-        else:
-            raise ArgumentError(response.text)
+        url = "/dns/aliases/{}".format(name)
+
+        self._http_request("delete", url)
 
     @with_timer
     def update_dns_alias(self, name, new_target=None, ttl=None):
 
         payload = {}
         if new_target is not None:
-            payload['target'] = new_target
+            payload["target"] = new_target
         if ttl is not None:
-            payload['ttl'] = ttl
-        url = '{}/dns/aliases/{}'.format(self.ib_service_url, name)
-        LOGGER.info("Invoking {} with payload: {}".format(url, payload))
+            payload["ttl"] = ttl
+        url = "/dns/aliases/{}".format(name)
 
-        response = self.session.patch(url=url, json=payload, timeout=IB_SERVICES_TIMEOUT)
-        if response.status_code == httplib.NO_CONTENT:
-            LOGGER.info('CNAME has been updated in Infoblox')
+        self._http_request("patch", url, payload)
+
+    def _http_request(self, http_cmd, url, data=None):
+        if not self.enabled:
+            return
+
+        if not http_cmd in ("DELETE", "GET", "PATCH", "POST"):
+            raise ArgumentError("HTTP command {} not supported".format(http_cmd))
+
+        response = None
+        full_url = ""
+
+        for base_url in self.urls:
+            full_url = base_url + url
+
+            try:
+                log_msg = "Sending request {} {}".format(http_cmd, full_url)
+                if data:
+                    log_msg += " with data {}".format(data)
+                self.log.info(log_msg)
+
+                response = self.session.request(http_cmd, full_url, json=data, timeout=self.timeout)
+            except Timeout:
+                self.log.warning("Request to {} timed out after {}s.".format(full_url, self.timeout))
+
+            # There are several possible other exception types.  Not all possibilities are known.
+            # In all cases, the logic depends on another pass through the loop to try any remaining URLs.
+            except Exception as e:
+                self.log.warning("Request to {} failed with exception {}".format(full_url, e))
+
+            # Stop trying URLs if there was no exception.
+            else:
+                break
+
+        if response == None:
+            raise ProcessException("Infoblox returned errors or no Infoblox servers could be reached, aborting change")
+
+        response_str = "{} ({})".format(response.status_code, response.reason)
+
+        if response.ok:
+            self.log.info("Successful response from Infoblox: got {} for {} {} {})".format(response_str, http_cmd, full_url, data))
+            return response
         else:
-            raise ArgumentError(response.text)
+            error_msg = ""
+            try:
+                error_msg = response.json().get("message")
+            except ValueError as ve:
+                # Probably a JSON decode error.  Fall back to showing whole body of response.
+                error_msg = response.text
+
+            message = "Infoblox error "{}" ({}) for {} {} {})".format(error_msg, response_str, http_cmd, full_url, data)
+            raise ProcessException(message)
+
+    def feature_enabled(self, name):
+        enabled = False
+
+        if self.enabled:
+            enabled = name in re.split("\s*,\s*", self.config.get("ib-services", "enabled_commands"))
+
+        return enabled
+

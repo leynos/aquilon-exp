@@ -34,13 +34,9 @@ dsdb_use_testdb = True
 enable = True
 
 [ib-services]
-# ib-services related configurations
-ca_chain = /etc/pki/ms/certs/ms-ca-chain.crt
-# AQ + IB integration is disabled now. Can be enabled anytime by toggling this flag.
-enable = False
-timeout = 180
-# url of Infoblox API.
-url = https://ib-services.l0.ms.com
+enable = True
+enabled_commands = add_alias, update_alias, del_alias, add_chassis, update_chassis, del_chassis, update_machine
+urls = https://ib-services.l0.ms.com
 
 [change_management]
 # The contents of --justification will not be validated externally
