@@ -54,7 +54,6 @@ class TestDelManager(TestBrokerCommand):
 
     def test_110_del_unittest02rsa(self):
         ip = self.net["unknown0"].usable[9]
-        ib_expect_del_address("unittest00r.one-nyp.ms.com", str(ip))
         ib_expect_del_address("unittest02rsa.one-nyp.ms.com", str(ip))
         self.dsdb_expect_delete(ip)
         command = "del manager --manager unittest02rsa.one-nyp.ms.com"

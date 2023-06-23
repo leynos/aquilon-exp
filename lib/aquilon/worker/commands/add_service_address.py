@@ -270,8 +270,8 @@ class CommandAddServiceAddress(BrokerCommand):
                               comments=None, exporter=exporter,
                               flush_session=True, sync_ib=False)
             ibg.add(
-                lambda: IBServices().add_dns_alias(str(sibling_ssn.fqdn), str(dbdns_rec.fqdn)),
-                lambda: IBServices().del_dns_alias(str(sibling_ssn.fqdn)))
+                lambda: IBServices().add_a_ptr(str(sibling_ssn.fqdn), dbdns_rec.ip),
+                lambda: IBServices().delete_a_ptr(str(sibling_ssn.fqdn)))
 
         plenaries.add(holder.holder_object)
         plenaries.add(dbsrv)
@@ -302,5 +302,3 @@ class CommandAddServiceAddress(BrokerCommand):
 
         for name, value in audit_results:
             self.audit_result(session, name, value, **kwargs)
-
-        return

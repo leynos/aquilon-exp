@@ -19,7 +19,8 @@
 
 import unittest
 
-from mock_ib_services import ib_expect_add_address, ib_expect_del_address, ib_expect_del_alias
+from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_del_address
 
 if __name__ == "__main__":
     import utils
@@ -331,8 +332,6 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
         fqdn = "ivirt11.aqd-unittest.ms.com"
         ip = self.net["zebra_vip"].usable[5]
         self.dsdb_expect_delete(ip)
-        # TODO: surely this is wrong, the alias needs to be different than the address
-        ib_expect_del_alias("renametest-ivirt.aqd-unittest.ms.com")
         ib_expect_del_address("renametest-ivirt.aqd-unittest.ms.com", str(ip))
         self.noouttest(["del_service_address", "--name", "renametest",
                         "--hostname", fqdn])

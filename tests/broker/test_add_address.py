@@ -620,24 +620,16 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         mh.add_dns_domain('test-infoblox.cc', restricted=False)
         mh.add_network()
 
-        # order is important. Carry out the failure cases before the success case, which updates the database.
-        mh.add_address("add-address-test.test-infoblox.cc", "10.25.0.1",
-                       fail_dsdb=True)
-        mh.add_address("add-address-test.test-infoblox.cc", "10.25.0.1",
-                       fail_ib=True)
+        mh.add_address("add-address-test.test-infoblox.cc", "10.25.0.1", fail_dsdb=True)
+        mh.add_address("add-address-test.test-infoblox.cc", "10.25.0.1", fail_ib=True)
         mh.add_address("add-address-test.test-infoblox.cc", "10.25.0.1")
 
-        mh.update_address("add-address-test.test-infoblox.cc", "10.25.0.1",
-                          new_ip="10.25.0.2", fail_dsdb=True)
-        mh.update_address("add-address-test.test-infoblox.cc", "10.25.0.1",
-                          new_ip="10.25.0.2", fail_ib=True)
-        mh.update_address("add-address-test.test-infoblox.cc", "10.25.0.1",
-                          new_ip="10.25.0.2")
+        mh.update_address("add-address-test.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2", fail_dsdb=True)
+        mh.update_address("add-address-test.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2", fail_ib=True)
+        mh.update_address("add-address-test.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2")
 
-        mh.delete_address("add-address-test.test-infoblox.cc", "10.25.0.2",
-                          fail_dsdb=True)
-        mh.delete_address("add-address-test.test-infoblox.cc", "10.25.0.2",
-                          fail_ib=True)
+        mh.delete_address("add-address-test.test-infoblox.cc", "10.25.0.2", fail_dsdb=True)
+        mh.delete_address("add-address-test.test-infoblox.cc", "10.25.0.2", fail_ib=True)
         mh.delete_address("add-address-test.test-infoblox.cc", "10.25.0.2")
         mh.delete()
 
