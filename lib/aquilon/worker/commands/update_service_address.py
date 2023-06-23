@@ -122,9 +122,10 @@ class CommandUpdateServiceAddress(BrokerCommand):
                                     "shared service name")
 
         ibg = IBServiceGroup()
+        ib_services = IBServices(logger)
 
         if (len(ibs_args.keys()) > 2):
-            ibg.add(lambda: IBServices().update_a_ptr(**ibs_args))
+            ibg.add(lambda: ib_services.update_a_ptr(**ibs_args))
 
         session.flush()
 

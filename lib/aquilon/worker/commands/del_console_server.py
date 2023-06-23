@@ -65,11 +65,10 @@ class CommandDelConsoleServer(BrokerCommand):
             dsdb_runner.update_host(None, oldinfo)
             dsdb_runner.commit_or_rollback("Could not remove console server from DSDB")
 
-            if self.config.infoblox_feature_enabled("del_console_server"):
+            ib_services = IBServices(logger)
+            if ib_services.feature_enabled("del_console_server"):
                 try:
-                    IBServices().delete_a_ptr(str(dbcons.primary_name.fqdn), dbcons.primary_name.ip)
+                    ib_services.delete_a_ptr(str(dbcons.primary_name.fqdn), dbcons.primary_name.ip)
                 except (ArgumentError,RequestException) as e:
-                    logger.warning("Error calling Infoblox delete_a_ptr: {0}".format(str(e)))
-                    logger.warning("Rolling back DSDB transaction ...")
                     dsdb_runner.rollback()
                     raise e

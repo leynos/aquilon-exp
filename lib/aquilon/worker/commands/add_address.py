@@ -74,12 +74,11 @@ class CommandAddAddress(BrokerCommand):
         for name, value in audit_results:
             self.audit_result(session, name, value, **arguments)
 
-        if self.config.infoblox_feature_enabled("add_address"):
+        ib_services = IBServices(logger)
+        if ib_services.feature_enabled("add_address"):
             try:
-                IBServices().add_a_ptr(str(dbdns_rec.fqdn), ip, reverse_ptr, ttl)
+                ib_services.add_a_ptr(str(dbdns_rec.fqdn), ip, reverse_ptr, ttl)
             except (ArgumentError,RequestException) as e:
-                logger.warning("Error calling Infoblox add_a_ptr: {0}".format(str(e)))
                 if dsdb_runner:
-                    logger.warning("Rolling back DSDB transaction ...")
                     dsdb_runner.rollback()
                 raise e

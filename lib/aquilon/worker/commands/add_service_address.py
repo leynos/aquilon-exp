@@ -248,15 +248,16 @@ class CommandAddServiceAddress(BrokerCommand):
             if dbifaces:
                 dbsrv.interfaces = dbifaces
 
+        ib_services = IBServices(logger)
         if newly_created:
             ibg.add(
-                lambda: IBServices().add_a_ptr(ip=ip, **ibs_args),
-                lambda: IBServices().delete_a_ptr(**ibs_rollback_args))
+                lambda: ib_services.add_a_ptr(ip=ip, **ibs_args),
+                lambda: ib_services.delete_a_ptr(**ibs_rollback_args))
         else:
             if (len(ibs_args.keys()) > 2):
                 ibg.add(
-                    lambda: IBServices().update_a_ptr(ip=ip, **ibs_args),
-                    lambda: IBServices().update_a_ptr(**ibs_rollback_args))
+                    lambda: ib_services.update_a_ptr(ip=ip, **ibs_args),
+                    lambda: ib_services.update_a_ptr(**ibs_rollback_args))
 
         session.flush()
 
@@ -270,8 +271,8 @@ class CommandAddServiceAddress(BrokerCommand):
                               comments=None, exporter=exporter,
                               flush_session=True, sync_ib=False)
             ibg.add(
-                lambda: IBServices().add_dns_alias(str(sibling_ssn.fqdn), str(dbdns_rec.fqdn)),
-                lambda: IBServices().del_dns_alias(str(sibling_ssn.fqdn)))
+                lambda: ib_services.add_dns_alias(str(sibling_ssn.fqdn), str(dbdns_rec.fqdn)),
+                lambda: ib_services.del_dns_alias(str(sibling_ssn.fqdn)))
 
         plenaries.add(holder.holder_object)
         plenaries.add(dbsrv)

@@ -66,14 +66,12 @@ class CommandDelAlias(BrokerCommand):
             dsdb_runner.del_alias(fqdn, old_target_fqdn, old_comments)
             dsdb_runner.commit_or_rollback("Could not delete alias from DSDB")
 
-        if self.config.infoblox_feature_enabled("del_alias"):
+        ib_services = IBServices(logger)
+        if ib_services.feature_enabled("del_alias"):
             try:
-                ib_services = IBServices()
                 if ib_services.assert_dns_environment(dbdns_rec.fqdn.dns_environment.name):
                     ib_services.del_dns_alias(str(dbdns_rec))
             except (ArgumentError, RequestException) as e:
-                logger.warning("Error calling Infoblox del_dns_alias: {0}".format(str(e)))
                 if dsdb_runner:
-                    logger.warning("Rolling back DSDB transaction ...")
                     dsdb_runner.rollback()
                 raise e

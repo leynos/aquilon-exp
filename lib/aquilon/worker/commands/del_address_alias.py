@@ -71,15 +71,14 @@ class CommandDelAddressAlias(BrokerCommand):
 
         cm.validate()
 
-        if self.config.infoblox_feature_enabled('del_address_alias'):
+        ib_services = IBServices(logger)
+        if ib_services.feature_enabled('del_address_alias'):
             try:
-                ib_services = IBServices()
                 for dns_rec in rrs:
                     if ib_services.assert_dns_environment(dns_rec.fqdn.dns_environment.name) and \
                             ib_services.assert_dns_environment(dns_rec.target.dns_environment.name):
                         ib_services.delete_a_ptr(str(dns_rec), dns_rec.target_ip, delete_ptr=False)
             except (ArgumentError, RequestException) as e:
-                logger.warning("Error calling Infoblox delete_a_ptr: {0}".format(str(e)))
                 raise e
 
         session.flush()

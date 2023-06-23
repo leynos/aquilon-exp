@@ -138,14 +138,13 @@ class CommandDelInterfaceAddress(BrokerCommand):
                 dsdb_runner.update_host(dbhw_ent, oldinfo)
                 dsdb_runner.commit_or_rollback("Could not add host to DSDB")
 
-            if self.config.infoblox_feature_enabled("del_interface_address"):
+            ib_services = IBServices(logger)
+            if ib_services.feature_enabled("del_interface_address"):
                 try:
                     # TODO: Disable DHCP in Infoblox
                     for dns_rec in addr.dns_records:
-                        IBServices().delete_a_ptr(dns_rec, ip)
+                        ib_services.delete_a_ptr(dns_rec, ip)
                 except (ArgumentError,RequestException) as e:
-                    logger.warning("Error calling Infoblox delete_a_ptr: {}".format(str(e)))
-                    logger.warning("Rolling back DSDB transaction ...")
                     dsdb_runner.rollback()
                     raise e
 

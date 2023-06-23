@@ -90,17 +90,14 @@ class CommandUpdateChassis(BrokerCommand):
         dsdb_runner.update_host(dbchassis, oldinfo)
         dsdb_runner.commit_or_rollback("Could not update chassis in DSDB")
 
-        if ip and self.config.infoblox_feature_enabled("update_chassis"):
+        ib_services = IBServices(logger)
+        if ip and ib_services.feature_enabled("update_chassis"):
             try:
                 # If no existing IP, we must now create one.
                 if old_ip:
-                    IBServices().update_a_ptr(str(dbchassis.primary_name.fqdn), old_ip, ip)
+                    ib_services.update_a_ptr(str(dbchassis.primary_name.fqdn), old_ip, ip)
                 else:
-                    IBServices().add_a_ptr(str(dbchassis.primary_name.fqdn), ip)
+                    ib_services.add_a_ptr(str(dbchassis.primary_name.fqdn), ip)
             except (ArgumentError,RequestException) as e:
-                logger.warning("Error calling Infoblox {0} {1}".format(
-                    "update_a_ptr" if old_ip else "add_a_ptr", str(e))
-                )
-                logger.warning("Rolling back DSDB transaction ...")
                 dsdb_runner.rollback()
                 raise e

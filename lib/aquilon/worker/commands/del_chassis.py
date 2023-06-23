@@ -57,11 +57,10 @@ class CommandDelChassis(BrokerCommand):
 
         # chassis may not hve a primary interface assigned
         ip = dbchassis.primary_name.ip if type(dbchassis.primary_name) == ARecord else None
-        if ip and self.config.infoblox_feature_enabled("del_chassis"):
+        ib_services = IBServices(logger)
+        if ip and ib_services.feature_enabled("del_chassis"):
             try:
-                IBServices().delete_a_ptr(str(dbchassis.primary_name.fqdn), ip)
+                ib_services.delete_a_ptr(str(dbchassis.primary_name.fqdn), ip)
             except (ArgumentError,RequestException) as e:
-                logger.warning("Error calling Infoblox delete_a_ptr: {0}".format(str(e)))
-                logger.warning("Rolling back DSDB transaction ...")
                 dsdb_runner.rollback()
                 raise e

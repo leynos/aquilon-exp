@@ -70,11 +70,10 @@ class CommandDelNetworkDevice(BrokerCommand):
             dsdb_runner.update_host(None, oldinfo)
             dsdb_runner.commit_or_rollback("Could not remove network device from DSDB")
 
-            if dbdns_rec and self.config.infoblox_feature_enabled("del_network_device"):
+            ib_services = IBServices(logger)
+            if dbdns_rec and ib_services.feature_enabled("del_network_device"):
                 try:
-                    IBServices().delete_a_ptr(str(dbdns_rec.fqdn), dbdns_rec.ip)
+                    ib_services.delete_a_ptr(str(dbdns_rec.fqdn), dbdns_rec.ip)
                 except (ArgumentError,RequestException) as e:
-                    logger.warning("Error calling Infoblox delete_a_ptr: {0}".format(str(e)))
-                    logger.warning("Rolling back DSDB transaction ...")
                     dsdb_runner.rollback()
                     raise e

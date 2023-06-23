@@ -501,7 +501,7 @@ class DSDBRunner(object):
                 if cmd_line:
                     cmd = ["dsdb"]
                     cmd.extend(args)
-                    self.logger.client_info("DSDB: %s" %
+                    self.logger.client_info("Rollback DSDB transaction: %s" %
                                             " ".join(str(a) for a in args))
                     run_command(cmd, env=self.getenv(), logger=self.logger)
                 else:

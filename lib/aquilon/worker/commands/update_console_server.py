@@ -68,11 +68,10 @@ class CommandUpdateConsoleServer(BrokerCommand):
         dsdb_runner.update_host(dbcons, oldinfo)
         dsdb_runner.commit_or_rollback("Could not update console server in DSDB")
 
-        if ip and self.config.infoblox_feature_enabled("update_console_server"):
+        ib_services = IBServices(logger)
+        if ip and ib_services.feature_enabled("update_console_server"):
             try:
-                IBServices().update_a_ptr(str(dbcons.primary_name.fqdn), old_ip, ip)
+                ib_services.update_a_ptr(str(dbcons.primary_name.fqdn), old_ip, ip)
             except (ArgumentError, RequestException) as e:
-                logger.warning("Error calling Infoblox update_a_ptr {0}".format(str(e)))
-                logger.warning("Rolling back DSDB transaction ...")
                 dsdb_runner.rollback()
                 raise e

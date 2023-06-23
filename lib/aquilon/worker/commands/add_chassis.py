@@ -65,11 +65,10 @@ class CommandAddChassis(BrokerCommand):
             dsdb_runner.update_host(dbchassis, None)
         dsdb_runner.commit_or_rollback("Could not add chassis to DSDB")
 
-        if ip and self.config.infoblox_feature_enabled("add_chassis"):
+        ib_services = IBServices(logger)
+        if ip and ib_services.feature_enabled("add_chassis"):
             try:
-                IBServices().add_a_ptr(str(dbchassis.primary_name.fqdn), ip)
+                ib_services.add_a_ptr(str(dbchassis.primary_name.fqdn), ip)
             except (ArgumentError,RequestException) as e:
-                logger.warning("Error calling Infoblox add_a_ptr: {0}".format(str(e)))
-                logger.warning("Rolling back DSDB transaction ...")
                 dsdb_runner.rollback()
                 raise e

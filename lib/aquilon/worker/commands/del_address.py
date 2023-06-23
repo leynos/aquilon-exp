@@ -104,12 +104,11 @@ class CommandDelAddress(BrokerCommand):
                                             comments=old_comments)
             dsdb_runner.commit_or_rollback()
 
-        if self.config.infoblox_feature_enabled("del_address"):
+        ib_services = IBServices(logger)
+        if ib_services.feature_enabled("del_address"):
             try:
-                IBServices().delete_a_ptr(old_fqdn, ip)
+                ib_services.delete_a_ptr(old_fqdn, ip)
             except (ArgumentError,RequestException) as e:
-                logger.warning("Error calling Infoblox delete_a_ptr: {0}".format(str(e)))
                 if dsdb_runner:
-                    logger.warning("Rolling back DSDB transaction ...")
                     dsdb_runner.rollback()
                 raise e

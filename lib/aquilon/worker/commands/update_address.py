@@ -94,11 +94,11 @@ class CommandUpdateAddress(BrokerCommand):
                                             old_comments=old_comments)
             dsdb_runner.commit_or_rollback()
 
-        if self.config.infoblox_feature_enabled("update_address") and (ip or reverse_ptr or clear_ttl or ttl):
+        ib_services = IBServices(logger)
+        if ib_services.feature_enabled("update_address") and (ip or reverse_ptr or clear_ttl or ttl):
             try:
-                #logger.warning("{} {} {} {}".format(ip, reverse_ptr, clear_ttl, ttl))
                 a_fqdn = str(dbdns_rec.fqdn)
-                IBServices().update_a_ptr(a_fqdn, old_ip, ip if ip else None, reverse_ptr, -1 if clear_ttl else ttl)
+                ib_services.update_a_ptr(a_fqdn, old_ip, ip if ip else None, reverse_ptr, -1 if clear_ttl else ttl)
                 if ip:
                     for address_alias in dbdns_rec.address_aliases:
                         alias_fqdn = str(address_alias.fqdn)
@@ -117,10 +117,8 @@ class CommandUpdateAddress(BrokerCommand):
                             so any failure (a 400) should invoke a rollback to DSDB, but won't roll back the
                             update_a_ptr change on the A record.
                             """
-                            IBServices().update_a_ptr(alias_fqdn, old_ip, dbdns_rec.ip, ttl=-1 if clear_ttl else ttl)
+                            ib_services.update_a_ptr(alias_fqdn, old_ip, dbdns_rec.ip, ttl=-1 if clear_ttl else ttl)
             except (ArgumentError,RequestException) as e:
-                logger.warning("Error calling Infoblox update_a_ptr: {0}".format(str(e)))
                 if dsdb_runner:
-                    logger.warning("Rolling back DSDB transaction ...")
                     dsdb_runner.rollback()
                 raise e

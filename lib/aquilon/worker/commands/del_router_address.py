@@ -75,7 +75,8 @@ class CommandDelRouterAddress(BrokerCommand):
         plenaries.add(dbnetwork)
 
         with plenaries.transaction():
-            if self.config.infoblox_feature_enabled("del_router_address"):
+            ib_services = IBServices(logger)
+            if ib_services.feature_enabled("del_router_address"):
                 # If FQDN not passed then look it up from the DNS records associated with the router
                 if not fqdn:
                     for r in dbrouter.dns_records:
@@ -86,8 +87,6 @@ class CommandDelRouterAddress(BrokerCommand):
                                  .format(ip))
                 else:
                     try:
-                        IBServices().delete_a_ptr(fqdn, ip)
+                        ib_services.delete_a_ptr(fqdn, ip)
                     except (ArgumentError,RequestException) as e:
-                        logger.warning("Error calling Infoblox delete_a_ptr: {0}".format(str(e)))
-                        logger.warning("Rolling back DSDB transaction ...")
                         raise e

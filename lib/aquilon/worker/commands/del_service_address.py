@@ -69,6 +69,7 @@ class CommandDelServiceAddress(BrokerCommand):
         plenaries.add(dbsrv)
 
         holder.resources.remove(dbsrv)
+        ib_services = IBServices(logger)
         if not dbdns_rec.service_addresses:
             # if we're in a resource-group and a shared-service-name exists
             # that has sa_aliases set, and there'a an alias pointing at
@@ -94,7 +95,7 @@ class CommandDelServiceAddress(BrokerCommand):
                     delete_dns_record(rr, exporter=exporter)
                     # TODO: see todo below
                     ibg.add(
-                        lambda: IBServices().del_dns_alias(str(rr.fqdn))
+                        lambda: ib_services.del_dns_alias(str(rr.fqdn))
                     )
                         # .target is None
                         #lambda: IBServices().add_dns_alias(str(rr.fqdn), (rr.target)))
@@ -105,7 +106,7 @@ class CommandDelServiceAddress(BrokerCommand):
             # but also dbdns_rec.target and dbdns_rec.reverse_ptr
             # so do i need to do that in ib too ?
             ibg.add(
-                lambda: IBServices().del_dns_alias(str(dbdns_rec.fqdn))
+                lambda: ib_services.del_dns_alias(str(dbdns_rec.fqdn))
             )
                 # .target is None
                 #lambda: IBServices().add_dns_alias(str(dbdns_rec.fqdn), str(dbdns_rec.target)))
@@ -116,7 +117,7 @@ class CommandDelServiceAddress(BrokerCommand):
             if (not dbdns_rec.service_addresses and
                     dbdns_rec.network.is_internal):
                 dsdb_runner.delete_host_details(old_fqdn, old_ip)
-                ibg.add(lambda: IBServices().delete_a_ptr(old_fqdn, old_ip))
+                ibg.add(lambda: ib_services.delete_a_ptr(old_fqdn, old_ip))
             dsdb_runner.commit_or_rollback("Could not delete host from DSDB")
             try:
                 ibg.commit_or_rollback()
