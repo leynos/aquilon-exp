@@ -3,7 +3,7 @@ from urllib import urlencode
 from urlparse import urlparse, urlunparse
 
 from aquilon.config import Config
-from aquilon.exceptions_ import ArgumentError, ProcessException
+from aquilon.exceptions_ import ArgumentError
 from aquilon.utils import with_timer
 from ipaddress import IPv4Address
 from requests.adapters import HTTPAdapter, Retry
@@ -30,7 +30,7 @@ class IBServiceGroup(object):
                     rollbacks.append(rollback)
                 action()
             self.functions = []
-        except ProcessException as e:
+        except ArgumentError as e:
             # Reverse the rollbacks to start from the last, and run them.
             rollbacks.reverse()
             for rollback in rollbacks:
@@ -90,6 +90,7 @@ class IBServices(object):
     def add_a_ptr(self, name, ip, assign_ptr_to_fqdn=None, ttl=None, create_ptr=True):
         payload = self._build_a_ptr_payload(name, ip, assign_ptr_to_fqdn, ttl)
         payload["create_ptr"] = create_ptr
+        payload["eonid"] = self.eonid
         url = "/dns/a_ptr"
 
         self._http_request("POST", url, payload)
@@ -101,13 +102,17 @@ class IBServices(object):
         payload = self._build_a_ptr_payload(None, new_ip, assign_ptr_to_fqdn, ttl)
         payload["create_if_doesnt_exist"] = True
         payload["update_ptr"] = update_ptr
+        payload["eonid"] = self.eonid
         url = "/dns/a_ptr/{}/{}".format(name, ip)
 
         self._http_request("PATCH", url, payload)
 
     @with_timer
     def delete_a_ptr(self, name, ip, delete_ptr=True):
-        params = {"delete_ptr": delete_ptr}
+        params = {
+            "delete_ptr": delete_ptr,
+            "eonid": self.eonid,
+        }
         url = "/dns/a_ptr/{}/{}".format(name, ip)
         url = self._generate_url_from_params(url, params)
 
@@ -118,7 +123,8 @@ class IBServices(object):
         url = "/dns/aliases"
         payload = {
             "name": name,
-            "target": target
+            "target": target,
+            "eonid": self.eonid,
         }
         if ttl:
             payload["ttl"] = ttl
@@ -127,7 +133,11 @@ class IBServices(object):
 
     @with_timer
     def del_dns_alias(self, name):
+        params = {
+            "eonid": self.eonid,
+        }
         url = "/dns/aliases/{}".format(name)
+        url = self._generate_url_from_params(url, params)
 
         self._http_request("DELETE", url)
 
@@ -139,6 +149,7 @@ class IBServices(object):
             payload["target"] = new_target
         if ttl is not None:
             payload["ttl"] = ttl
+        payload["eonid"] = self.eonid
         url = "/dns/aliases/{}".format(name)
 
         self._http_request("PATCH", url, payload)
@@ -176,7 +187,7 @@ class IBServices(object):
                 break
 
         if response is None:
-            raise ProcessException("Infoblox returned errors or no Infoblox servers could be reached, aborting change")
+            raise ArgumentError("Infoblox returned errors or no Infoblox servers could be reached, aborting change")
 
         response_str = "{} ({})".format(response.status_code, response.reason)
 
@@ -192,7 +203,7 @@ class IBServices(object):
                 error_msg = response.text
 
             message = "Infoblox error '{}' ({}) for {} {} {})".format(error_msg, response_str, http_cmd, full_url, data)
-            raise ProcessException(message)
+            raise ArgumentError(message)
 
     def feature_enabled(self, name):
         enabled = False
