@@ -801,6 +801,9 @@ class DSDBRunner(object):
             rollback.extend(["-ethernet_address", mac])
         if primary and str(primary) != str(fqdn):
             rollback.extend(["-primary_host_name", primary])
+        else:
+            # if primary isn't specified, means we're creating the primary
+            rollback.extend(["-manager_grn", self.manager_grn])
         if comments:
             rollback.extend(["-comments", comments])
 
