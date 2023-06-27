@@ -16,7 +16,9 @@
 # limitations under the License.
 """Contains a wrapper for `aq add service --instance`."""
 
-from aquilon.aqdb.model import Service, ServiceInstance
+from aquilon.aqdb.model import Service
+from aquilon.aqdb.model import ServiceInstance
+from aquilon.exceptions_ import ArgumentError
 from aquilon.worker.broker import BrokerCommand
 
 
@@ -25,7 +27,15 @@ class CommandAddServiceInstance(BrokerCommand):
 
     required_parameters = ["service", "instance"]
 
-    def render(self, session, plenaries, service, instance, comments, **_):
+    def render(self, session, plenaries, service, instance, comments, need_client_list=None, allow_alias_bindings=None,
+               **_):
+
+        if need_client_list is not None:
+            raise ArgumentError("The --need_client_list option cannot be used with the --instance option")
+
+        if allow_alias_bindings is not None:
+            raise ArgumentError("The --allow_alias_bindings option cannot be used with the --instance option")
+
         dbservice = Service.get_unique(session, service, compel=True)
         ServiceInstance.get_unique(session, service=dbservice, name=instance,
                                    preclude=True)
