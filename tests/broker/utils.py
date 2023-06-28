@@ -253,12 +253,14 @@ class MockHub(object):
         if fqdn == self.default_dns_domain:
             self.default_dns_domain = None
 
-    def add_address(self, fqdn, ip, ttl=None, reverse_ptr=None, comments=None,
+    def add_address(self, fqdn, ip, ttl=None, reverse_ptr=None, comments=None, dns_environment="internal",
                     fail_dsdb=False, fail_ib=False, create_ptr=True):
 
-        self._engine.dsdb_expect_add(fqdn, ip, fail=fail_dsdb)
-        if fail_ib:
-            self._engine.dsdb_expect_delete(ip)
+        if dns_environment == "internal":
+            self._engine.dsdb_expect_add(fqdn, ip, fail=fail_dsdb)
+            if fail_ib:
+                self._engine.dsdb_expect_delete(ip)
+
         if not fail_dsdb:
             ib_expect_add_address(fqdn, ip, reverse_ptr=reverse_ptr, ttl=ttl, create_ptr=create_ptr, fail=fail_ib)
 
@@ -266,8 +268,9 @@ class MockHub(object):
                    '--ip', ip,
                    '--grn', self.grn]
         if ttl is not None:
-            command.append('--ttl')
-            command.append(ttl)
+            command.extend(['--ttl', ttl])
+        if dns_environment is not None:
+            command.extend(['--dns_environment', dns_environment])
 
         command += self._engine.valid_just_tcm
         if fail_dsdb:
@@ -276,12 +279,12 @@ class MockHub(object):
             self._engine.iberrortest(command)
         else:
             self._engine.noouttest(command)
-            self.addresses[fqdn] = {'ip': ip}
+            self.addresses[fqdn, dns_environment] = {'ip': ip}
 
-        self._engine.dsdb_verify(True if fail_ib else False)
+        self._engine.dsdb_verify(True if fail_ib or dns_environment != "internal" else False)
         self._engine.ib_verify(True if fail_dsdb else False)
 
-    def update_address(self, fqdn, original_ip, new_ip=None, new_ttl=None, reverse_ptr=None,
+    def update_address(self, fqdn, original_ip, new_ip=None, new_ttl=None, reverse_ptr=None, dns_environment="internal",
                        comments=None, grn=None, fail_dsdb=False, fail_ib=False):
 
         self._engine.dsdb_expect_update(fqdn, iface=None, ip=new_ip,
@@ -292,21 +295,18 @@ class MockHub(object):
             ib_expect_update_address(fqdn, original_ip, new_ip=new_ip, reverse_ptr=reverse_ptr,
                                      new_ttl=new_ttl, fail=fail_ib)
         command = ['update_address', '--fqdn', fqdn]
+        if dns_environment is not None:
+            command.extend(['--dns_environment', dns_environment])
         if new_ip is not None:
-            command.append('--ip')
-            command.append(new_ip)
+            command.extend(['--ip', new_ip])
         if new_ttl is not None:
-            command.append('--ttl')
-            command.append(new_ttl)
+            command.extend(['--ttl', new_ttl])
         if reverse_ptr is not None:
-            command.append('--reverse_ptr')
-            command.append(reverse_ptr)
+            command.extend(['--reverse_ptr', reverse_ptr])
         if comments is not None:
-            command.append('--comments')
-            command.append(comments)
+            command.extend(['--comments', comments])
         if grn is not None:
-            command.append('--grn')
-            command.append(grn)
+            command.extend(['--grn', grn])
         command += self._engine.valid_just_tcm
 
         if fail_ib:
@@ -324,19 +324,22 @@ class MockHub(object):
         else:
             self._engine.noouttest(command)
             if new_ip is not None:
-                self.addresses[fqdn] = {'ip': new_ip}
+                self.addresses[fqdn, dns_environment] = {'ip': new_ip}
 
         self._engine.dsdb_verify(True if fail_ib else False)
         self._engine.ib_verify(True if fail_dsdb else False)
 
-    def delete_address(self, fqdn, ip, fail_dsdb=False, fail_ib=False):
-        self._engine.dsdb_expect_delete(ip, fail=fail_dsdb)
-        if fail_ib:
-            self._engine.dsdb_expect_add(fqdn, ip)
+    def delete_address(self, fqdn, ip, fail_dsdb=False, fail_ib=False, dns_environment="internal"):
+        if dns_environment == "internal":
+            self._engine.dsdb_expect_delete(ip, fail=fail_dsdb)
+            if fail_ib:
+                self._engine.dsdb_expect_add(fqdn, ip)
         if not fail_dsdb:
             ib_expect_del_address(fqdn, ip, fail=fail_ib)
 
         command = ['del_address', '--fqdn', fqdn, '--ip', ip]
+        if dns_environment is not None:
+            command.extend(['--dns_environment', dns_environment])
         command += self._engine.valid_just_tcm
 
         if fail_dsdb:
@@ -345,9 +348,9 @@ class MockHub(object):
             self._engine.iberrortest(command)
         else:
             self._engine.noouttest(command)
-            del self.addresses[fqdn]
+            del self.addresses[fqdn, dns_environment]
 
-        self._engine.dsdb_verify()
+        self._engine.dsdb_verify(False if dns_environment == "internal" else True)
         self._engine.ib_verify()
 
     def add_resource_group(self, resourcegroup, hostname):
@@ -838,8 +841,8 @@ class MockHub(object):
             ib_expect_del_alias(fqdn)
             self.delete_alias(fqdn)
         # Delete Addresses
-        for fqdn in self.addresses.keys():
-            self.delete_address(fqdn, self.addresses[fqdn]['ip'])
+        for fqdn, dns_environment in self.addresses.keys():
+            self.delete_address(fqdn, self.addresses[fqdn, dns_environment]['ip'], dns_environment=dns_environment)
         # Delete DNS domains.
         for dns_domain in self.dns_domains[:]:
             self.delete_dns_domain(dns_domain)

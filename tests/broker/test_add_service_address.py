@@ -478,7 +478,7 @@ class TestAddServiceAddress(TestBrokerCommand):
         self.noouttest(command)
         self.dsdb_verify()
         self.ib_verify()
-        del mh.addresses['sa.test-infoblox.cc']
+        del mh.addresses['sa.test-infoblox.cc', 'internal']
 
         mh.delete()
 
@@ -551,7 +551,7 @@ class TestAddServiceAddress(TestBrokerCommand):
         self.noouttest(command)
         self.dsdb_verify()
         self.ib_verify()
-        del mh.addresses['sa.test-infoblox.cc']
+        del mh.addresses['sa.test-infoblox.cc', 'internal']
 
         mh.delete()
 
