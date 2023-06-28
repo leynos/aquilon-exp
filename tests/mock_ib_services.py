@@ -80,6 +80,8 @@ def run_server(handler = IBServicesRequestHandler):
 
 
 def ib_test_case(method, path, payload, response_code, response_body):
+#    full_path = "http://localhost:{}{}".format(PORT, path)
+
     return {
         "request": {
             "method": method,

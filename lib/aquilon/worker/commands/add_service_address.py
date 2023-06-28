@@ -250,12 +250,12 @@ class CommandAddServiceAddress(BrokerCommand):
 
         ib_services = IBServices(logger)
         if newly_created:
-            ibg.add(
+            ibg.add_action(
                 lambda: ib_services.add_a_ptr(ip=ip, **ibs_args),
                 lambda: ib_services.delete_a_ptr(**ibs_rollback_args))
         else:
             if (len(ibs_args.keys()) > 2):
-                ibg.add(
+                ibg.add_action(
                     lambda: ib_services.update_a_ptr(ip=ip, **ibs_args),
                     lambda: ib_services.update_a_ptr(**ibs_rollback_args))
 
@@ -270,7 +270,7 @@ class CommandAddServiceAddress(BrokerCommand):
                               ttl=None, grn=None, eon_id=None,
                               comments=None, exporter=exporter,
                               flush_session=True, sync_ib=False)
-            ibg.add(
+            ibg.add_action(
                 lambda: ib_services.add_dns_alias(str(sibling_ssn.fqdn), str(dbdns_rec.fqdn)),
                 lambda: ib_services.del_dns_alias(str(sibling_ssn.fqdn)))
 

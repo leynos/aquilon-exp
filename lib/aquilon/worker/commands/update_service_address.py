@@ -125,7 +125,7 @@ class CommandUpdateServiceAddress(BrokerCommand):
         ib_services = IBServices(logger)
 
         if (len(ibs_args.keys()) > 2):
-            ibg.add(lambda: ib_services.update_a_ptr(**ibs_args))
+            ibg.add_action(lambda: ib_services.update_a_ptr(**ibs_args))
 
         session.flush()
 

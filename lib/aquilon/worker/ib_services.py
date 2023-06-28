@@ -53,8 +53,9 @@ class IBServices(object):
         self.log = logger
 
         self.session = Session()
-        self.session.auth = HTTPKerberosAuth(mutual_authentication=DISABLED, force_preemptive=True)
-        self.session.verify = self.ca_chain
+        if self.ca_chain:
+            self.session.auth = HTTPKerberosAuth(mutual_authentication=DISABLED, force_preemptive=True)
+            self.session.verify = self.ca_chain
         retries = Retry(total=1, status_forcelist=(500, 501, 502, 503, 504))
         self.session.mount("https://", HTTPAdapter(max_retries=retries))
 
@@ -90,7 +91,7 @@ class IBServices(object):
     def add_a_ptr(self, name, ip, assign_ptr_to_fqdn=None, ttl=None, create_ptr=True):
         payload = self._build_a_ptr_payload(name, ip, assign_ptr_to_fqdn, ttl)
         payload["create_ptr"] = create_ptr
-        payload["eonid"] = self.eonid
+#        payload["eonid"] = self.eonid
         url = "/dns/a_ptr"
 
         self._http_request("POST", url, payload)
@@ -102,7 +103,7 @@ class IBServices(object):
         payload = self._build_a_ptr_payload(None, new_ip, assign_ptr_to_fqdn, ttl)
         payload["create_if_doesnt_exist"] = True
         payload["update_ptr"] = update_ptr
-        payload["eonid"] = self.eonid
+#        payload["eonid"] = self.eonid
         url = "/dns/a_ptr/{}/{}".format(name, ip)
 
         self._http_request("PATCH", url, payload)
@@ -111,7 +112,7 @@ class IBServices(object):
     def delete_a_ptr(self, name, ip, delete_ptr=True):
         params = {
             "delete_ptr": delete_ptr,
-            "eonid": self.eonid,
+#            "eonid": self.eonid,
         }
         url = "/dns/a_ptr/{}/{}".format(name, ip)
         url = self._generate_url_from_params(url, params)
@@ -124,7 +125,7 @@ class IBServices(object):
         payload = {
             "name": name,
             "target": target,
-            "eonid": self.eonid,
+#            "eonid": self.eonid,
         }
         if ttl:
             payload["ttl"] = ttl
@@ -134,7 +135,7 @@ class IBServices(object):
     @with_timer
     def del_dns_alias(self, name):
         params = {
-            "eonid": self.eonid,
+#            "eonid": self.eonid,
         }
         url = "/dns/aliases/{}".format(name)
         url = self._generate_url_from_params(url, params)
@@ -149,7 +150,7 @@ class IBServices(object):
             payload["target"] = new_target
         if ttl is not None:
             payload["ttl"] = ttl
-        payload["eonid"] = self.eonid
+#        payload["eonid"] = self.eonid
         url = "/dns/aliases/{}".format(name)
 
         self._http_request("PATCH", url, payload)
@@ -157,9 +158,6 @@ class IBServices(object):
     def _http_request(self, http_cmd, url, data=None):
         if not self.enabled:
             return
-
-        if http_cmd not in ("DELETE", "GET", "PATCH", "POST"):
-            raise ArgumentError("HTTP command {} not supported".format(http_cmd))
 
         response = None
         full_url = ""
@@ -193,7 +191,8 @@ class IBServices(object):
 
         if response.ok:
             self.log.info("Successful response from Infoblox: got {} for {} {} {})".format(response_str, http_cmd, full_url, data))
-            return response
+            if http_cmd == "GET":
+                return response
         else:
             error_msg = ""
             try:

@@ -94,7 +94,7 @@ class CommandDelServiceAddress(BrokerCommand):
 
                     delete_dns_record(rr, exporter=exporter)
                     # TODO: see todo below
-                    ibg.add(
+                    ibg.add_action(
                         lambda: ib_services.del_dns_alias(str(rr.fqdn))
                     )
                         # .target is None
@@ -105,7 +105,7 @@ class CommandDelServiceAddress(BrokerCommand):
             # delete_dns_records deletes not only dbdns_rec.fqdn
             # but also dbdns_rec.target and dbdns_rec.reverse_ptr
             # so do i need to do that in ib too ?
-            ibg.add(
+            ibg.add_action(
                 lambda: ib_services.del_dns_alias(str(dbdns_rec.fqdn))
             )
                 # .target is None
@@ -117,7 +117,7 @@ class CommandDelServiceAddress(BrokerCommand):
             if (not dbdns_rec.service_addresses and
                     dbdns_rec.network.is_internal):
                 dsdb_runner.delete_host_details(old_fqdn, old_ip)
-                ibg.add(lambda: ib_services.delete_a_ptr(old_fqdn, old_ip))
+                ibg.add_action(lambda: ib_services.delete_a_ptr(old_fqdn, old_ip))
             dsdb_runner.commit_or_rollback("Could not delete host from DSDB")
             try:
                 ibg.commit_or_rollback()
