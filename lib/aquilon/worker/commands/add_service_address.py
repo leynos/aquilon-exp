@@ -271,8 +271,8 @@ class CommandAddServiceAddress(BrokerCommand):
                               comments=None, exporter=exporter,
                               flush_session=True, sync_ib=False)
             ibg.add_action(
-                lambda: ib_services.delete_a_ptr(str(rr.fqdn), rr.target_ip),
-                lambda: ib_services.add_a_ptr(str(rr.fqdn), rr.target_ip, ttl=rr.ttl)
+                lambda: ib_services.add_a_ptr(str(sibling_ssn.fqdn), dbdns_rec.ip),
+                lambda: ib_services.delete_a_ptr(str(sibling_ssn.fqdn)))
 
         plenaries.add(holder.holder_object)
         plenaries.add(dbsrv)
