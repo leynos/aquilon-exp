@@ -270,7 +270,7 @@ class MockHub(object):
         command += self._engine.valid_just_tcm
         if fail_dsdb or fail_ib:
             err = self._engine.badrequesttest(command)
-            self._engine.matchoutput(err, "DSDB" if fail_dsdb else "Error calling Infoblox", command)
+            self._engine.matchoutput(err, "DSDB" if fail_dsdb else "Infoblox error", command)
         else:
             self._engine.noouttest(command)
             self.addresses[fqdn] = {'ip': ip}
@@ -316,7 +316,7 @@ class MockHub(object):
 
         if fail_dsdb or fail_ib:
             err = self._engine.badrequesttest(command)
-            self._engine.matchoutput(err, "DSDB" if fail_dsdb else "Error calling Infoblox", command)
+            self._engine.matchoutput(err, "DSDB" if fail_dsdb else "Infoblox error", command)
         else:
             self._engine.noouttest(command)
             if new_ip is not None:
@@ -345,7 +345,7 @@ class MockHub(object):
 
         if fail_dsdb or fail_ib:
             err = self._engine.badrequesttest(command)
-            self._engine.matchoutput(err, "DSDB" if fail_dsdb else "Error calling Infoblox", command)
+            self._engine.matchoutput(err, "DSDB" if fail_dsdb else "Infoblox error", command)
         else:
             self._engine.noouttest(command)
             del self.addresses[fqdn]

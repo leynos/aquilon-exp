@@ -60,15 +60,12 @@ class IBServices(object):
         self.session.mount("https://", HTTPAdapter(max_retries=retries))
 
     def _assert_ip(self, ip):
-        if isinstance(ip, IPv4Address) or re.match(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip):
+        if isinstance(ip, IPv4Address) or (isinstance(ip, str) and re.match(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip)):
             return
-        raise ArgumentError("IP address must be IPv4 (either an IPv4Address object or a correctly-formatted string")
+        raise ArgumentError("IP address must be IPv4 (either an IPv4Address object or a correctly-formatted string)")
 
     def assert_dns_environment(self, environment):
-        if environment == "internal":
-            return True
-        else:
-            self.log.warning("DNS environment {} has not been integrated with Infoblox yet".format(environment))
+        return environment == "internal"
 
     def _generate_url_from_params(self, url, params):
         parse = urlparse(url)._replace(query=urlencode(params))
@@ -110,11 +107,12 @@ class IBServices(object):
 
     @with_timer
     def delete_a_ptr(self, name, ip, delete_ptr=True):
+        self._assert_ip(ip)
         params = {
-            "delete_ptr": delete_ptr,
+            "delete_ptr": str(delete_ptr).lower(),
 #            "eonid": self.eonid,
         }
-        url = "/dns/a_ptr/{}/{}".format(name, ip)
+        url = "/dns/a_ptr/{}/{}".format(str(name), str(ip))
         url = self._generate_url_from_params(url, params)
 
         self._http_request("DELETE", url)
@@ -137,7 +135,7 @@ class IBServices(object):
         params = {
 #            "eonid": self.eonid,
         }
-        url = "/dns/aliases/{}".format(name)
+        url = "/dns/aliases/{}".format(str(name))
         url = self._generate_url_from_params(url, params)
 
         self._http_request("DELETE", url)

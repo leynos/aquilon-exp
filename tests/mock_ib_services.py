@@ -80,8 +80,6 @@ def run_server(handler = IBServicesRequestHandler):
 
 
 def ib_test_case(method, path, payload, response_code, response_body):
-#    full_path = "http://localhost:{}{}".format(PORT, path)
-
     return {
         "request": {
             "method": method,
@@ -134,7 +132,7 @@ def ib_expect_del_address(fqdn, ip, delete_ptr=True, response_code=204, response
         response_code = 400
     test_case = ib_test_case(
         "DELETE",
-        "/dns/a_ptr/{}/{}?delete_ptr={}".format(fqdn, ip, str(delete_ptr).lower()),
+        "/dns/a_ptr/{}/{}?delete_ptr={}".format(str(fqdn), ip, str(delete_ptr).lower()),
         None, response_code, response_body)
     http_monitor.expect(test_case)
 
