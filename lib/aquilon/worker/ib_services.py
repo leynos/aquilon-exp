@@ -60,9 +60,9 @@ class IBServices(object):
         self.session.mount("https://", HTTPAdapter(max_retries=retries))
 
     def _assert_ip(self, ip):
-        if isinstance(ip, IPv4Address) or (isinstance(ip, str) and re.match(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip)):
-            return
-        raise ArgumentError("IP address must be IPv4 (either an IPv4Address object or a correctly-formatted string)")
+        if not ip or isinstance(ip, IPv4Address) or (isinstance(ip, str) and re.match(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip)):
+            return True
+        return False
 
     def assert_dns_environment(self, environment):
         return environment == "internal"
@@ -76,7 +76,6 @@ class IBServices(object):
         if name:
             payload["name"] = name
         if ip:
-            self._assert_ip(ip)
             payload["address"] = str(ip)
         if assign_ptr_to_fqdn:
             payload["assign_ptr_to_fqdn"] = assign_ptr_to_fqdn
@@ -86,6 +85,8 @@ class IBServices(object):
 
     @with_timer
     def add_a_ptr(self, name, ip, assign_ptr_to_fqdn=None, ttl=None, create_ptr=True):
+        if not self._assert_ip(ip):
+            return
         payload = self._build_a_ptr_payload(name, ip, assign_ptr_to_fqdn, ttl)
         payload["create_ptr"] = create_ptr
 #        payload["eonid"] = self.eonid
@@ -96,6 +97,8 @@ class IBServices(object):
     @with_timer
     def update_a_ptr(self, name, ip, new_ip=None, assign_ptr_to_fqdn=None, ttl=None, update_ptr=True):
         assert new_ip or assign_ptr_to_fqdn or ttl, "new_ip, assign_ptr_to_fqdn and ttl all None"
+        if not self._assert_ip(ip):
+            return
 
         payload = self._build_a_ptr_payload(None, new_ip, assign_ptr_to_fqdn, ttl)
         payload["create_if_doesnt_exist"] = True
@@ -107,7 +110,8 @@ class IBServices(object):
 
     @with_timer
     def delete_a_ptr(self, name, ip, delete_ptr=True):
-        self._assert_ip(ip)
+        if not self._assert_ip(ip):
+            return
         params = {
             "delete_ptr": str(delete_ptr).lower(),
 #            "eonid": self.eonid,

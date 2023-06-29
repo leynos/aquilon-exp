@@ -392,6 +392,14 @@ class TestBrokerCommand(unittest.TestCase):
                              (command, out))
         return err
 
+    def dsdberrortest(self, command, **kwargs):
+        err = self.badrequesttest(command, **kwargs)
+        self.matchoutput(err, "DSDB", command)
+
+    def iberrortest(self, command, **kwargs):
+        err = self.badrequesttest(command, **kwargs)
+        self.matchoutput(err, "Infoblox error", command)
+
     def unauthorizedtest(self, command, auth=False, msgcheck=True, **kwargs):
         (p, out, err) = self.runcommand(command, auth=auth, **kwargs)
         self.assertEqual(p.returncode, 4,
@@ -810,7 +818,7 @@ class TestBrokerCommand(unittest.TestCase):
                 fp.write("\n")
 
     def dsdb_expect_add(self, hostname, ip, interface=None, mac=None,
-                        primary=None, comments=None, use_grn=True, fail=False):
+                        primary=None, comments=None, fail=False):
         command = ["add_host", "-host_name", hostname,
                    "-ip_address", str(ip), "-status", "aq"]
         if interface:
@@ -820,7 +828,7 @@ class TestBrokerCommand(unittest.TestCase):
             command.extend(["-ethernet_address", str(mac)])
         if primary:
             command.extend(["-primary_host_name", primary])
-        elif use_grn:
+        else:
             command.extend(["-manager_grn",
                            self.config.get('broker', 'manager_grn')])
         if comments:
@@ -888,6 +896,7 @@ class TestBrokerCommand(unittest.TestCase):
                 with open(expected_name, "r") as fp:
                     for line in fp:
                         expected[line.rstrip("\n")] = True
+                os.remove(expected_name)
             except IOError:
                 pass
 
@@ -901,6 +910,7 @@ class TestBrokerCommand(unittest.TestCase):
             with open(issued_name, "r") as fp:
                 for line in fp:
                     issued[line.rstrip("\n")] = True
+            os.remove(issued_name)
         except IOError:
             pass
 
@@ -909,6 +919,10 @@ class TestBrokerCommand(unittest.TestCase):
             if cmd not in issued:
                 errors.append("'%s'" % cmd)
         # Unexpected DSDB commands are caught by the fake_dsdb script
+
+        full_path = os.path.join(self.dsdb_coverage_dir, DSDB_EXPECT_FAILURE_ERROR)
+        if os.path.exists(full_path):
+            os.remove(full_path)
 
         if errors:
             self.fail("The following expected DSDB commands were not called:"

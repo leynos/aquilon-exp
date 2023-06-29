@@ -19,7 +19,8 @@
 
 import unittest
 
-from mock_ib_services import ib_expect_add_address, ib_expect_del_address, ib_expect_del_alias
+from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_del_address
 
 if __name__ == "__main__":
     import utils
@@ -501,7 +502,6 @@ class TestUpdateBuilding(PersonalityTestMixin, MachineTestMixin,
     def test_211_clean_up_service_addresses(self):
         ip = self.net["zebra_vip"].usable[12]
         self.dsdb_expect_delete(ip)
-        ib_expect_del_alias("zebra6.aqd-unittest.ms.com")
         ib_expect_del_address("zebra6.aqd-unittest.ms.com", str(ip))
         command = "del service address --resourcegroup test-host-resgr --name test-service-host"
         self.noouttest(command.split(" "))
@@ -511,8 +511,6 @@ class TestUpdateBuilding(PersonalityTestMixin, MachineTestMixin,
     def test_212_clean_up_service_addresses(self):
         ip = self.net["zebra_vip"].usable[11]
         self.dsdb_expect_delete(ip)
-        # TODO: Again, should fqdns of CNAME and A records be the same ?
-        ib_expect_del_alias("zebra5.aqd-unittest.ms.com")
         ib_expect_del_address("zebra5.aqd-unittest.ms.com", ip)
         command = ["del", "service", "address", "--resourcegroup", "test-resource-group",
                    "--name", "test-cluster-res-service"] + self.valid_just_sn
@@ -523,7 +521,6 @@ class TestUpdateBuilding(PersonalityTestMixin, MachineTestMixin,
     def test_213_clean_up_service_addresses(self):
         ip = self.net["zebra_vip"].usable[10]
         self.dsdb_expect_delete(ip)
-        ib_expect_del_alias("zebra4.aqd-unittest.ms.com")
         ib_expect_del_address("zebra4.aqd-unittest.ms.com", str(ip))
         command = ["del", "service", "address", "--cluster", "campus-test", "--name",
                    "test-cluster-service"] + self.valid_just_sn

@@ -147,6 +147,8 @@ class MockHub(object):
         self.dns_domains = []
         self.networks = {}
         self.addresses = {}
+        self.resource_groups = {}
+        self.shared_service_names = {}
         self.aliases = {}
         self.srvrecords = {}
         self.create(name)
@@ -251,12 +253,14 @@ class MockHub(object):
         if fqdn == self.default_dns_domain:
             self.default_dns_domain = None
 
-    def add_address(self, fqdn, ip, ttl=None, reverse_ptr=None, comments=None,
+    def add_address(self, fqdn, ip, ttl=None, reverse_ptr=None, comments=None, dns_environment="internal",
                     fail_dsdb=False, fail_ib=False, create_ptr=True):
 
-        self._engine.dsdb_expect_add(fqdn, ip, fail=fail_dsdb)
-        if fail_ib:
-            self._engine.dsdb_expect_delete(ip)
+        if dns_environment == "internal":
+            self._engine.dsdb_expect_add(fqdn, ip, fail=fail_dsdb)
+            if fail_ib:
+                self._engine.dsdb_expect_delete(ip)
+
         if not fail_dsdb:
             ib_expect_add_address(fqdn, ip, reverse_ptr=reverse_ptr, ttl=ttl, create_ptr=create_ptr, fail=fail_ib)
 
@@ -264,21 +268,23 @@ class MockHub(object):
                    '--ip', ip,
                    '--grn', self.grn]
         if ttl is not None:
-            command.append('--ttl')
-            command.append(ttl)
+            command.extend(['--ttl', ttl])
+        if dns_environment is not None:
+            command.extend(['--dns_environment', dns_environment])
 
         command += self._engine.valid_just_tcm
-        if fail_dsdb or fail_ib:
-            err = self._engine.badrequesttest(command)
-            self._engine.matchoutput(err, "DSDB" if fail_dsdb else "Infoblox error", command)
+        if fail_dsdb:
+            self._engine.dsdberrortest(command)
+        elif fail_ib:
+            self._engine.iberrortest(command)
         else:
             self._engine.noouttest(command)
-            self.addresses[fqdn] = {'ip': ip}
+            self.addresses[fqdn, dns_environment] = {'ip': ip}
 
-        self._engine.dsdb_verify(True if fail_ib else False)
+        self._engine.dsdb_verify(True if fail_ib or dns_environment != "internal" else False)
         self._engine.ib_verify(True if fail_dsdb else False)
 
-    def update_address(self, fqdn, original_ip, new_ip=None, new_ttl=None, reverse_ptr=None,
+    def update_address(self, fqdn, original_ip, new_ip=None, new_ttl=None, reverse_ptr=None, dns_environment="internal",
                        comments=None, grn=None, fail_dsdb=False, fail_ib=False):
 
         self._engine.dsdb_expect_update(fqdn, iface=None, ip=new_ip,
@@ -289,21 +295,18 @@ class MockHub(object):
             ib_expect_update_address(fqdn, original_ip, new_ip=new_ip, reverse_ptr=reverse_ptr,
                                      new_ttl=new_ttl, fail=fail_ib)
         command = ['update_address', '--fqdn', fqdn]
+        if dns_environment is not None:
+            command.extend(['--dns_environment', dns_environment])
         if new_ip is not None:
-            command.append('--ip')
-            command.append(new_ip)
+            command.extend(['--ip', new_ip])
         if new_ttl is not None:
-            command.append('--ttl')
-            command.append(new_ttl)
+            command.extend(['--ttl', new_ttl])
         if reverse_ptr is not None:
-            command.append('--reverse_ptr')
-            command.append(reverse_ptr)
+            command.extend(['--reverse_ptr', reverse_ptr])
         if comments is not None:
-            command.append('--comments')
-            command.append(comments)
+            command.extend(['--comments', comments])
         if grn is not None:
-            command.append('--grn')
-            command.append(grn)
+            command.extend(['--grn', grn])
         command += self._engine.valid_just_tcm
 
         if fail_ib:
@@ -314,44 +317,87 @@ class MockHub(object):
                 dsdb_rollback_args["comments"] = comments
             self._engine.dsdb_expect_update(fqdn, **dsdb_rollback_args)
 
-        if fail_dsdb or fail_ib:
-            err = self._engine.badrequesttest(command)
-            self._engine.matchoutput(err, "DSDB" if fail_dsdb else "Infoblox error", command)
+        if fail_dsdb:
+            self._engine.dsdberrortest(command)
+        elif fail_ib:
+            self._engine.iberrortest(command)
         else:
             self._engine.noouttest(command)
             if new_ip is not None:
-                self.addresses[fqdn] = {'ip': new_ip}
+                self.addresses[fqdn, dns_environment] = {'ip': new_ip}
 
         self._engine.dsdb_verify(True if fail_ib else False)
         self._engine.ib_verify(True if fail_dsdb else False)
 
-    def delete_address(self, fqdn, ip, fail_dsdb=False, fail_ib=False):
-        self._engine.dsdb_expect_delete(ip, fail=fail_dsdb)
-        if fail_ib:
-            # TODO, I don't think I should need this use_grn argument
-            # I think this is masking a bug in the aqd code
-            # where hosts are created in dsdb with a manager grn,
-            # but i aqd then `dsdb deletes` the host and tries to
-            # rollback the `dsdb delete`, it `dsdb adds` the host
-            # without the manager grn.  I think that's the bug,
-            # aqd needs to add the manager grn when running `dsdb add host`
-            # as a result of rolling back a `dsdb delete` command.
-            self._engine.dsdb_expect_add(fqdn, ip, use_grn=False)
+    def delete_address(self, fqdn, ip, fail_dsdb=False, fail_ib=False, dns_environment="internal"):
+        if dns_environment == "internal":
+            self._engine.dsdb_expect_delete(ip, fail=fail_dsdb)
+            if fail_ib:
+                self._engine.dsdb_expect_add(fqdn, ip)
         if not fail_dsdb:
             ib_expect_del_address(fqdn, ip, fail=fail_ib)
 
         command = ['del_address', '--fqdn', fqdn, '--ip', ip]
+        if dns_environment is not None:
+            command.extend(['--dns_environment', dns_environment])
         command += self._engine.valid_just_tcm
 
-        if fail_dsdb or fail_ib:
-            err = self._engine.badrequesttest(command)
-            self._engine.matchoutput(err, "DSDB" if fail_dsdb else "Infoblox error", command)
+        if fail_dsdb:
+            self._engine.dsdberrortest(command)
+        elif fail_ib:
+            self._engine.iberrortest(command)
         else:
             self._engine.noouttest(command)
-            del self.addresses[fqdn]
+            del self.addresses[fqdn, dns_environment]
 
-        self._engine.dsdb_verify()
+        self._engine.dsdb_verify(False if dns_environment == "internal" else True)
         self._engine.ib_verify()
+
+    def add_resource_group(self, resourcegroup, hostname):
+        if resourcegroup in self.resource_groups:
+            raise ValueError('Resource Group {} already exists.'.format(resourcegroup))
+
+        command = ['add_resourcegroup', '--resourcegroup', resourcegroup, '--hostname', hostname]
+
+        self._engine.noouttest(command)
+
+        self.resource_groups[resourcegroup] = {'hostname': hostname}
+
+    def delete_resource_group(self, resourcegroup):
+        if resourcegroup not in self.resource_groups:
+            raise ValueError('Resource Group {} does not exist.'.format(resourcegroup))
+
+        hostname = self.resource_groups[resourcegroup]['hostname']
+
+        command = ['del_resourcegroup', '--resourcegroup', resourcegroup, '--hostname', hostname]
+        self._engine.noouttest(command)
+
+        del self.resource_groups[resourcegroup]
+
+    def add_shared_service_name(self, sharedservicename, resourcegroup, fqdn, sa_aliases):
+        if resourcegroup not in self.resource_groups:
+            raise ValueError('Resource Group {} does not exist.'.format(resourcegroup))
+        if sharedservicename in self.shared_service_names:
+            raise ValueError('Shared Service Name {} already exists.'.format(sharedservicename))
+
+        command = ['add_shared_service_name', '--name', sharedservicename, '--resourcegroup', resourcegroup,
+                   '--fqdn', fqdn, '--sa_aliases' if sa_aliases else '--nosa_aliases']
+
+        self._engine.noouttest(command)
+
+        self.shared_service_names[sharedservicename] = {'resourcegroup': resourcegroup, 'fqdn': fqdn,
+                                                        'sa_aliases': sa_aliases}
+
+    def delete_shared_service_name(self, sharedservicename):
+        if sharedservicename not in self.shared_service_names:
+            raise ValueError('Shared Service Name {} does not exist.'.format(sharedservicename))
+
+        resourcegroup = self.shared_service_names[sharedservicename]['resourcegroup']
+
+        command = ['del_shared_service_name', '--name', sharedservicename, '--resourcegroup', resourcegroup]
+        self._engine.noouttest(command)
+
+        del self.shared_service_names[sharedservicename]
 
     def add_alias(self, fqdn, target, ttl=None):
         ib_expect_add_alias(fqdn, target, ttl=ttl)
@@ -757,6 +803,13 @@ class MockHub(object):
         # defined in this class.
         # Use verify=True to confirm if all objects stored in MockHub have been
         # deleted.
+
+        for sharedservicename in self.shared_service_names.keys():
+            self.delete_shared_service_name(sharedservicename)
+
+        for resource_group in self.resource_groups.keys():
+            self.delete_resource_group(resource_group)
+
         self.delete_hosts(slow, verify)
         # Delete machines.
         self.delete_machines(slow, verify)
@@ -788,8 +841,8 @@ class MockHub(object):
             ib_expect_del_alias(fqdn)
             self.delete_alias(fqdn)
         # Delete Addresses
-        for fqdn in self.addresses.keys():
-            self.delete_address(fqdn, self.addresses[fqdn]['ip'])
+        for fqdn, dns_environment in self.addresses.keys():
+            self.delete_address(fqdn, self.addresses[fqdn, dns_environment]['ip'], dns_environment=dns_environment)
         # Delete DNS domains.
         for dns_domain in self.dns_domains[:]:
             self.delete_dns_domain(dns_domain)

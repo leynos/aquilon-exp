@@ -17,7 +17,7 @@
 """Contains the logic for `aq add address`."""
 
 from aquilon.aqdb.model.network_environment import get_net_dns_env
-from aquilon.exceptions_ import ArgumentError, ProcessException
+from aquilon.exceptions_ import ArgumentError
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import (grab_address,
                                            set_reverse_ptr)

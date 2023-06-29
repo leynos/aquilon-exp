@@ -21,11 +21,14 @@ import unittest
 import json
 
 from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_update_address
 
 if __name__ == '__main__':
     import utils
     utils.import_depends()
 
+from broker.utils import MockHub
 from brokertest import TestBrokerCommand
 
 
@@ -414,6 +417,61 @@ class TestAddAddressAlias(TestBrokerCommand):
                          "not be set but derived from the device.",
                          command)
 
+    def test_900_ib_address_alias(self):
+        mh = MockHub(self)
+
+        mh.add_dns_domain('test-infoblox.cc', restricted=False)
+        mh.add_network()
+
+        for dns_environment in ['internal', 'external']:
+            mh.add_address("address-alias-target-1.test-infoblox.cc", "10.25.0.1", dns_environment=dns_environment)
+            mh.add_address("address-alias-target-2.test-infoblox.cc", "10.25.0.2", dns_environment=dns_environment)
+
+            command = ['add_address_alias',
+                       '--fqdn', 'address-alias-fqdn.test-infoblox.cc',
+                       '--target', 'address-alias-target-1.test-infoblox.cc',
+                       '--dns_environment', dns_environment] + self.valid_just_tcm
+
+            if dns_environment == 'internal':
+                ib_expect_add_address("address-alias-fqdn.test-infoblox.cc", "10.25.0.1", create_ptr=False, fail=True)
+                self.iberrortest(command)
+                ib_expect_add_address("address-alias-fqdn.test-infoblox.cc", "10.25.0.1", create_ptr=False)
+            self.noouttest(command)
+
+            command = ['update_address_alias',
+                       '--fqdn', 'address-alias-fqdn.test-infoblox.cc',
+                       '--ttl', 100,
+                       '--dns_environment', dns_environment] + self.valid_just_tcm
+            if dns_environment == 'internal':
+                ib_expect_update_address("address-alias-fqdn.test-infoblox.cc", "10.25.0.1", new_ttl=100,
+                                         update_ptr=False, fail=True)
+                self.iberrortest(command)
+                ib_expect_update_address("address-alias-fqdn.test-infoblox.cc", "10.25.0.1", new_ttl=100,
+                                         update_ptr=False)
+            self.noouttest(command)
+
+            command = ['update_address_alias',
+                       '--fqdn', 'address-alias-fqdn.test-infoblox.cc',
+                       '--comments', 'check no IB request',
+                       '--dns_environment', dns_environment] + self.valid_just_tcm
+            self.noouttest(command)
+
+            command = ['del_address_alias',
+                       '--fqdn', 'address-alias-fqdn.test-infoblox.cc',
+                       '--dns_environment', dns_environment] + self.valid_just_tcm
+            if dns_environment == 'internal':
+                ib_expect_del_address("address-alias-fqdn.test-infoblox.cc", "10.25.0.1", delete_ptr=False, fail=True)
+                self.iberrortest(command)
+                ib_expect_del_address("address-alias-fqdn.test-infoblox.cc", "10.25.0.1", delete_ptr=False)
+            self.noouttest(command)
+
+            self.dsdb_verify(empty=True)
+            self.ib_verify(False if dns_environment == "internal" else True)
+
+            mh.delete_address("address-alias-target-1.test-infoblox.cc", "10.25.0.1", dns_environment=dns_environment)
+            mh.delete_address("address-alias-target-2.test-infoblox.cc", "10.25.0.2", dns_environment=dns_environment)
+
+        mh.delete()
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestAddAddressAlias)

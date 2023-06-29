@@ -21,7 +21,6 @@ import unittest
 
 from mock_ib_services import ib_expect_add_address
 from mock_ib_services import ib_expect_del_address
-from mock_ib_services import ib_expect_del_alias
 
 if __name__ == "__main__":
     import utils
@@ -127,7 +126,6 @@ class TestUsecaseAnycast(MachineTestMixin, TestBrokerCommand):
 
     def test_700_del_service_address(self):
         self.dsdb_expect_delete(anycast['sa_ip'](self))
-        ib_expect_del_alias("anycast.aqd-unittest.ms.com")
         ib_expect_del_address("anycast.aqd-unittest.ms.com", str(anycast['sa_ip'](self)))
         for server in anycast['servers']:
             command = ["del", "service", "address",

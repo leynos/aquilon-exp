@@ -93,23 +93,16 @@ class CommandDelServiceAddress(BrokerCommand):
                         continue
 
                     delete_dns_record(rr, exporter=exporter)
-                    # TODO: see todo below
                     ibg.add_action(
-                        lambda: ib_services.del_dns_alias(str(rr.fqdn))
+                        lambda: ib_services.delete_a_ptr(str(rr.fqdn), rr.target_ip),
+                        lambda: ib_services.add_a_ptr(str(rr.fqdn), rr.target_ip, ttl=rr.ttl)
                     )
-                        # .target is None
-                        #lambda: IBServices().add_dns_alias(str(rr.fqdn), (rr.target)))
                     break
 
+            # TODO:
+            # When the domain is restricted, delete_dns_records deletes not only dbdns_rec.fqdn
+            # but also dbdns_rec.target and dbdns_rec.reverse_ptr so do i need to do that in ib too ?
             delete_dns_record(dbdns_rec, exporter=exporter)
-            # delete_dns_records deletes not only dbdns_rec.fqdn
-            # but also dbdns_rec.target and dbdns_rec.reverse_ptr
-            # so do i need to do that in ib too ?
-            ibg.add_action(
-                lambda: ib_services.del_dns_alias(str(dbdns_rec.fqdn))
-            )
-                # .target is None
-                #lambda: IBServices().add_dns_alias(str(dbdns_rec.fqdn), str(dbdns_rec.target)))
 
         session.flush()
 
@@ -124,6 +117,3 @@ class CommandDelServiceAddress(BrokerCommand):
             except (ArgumentError, RequestException) as e:
                 dsdb_runner.rollback()
                 raise e
-
-        ibg.commit_or_rollback()
-        return
