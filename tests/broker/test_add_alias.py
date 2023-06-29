@@ -22,12 +22,14 @@ import json
 
 from mock_ib_services import ib_expect_add_alias
 from mock_ib_services import ib_expect_del_alias
+from mock_ib_services import ib_expect_update_alias
 
 if __name__ == '__main__':
     from broker import utils
     utils.import_depends()
 
 from broker.brokertest import TestBrokerCommand
+from broker.utils import MockHub
 from eventstest import EventsTestMixin
 
 
@@ -500,6 +502,59 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
                          "unittest20.aqd-unittest.ms.com/eth1. GRN should not "
                          "be set but derived from the device.",
                          command)
+
+    def test_900_ib_alias(self):
+        mh = MockHub(self)
+
+        mh.add_dns_domain('test-infoblox.cc', restricted=False)
+        mh.add_network()
+
+        for dns_environment in ['internal', 'external']:
+            mh.add_address("alias-target-1.test-infoblox.cc", "10.25.0.1", dns_environment=dns_environment)
+            mh.add_address("alias-target-2.test-infoblox.cc", "10.25.0.2", dns_environment=dns_environment)
+
+            command = ['add_alias',
+                       '--fqdn', 'alias-fqdn.test-infoblox.cc',
+                       '--target', 'alias-target-1.test-infoblox.cc',
+                       '--dns_environment', dns_environment] + self.valid_just_tcm
+
+            if dns_environment == 'internal':
+                ib_expect_add_alias("alias-fqdn.test-infoblox.cc", "alias-target-1.test-infoblox.cc", fail=True)
+                self.iberrortest(command)
+                ib_expect_add_alias("alias-fqdn.test-infoblox.cc", "alias-target-1.test-infoblox.cc")
+            self.noouttest(command)
+
+            command = ['update_alias',
+                       '--fqdn', 'alias-fqdn.test-infoblox.cc',
+                       '--ttl', 100,
+                       '--dns_environment', dns_environment] + self.valid_just_tcm
+            if dns_environment == 'internal':
+                ib_expect_update_alias("alias-fqdn.test-infoblox.cc", ttl=100, fail=True)
+                self.iberrortest(command)
+                ib_expect_update_alias("alias-fqdn.test-infoblox.cc", ttl=100)
+            self.noouttest(command)
+
+            command = ['update_alias',
+                       '--fqdn', 'alias-fqdn.test-infoblox.cc',
+                       '--comments', 'check no IB request',
+                       '--dns_environment', dns_environment] + self.valid_just_tcm
+            self.noouttest(command)
+
+            command = ['del_alias',
+                       '--fqdn', 'alias-fqdn.test-infoblox.cc',
+                       '--dns_environment', dns_environment] + self.valid_just_tcm
+            if dns_environment == 'internal':
+                ib_expect_del_alias("alias-fqdn.test-infoblox.cc", fail=True)
+                self.iberrortest(command)
+                ib_expect_del_alias("alias-fqdn.test-infoblox.cc")
+            self.noouttest(command)
+
+            self.dsdb_verify(empty=True)
+            self.ib_verify(False if dns_environment == "internal" else True)
+
+            mh.delete_address("alias-target-1.test-infoblox.cc", "10.25.0.1", dns_environment=dns_environment)
+
+        mh.delete()
 
 
 if __name__ == '__main__':

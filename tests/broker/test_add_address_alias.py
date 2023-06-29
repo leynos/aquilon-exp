@@ -425,7 +425,6 @@ class TestAddAddressAlias(TestBrokerCommand):
 
         for dns_environment in ['internal', 'external']:
             mh.add_address("address-alias-target-1.test-infoblox.cc", "10.25.0.1", dns_environment=dns_environment)
-            mh.add_address("address-alias-target-2.test-infoblox.cc", "10.25.0.2", dns_environment=dns_environment)
 
             command = ['add_address_alias',
                        '--fqdn', 'address-alias-fqdn.test-infoblox.cc',
@@ -469,7 +468,6 @@ class TestAddAddressAlias(TestBrokerCommand):
             self.ib_verify(False if dns_environment == "internal" else True)
 
             mh.delete_address("address-alias-target-1.test-infoblox.cc", "10.25.0.1", dns_environment=dns_environment)
-            mh.delete_address("address-alias-target-2.test-infoblox.cc", "10.25.0.2", dns_environment=dns_environment)
 
         mh.delete()
 
