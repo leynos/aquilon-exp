@@ -20,11 +20,14 @@
 import unittest
 
 from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_update_address
 
 if __name__ == "__main__":
     import utils
     utils.import_depends()
 
+from broker.utils import MockHub
 from brokertest import TestBrokerCommand
 from chassistest import VerifyChassisMixin
 
@@ -217,6 +220,120 @@ class TestAddChassis(TestBrokerCommand, VerifyChassisMixin):
         command = ["del_chassis", "--chassis", "ut3c6.aqd-unittest.ms.com"]
         self.noouttest(command)
 
+    def test_900_ib_chassis(self):
+        mh = MockHub(self)
+
+        mh.add_dns_domain('test-infoblox.cc', restricted=False)
+        mh.add_network()
+
+        rack = mh.add_rack()
+        chassis = rack + "c1.test-infoblox.cc"
+
+        # Test case when creating a chassis without an IP
+        command = ['add_chassis', "--chassis", chassis, "--rack", rack, "--model", "c-class"]
+        self.noouttest(command)
+        self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
+
+        command = ['del_chassis', "--chassis", chassis]
+        self.noouttest(command)
+        self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
+
+        # Test case when updating from noip to an ip
+        command = ['add_chassis', "--chassis", chassis, "--rack", rack, "--model", "c-class"]
+        self.noouttest(command)
+        self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
+
+        command = ['update_chassis', '--chassis', chassis, '--ip', '10.25.0.1']
+
+        self.dsdb_expect_add(chassis, "10.25.0.1", interface="oa", fail=True)
+        self.dsdberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_add(chassis, "10.25.0.1", interface="oa")
+        ib_expect_add_address(chassis, "10.25.0.1", fail=True)
+        self.dsdb_expect_delete("10.25.0.1")
+        self.iberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_add(chassis, "10.25.0.1", interface="oa")
+        ib_expect_add_address(chassis, "10.25.0.1")
+        self.noouttest(command)
+        self.dsdb_verify()
+
+        # Test case when updating from one ip to a different ip
+        command = ['update_chassis', '--chassis', chassis, '--ip', '10.25.0.2']
+
+        self.dsdb_expect_update(chassis, ip="10.25.0.2", iface="oa", fail=True)
+        self.dsdberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_update(chassis, ip="10.25.0.2", iface="oa")
+        ib_expect_update_address(chassis, "10.25.0.1", new_ip="10.25.0.2", fail=True)
+        self.dsdb_expect_update(chassis, ip="10.25.0.1", iface="oa")
+        self.iberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_update(chassis, ip="10.25.0.2", iface="oa")
+        ib_expect_update_address(chassis, "10.25.0.1", new_ip="10.25.0.2")
+        self.noouttest(command)
+        self.dsdb_verify()
+
+        command = ['del_chassis', "--chassis", chassis]
+
+        self.dsdb_expect_delete("10.25.0.2", fail=True)
+        self.dsdberrortest(command)
+        self.dsdb_verify()
+        self.ib_verify(empty=True)
+
+        self.dsdb_expect_delete("10.25.0.2")
+        ib_expect_del_address(chassis, "10.25.0.2", fail=True)
+        self.dsdb_expect_add(chassis, "10.25.0.2", interface="oa")
+        self.iberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_delete("10.25.0.2")
+        ib_expect_del_address(chassis, "10.25.0.2")
+        self.noouttest(command)
+        self.dsdb_verify()
+
+        command = ['add_chassis', "--chassis", chassis, "--rack", rack, "--model", "c-class", "--ip", "10.25.0.1"]
+
+        # test case when dsdb fails and ib is not called
+        self.dsdb_expect_add(chassis, "10.25.0.1", interface="oa", fail=True)
+        self.dsdberrortest(command)
+        self.dsdb_verify()
+        self.ib_verify(empty=True)  # no IB requests when dsdb fails
+
+        # test case when dsdb succeeds, ib fails and dsdb is rolled back
+        self.dsdb_expect_add(chassis, "10.25.0.1", interface="oa")
+        ib_expect_add_address(chassis, "10.25.0.1", fail=True)
+        self.dsdb_expect_delete("10.25.0.1")
+        self.iberrortest(command)
+        self.dsdb_verify()
+
+        # test case when both dsdb and ib succeed
+        self.dsdb_expect_add(chassis, "10.25.0.1", interface="oa")
+        ib_expect_add_address(chassis, "10.25.0.1")
+        self.noouttest(command)
+        self.dsdb_verify()
+
+        # test case when chassis is updated without changing ip
+        command = ['update_chassis', "--chassis", chassis, "--comments", "check no IB requests when IP is unchanged"]
+        self.dsdb_expect_update(chassis, iface="oa", comments="check no IB requests when IP is unchanged")
+        self.noouttest(command)
+
+        command = ['del_chassis', "--chassis", chassis]
+        self.dsdb_expect_delete("10.25.0.1")
+        ib_expect_del_address(chassis, "10.25.0.1")
+        self.noouttest(command)
+        self.dsdb_verify()
+
+        self.ib_verify()
+
+        mh.delete()
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestAddChassis)

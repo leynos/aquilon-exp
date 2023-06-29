@@ -90,7 +90,7 @@ class CommandUpdateChassis(BrokerCommand):
         dsdb_runner.update_host(dbchassis, oldinfo)
         dsdb_runner.commit_or_rollback("Could not update chassis in DSDB")
 
-        if ip and self.config.infoblox_feature_enabled("update_chassis"):
+        if ip:
             try:
                 # If no existing IP, we must now create one.
                 if old_ip:

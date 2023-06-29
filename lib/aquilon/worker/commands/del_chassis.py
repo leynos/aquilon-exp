@@ -57,7 +57,7 @@ class CommandDelChassis(BrokerCommand):
 
         # chassis may not hve a primary interface assigned
         ip = dbchassis.primary_name.ip if type(dbchassis.primary_name) == ARecord else None
-        if ip and self.config.infoblox_feature_enabled("del_chassis"):
+        if ip:
             try:
                 IBServices().delete_a_ptr(str(dbchassis.primary_name.fqdn), ip)
             except (ArgumentError,RequestException) as e:
