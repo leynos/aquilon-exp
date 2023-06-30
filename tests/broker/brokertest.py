@@ -375,13 +375,13 @@ class TestBrokerCommand(unittest.TestCase):
                             (command, err))
         return err
 
-    def badrequesttest(self, command, ignoreout=False, **kwargs):
+    def badrequesttest(self, command, ignoreout=False, expected_code=4, **kwargs):
         (p, out, err) = self.runcommand(command, **kwargs)
-        self.assertEqual(p.returncode, 4,
+        self.assertEqual(p.returncode, expected_code,
                          "Return code for %s was %d instead of %d"
                          "\nSTDOUT:\n@@@\n'%s'\n@@@"
                          "\nSTDERR:\n@@@\n'%s'\n@@@" %
-                         (command, p.returncode, 4, out, err))
+                         (command, p.returncode, expected_code, out, err))
         self.assertTrue(err.find("Bad Request") >= 0,
                         "STDERR for %s did not include Bad Request:"
                         "\n@@@\n'%s'\n@@@\n" %
@@ -397,7 +397,8 @@ class TestBrokerCommand(unittest.TestCase):
         self.matchoutput(err, "DSDB", command)
 
     def iberrortest(self, command, **kwargs):
-        err = self.badrequesttest(command, **kwargs)
+        expected_code = 5
+        err = self.badrequesttest(command, expected_code=5, **kwargs)
         self.matchoutput(err, "Infoblox error", command)
 
     def unauthorizedtest(self, command, auth=False, msgcheck=True, **kwargs):
