@@ -62,6 +62,7 @@ class IBServices(object):
     def _assert_ip(self, ip):
         if not ip or isinstance(ip, IPv4Address) or (isinstance(ip, str) and re.match(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip)):
             return True
+        self.log.warning("IP not valid for IPServices:  if supplied, it must be an IPv4Address object or correctly formatted IPv4 string.")
         return False
 
     def assert_dns_environment(self, environment):
