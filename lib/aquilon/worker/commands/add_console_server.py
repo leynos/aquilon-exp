@@ -16,7 +16,7 @@
 # limitations under the License.
 """Contains the logic for `aq add console server`."""
 
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.aqdb.types import ConsoleServerType
 from aquilon.aqdb.model import ConsoleServer, Model
 from aquilon.aqdb.model.network import get_net_id_from_ip
@@ -28,7 +28,6 @@ from aquilon.worker.dbwrappers.interface import (get_or_create_interface,
 from aquilon.worker.dbwrappers.location import get_location
 from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
-from requests import RequestException
 
 
 class CommandAddConsoleServer(BrokerCommand):
@@ -85,6 +84,6 @@ class CommandAddConsoleServer(BrokerCommand):
             if ib_services.feature_enabled("add_console_server"):
                 try:
                     ib_services.add_a_ptr(str(dbcons.primary_name.fqdn), ip)
-                except (ArgumentError,RequestException) as e:
+                except ProcessException as e:
                     dsdb_runner.rollback()
                     raise e

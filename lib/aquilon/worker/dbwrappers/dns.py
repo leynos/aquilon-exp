@@ -52,7 +52,6 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql import or_
-from requests import RequestException
 
 
 def delete_dns_record(dbdns_rec, locked=False, verify_assignments=False, exporter=None):

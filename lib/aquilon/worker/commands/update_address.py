@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.aqdb.model import ARecord
 from aquilon.aqdb.model.network import get_net_id_from_ip
 from aquilon.aqdb.model.network_environment import get_net_dns_env
@@ -27,7 +27,6 @@ from aquilon.worker.dbwrappers.dns import (set_reverse_ptr,
 from aquilon.worker.dbwrappers.grn import lookup_grn
 from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
-from requests import RequestException
 
 
 class CommandUpdateAddress(BrokerCommand):
@@ -118,7 +117,7 @@ class CommandUpdateAddress(BrokerCommand):
                             update_a_ptr change on the A record.
                             """
                             ib_services.update_a_ptr(alias_fqdn, old_ip, dbdns_rec.ip, ttl=-1 if clear_ttl else ttl)
-            except (ArgumentError,RequestException) as e:
+            except ProcessException as e:
                 if dsdb_runner:
                     dsdb_runner.rollback()
                 raise e

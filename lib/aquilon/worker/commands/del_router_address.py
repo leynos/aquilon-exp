@@ -16,14 +16,13 @@
 # limitations under the License.
 """Contains the logic for `aq del router address`."""
 
-from aquilon.exceptions_ import ArgumentError, NotFoundException
+from aquilon.exceptions_ import ArgumentError, NotFoundException, ProcessException
 from aquilon.aqdb.model import ARecord, NetworkEnvironment
 from aquilon.aqdb.model.network import get_net_id_from_ip
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.ib_services import IBServices
-from requests import RequestException
 
 
 class CommandDelRouterAddress(BrokerCommand):
@@ -88,5 +87,5 @@ class CommandDelRouterAddress(BrokerCommand):
                 else:
                     try:
                         ib_services.delete_a_ptr(fqdn, ip)
-                    except (ArgumentError,RequestException) as e:
+                    except ProcessException as e:
                         raise e

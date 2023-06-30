@@ -19,7 +19,7 @@
 import logging
 
 from aquilon.worker.broker import BrokerCommand
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.aqdb.model import (Interface, AddressAssignment, DnsDomain, Fqdn,
                                 ARecord, NetworkEnvironment)
 from aquilon.utils import first_of
@@ -29,7 +29,6 @@ from aquilon.worker.dbwrappers.hardware_entity import get_hardware
 from aquilon.worker.dbwrappers.service_instance import check_no_provided_service
 from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
-from requests.exceptions import RequestException
 
 
 LOGGER = logging.getLogger(__name__)
@@ -144,7 +143,7 @@ class CommandDelInterfaceAddress(BrokerCommand):
                     # TODO: Disable DHCP in Infoblox
                     for dns_rec in addr.dns_records:
                         ib_services.delete_a_ptr(dns_rec, ip)
-                except (ArgumentError,RequestException) as e:
+                except ProcessException as e:
                     dsdb_runner.rollback()
                     raise e
 

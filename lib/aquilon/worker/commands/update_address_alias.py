@@ -19,11 +19,9 @@
 from aquilon.aqdb.model import Fqdn, AddressAlias
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.grn import lookup_grn
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.ib_services import IBServices
-
-from requests import RequestException
 
 
 class CommandUpdateAddressAlias(BrokerCommand):
@@ -87,7 +85,7 @@ class CommandUpdateAddressAlias(BrokerCommand):
                 for dns_rec in dbdns_records:
                     if ib_services.assert_dns_environment(dns_rec.fqdn.dns_environment.name):
                         ib_services.update_a_ptr(str(dns_rec), dns_rec.target_ip, ttl=ttl, update_ptr=False)
-            except (ArgumentError, RequestException) as e:
+            except ProcessException as e:
                 raise e
 
 

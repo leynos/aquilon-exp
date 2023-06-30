@@ -18,7 +18,7 @@
 
 from datetime import datetime
 
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.aqdb.types import MACAddress
 from aquilon.aqdb.model import Model, NetworkDevice, ObservedMac, Chassis, NetworkDeviceChassisSlot, ARecord
 from aquilon.worker.broker import BrokerCommand
@@ -33,7 +33,6 @@ from aquilon.worker.processes import DSDBRunner
 from aquilon.worker.templates import PlenarySwitchData
 from aquilon.utils import validate_json
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
-from requests import RequestException
 
 
 class CommandUpdateNetworkDevice(BrokerCommand):
@@ -157,7 +156,7 @@ class CommandUpdateNetworkDevice(BrokerCommand):
             if ip and ib_services.feature_enabled("update_network_device"):
                 try:
                     ib_services.update_a_ptr(str(dbnetdev.primary_name.fqdn), old_ip, ip)
-                except (ArgumentError, RequestException) as e:
+                except ProcessException as e:
                     dsdb_runner.rollback()
                     raise e
 

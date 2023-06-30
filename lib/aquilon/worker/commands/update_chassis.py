@@ -26,10 +26,9 @@ from aquilon.worker.dbwrappers.hardware_entity import (
     update_primary_ip,
 )
 from aquilon.worker.dbwrappers.location import get_location
-from aquilon.exceptions_ import ArgumentError, NotFoundException
+from aquilon.exceptions_ import NotFoundException, ProcessException
 from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
-from requests import RequestException
 
 
 class CommandUpdateChassis(BrokerCommand):
@@ -98,6 +97,6 @@ class CommandUpdateChassis(BrokerCommand):
                     ib_services.update_a_ptr(str(dbchassis.primary_name.fqdn), old_ip, ip)
                 else:
                     ib_services.add_a_ptr(str(dbchassis.primary_name.fqdn), ip)
-            except (ArgumentError,RequestException) as e:
+            except ProcessException as e:
                 dsdb_runner.rollback()
                 raise e

@@ -17,7 +17,7 @@
 """Contains the logic for `aq add chassis`."""
 
 from aquilon.aqdb.model.network import get_net_id_from_ip
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ProcessException
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import grab_address
 from aquilon.worker.dbwrappers.interface import (get_or_create_interface,
@@ -26,7 +26,6 @@ from aquilon.worker.dbwrappers.interface import (get_or_create_interface,
 from aquilon.worker.dbwrappers.hardware_entity import get_or_create_chassis
 from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
-from requests import RequestException
 
 
 class CommandAddChassis(BrokerCommand):
@@ -69,6 +68,6 @@ class CommandAddChassis(BrokerCommand):
         if ip and ib_services.feature_enabled("add_chassis"):
             try:
                 ib_services.add_a_ptr(str(dbchassis.primary_name.fqdn), ip)
-            except (ArgumentError,RequestException) as e:
+            except ProcessException as e:
                 dsdb_runner.rollback()
                 raise e

@@ -23,7 +23,7 @@ from aquilon.aqdb.model import (
     ServiceAddress,
     SharedServiceName,
 )
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.dbwrappers.dns import delete_dns_record
@@ -32,7 +32,6 @@ from aquilon.worker.dbwrappers.service_instance import check_no_provided_service
 from aquilon.worker.ib_services import IBServiceGroup
 from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
-from requests import RequestException
 
 
 class CommandDelServiceAddress(BrokerCommand):
@@ -114,6 +113,6 @@ class CommandDelServiceAddress(BrokerCommand):
             dsdb_runner.commit_or_rollback("Could not delete host from DSDB")
             try:
                 ibg.commit_or_rollback()
-            except (ArgumentError, RequestException) as e:
+            except ProcessException as e:
                 dsdb_runner.rollback()
                 raise e

@@ -16,7 +16,7 @@
 # limitations under the License.
 """Contains the logic for `aq update alias`."""
 
-from aquilon.exceptions_ import ArgumentError, NotFoundException
+from aquilon.exceptions_ import ArgumentError, NotFoundException, ProcessException
 from aquilon.aqdb.model import Alias, DnsEnvironment
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
@@ -25,8 +25,6 @@ from aquilon.worker.dbwrappers.dns import (create_target_if_needed,
 from aquilon.worker.dbwrappers.grn import lookup_grn
 from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
-
-from requests import RequestException
 
 
 class CommandUpdateAlias(BrokerCommand):
@@ -157,7 +155,7 @@ class CommandUpdateAlias(BrokerCommand):
                             str(dbalias.fqdn),
                             new_target=str(dbalias.target) if old_target is not None else None,
                             ttl=-1 if clear_ttl else ttl)
-            except (ArgumentError, RequestException) as e:
+            except ProcessException as e:
                 if dsdb_runner:
                     dsdb_runner.rollback()
                 raise e

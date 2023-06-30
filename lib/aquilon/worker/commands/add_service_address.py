@@ -28,7 +28,7 @@ from aquilon.aqdb.model import (
     ServiceAddress,
     SharedServiceName,
 )
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.utils import validate_nlist_key
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
@@ -46,7 +46,6 @@ from aquilon.worker.dbwrappers.search import search_next
 from aquilon.worker.ib_services import IBServiceGroup
 from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
-from requests import RequestException
 
 class CommandAddServiceAddress(BrokerCommand):
     requires_plenaries = True
@@ -297,7 +296,7 @@ class CommandAddServiceAddress(BrokerCommand):
 
             try:
                 ibg.commit_or_rollback()
-            except (ArgumentError, RequestException) as e:
+            except ProcessException as e:
                 dsdb_runner.rollback()
                 raise e
 

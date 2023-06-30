@@ -30,7 +30,6 @@ from aquilon.worker.dbwrappers.location import get_default_dns_domain
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
-from requests import RequestException
 
 
 class CommandAddInterfaceAddress(BrokerCommand):
@@ -204,7 +203,7 @@ class CommandAddInterfaceAddress(BrokerCommand):
                 try:
                     # TODO: Enable DHCP in Infoblox
                     ib_services.add_a_ptr(fqdn, ip)
-                except (ArgumentError, RequestException) as e:
+                except ProcessException as e:
                     dsdb_runner.rollback()
                     raise e
 

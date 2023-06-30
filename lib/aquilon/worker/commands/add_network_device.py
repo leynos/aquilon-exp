@@ -18,7 +18,7 @@
 
 from sqlalchemy.orm import subqueryload
 
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.aqdb.model import NetworkDevice, Model, Archetype, Chassis, NetworkDeviceChassisSlot, ARecord
 from aquilon.aqdb.model.network import get_net_id_from_ip
 from aquilon.worker.broker import BrokerCommand
@@ -32,7 +32,6 @@ from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
 from aquilon.worker.templates.switchdata import PlenarySwitchData
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
-from requests import RequestException
 
 # The render function unhelpfully shadows this function
 f_type = type
@@ -145,6 +144,6 @@ class CommandAddNetworkDevice(BrokerCommand):
             if f_type(dbdns_rec) == ARecord and ib_services.feature_enabled("add_network_device"):
                 try:
                     ib_services.add_a_ptr(str(dbdns_rec.fqdn), ip)
-                except (ArgumentError, RequestException) as e:
+                except ProcessException as e:
                     dsdb_runner.rollback()
                     raise e

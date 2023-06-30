@@ -17,7 +17,7 @@
 """Contains the logic for `aq del network_device`."""
 
 from aquilon.aqdb.model import NetworkDevice
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ProcessException
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.hardware_entity import check_only_primary_ip
@@ -26,7 +26,6 @@ from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
 from aquilon.worker.templates.switchdata import PlenarySwitchData
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
-from requests import RequestException
 
 
 class CommandDelNetworkDevice(BrokerCommand):
@@ -74,6 +73,6 @@ class CommandDelNetworkDevice(BrokerCommand):
             if dbdns_rec and ib_services.feature_enabled("del_network_device"):
                 try:
                     ib_services.delete_a_ptr(str(dbdns_rec.fqdn), dbdns_rec.ip)
-                except (ArgumentError,RequestException) as e:
+                except ProcessException as e:
                     dsdb_runner.rollback()
                     raise e
