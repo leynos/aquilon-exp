@@ -324,7 +324,7 @@ class TestBrokerCommand(unittest.TestCase):
     def assertEmptyOut(self, contents, command):
         self.assertEmptyStream("STDOUT", contents, command)
 
-    def commandtest(self, command, exclude_err_re=none, **kwargs):
+    def commandtest(self, command, exclude_err_re=None, **kwargs):
         (p, out, err) = self.runcommand(command, **kwargs)
         if exclude_err_re:
             err = err.replace(exclude_re, '')
