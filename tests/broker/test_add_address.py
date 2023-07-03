@@ -138,8 +138,8 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         command = ["add_address", "--ip", self.net["ipv6_test"].usable[1],
                    "--fqdn", "ipv6test.aqd-unittest.ms.com",
                    "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_tcm
-        exclude_re = r"IP not valid for IBServices:  if supplied, it must be an IPv4Address object or correctly formatted IPv4 string."
-        self.noouttest(command, exclude_err_re=exclude_re)
+        exclude_err_str = r"IP not valid for IBServices:  if supplied, it must be an IPv4Address object or correctly formatted IPv4 string.\n"
+        self.noouttest(command, exclude_err_str=exclude_err_str)
         self.dsdb_verify(empty=True)
         self.ib_verify(empty=True)
         self.events_verify()

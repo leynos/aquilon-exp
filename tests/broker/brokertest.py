@@ -324,10 +324,10 @@ class TestBrokerCommand(unittest.TestCase):
     def assertEmptyOut(self, contents, command):
         self.assertEmptyStream("STDOUT", contents, command)
 
-    def commandtest(self, command, exclude_err_re=None, **kwargs):
+    def commandtest(self, command, exclude_err_str=None, **kwargs):
         (p, out, err) = self.runcommand(command, **kwargs)
-        if exclude_err_re:
-            err = err.replace(exclude_err_re, '')
+        if exclude_err_str:
+            err = err.replace(exclude_err_str, '')
         self.assertEmptyErr(err, command)
         self.assertEqual(p.returncode, 0,
                          "Non-zero return code for %s, "
@@ -335,8 +335,8 @@ class TestBrokerCommand(unittest.TestCase):
                          % (command, out))
         return out
 
-    def noouttest(self, command, exclude_err_re=None, **kwargs):
-        out = self.commandtest(command, exclude_err_re, **kwargs)
+    def noouttest(self, command, exclude_err_str=None, **kwargs):
+        out = self.commandtest(command, exclude_err_str, **kwargs)
         self.assertEqual(out, "",
                          "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n"
                          % (command, out))
