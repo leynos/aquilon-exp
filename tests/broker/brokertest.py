@@ -327,7 +327,7 @@ class TestBrokerCommand(unittest.TestCase):
     def commandtest(self, command, exclude_err_re=None, **kwargs):
         (p, out, err) = self.runcommand(command, **kwargs)
         if exclude_err_re:
-            err = err.replace(exclude_re, '')
+            err = err.replace(exclude_err_re, '')
         self.assertEmptyErr(err, command)
         self.assertEqual(p.returncode, 0,
                          "Non-zero return code for %s, "
