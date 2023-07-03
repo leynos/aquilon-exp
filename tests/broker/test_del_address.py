@@ -44,7 +44,8 @@ class TestDelAddress(TestBrokerCommand):
 
     def testbasicipv6(self):
         command = ["del_address", "--ip=%s" % self.net["ipv6_test"].usable[1]] + self.valid_just_tcm
-        self.noouttest(command)
+        exclude_re = r"IP not valid for IBServices:  if supplied, it must be an IPv4Address object or correctly formatted IPv4 string."
+        self.noouttest(command, exclude_err_re=exclude_re)
         self.dsdb_verify(empty=True)
         self.ib_verify(empty=True)
 

@@ -324,8 +324,10 @@ class TestBrokerCommand(unittest.TestCase):
     def assertEmptyOut(self, contents, command):
         self.assertEmptyStream("STDOUT", contents, command)
 
-    def commandtest(self, command, **kwargs):
+    def commandtest(self, command, exclude_err_re=none, **kwargs):
         (p, out, err) = self.runcommand(command, **kwargs)
+        if exclude_err_re:
+            err = err.replace(exclude_re, '')
         self.assertEmptyErr(err, command)
         self.assertEqual(p.returncode, 0,
                          "Non-zero return code for %s, "
@@ -333,8 +335,8 @@ class TestBrokerCommand(unittest.TestCase):
                          % (command, out))
         return out
 
-    def noouttest(self, command, **kwargs):
-        out = self.commandtest(command, **kwargs)
+    def noouttest(self, command, exclude_err_re=None, **kwargs):
+        out = self.commandtest(command, exclude_err_re, **kwargs)
         self.assertEqual(out, "",
                          "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n"
                          % (command, out))
@@ -397,7 +399,6 @@ class TestBrokerCommand(unittest.TestCase):
         self.matchoutput(err, "DSDB", command)
 
     def iberrortest(self, command, **kwargs):
-        expected_code = 5
         err = self.badrequesttest(command, expected_code=5, **kwargs)
         self.matchoutput(err, "Infoblox error", command)
 
