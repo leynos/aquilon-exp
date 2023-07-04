@@ -19,7 +19,10 @@
 
 import unittest
 
+from broker.utils import MockHub
 from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_update_address
 
 if __name__ == "__main__":
     import utils
@@ -122,6 +125,81 @@ class TestAddConsoleServer(TestBrokerCommand, VerifyConsoleServerMixin):
 #            'The following chassis have not been found in the protobuf '
 #            'output: {}'.format(', '.join(search_console_server_primary_name)))
 
+    def test_900_ib_console_server(self):
+        mh = MockHub(self)
+
+        self.noouttest(['add_model', '--model', 'console_server_model', '--vendor', 'generic',
+                        '--type', 'console_server'])
+        mh.add_dns_domain('test-infoblox.cc', restricted=False)
+        mh.add_network()
+
+        rack = mh.add_rack()
+        console_server = "console-server.test-infoblox.cc"
+
+        command = ['add_console_server', "--console_server", console_server, "--rack", rack,
+                   "--model", "console_server_model", "--ip", "10.25.0.1", "--label", "consolerserverlabel"]
+
+        self.dsdb_expect_add(console_server, "10.25.0.1", interface="mgmt", fail=True)
+        self.dsdberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_add(console_server, "10.25.0.1", interface="mgmt")
+        ib_expect_add_address(console_server, "10.25.0.1", fail=True)
+        self.dsdb_expect_delete("10.25.0.1")  # Check dsdb rollback when ib fails
+        self.iberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_add(console_server, "10.25.0.1", interface="mgmt")
+        ib_expect_add_address(console_server, "10.25.0.1")
+        self.noouttest(command)
+        self.dsdb_verify()
+
+        command = ['update_console_server', "--console_server", console_server, "--ip", "10.25.0.2"]
+
+        self.dsdb_expect_update(console_server, iface="mgmt", ip="10.25.0.2", fail=True)
+        self.dsdberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_update(console_server, iface="mgmt", ip="10.25.0.2")
+        ib_expect_update_address(console_server, "10.25.0.1", new_ip="10.25.0.2", fail=True)
+        self.dsdb_expect_update(console_server, iface="mgmt", ip="10.25.0.1")  # Check dsdb rollback when ib fails
+        self.iberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_update(console_server, iface="mgmt", ip="10.25.0.2")
+        ib_expect_update_address(console_server, "10.25.0.1", new_ip="10.25.0.2")
+        self.noouttest(command)
+        self.dsdb_verify()
+
+        command = ['update_console_server', "--console_server", console_server,
+                   "--comments", "Test that updating comments does not send a request to IB"]
+        self.dsdb_expect_update(console_server, iface="mgmt",
+                                comments="Test that updating comments does not send a request to IB")
+        self.noouttest(command)
+        self.dsdb_verify()
+
+        command = ['del_console_server', "--console_server", console_server]
+
+        self.dsdb_expect_delete("10.25.0.2", fail=True)
+        self.dsdberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_delete("10.25.0.2")
+        ib_expect_del_address(console_server, "10.25.0.2", fail=True)
+        self.dsdb_expect_add(console_server, "10.25.0.2", interface="mgmt",  # Check dsdb rollback when ib fails
+                             comments="Test that updating comments does not send a request to IB")
+        self.iberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_delete("10.25.0.2")
+        ib_expect_del_address(console_server, "10.25.0.2")
+        self.noouttest(command)
+        self.dsdb_verify()
+
+        self.ib_verify()
+
+        self.noouttest(['del_model', '--model', 'console_server_model', '--vendor', 'generic'])
+        mh.delete()
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestAddChassis)
