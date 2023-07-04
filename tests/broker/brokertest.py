@@ -324,8 +324,10 @@ class TestBrokerCommand(unittest.TestCase):
     def assertEmptyOut(self, contents, command):
         self.assertEmptyStream("STDOUT", contents, command)
 
-    def commandtest(self, command, **kwargs):
+    def commandtest(self, command, exclude_err_str=None, **kwargs):
         (p, out, err) = self.runcommand(command, **kwargs)
+        if exclude_err_str:
+            err = err.replace(exclude_err_str, '')
         self.assertEmptyErr(err, command)
         self.assertEqual(p.returncode, 0,
                          "Non-zero return code for %s, "
@@ -333,8 +335,8 @@ class TestBrokerCommand(unittest.TestCase):
                          % (command, out))
         return out
 
-    def noouttest(self, command, **kwargs):
-        out = self.commandtest(command, **kwargs)
+    def noouttest(self, command, exclude_err_str=None, **kwargs):
+        out = self.commandtest(command, exclude_err_str, **kwargs)
         self.assertEqual(out, "",
                          "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n"
                          % (command, out))
@@ -375,13 +377,13 @@ class TestBrokerCommand(unittest.TestCase):
                             (command, err))
         return err
 
-    def badrequesttest(self, command, ignoreout=False, **kwargs):
+    def badrequesttest(self, command, ignoreout=False, expected_code=4, **kwargs):
         (p, out, err) = self.runcommand(command, **kwargs)
-        self.assertEqual(p.returncode, 4,
+        self.assertEqual(p.returncode, expected_code,
                          "Return code for %s was %d instead of %d"
                          "\nSTDOUT:\n@@@\n'%s'\n@@@"
                          "\nSTDERR:\n@@@\n'%s'\n@@@" %
-                         (command, p.returncode, 4, out, err))
+                         (command, p.returncode, expected_code, out, err))
         self.assertTrue(err.find("Bad Request") >= 0,
                         "STDERR for %s did not include Bad Request:"
                         "\n@@@\n'%s'\n@@@\n" %
@@ -397,8 +399,8 @@ class TestBrokerCommand(unittest.TestCase):
         self.matchoutput(err, "DSDB", command)
 
     def iberrortest(self, command, **kwargs):
-        err = self.badrequesttest(command, **kwargs)
-        self.matchoutput(err, "Infoblox request failed", command)
+        err = self.badrequesttest(command, expected_code=5, **kwargs)
+        self.matchoutput(err, "Infoblox error", command)
 
     def unauthorizedtest(self, command, auth=False, msgcheck=True, **kwargs):
         (p, out, err) = self.runcommand(command, auth=auth, **kwargs)

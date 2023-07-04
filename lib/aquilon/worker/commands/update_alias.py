@@ -16,7 +16,7 @@
 # limitations under the License.
 """Contains the logic for `aq update alias`."""
 
-from aquilon.exceptions_ import ArgumentError, NotFoundException
+from aquilon.exceptions_ import ArgumentError, NotFoundException, ProcessException
 from aquilon.aqdb.model import Alias, DnsEnvironment
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
@@ -25,8 +25,6 @@ from aquilon.worker.dbwrappers.dns import (create_target_if_needed,
 from aquilon.worker.dbwrappers.grn import lookup_grn
 from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
-
-from requests import RequestException
 
 
 class CommandUpdateAlias(BrokerCommand):
@@ -144,9 +142,9 @@ class CommandUpdateAlias(BrokerCommand):
                                      old_comments)
             dsdb_runner.commit_or_rollback("Could not update alias in DSDB")
 
-        if self.config.infoblox_feature_enabled("update_alias"):
+        ib_services = IBServices(logger)
+        if ib_services.feature_enabled("update_alias"):
             try:
-                ib_services = IBServices()
                 if ib_services.assert_dns_environment(dbalias.fqdn.dns_environment.name) and \
                         (not old_target or ib_services.assert_dns_environment(old_target.dns_environment.name)) and \
                         ib_services.assert_dns_environment(dbalias.target.dns_environment.name):
@@ -157,10 +155,7 @@ class CommandUpdateAlias(BrokerCommand):
                             str(dbalias.fqdn),
                             new_target=str(dbalias.target) if old_target is not None else None,
                             ttl=-1 if clear_ttl else ttl)
-            except (ArgumentError, RequestException) as e:
-                logger.warning("Error calling Infoblox update_dns_alias: {0}".format(str(e)))
+            except ProcessException as e:
                 if dsdb_runner:
-                    logger.warning("Rolling back DSDB transaction ...")
                     dsdb_runner.rollback()
                 raise e
-        return

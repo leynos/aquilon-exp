@@ -17,10 +17,10 @@
 # limitations under the License.
 """Basic config module for aqdb and the broker."""
 
-import logging
 import os
 import socket
 import pwd
+import re
 import sys
 from six.moves.configparser import SafeConfigParser  # pylint: disable=F0401
 from six.moves.configparser import NoSectionError, NoOptionError
@@ -28,7 +28,6 @@ from six.moves.configparser import NoSectionError, NoOptionError
 from aquilon.exceptions_ import AquilonError
 from aquilon.ldap_utils import check_ldapgroup
 
-LOGGER = logging.getLogger(__name__)
 _SRCDIR = os.path.realpath(os.path.join(os.path.dirname(__file__),
                                         "..", ".."))
 
@@ -152,7 +151,7 @@ class Config(NewStyleClassSafeConfigParser):
         if not configfile:
             configfile = os.environ.get("AQDCONF", "/etc/aqd.conf")
         self.baseconfig = os.path.realpath(configfile)
-        LOGGER.info("Loading config file {}".format(configfile))
+
         SafeConfigParser.__init__(self, defaults)
         src_defaults = lookup_file_path("aqd.conf.defaults")
         read_files = self.read([src_defaults, self.baseconfig])
@@ -202,8 +201,3 @@ class Config(NewStyleClassSafeConfigParser):
             return default
         return super(Config, self).getboolean(section, option)
 
-    def infoblox_feature_enabled(self, name):
-        enabled = False
-        if self.has_section("ib-services") and self.getboolean("ib-services", "enable"):
-            enabled = name in self.get("ib-services", "activities").split(",")
-        return enabled

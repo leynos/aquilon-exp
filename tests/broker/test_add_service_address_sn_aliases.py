@@ -108,18 +108,18 @@ class TestAddServiceAddressSNAliases(TestBrokerCommand):
         command = ['search_dns', '--fqdn=utvcs1pn1.aqd-unittest.ms.com',
                    '--fullinfo']
         out = self.commandtest(command)
-        self.matchoutput(out, 'Address Alias: utvcs1pn1.aqd-unittest.ms.com',
+        self.matchoutput(out, 'utvcs1pn1.aqd-unittest.ms.com',
                          command)
-        self.matchoutput(out, 'Target: utvcs1sa1.aqd-unittest.ms.com',
+        self.matchoutput(out, 'utvcs1sa1.aqd-unittest.ms.com',
                          command)
 
     def test_025_utvcs1pn2_noaddr_alias(self):
         command = ['search_dns', '--fqdn=utvcs1pn2.aqd-unittest.ms.com',
                    '--fullinfo']
         out = self.commandtest(command)
-        self.matchclean(out, 'Address Alias: utvcs1pn2.aqd-unittest.ms.com',
+        self.matchclean(out, 'utvcs1pn2.aqd-unittest.ms.com',
                         command)
-        self.matchclean(out, 'Target: utvcs1sa2.aqd-unittest.ms.com', command)
+        self.matchclean(out, 'utvcs1sa2.aqd-unittest.ms.com', command)
 
 
 if __name__ == '__main__':

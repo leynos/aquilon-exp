@@ -17,7 +17,7 @@
 """Contains the logic for `aq add address`."""
 
 from aquilon.aqdb.model.network_environment import get_net_dns_env
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ProcessException
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import (grab_address,
                                            set_reverse_ptr)
@@ -26,7 +26,6 @@ from aquilon.worker.dbwrappers.interface import generate_ip
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
-from requests import RequestException
 
 
 class CommandAddAddress(BrokerCommand):
@@ -74,12 +73,11 @@ class CommandAddAddress(BrokerCommand):
         for name, value in audit_results:
             self.audit_result(session, name, value, **arguments)
 
-        if self.config.infoblox_feature_enabled("add_address"):
+        ib_services = IBServices(logger)
+        if ib_services.feature_enabled("add_address"):
             try:
-                IBServices().add_a_ptr(str(dbdns_rec.fqdn), ip, reverse_ptr, ttl)
-            except (ArgumentError,RequestException) as e:
-                logger.warning("Error calling Infoblox add_a_ptr: {0}".format(str(e)))
+                ib_services.add_a_ptr(str(dbdns_rec.fqdn), ip, reverse_ptr, ttl)
+            except ProcessException as e:
                 if dsdb_runner:
-                    logger.warning("Rolling back DSDB transaction ...")
                     dsdb_runner.rollback()
                 raise e

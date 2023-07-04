@@ -28,7 +28,7 @@ from aquilon.aqdb.model import (
     ServiceAddress,
     SharedServiceName,
 )
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.utils import validate_nlist_key
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
@@ -46,7 +46,6 @@ from aquilon.worker.dbwrappers.search import search_next
 from aquilon.worker.ib_services import IBServiceGroup
 from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
-from requests import RequestException
 
 class CommandAddServiceAddress(BrokerCommand):
     requires_plenaries = True
@@ -248,15 +247,16 @@ class CommandAddServiceAddress(BrokerCommand):
             if dbifaces:
                 dbsrv.interfaces = dbifaces
 
+        ib_services = IBServices(logger)
         if newly_created:
-            ibg.add(
-                lambda: IBServices().add_a_ptr(ip=ip, **ibs_args),
-                lambda: IBServices().delete_a_ptr(**ibs_rollback_args))
+            ibg.add_action(
+                lambda: ib_services.add_a_ptr(ip=ip, **ibs_args),
+                lambda: ib_services.delete_a_ptr(**ibs_rollback_args))
         else:
             if (len(ibs_args.keys()) > 2):
-                ibg.add(
-                    lambda: IBServices().update_a_ptr(ip=ip, **ibs_args),
-                    lambda: IBServices().update_a_ptr(**ibs_rollback_args))
+                ibg.add_action(
+                    lambda: ib_services.update_a_ptr(ip=ip, **ibs_args),
+                    lambda: ib_services.update_a_ptr(**ibs_rollback_args))
 
         session.flush()
 
@@ -269,9 +269,9 @@ class CommandAddServiceAddress(BrokerCommand):
                               ttl=None, grn=None, eon_id=None,
                               comments=None, exporter=exporter,
                               flush_session=True, sync_ib=False)
-            ibg.add(
-                lambda: IBServices().add_a_ptr(str(sibling_ssn.fqdn), dbdns_rec.ip),
-                lambda: IBServices().delete_a_ptr(str(sibling_ssn.fqdn)))
+            ibg.add_action(
+                lambda: ib_services.add_a_ptr(str(sibling_ssn.fqdn), dbdns_rec.ip),
+                lambda: ib_services.delete_a_ptr(str(sibling_ssn.fqdn)))
 
         plenaries.add(holder.holder_object)
         plenaries.add(dbsrv)
@@ -296,7 +296,7 @@ class CommandAddServiceAddress(BrokerCommand):
 
             try:
                 ibg.commit_or_rollback()
-            except (ArgumentError, RequestException) as e:
+            except ProcessException as e:
                 dsdb_runner.rollback()
                 raise e
 

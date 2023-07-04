@@ -25,7 +25,7 @@ from aquilon.aqdb.model import (
     SharedServiceName,
 )
 from aquilon.aqdb.model.network import get_net_id_from_ip
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.dbwrappers.dns import update_address
@@ -34,7 +34,6 @@ from aquilon.worker.dbwrappers.resources import get_resource_holder
 from aquilon.worker.ib_services import IBServiceGroup
 from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
-from requests import RequestException
 
 
 class CommandUpdateServiceAddress(BrokerCommand):
@@ -123,9 +122,10 @@ class CommandUpdateServiceAddress(BrokerCommand):
                                     "shared service name")
 
         ibg = IBServiceGroup()
+        ib_services = IBServices(logger)
 
         if (len(ibs_args.keys()) > 2):
-            ibg.add(lambda: IBServices().update_a_ptr(**ibs_args))
+            ibg.add_action(lambda: ib_services.update_a_ptr(**ibs_args))
 
         session.flush()
 
@@ -146,7 +146,7 @@ class CommandUpdateServiceAddress(BrokerCommand):
                     # dns record network is internal
                     try:
                         ibg.commit_or_rollback()
-                    except (ArgumentError, RequestException) as e:
+                    except ProcessException as e:
                         dsdb_runner.rollback()
                         raise e
             except:

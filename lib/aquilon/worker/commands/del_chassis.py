@@ -16,14 +16,13 @@
 # limitations under the License.
 """Contains the logic for `aq del chassis`."""
 
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.worker.broker import BrokerCommand
 from aquilon.aqdb.model import Chassis, ARecord
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.hardware_entity import check_only_primary_ip
 from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
-from requests import RequestException
 
 
 class CommandDelChassis(BrokerCommand):
@@ -57,11 +56,10 @@ class CommandDelChassis(BrokerCommand):
 
         # chassis may not hve a primary interface assigned
         ip = dbchassis.primary_name.ip if type(dbchassis.primary_name) == ARecord else None
+        ib_services = IBServices(logger)
         if ip:
             try:
-                IBServices().delete_a_ptr(str(dbchassis.primary_name.fqdn), ip)
-            except (ArgumentError,RequestException) as e:
-                logger.warning("Error calling Infoblox delete_a_ptr: {0}".format(str(e)))
-                logger.warning("Rolling back DSDB transaction ...")
+                ib_services.delete_a_ptr(str(dbchassis.primary_name.fqdn), ip)
+            except ProcessException as e:
                 dsdb_runner.rollback()
                 raise e

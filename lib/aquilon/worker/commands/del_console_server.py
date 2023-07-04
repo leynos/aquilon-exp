@@ -16,7 +16,7 @@
 # limitations under the License.
 """Contains the logic for `aq del console server`."""
 
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.aqdb.model import ConsoleServer
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
@@ -24,7 +24,6 @@ from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.hardware_entity import check_only_primary_ip
 from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
-from requests import RequestException
 
 
 
@@ -65,11 +64,10 @@ class CommandDelConsoleServer(BrokerCommand):
             dsdb_runner.update_host(None, oldinfo)
             dsdb_runner.commit_or_rollback("Could not remove console server from DSDB")
 
-            if self.config.infoblox_feature_enabled("del_console_server"):
+            ib_services = IBServices(logger)
+            if ib_services.feature_enabled("del_console_server"):
                 try:
-                    IBServices().delete_a_ptr(str(dbcons.primary_name.fqdn), dbcons.primary_name.ip)
-                except (ArgumentError,RequestException) as e:
-                    logger.warning("Error calling Infoblox delete_a_ptr: {0}".format(str(e)))
-                    logger.warning("Rolling back DSDB transaction ...")
+                    ib_services.delete_a_ptr(str(dbcons.primary_name.fqdn), dbcons.primary_name.ip)
+                except ProcessException as e:
                     dsdb_runner.rollback()
                     raise e

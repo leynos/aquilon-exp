@@ -212,20 +212,20 @@ disk_usage_types = os, data, swap, cache, capacity
 dynamic_range_classes = vm, fab
 default_dynamic_range_class = vm
 
+# EON ID and GRN for AQD
+aqd_eonid = 1156
+manager_grn = grn:/ms/ei/aquilon/aqd
+
 [dsdb]
 enable = True
 dsdb_use_testdb = False
-manager_grn = grn:/ms/ei/aquilon/aqd
 
 [ib-services]
-# ib-services related configurations
 ca_chain = /etc/pki/ms/certs/ms-ca-chain.crt
-# AQ + IB integration is disabled now. Can be enabled anytime by toggling this flag.
+timeout = 120
 enable = False
-timeout = 180
-# url of Infoblox API.
-url = https://ib-services.na.ms.com
-#activities = add_address,update_address,del_address,update_chassis,update_console_server,update_network_device,add_chassis,del_chassis
+enabled_commands =
+urls =
 
 [change_management]
 # The contents of --justification will not be validated externally

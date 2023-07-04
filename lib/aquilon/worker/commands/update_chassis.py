@@ -26,10 +26,9 @@ from aquilon.worker.dbwrappers.hardware_entity import (
     update_primary_ip,
 )
 from aquilon.worker.dbwrappers.location import get_location
-from aquilon.exceptions_ import ArgumentError, NotFoundException
+from aquilon.exceptions_ import NotFoundException, ProcessException
 from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
-from requests import RequestException
 
 
 class CommandUpdateChassis(BrokerCommand):
@@ -90,17 +89,14 @@ class CommandUpdateChassis(BrokerCommand):
         dsdb_runner.update_host(dbchassis, oldinfo)
         dsdb_runner.commit_or_rollback("Could not update chassis in DSDB")
 
+        ib_services = IBServices(logger)
         if ip:
             try:
                 # If no existing IP, we must now create one.
                 if old_ip:
-                    IBServices().update_a_ptr(str(dbchassis.primary_name.fqdn), old_ip, ip)
+                    ib_services.update_a_ptr(str(dbchassis.primary_name.fqdn), old_ip, ip)
                 else:
-                    IBServices().add_a_ptr(str(dbchassis.primary_name.fqdn), ip)
-            except (ArgumentError,RequestException) as e:
-                logger.warning("Error calling Infoblox {0} {1}".format(
-                    "update_a_ptr" if old_ip else "add_a_ptr", str(e))
-                )
-                logger.warning("Rolling back DSDB transaction ...")
+                    ib_services.add_a_ptr(str(dbchassis.primary_name.fqdn), ip)
+            except ProcessException as e:
                 dsdb_runner.rollback()
                 raise e

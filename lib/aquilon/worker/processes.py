@@ -64,7 +64,7 @@ if DSDB_ENABLED:
         ms.version.addpkg("cryptography", "2.8-py27-64")
         ms.version.addpkg("enum34", "1.1.6")
         ms.version.addpkg("dns", "1.10.0")
-        ms.version.addpkg('ms.dsdb', '6.0.32')
+        ms.version.addpkg('ms.dsdb', '6.0.39')
     import ms.dsdb.client
 
 # subprocess.Popen is not thread-safe in Python 2, so we need locking
@@ -458,7 +458,7 @@ class DSDBRunner(object):
         self.dsdb_use_testdb = config.getboolean("dsdb", "dsdb_use_testdb")
         self.actions = []
         self.rollback_list = []
-        self.manager_grn = config.get('dsdb', 'manager_grn')
+        self.manager_grn = config.get('broker', 'manager_grn')
 
     def normalize_iface(self, iface):
         return INVALID_NAME_RE.sub("_", iface)
@@ -501,7 +501,7 @@ class DSDBRunner(object):
                 if cmd_line:
                     cmd = ["dsdb"]
                     cmd.extend(args)
-                    self.logger.client_info("DSDB: %s" %
+                    self.logger.client_info("Rollback DSDB transaction: %s" %
                                             " ".join(str(a) for a in args))
                     run_command(cmd, env=self.getenv(), logger=self.logger)
                 else:

@@ -19,7 +19,7 @@
 import logging
 
 from aquilon.worker.broker import BrokerCommand
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.aqdb.model import (Interface, AddressAssignment, DnsDomain, Fqdn,
                                 ARecord, NetworkEnvironment)
 from aquilon.utils import first_of
@@ -29,7 +29,6 @@ from aquilon.worker.dbwrappers.hardware_entity import get_hardware
 from aquilon.worker.dbwrappers.service_instance import check_no_provided_service
 from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
-from requests.exceptions import RequestException
 
 
 LOGGER = logging.getLogger(__name__)
@@ -138,14 +137,13 @@ class CommandDelInterfaceAddress(BrokerCommand):
                 dsdb_runner.update_host(dbhw_ent, oldinfo)
                 dsdb_runner.commit_or_rollback("Could not add host to DSDB")
 
-            if self.config.infoblox_feature_enabled("del_interface_address"):
+            ib_services = IBServices(logger)
+            if ib_services.feature_enabled("del_interface_address"):
                 try:
                     # TODO: Disable DHCP in Infoblox
                     for dns_rec in addr.dns_records:
-                        IBServices().delete_a_ptr(dns_rec, ip)
-                except (ArgumentError,RequestException) as e:
-                    logger.warning("Error calling Infoblox delete_a_ptr: {}".format(str(e)))
-                    logger.warning("Rolling back DSDB transaction ...")
+                        ib_services.delete_a_ptr(dns_rec, ip)
+                except ProcessException as e:
                     dsdb_runner.rollback()
                     raise e
 
