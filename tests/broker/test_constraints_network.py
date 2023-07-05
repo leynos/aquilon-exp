@@ -38,10 +38,9 @@ class TestNetworkConstraints(TestBrokerCommand):
         # Rack is bunkerized, network is not
         net = self.net["bunker_mismatch1"]
         ip = net.usable[0]
-        self.dsdb_expect_add("mismatch1.aqd-unittest.ms.com", ip,
-                             "eth0_bunkertest",
+        self.dsdb_expect_add("mismatch1.aqd-unittest.ms.com", ip, "eth0_bunkertest",
                              primary="aquilon61.aqd-unittest.ms.com")
-        ib_expect_add_address("mismatch1.aqd-unittest.ms.com", str(ip))
+        ib_expect_add_address("mismatch1.aqd-unittest.ms.com", str(ip), reverse_ptr="aquilon61.aqd-unittest.ms.com")
         command = ["add_interface_address",
                    "--machine", "aquilon61.aqd-unittest.ms.com",
                    "--interface", "eth0", "--label", "bunkertest",
@@ -59,10 +58,9 @@ class TestNetworkConstraints(TestBrokerCommand):
         # Rack and network has different bunkers
         net = self.net["bunker_mismatch2"]
         ip = net.usable[0]
-        self.dsdb_expect_add("mismatch2.aqd-unittest.ms.com", ip,
-                             "eth0_bunkertest",
+        self.dsdb_expect_add("mismatch2.aqd-unittest.ms.com", ip, "eth0_bunkertest",
                              primary="aquilon62.aqd-unittest.ms.com")
-        ib_expect_add_address("mismatch2.aqd-unittest.ms.com", str(ip))
+        ib_expect_add_address("mismatch2.aqd-unittest.ms.com", str(ip), reverse_ptr="aquilon62.aqd-unittest.ms.com")
         command = ["add_interface_address",
                    "--machine", "aquilon62.aqd-unittest.ms.com",
                    "--interface", "eth0", "--label", "bunkertest",
@@ -80,10 +78,9 @@ class TestNetworkConstraints(TestBrokerCommand):
         # Network is bunkerized, rack is not
         net = self.net["bunker_mismatch2"]
         ip = net.usable[1]
-        self.dsdb_expect_add("mismatch3.aqd-unittest.ms.com", ip,
-                             "eth0_bunkertest",
+        self.dsdb_expect_add("mismatch3.aqd-unittest.ms.com", ip, "eth0_bunkertest",
                              primary="server9.aqd-unittest.ms.com")
-        ib_expect_add_address("mismatch3.aqd-unittest.ms.com", str(ip))
+        ib_expect_add_address("mismatch3.aqd-unittest.ms.com", str(ip), reverse_ptr="server9.aqd-unittest.ms.com")
         command = ["add_interface_address",
                    "--machine", "server9.aqd-unittest.ms.com",
                    "--interface", "eth0", "--label", "bunkertest",

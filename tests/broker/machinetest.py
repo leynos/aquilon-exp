@@ -382,7 +382,7 @@ class MachineTestMixin(EventsTestMixin):
                 params["fqdn"] = fqdn
                 kwargs[nic_name + "_fqdn"] = fqdn
 
-            ib_expect_add_address(fqdn, str(params["ip"]))
+            ib_expect_add_address(fqdn, str(params["ip"]), reverse_ptr=hostname)
             self.dsdb_expect_add(fqdn, params["ip"], nic_name, params["mac"],
                                  primary=hostname)
             self.statustest(["add_interface_address", "--machine", machine,

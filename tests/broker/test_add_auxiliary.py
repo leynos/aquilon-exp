@@ -33,9 +33,8 @@ class TestAddAuxiliary(TestBrokerCommand):
     def test_100_add_unittest00e1(self):
         ip = self.net["unknown0"].usable[3]
         hostname = "unittest00-e1.one-nyp.ms.com"
-        ib_expect_add_address(hostname, str(ip))
-        self.dsdb_expect_add(hostname, ip, "eth1", ip.mac,
-                             "unittest00.one-nyp.ms.com")
+        ib_expect_add_address(hostname, str(ip), reverse_ptr="unittest00.one-nyp.ms.com")
+        self.dsdb_expect_add(hostname, ip, "eth1", ip.mac, "unittest00.one-nyp.ms.com")
         self.statustest(["add_interface_address", "--ip", ip, "--fqdn", hostname,
                          "--machine", "ut3c1n3", "--interface", "eth1"])
         self.dsdb_verify()
