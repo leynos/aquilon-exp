@@ -20,11 +20,14 @@
 import unittest
 
 from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_update_address
 
 if __name__ == "__main__":
     import utils
     utils.import_depends()
 
+from broker.utils import MockHub
 from brokertest import TestBrokerCommand
 from netdevtest import VerifyNetworkDeviceMixin
 
@@ -495,6 +498,79 @@ class TestAddNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
         self.dsdb_verify()
         self.ib_verify()
 
+    def test_900_ib_netdev(self):
+        mh = MockHub(self)
+
+        mh.add_dns_domain('test-infoblox.cc', restricted=False)
+        mh.add_network()
+        rack_name = mh.add_rack()
+
+        command = ["add_network_device", "--network_device", "network-device.test-infoblox.cc",
+                   "--model", "temp_switch", "--type", "agg", "--interface", "gi0", "--iftype", "physical",
+                   "--domain", mh.default_domain, "--personality", mh.default_personality,
+                   "--osname", mh.default_os, "--osversion", mh.default_os_version, "--rack", rack_name,
+                   "--archetype", mh.default_archetype, "--label", "networkdevicelabel", "--ip", "10.25.0.1"]
+
+        self.dsdb_expect_add("network-device.test-infoblox.cc", "10.25.0.1", interface="gi0", fail=True)
+        self.dsdberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_add("network-device.test-infoblox.cc", "10.25.0.1", interface="gi0")
+        ib_expect_add_address("network-device.test-infoblox.cc", "10.25.0.1", fail=True)
+        self.dsdb_expect_delete("10.25.0.1")
+        self.iberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_add("network-device.test-infoblox.cc", "10.25.0.1", interface="gi0")
+        ib_expect_add_address("network-device.test-infoblox.cc", "10.25.0.1")
+        self.noouttest(command)
+        self.dsdb_verify()
+
+
+
+        command = ["update_network_device", "--network_device", "network-device.test-infoblox.cc", "--ip", "10.25.0.2"]
+
+        self.dsdb_expect_update("network-device.test-infoblox.cc", ip="10.25.0.2", iface="gi0", fail=True)
+        self.dsdberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_update("network-device.test-infoblox.cc", ip="10.25.0.2", iface="gi0")
+        ib_expect_update_address("network-device.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2", fail=True)
+        self.dsdb_expect_update("network-device.test-infoblox.cc", ip="10.25.0.1", iface="gi0")
+        self.iberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_update("network-device.test-infoblox.cc", ip="10.25.0.2", iface="gi0")
+        ib_expect_update_address("network-device.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2")
+        self.noouttest(command)
+        self.dsdb_verify()
+
+        command = ["update_network_device", "--network_device", "network-device.test-infoblox.cc",
+                   "--comments", "Test no request to IB"]
+        self.dsdb_expect_update("network-device.test-infoblox.cc", iface="gi0", comments="Test no request to IB")
+        self.noouttest(command)
+        self.dsdb_verify()
+
+        command = ['del_network_device', '--network_device', 'network-device.test-infoblox.cc']
+
+        self.dsdb_expect_delete("10.25.0.2", fail=True)
+        self.dsdberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_delete("10.25.0.2")
+        ib_expect_del_address("network-device.test-infoblox.cc", "10.25.0.2", fail=True)
+        self.dsdb_expect_add("network-device.test-infoblox.cc", "10.25.0.2", interface="gi0",
+                             comments="Test no request to IB")
+        self.iberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_delete("10.25.0.2")
+        ib_expect_del_address("network-device.test-infoblox.cc", "10.25.0.2")
+        self.noouttest(command)
+        self.dsdb_verify()
+
+        self.ib_verify()
+        mh.delete()
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestAddNetworkDevice)
