@@ -379,11 +379,11 @@ if __name__ == "__main__":
                 for i in v:
                     if isinstance(i, str) and i.decode('ascii'):
                         pass
-            if (k != 'list' and isinstance(v, str)) and len(v) > 2599:
-                print("The character count in {0} is beyond the permitted "
-                      "value. Please specify argument value less "
-                      "than 2600".format(k))
-                sys.exit(0)
+            # if (k != 'list' and isinstance(v, str)) and len(v) > 2599:
+            #    print("The character count in {0} is beyond the permitted "
+            #          "value. Please specify argument value less "
+            #          "than 2600".format(k))
+            #    sys.exit(0)
         except UnicodeDecodeError as e:
             print("Non-ascii characters detected on command options."
                   "Only ASCII characters are allowed for --%s" %k)
