@@ -21,7 +21,7 @@ from itertools import chain
 import json
 import unittest
 
-from mock_ib_services import ib_expect_add_address, ib_expect_del_address
+from mock_ib_services import ib_expect_add_address, ib_expect_del_address, ib_expect_update_address
 
 if __name__ == "__main__":
     import utils
@@ -1102,10 +1102,14 @@ class TestAddVirtualHardware(EventsTestMixin, TestBrokerCommand):
         self.dsdb_verify()
 
     def test_451_fix_pg_mismatch(self):
-        new_ip = self.net["autopg2"].usable[0]
-        self.dsdb_expect_update("evm50.aqd-unittest.ms.com", "eth0", new_ip)
+        old_ip = str(self.net["unknown0"].usable[-1])
+        new_ip = str(self.net["autopg2"].usable[0])
+        fqdn = "evm50.aqd-unittest.ms.com"
+        self.dsdb_expect_update(fqdn, "eth0", new_ip)
+        ib_expect_update_address(fqdn, old_ip, new_ip=new_ip)
         self.noouttest(["update_machine", "--machine", "evm50", "--ip", new_ip])
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_452_make_evm50(self):
         command = ["make", "--hostname", "evm50.aqd-unittest.ms.com"]
