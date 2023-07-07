@@ -65,7 +65,7 @@ class CommandAddChassis(BrokerCommand):
         dsdb_runner.commit_or_rollback("Could not add chassis to DSDB")
 
         ib_services = IBServices(logger)
-        if ip:
+        if ib_services.feature_enabled("chassis") and ip:
             try:
                 ib_services.add_a_ptr(str(dbchassis.primary_name.fqdn), ip)
             except ProcessException as e:

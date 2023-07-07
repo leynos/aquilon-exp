@@ -104,7 +104,7 @@ class CommandDelAddress(BrokerCommand):
             dsdb_runner.commit_or_rollback()
 
         ib_services = IBServices(logger)
-        if ib_services.feature_enabled("del_address"):
+        if ib_services.feature_enabled("address"):
             try:
                 ib_services.delete_a_ptr(old_fqdn, ip)
             except ProcessException as e:

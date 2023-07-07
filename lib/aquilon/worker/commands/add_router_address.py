@@ -78,5 +78,5 @@ class CommandAddRouterAddress(BrokerCommand):
 
         with plenaries.transaction():
             ib_services = IBServices(logger)
-            if newly_created and ib_services.feature_enabled("add_router_address"):
+            if newly_created and ib_services.feature_enabled("router_address"):
                 ib_services.add_a_ptr(str(dbdns_rec.fqdn), ip)

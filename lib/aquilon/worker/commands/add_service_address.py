@@ -294,11 +294,12 @@ class CommandAddServiceAddress(BrokerCommand):
 
             dsdb_runner.commit_or_rollback("Could not add host to DSDB")
 
-            try:
-                ibg.commit_or_rollback()
-            except ProcessException as e:
-                dsdb_runner.rollback()
-                raise e
+            if ib_services.feature_enabled("service_address"):
+                try:
+                    ibg.commit_or_rollback()
+                except ProcessException as e:
+                    dsdb_runner.rollback()
+                    raise e
 
         for name, value in audit_results:
             self.audit_result(session, name, value, **kwargs)

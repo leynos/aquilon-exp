@@ -90,7 +90,7 @@ class CommandUpdateChassis(BrokerCommand):
         dsdb_runner.commit_or_rollback("Could not update chassis in DSDB")
 
         ib_services = IBServices(logger)
-        if ip:
+        if ib_services.feature_enabled("chassis") and ip:
             try:
                 # If no existing IP, we must now create one.
                 if old_ip:

@@ -68,7 +68,7 @@ class CommandUpdateConsoleServer(BrokerCommand):
         dsdb_runner.commit_or_rollback("Could not update console server in DSDB")
 
         ib_services = IBServices(logger)
-        if ip and ib_services.feature_enabled("update_console_server"):
+        if ip and ib_services.feature_enabled("console_server"):
             try:
                 ib_services.update_a_ptr(str(dbcons.primary_name.fqdn), old_ip, ip)
             except ProcessException as e:

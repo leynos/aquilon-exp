@@ -86,7 +86,7 @@ class CommandAddAlias(BrokerCommand):
             dsdb_runner.commit_or_rollback("Could not add alias to DSDB")
 
         ib_services = IBServices(logger)
-        if ib_services.feature_enabled("add_alias"):
+        if ib_services.feature_enabled("alias"):
             try:
                 if ib_services.assert_dns_environment(db_record.fqdn.dns_environment.name) and \
                         ib_services.assert_dns_environment(db_record.target.dns_environment.name):
