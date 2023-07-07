@@ -19,8 +19,7 @@
 
 import unittest
 
-from mock_ib_services import ib_expect_add_address
-from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_add_address, ib_expect_del_address, ib_expect_update_address
 
 if __name__ == "__main__":
     import utils
@@ -76,10 +75,12 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
         oldip = self.net["unknown0"].usable[0]
         newip = self.net["unknown0"].usable[11]
         self.dsdb_expect_update(self.badhost, "eth0", newip)
+        ib_expect_update_address(self.badhost, oldip, new_ip=newip)
 
         self.noouttest(["update", "machine", "--machine", "ut3c5n10",
                         "--ip", newip])
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_116_verify_server_plenary(self):
         command = ["cat", "--service", "utsvc", "--instance", "utsi1"]

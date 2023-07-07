@@ -52,6 +52,7 @@ from aquilon.worker.templates import (PlenaryHostData,
 from aquilon.worker.processes import DSDBRunner
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.commands.update_interface_machine import CommandUpdateInterfaceMachine
+from aquilon.worker.ib_services import IBServices
 from aquilon.utils import force_mac, validate_json
 
 _disk_map_re = re.compile(r'^([^/]+)/(?:([^/]+)/)?([^/]+):([^/]+)/(?:([^/]+)/)?([^/]+)$')
@@ -122,7 +123,7 @@ def update_disk_backing_stores(dbmachine, old_holder, new_holder, remap_disk):
 
 
 def update_interface_bindings(session, logger, dbmachine, autoip,
-                              autopg, pg):
+                              autopg, pg, ib_services):
     for dbinterface in dbmachine.interfaces:
         old_pg = dbinterface.port_group
         if not old_pg:
@@ -165,12 +166,18 @@ def update_interface_bindings(session, logger, dbmachine, autoip,
             logger.info("Changed {0:l} IP address from {1!s} to {2!s}."
                         .format(dbinterface, old_ip, new_ip))
 
+            fqdn = str(dbinterface.hardware_entity.primary_name.fqdn)
+            ib_services.group.add_action(
+                lambda: ib_services.update_a_ptr(fqdn, old_ip, new_ip=new_ip),
+                lambda: ib_services.update_a_ptr(fqdn, new_ip, new_ip=old_ip)
+            )
+
         dbinterface.check_pg_consistency(logger=logger)
 
 
 def move_vm(session, logger, dbmachine, resholder, remap_disk,
             allow_metacluster_change, autoip, plenaries,
-            autopg=False, pg=None):
+            autopg=False, pg=None, ib_services=None):
     old_holder = dbmachine.vm_container.holder.holder_object
     if resholder:
         new_holder = resholder.holder_object
@@ -195,7 +202,7 @@ def move_vm(session, logger, dbmachine, resholder, remap_disk,
         update_disk_backing_stores(dbmachine, old_holder, new_holder, remap_disk)
 
     if new_holder != old_holder or autoip:
-        update_interface_bindings(session, logger, dbmachine, autoip, autopg, pg)
+        update_interface_bindings(session, logger, dbmachine, autoip, autopg, pg, ib_services)
 
     if hasattr(new_holder, 'location_constraint'):
         dbmachine.location = new_holder.location_constraint
@@ -228,6 +235,8 @@ class CommandUpdateMachine(BrokerCommand):
         dbmachine = Machine.get_unique(session, machine, compel=True)
         oldinfo = DSDBRunner.snapshot_hw(dbmachine)
         old_location = dbmachine.location
+
+        ib_services = IBServices(logger)
 
         # Validate ChangeManagement
         cm = ChangeManagement(session, user, justification, reason, logger, self.command, **arguments)
@@ -377,16 +386,16 @@ class CommandUpdateMachine(BrokerCommand):
                     recipe.get("autopg"):
                 move_vm(session, logger, dbmachine, resholder, remap_disk,
                         allow_metacluster_change, autoip, plenaries,
-                        autopg=recipe.get("autopg"))
+                        autopg=recipe.get("autopg"), ib_services=ib_services)
             elif recipe and len(recipe.get('interface').split()) == 1 and \
                     recipe.get("pg"):
                 move_vm(session, logger, dbmachine, resholder, remap_disk,
                         allow_metacluster_change, autoip, plenaries,
-                        pg=recipe.get("pg"))
+                        pg=recipe.get("pg"), ib_services=ib_services)
                 pg_used = True
             else:
                 move_vm(session, logger, dbmachine, resholder, remap_disk,
-                        allow_metacluster_change, autoip, plenaries)
+                        allow_metacluster_change, autoip, plenaries, ib_services=ib_services)
         elif remap_disk:
             update_disk_backing_stores(dbmachine, None, None, remap_disk)
 
@@ -444,12 +453,14 @@ class CommandUpdateMachine(BrokerCommand):
 
         swap_addr = None
         old_ip = None
+        if (dbmachine.primary_name and hasattr(dbmachine.primary_name, "ip")):
+            old_ip = dbmachine.primary_name.ip
+
         temp_ip = None
         if swap_ip:
             if not dbmachine.primary_name:
                 raise ArgumentError("Cannot swap IP with a machine that "
                                     "has no primary name.")
-            old_ip = dbmachine.primary_name.ip
             dbnetwork = dbmachine.primary_name.network
             q = session.query(ARecord)
             q = q.filter_by(ip=swap_ip)
@@ -473,6 +484,12 @@ class CommandUpdateMachine(BrokerCommand):
             update_address(session, swap_addr, temp_ip, swap_addr.network)
             session.flush()
 
+            fqdn = str(swap_addr.fqdn)
+            ib_services.group.add_action(
+                lambda: ib_services.update_a_ptr(fqdn, swap_addr.ip, new_ip=temp_ip),
+                lambda: ib_services.update_a_ptr(fqdn, temp_ip,      new_ip=swap_addr.ip)
+            )
+
         if (ip or swap_ip):
             target_ip = ip if ip else swap_ip
             if dbmachine.host:
@@ -481,8 +498,20 @@ class CommandUpdateMachine(BrokerCommand):
                     plenaries.add(si, cls=PlenaryServiceInstanceToplevel)
             update_primary_ip(session, logger, dbmachine, target_ip)
 
+            fqdn = str(dbmachine.primary_name.fqdn)
+            ib_services.group.add_action(
+                lambda: ib_services.update_a_ptr(fqdn, old_ip,    new_ip=target_ip),
+                lambda: ib_services.update_a_ptr(fqdn, target_ip, new_ip=old_ip)
+            )
+
         if swap_ip:
             update_address(session, swap_addr, old_ip, swap_addr.network)
+
+            fqdn = str(swap_addr.fqdn)
+            ib_services.group.add_action(
+                lambda: ib_services.update_a_ptr(fqdn, temp_ip, new_ip=old_ip),
+                lambda: ib_services.update_a_ptr(fqdn, old_ip,  new_ip=temp_ip)
+            )
 
         if dbmachine.location != old_location and dbmachine.host:
             for vm in dbmachine.host.virtual_machines:
@@ -522,7 +551,14 @@ class CommandUpdateMachine(BrokerCommand):
                                                     new_ip=old_ip)
                 dsdb_runner.commit_or_rollback("Could not update machine in DSDB")
 
-        return
+        if ib_services.feature_enabled("machine"):
+            try:
+                ib_services.group.commit_or_rollback()
+            except Exception as e:
+                dsdb_runner.rollback()
+                raise e
+
+            return
 
     def adjust_slot(self, session, logger,
                     dbmachine, dbchassis, slot, multislot):

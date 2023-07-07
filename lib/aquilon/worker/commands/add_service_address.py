@@ -43,7 +43,6 @@ from aquilon.worker.dbwrappers.interface import (
 from aquilon.worker.dbwrappers.location import get_default_dns_domain
 from aquilon.worker.dbwrappers.resources import get_resource_holder
 from aquilon.worker.dbwrappers.search import search_next
-from aquilon.worker.ib_services import IBServiceGroup
 from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
 
@@ -197,7 +196,6 @@ class CommandAddServiceAddress(BrokerCommand):
         ip = dbdns_rec.ip
         ibs_args = {'name': str(dbdns_rec.fqdn)}
         ibs_rollback_args = {'name': str(dbdns_rec.fqdn), 'ip': ip}
-        ibg = IBServiceGroup()
 
         if map_to_primary and map_to_shared_name:
             raise ArgumentError("Cannot use --map_to_primary and "
@@ -249,12 +247,12 @@ class CommandAddServiceAddress(BrokerCommand):
 
         ib_services = IBServices(logger)
         if newly_created:
-            ibg.add_action(
+            ib_services.group.add_action(
                 lambda: ib_services.add_a_ptr(ip=ip, **ibs_args),
                 lambda: ib_services.delete_a_ptr(**ibs_rollback_args))
         else:
             if (len(ibs_args.keys()) > 2):
-                ibg.add_action(
+                ib_services.group.add_action(
                     lambda: ib_services.update_a_ptr(ip=ip, **ibs_args),
                     lambda: ib_services.update_a_ptr(**ibs_rollback_args))
 
@@ -269,7 +267,7 @@ class CommandAddServiceAddress(BrokerCommand):
                               ttl=None, grn=None, eon_id=None,
                               comments=None, exporter=exporter,
                               flush_session=True, sync_ib=False)
-            ibg.add_action(
+            ib_services.group.add_action(
                 lambda: ib_services.add_a_ptr(str(sibling_ssn.fqdn), dbdns_rec.ip),
                 lambda: ib_services.delete_a_ptr(str(sibling_ssn.fqdn)))
 
@@ -296,7 +294,7 @@ class CommandAddServiceAddress(BrokerCommand):
 
             if ib_services.feature_enabled("service_address"):
                 try:
-                    ibg.commit_or_rollback()
+                    ib_services.group.commit_or_rollback()
                 except ProcessException as e:
                     dsdb_runner.rollback()
                     raise e

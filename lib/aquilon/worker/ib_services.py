@@ -51,6 +51,7 @@ class IBServices(object):
 
     def __init__(self, logger):
         self.log = logger
+        self.group = IBServiceGroup()
 
         self.session = Session()
         if self.ca_chain:

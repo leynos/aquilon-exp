@@ -29,7 +29,6 @@ from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.resources import get_resource_holder
 from aquilon.worker.dbwrappers.service_instance import check_no_provided_service
-from aquilon.worker.ib_services import IBServiceGroup
 from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
 
@@ -62,7 +61,6 @@ class CommandDelServiceAddress(BrokerCommand):
         check_no_provided_service(dbsrv)
 
         dsdb_runner = DSDBRunner(logger=logger)
-        ibg = IBServiceGroup()
 
         plenaries.add(holder.holder_object)
         plenaries.add(dbsrv)
@@ -92,7 +90,7 @@ class CommandDelServiceAddress(BrokerCommand):
                         continue
 
                     delete_dns_record(rr, exporter=exporter)
-                    ibg.add_action(
+                    ib_services.group.add_action(
                         lambda: ib_services.delete_a_ptr(str(rr.fqdn), rr.target_ip),
                         lambda: ib_services.add_a_ptr(str(rr.fqdn), rr.target_ip, ttl=rr.ttl)
                     )
@@ -109,12 +107,12 @@ class CommandDelServiceAddress(BrokerCommand):
             if (not dbdns_rec.service_addresses and
                     dbdns_rec.network.is_internal):
                 dsdb_runner.delete_host_details(old_fqdn, old_ip)
-                ibg.add_action(lambda: ib_services.delete_a_ptr(old_fqdn, old_ip))
+                ib_services.group.add_action(lambda: ib_services.delete_a_ptr(old_fqdn, old_ip))
             dsdb_runner.commit_or_rollback("Could not delete host from DSDB")
 
             if ib_services.feature_enabled("service_address"):
                 try:
-                    ibg.commit_or_rollback()
+                    ib_services.group.commit_or_rollback()
                 except ProcessException as e:
                     dsdb_runner.rollback()
                     raise e

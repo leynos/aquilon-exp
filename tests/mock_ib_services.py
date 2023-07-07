@@ -109,11 +109,12 @@ def ib_expect_add_address(fqdn, ip, reverse_ptr=None, create_ptr=True, ttl=None,
 def ib_expect_update_address(fqdn, original_ip, new_ip=None, reverse_ptr=None,
                              new_ttl=None, response_code=204, response_body="", update_ptr=True,
                              fail = False):
+    original_ip = str(original_ip)
     if fail:
         response_code = 400
     payload = {"create_if_doesnt_exist": True}
     if new_ip:
-        payload["address"] = new_ip
+        payload["address"] = str(new_ip)
     if reverse_ptr is not None:
         payload["assign_ptr_to_fqdn"] = reverse_ptr
     payload["update_ptr"] = update_ptr
