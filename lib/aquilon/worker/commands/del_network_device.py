@@ -70,7 +70,7 @@ class CommandDelNetworkDevice(BrokerCommand):
             dsdb_runner.commit_or_rollback("Could not remove network device from DSDB")
 
             ib_services = IBServices(logger)
-            if dbdns_rec and ib_services.feature_enabled("del_network_device"):
+            if dbdns_rec and ib_services.feature_enabled("network_device"):
                 try:
                     ib_services.delete_a_ptr(str(dbdns_rec.fqdn), dbdns_rec.ip)
                 except ProcessException as e:

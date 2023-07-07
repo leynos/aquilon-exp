@@ -109,8 +109,10 @@ class CommandDelServiceAddress(BrokerCommand):
                 dsdb_runner.delete_host_details(old_fqdn, old_ip)
                 ib_services.group.add_action(lambda: ib_services.delete_a_ptr(old_fqdn, old_ip))
             dsdb_runner.commit_or_rollback("Could not delete host from DSDB")
-            try:
-                ib_services.group.commit_or_rollback()
-            except ProcessException as e:
-                dsdb_runner.rollback()
-                raise e
+
+            if ib_services.feature_enabled("service_address"):
+                try:
+                    ib_services.group.commit_or_rollback()
+                except ProcessException as e:
+                    dsdb_runner.rollback()
+                    raise e

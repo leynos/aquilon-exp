@@ -142,11 +142,13 @@ class CommandUpdateServiceAddress(BrokerCommand):
                     # note that this code path is only executed when
                     # either `ip` or `comments` have changed and the
                     # dns record network is internal
-                    try:
-                        ib_services.group.commit_or_rollback()
-                    except ProcessException as e:
-                        dsdb_runner.rollback()
-                        raise e
+
+                    if ib_services.feature_enabled("service_address"):
+                        try:
+                            ib_services.group.commit_or_rollback()
+                        except ProcessException as e:
+                            dsdb_runner.rollback()
+                            raise e
             except:
                 plenaries.restore_stash()
                 raise
@@ -155,6 +157,7 @@ class CommandUpdateServiceAddress(BrokerCommand):
         # `aq update service address --map_to_primary` or any other such
         # combination that does not trigger the commit_or_rollback call above
         # TODO, should this check if the network is internal ?
-        ib_services.group.commit_or_rollback()
+        if ib_services.feature_enabled("service_address"):
+            ib_services.group.commit_or_rollback()
 
         return

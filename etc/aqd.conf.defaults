@@ -224,7 +224,7 @@ dsdb_use_testdb = False
 ca_chain = /etc/pki/ms/certs/ms-ca-chain.crt
 timeout = 120
 enable = False
-enabled_commands =
+enabled_features =
 urls =
 
 [change_management]

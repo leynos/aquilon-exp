@@ -74,7 +74,7 @@ class CommandAddAddress(BrokerCommand):
             self.audit_result(session, name, value, **arguments)
 
         ib_services = IBServices(logger)
-        if ib_services.feature_enabled("add_address"):
+        if ib_services.feature_enabled("address"):
             try:
                 ib_services.add_a_ptr(str(dbdns_rec.fqdn), ip, reverse_ptr, ttl)
             except ProcessException as e:

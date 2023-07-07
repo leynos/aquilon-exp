@@ -66,7 +66,7 @@ class CommandDelAlias(BrokerCommand):
             dsdb_runner.commit_or_rollback("Could not delete alias from DSDB")
 
         ib_services = IBServices(logger)
-        if ib_services.feature_enabled("del_alias"):
+        if ib_services.feature_enabled("alias"):
             try:
                 if ib_services.assert_dns_environment(dbdns_rec.fqdn.dns_environment.name):
                     ib_services.del_dns_alias(str(dbdns_rec))

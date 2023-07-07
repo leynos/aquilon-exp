@@ -551,13 +551,14 @@ class CommandUpdateMachine(BrokerCommand):
                                                     new_ip=old_ip)
                 dsdb_runner.commit_or_rollback("Could not update machine in DSDB")
 
-        try:
-            ib_services.group.commit_or_rollback()
-        except Exception as e:
-            dsdb_runner.rollback()
-            raise e
+        if ib_services.feature_enabled("machine"):
+            try:
+                ib_services.group.commit_or_rollback()
+            except Exception as e:
+                dsdb_runner.rollback()
+                raise e
 
-        return
+            return
 
     def adjust_slot(self, session, logger,
                     dbmachine, dbchassis, slot, multislot):

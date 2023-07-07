@@ -138,7 +138,7 @@ class CommandDelInterfaceAddress(BrokerCommand):
                 dsdb_runner.commit_or_rollback("Could not add host to DSDB")
 
             ib_services = IBServices(logger)
-            if ib_services.feature_enabled("del_interface_address"):
+            if ib_services.feature_enabled("interface_address"):
                 try:
                     # TODO: Disable DHCP in Infoblox
                     for dns_rec in addr.dns_records:

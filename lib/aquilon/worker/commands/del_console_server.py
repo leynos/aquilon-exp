@@ -65,7 +65,7 @@ class CommandDelConsoleServer(BrokerCommand):
             dsdb_runner.commit_or_rollback("Could not remove console server from DSDB")
 
             ib_services = IBServices(logger)
-            if ib_services.feature_enabled("del_console_server"):
+            if ib_services.feature_enabled("console_server"):
                 try:
                     ib_services.delete_a_ptr(str(dbcons.primary_name.fqdn), dbcons.primary_name.ip)
                 except ProcessException as e:

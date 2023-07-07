@@ -203,7 +203,7 @@ class IBServices(object):
         enabled = False
 
         if self.enabled:
-            enabled = name in re.split(r"\s*,\s*", self.config.get("ib-services", "enabled_commands"))
+            enabled = name in re.split(r"\s*,\s*", self.config.get("ib-services", "enabled_features"))
 
         return enabled
 

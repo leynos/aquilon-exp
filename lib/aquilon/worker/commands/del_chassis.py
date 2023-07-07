@@ -57,7 +57,7 @@ class CommandDelChassis(BrokerCommand):
         # chassis may not hve a primary interface assigned
         ip = dbchassis.primary_name.ip if type(dbchassis.primary_name) == ARecord else None
         ib_services = IBServices(logger)
-        if ip:
+        if ib_services.feature_enabled("chassis") and ip:
             try:
                 ib_services.delete_a_ptr(str(dbchassis.primary_name.fqdn), ip)
             except ProcessException as e:

@@ -94,7 +94,7 @@ class CommandUpdateAddress(BrokerCommand):
             dsdb_runner.commit_or_rollback()
 
         ib_services = IBServices(logger)
-        if ib_services.feature_enabled("update_address") and (ip or reverse_ptr or clear_ttl or ttl):
+        if ib_services.feature_enabled("address") and (ip or reverse_ptr or clear_ttl or ttl):
             try:
                 a_fqdn = str(dbdns_rec.fqdn)
                 ib_services.update_a_ptr(a_fqdn, old_ip, ip if ip else None, reverse_ptr, -1 if clear_ttl else ttl)

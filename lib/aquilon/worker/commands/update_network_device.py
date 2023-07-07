@@ -153,7 +153,7 @@ class CommandUpdateNetworkDevice(BrokerCommand):
             dsdb_runner.commit_or_rollback("Could not update network device in DSDB")
 
             ib_services = IBServices(logger)
-            if ip and ib_services.feature_enabled("update_network_device"):
+            if ip and ib_services.feature_enabled("network_device"):
                 try:
                     ib_services.update_a_ptr(str(dbnetdev.primary_name.fqdn), old_ip, ip)
                 except ProcessException as e:

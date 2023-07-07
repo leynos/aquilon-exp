@@ -81,7 +81,7 @@ class CommandAddConsoleServer(BrokerCommand):
 
             # Oddly the code above assumes ip is optional but it's a required field.
             ib_services = IBServices(logger)
-            if ib_services.feature_enabled("add_console_server"):
+            if ib_services.feature_enabled("console_server"):
                 try:
                     ib_services.add_a_ptr(str(dbcons.primary_name.fqdn), ip)
                 except ProcessException as e:
