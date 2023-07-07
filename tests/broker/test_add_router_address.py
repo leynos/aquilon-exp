@@ -19,12 +19,14 @@
 
 import unittest
 
-from mock_ib_services import ib_expect_add_address, ib_expect_del_address
+from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_del_address
 
 if __name__ == "__main__":
     import utils
     utils.import_depends()
 
+from broker.utils import MockHub
 from brokertest import TestBrokerCommand
 
 
@@ -223,6 +225,35 @@ class TestAddRouterAddress(TestBrokerCommand):
         self.matchoutput(out, "Router: ut3gd1r01-v111-hsrp.aqd-unittest.ms.com", command)
         self.matchclean(out, "excx", command)
 
+    def test_900_ib_routeraddress(self):
+        mh = MockHub(self)
+
+        mh.add_dns_domain('test-infoblox.cc', restricted=False)
+        mh.add_network()
+
+        command = ["add_router_address", "--fqdn", "router-address.test-infoblox.cc", "--ip", "10.25.0.1"]
+
+        ib_expect_add_address("router-address.test-infoblox.cc", "10.25.0.1", fail=True)
+        self.iberrortest(command)
+
+        ib_expect_add_address("router-address.test-infoblox.cc", "10.25.0.1")
+        self.noouttest(command)
+
+        command = ["update_router_address", "--fqdn", "router-address.test-infoblox.cc",
+                   "--comments", "Test no request to IB"]
+        self.noouttest(command)
+
+        command = ['del_router_address', '--fqdn', 'router-address.test-infoblox.cc']
+
+        ib_expect_del_address("router-address.test-infoblox.cc", "10.25.0.1", fail=True)
+        self.iberrortest(command)
+
+        ib_expect_del_address("router-address.test-infoblox.cc", "10.25.0.1")
+        self.noouttest(command)
+        self.dsdb_verify(empty=True)
+
+        self.ib_verify()
+        mh.delete()
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestAddRouterAddress)

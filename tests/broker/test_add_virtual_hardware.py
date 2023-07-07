@@ -613,7 +613,7 @@ class TestAddVirtualHardware(EventsTestMixin, TestBrokerCommand):
             else:
                 port = i - 12
                 machine = "ut12s02p%d" % port
-            ib_expect_add_address(hostname, str(net.usable[i - 1]))
+            ib_expect_add_address(hostname, str(net.usable[i - 1]), reverse_ptr="evh%d.aqd-unittest.ms.com" % (i + 50))
             self.dsdb_expect_add(hostname, net.usable[i - 1],
                                  "eth1", net.usable[i - 1].mac,
                                  "evh%d.aqd-unittest.ms.com" % (i + 50))
