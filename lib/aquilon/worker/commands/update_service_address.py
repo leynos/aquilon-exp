@@ -31,7 +31,6 @@ from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.dbwrappers.dns import update_address
 from aquilon.worker.dbwrappers.interface import get_interfaces
 from aquilon.worker.dbwrappers.resources import get_resource_holder
-from aquilon.worker.ib_services import IBServiceGroup
 from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
 
@@ -121,11 +120,10 @@ class CommandUpdateServiceAddress(BrokerCommand):
                 raise ArgumentError("--map_to_shared_name specified, but no "
                                     "shared service name")
 
-        ibg = IBServiceGroup()
         ib_services = IBServices(logger)
 
         if (len(ibs_args.keys()) > 2):
-            ibg.add_action(lambda: ib_services.update_a_ptr(**ibs_args))
+            ib_services.group.add_action(lambda: ib_services.update_a_ptr(**ibs_args))
 
         session.flush()
 
@@ -145,7 +143,7 @@ class CommandUpdateServiceAddress(BrokerCommand):
                     # either `ip` or `comments` have changed and the
                     # dns record network is internal
                     try:
-                        ibg.commit_or_rollback()
+                        ib_services.group.commit_or_rollback()
                     except ProcessException as e:
                         dsdb_runner.rollback()
                         raise e
@@ -157,6 +155,6 @@ class CommandUpdateServiceAddress(BrokerCommand):
         # `aq update service address --map_to_primary` or any other such
         # combination that does not trigger the commit_or_rollback call above
         # TODO, should this check if the network is internal ?
-        ibg.commit_or_rollback()
+        ib_services.group.commit_or_rollback()
 
         return
