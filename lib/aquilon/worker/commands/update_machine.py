@@ -452,7 +452,6 @@ class CommandUpdateMachine(BrokerCommand):
                                "mutiple interfaces on the host")
 
         swap_addr = None
-#        old_ip = dbmachine.primary_name.ip if (dbmachine.primary_name and hasattr(dbmachine.primary_name, "ip")) else None
         old_ip = None
         if (dbmachine.primary_name and hasattr(dbmachine.primary_name, "ip")):
             old_ip = dbmachine.primary_name.ip
