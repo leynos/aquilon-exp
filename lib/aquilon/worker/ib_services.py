@@ -73,7 +73,7 @@ class IBServices(object):
         return urlunparse(parse)
 
     def _build_a_ptr_payload(self, name, ip, assign_ptr_to_fqdn, ttl):
-        payload = dict()
+        payload = { "eonid": self.eonid }
         if name:
             payload["name"] = name
         if ip:
@@ -113,6 +113,7 @@ class IBServices(object):
             return
         params = {
             "delete_ptr": str(delete_ptr).lower(),
+            "eonid":      self.eonid,
         }
         url = "/dns/a_ptr/{}/{}".format(str(name), str(ip))
         url = self._generate_url_from_params(url, params)
@@ -123,7 +124,8 @@ class IBServices(object):
     def add_dns_alias(self, name, target, ttl=None):
         url = "/dns/aliases"
         payload = {
-            "name": name,
+            "eonid":  self.eonid,
+            "name":   name,
             "target": target,
         }
         if ttl:
@@ -133,14 +135,15 @@ class IBServices(object):
 
     @with_timer
     def del_dns_alias(self, name):
+        params = { "eonid": self.eonid }
         url = "/dns/aliases/{}".format(str(name))
+        url = self._generate_url_from_params(url, params)
 
         self._http_request("DELETE", url)
 
     @with_timer
     def update_dns_alias(self, name, new_target=None, ttl=None):
-
-        payload = {}
+        payload = { "eonid": self.eonid }
         if new_target is not None:
             payload["target"] = new_target
         if ttl is not None:
