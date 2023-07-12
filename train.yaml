@@ -32,6 +32,9 @@ test_types:
          name: restart
          test: ./tests/restarttests.sh
     - test_type:
+         name: infoblox-end-to-end
+         test: set -o pipefail; ./tests/runtests.py --infoblox-integration --no-interactive --config=tests/ib-end-to-end.conf --failfast | tee ./tests/aqdtests.log
+    - test_type:
          name: jenkins
          test: 
          - script: |

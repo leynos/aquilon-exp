@@ -144,7 +144,7 @@ class IBServices(object):
 
     @with_timer
     def update_dns_alias(self, name, new_target=None, ttl=None):
-        payload = { "eonid": self.eonid }
+        payload = {"eonid": self.eonid, "create_if_doesnt_exist": True}
         if new_target is not None:
             payload["target"] = new_target
         if ttl is not None:

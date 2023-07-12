@@ -315,7 +315,9 @@ class TestUpdateAlias(EventsTestMixin, TestBrokerCommand):
 
     def test_600_update_ttl(self):
         fqdn = "alias2alias.aqd-unittest.ms.com"
-        ib_expect_update_alias(fqdn, ttl=120)
+        # Although only the ttl is being updated, we still expect IB to receive the target, in case the alias does not
+        # exist in IB and needs to be created rather than updated.
+        ib_expect_update_alias(fqdn, target="alias2host.aqd-unittest.ms.com", ttl=120)
         command = ["update", "alias",
                    "--fqdn", fqdn,
                    "--ttl", 120]
@@ -348,7 +350,7 @@ class TestUpdateAlias(EventsTestMixin, TestBrokerCommand):
 
     def test_700_remove_ttl(self):
         fqdn = "alias2alias.aqd-unittest.ms.com"
-        ib_expect_update_alias(fqdn, ttl=-1)
+        ib_expect_update_alias(fqdn, target="alias2host.aqd-unittest.ms.com", ttl=-1)
         command = ["update", "alias",
                    "--fqdn", fqdn,
                    "--clear_ttl"]
