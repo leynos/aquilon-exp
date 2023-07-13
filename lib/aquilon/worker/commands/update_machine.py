@@ -497,11 +497,11 @@ class CommandUpdateMachine(BrokerCommand):
                     si = srv.service_instance
                     plenaries.add(si, cls=PlenaryServiceInstanceToplevel)
             update_primary_ip(session, logger, dbmachine, target_ip)
+            swap_fqdn = str(dbmachine.primary_name.fqdn)
 
-            fqdn = str(dbmachine.primary_name.fqdn)
             ib_services.group.add_action(
-                lambda: ib_services.update_a_ptr(fqdn, old_ip,    new_ip=target_ip),
-                lambda: ib_services.update_a_ptr(fqdn, target_ip, new_ip=old_ip)
+                lambda: ib_services.update_a_ptr(swap_fqdn, old_ip,    new_ip=target_ip),
+                lambda: ib_services.update_a_ptr(swap_fqdn, target_ip, new_ip=old_ip)
             )
 
         if swap_ip:

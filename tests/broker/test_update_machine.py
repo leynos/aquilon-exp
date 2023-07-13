@@ -521,13 +521,14 @@ class TestUpdateMachine(EventsTestMixin, TestBrokerCommand):
         swap_ip = self.net["unknown0"].usable[13]
         old_ip = self.net["unknown0"].usable[11]
         fqdn = "arecord13.aqd-unittest.ms.com"
+        swap_fqdn = "unittest02.one-nyp.ms.com"
 
         self.dsdb_expect_update(fqdn, ip=temp_ip)
-        self.dsdb_expect_update("unittest02.one-nyp.ms.com", iface="eth0", ip=swap_ip)
+        self.dsdb_expect_update(swap_fqdn, iface="eth0", ip=swap_ip)
         self.dsdb_expect_update(fqdn, ip=old_ip)
 
         ib_expect_update_address(fqdn, old_ip, new_ip=temp_ip)
-        ib_expect_update_address(fqdn, old_ip, new_ip=swap_ip)
+        ib_expect_update_address(swap_fqdn, old_ip, new_ip=swap_ip)
         ib_expect_update_address(fqdn, temp_ip, new_ip=old_ip)
 
         command = ["update_machine", "--machine", "ut3c5n10", "--swap_ip", swap_ip]
@@ -547,13 +548,14 @@ class TestUpdateMachine(EventsTestMixin, TestBrokerCommand):
         swap_ip = ip=self.net["unknown0"].usable[11]
         old_ip = self.net["unknown0"].usable[13]
         fqdn = "arecord13.aqd-unittest.ms.com"
+        swap_fqdn = "unittest02.one-nyp.ms.com"
 
         self.dsdb_expect_update(fqdn, ip=temp_ip)
-        self.dsdb_expect_update("unittest02.one-nyp.ms.com", iface="eth0", ip=swap_ip)
+        self.dsdb_expect_update(swap_fqdn, iface="eth0", ip=swap_ip)
         self.dsdb_expect_update(fqdn, ip=old_ip)
 
         ib_expect_update_address(fqdn, old_ip, new_ip=temp_ip)
-        ib_expect_update_address(fqdn, old_ip, new_ip=swap_ip)
+        ib_expect_update_address(swap_fqdn, old_ip, new_ip=swap_ip)
         ib_expect_update_address(fqdn, temp_ip, new_ip=old_ip)
 
         command = ["update_machine", "--machine", "ut3c5n10", "--swap_ip", swap_ip]
