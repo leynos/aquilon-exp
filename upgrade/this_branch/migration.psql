@@ -1,5 +1,0 @@
--- network
-
-ALTER TABLE network DROP CONSTRAINT network_cidr_ip_ck;
-ALTER TABLE network ADD CONSTRAINT network_cidr_ip_ck
-	CHECK (cidr >= 1 AND cidr <= CASE WHEN (ip >= '0.0.0.0' AND ip <= '255.255.255.255') THEN 32 ELSE 128 END);
