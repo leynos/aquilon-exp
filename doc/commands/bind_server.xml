@@ -39,6 +39,7 @@
                 <arg><option>--resourcegroup <replaceable>GROUP</replaceable></option></arg>
             </arg>
             <arg><option>--alias <replaceable>ALIAS</replaceable></option></arg>
+            <arg><option>--fqdn <replaceable>FQDN</replaceable></option></arg>
             <arg><option>--position <replaceable>POSITION</replaceable></option></arg>
             <xi:include href="../common/change_management.xml"/>
             <xi:include href="../common/global_options.xml"/>
@@ -51,6 +52,7 @@
             <arg choice="plain"><option>--service_address <replaceable>NAME</replaceable></option></arg>
             <arg><option>--resourcegroup <replaceable>GROUP</replaceable></option></arg>
             <arg><option>--alias <replaceable>ALIAS</replaceable></option></arg>
+            <arg><option>--fqdn <replaceable>FQDN</replaceable></option></arg>
             <arg><option>--position <replaceable>POSITION</replaceable></option></arg>
         </cmdsynopsis>
         <cmdsynopsis>
@@ -58,6 +60,7 @@
             <arg choice="plain"><option>--service <replaceable>SERVICE</replaceable></option></arg>
             <arg choice="plain"><option>--instance <replaceable>INSTANCE</replaceable></option></arg>
             <arg choice="plain"><option>--alias <replaceable>ALIAS</replaceable></option></arg>
+            <arg choice="plain"><option>--fqdn <replaceable>FQDN</replaceable></option></arg>
             <arg><option>--position <replaceable>POSITION</replaceable></option></arg>
         </cmdsynopsis>
     </refsynopsisdiv>
@@ -66,7 +69,7 @@
         <title>Description</title>
         <para>
             The <command>aq bind server</command> command binds a server providing some service to a specific service instance.
-            A service may be provided by a host, a service address of a cluster, or an alias. If the service is provided by
+            A service may be provided by a host, a service address of a cluster, an alias or a fqdn. If the service is provided by
             a host, it is possible to specify the IP address or the service address where the service is bound to. The difference
             between the two is that service addresses may float between interfaces (controlled by a software component running
             on the host), while plain IP addresses are always bound to a specific network interface.
@@ -197,6 +200,18 @@
                         be specified in the client templates, even if it is otherwise known to the broker. Make sure not
                         to use <option>--alias</option> for any services that need to use IP addresses instead of names
                         registered in the DNS. One such example is configuring the DNS resolver itself.
+                    </para>
+                </listitem>
+            </varlistentry>
+            <varlistentry>
+                <term>
+                    <option>--fqdn <replaceable>FQDN</replaceable></option>
+                </term>
+                <listitem>
+                    <para>
+                        If this option is specified, then the serivce will be provided by the given fqdn. The fqdn must
+                        be defined in Aquilon through the "add address" command.  This is useful if the actual service
+                        is maintained/configured outside of Aquilon/Quattor.
                     </para>
                 </listitem>
             </varlistentry>
