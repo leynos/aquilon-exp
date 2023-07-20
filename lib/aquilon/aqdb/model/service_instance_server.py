@@ -27,6 +27,7 @@ from sqlalchemy.ext.orderinglist import ordering_list
 from aquilon.exceptions_ import AquilonError
 from aquilon.aqdb.model import (Base, ServiceInstance, Host, Cluster,
                                 AddressAssignment, ServiceAddress, Alias)
+from aquilon.aqdb.model import ARecord
 
 _TN = 'service_instance_server'
 
@@ -54,6 +55,8 @@ class ServiceInstanceServer(Base):
     alias_id = Column(ForeignKey(Alias.dns_record_id),
                       nullable=True, index=True)
 
+    address_id = Column(ForeignKey(ARecord.dns_record_id), nullable=True, index=True)
+
     position = Column(Integer, nullable=False)
 
     creation_date = deferred(Column(DateTime, default=datetime.now,
@@ -72,17 +75,18 @@ class ServiceInstanceServer(Base):
     address_assignment = relation(AddressAssignment,
                                   backref=backref("services_provided"))
     alias = relation(Alias, backref=backref("services_provided"))
+    address = relation(ARecord, backref=backref("services_provided"))
 
     __table_args__ = (UniqueConstraint(service_instance_id, host_id, cluster_id,
                                        address_assignment_id,
-                                       service_address_id, alias_id,
+                                       service_address_id, alias_id, address_id,
                                        name="%s_uk" % _TN),)
 
     def __init__(self, host=None, cluster=None, service_address=None,
-                 address_assignment=None, alias=None, **kwargs):
+                 address_assignment=None, alias=None, address=None, **kwargs):
         # Check for the combinations of target parameters we allow/disallow
-        if cluster and host:
-            raise AquilonError("Only one of cluster and host can be specified.")
+        if (cluster and host) or (cluster and address) or (host and address):
+            raise AquilonError("Only one of cluster, host and address can be specified.")
         if cluster and not service_address:
             raise AquilonError("Cluster needs a service_address.")
         if service_address and address_assignment:
@@ -96,7 +100,7 @@ class ServiceInstanceServer(Base):
         super(ServiceInstanceServer, self).__init__(host=host, cluster=cluster,
                                                     service_address=service_address,
                                                     address_assignment=address_assignment,
-                                                    alias=alias, **kwargs)
+                                                    alias=alias, address=address, **kwargs)
 
     @property
     def fqdn(self):
@@ -111,6 +115,8 @@ class ServiceInstanceServer(Base):
             return str(self.service_address.dns_record.fqdn)
         if self.address_assignment:
             return str(self.address_assignment.dns_records[0].fqdn)
+        if self.address:
+            return str(self.address.fqdn)
         return self.host.fqdn
 
     @property
@@ -149,6 +155,8 @@ class ServiceInstanceServer(Base):
             return lookup_ip_if_needed(self.service_address.dns_record)
         if self.address_assignment:
             return self.address_assignment.ip
+        if self.address:
+            return self.address.ip
         if self.host:
             return lookup_ip_if_needed(self.host.hardware_entity.primary_name)
         return None

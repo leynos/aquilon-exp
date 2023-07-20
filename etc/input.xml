@@ -2190,9 +2190,10 @@
             <option name="service" type="string">Service name</option>
             <option name="instance" type="string">Instance name</option>
             <optgroup>
-                <option name="hostname" type="string" conflicts="cluster">Server name</option>
-                <option name="cluster" type="string" conflicts="hostname ip">Cluster name</option>
+                <option name="hostname" type="string" conflicts="cluster fqdn">Server name</option>
+                <option name="cluster" type="string" conflicts="hostname ip fqdn">Cluster name</option>
                 <option name="alias" type="string">Use this alias instead of the real server name when configuring clients</option>
+                <option name="fqdn" type="string" conflicts="cluster hostname ip alias">FQDN</option>
             </optgroup>
         </optgroup>
         <optgroup>
@@ -2216,10 +2217,11 @@
                 <option name="all" type="flag">Remove server from all instances of this service</option>
             </optgroup>
             <optgroup>
-                <option name="position" type="int" conflicts="hostname cluster alias">Server definition at the given position</option>
-                <option name="hostname" type="string" conflicts="cluster position">Server name</option>
-                <option name="cluster" type="string" conflicts="hostname ip position">Cluster name</option>
-                <option name="alias" type="string" conflicts="position">Alias name</option>
+                <option name="position" type="int" conflicts="hostname cluster alias fqdn">Server definition at the given position</option>
+                <option name="hostname" type="string" conflicts="cluster fqdn position">Server name</option>
+                <option name="cluster" type="string" conflicts="hostname ip fqdn position">Cluster name</option>
+                <option name="alias" type="string" conflicts="position fqdn">Alias name</option>
+                <option name="fqdn" type="string" conflicts="cluster position hostname ip alias">FQDN</option>
             </optgroup>
         </optgroup>
         <optgroup>

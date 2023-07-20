@@ -29,7 +29,7 @@ class CommandUnbindServer(BrokerCommand):
     required_parameters = ["service"]
 
     def render(self, session, logger, plenaries, service, instance, position, hostname,
-               cluster, ip, resourcegroup, service_address, alias,
+               cluster, ip, resourcegroup, service_address, alias, fqdn,
                justification, reason, user, **arguments):
         dbservice = Service.get_unique(session, service, compel=True)
 
@@ -55,7 +55,7 @@ class CommandUnbindServer(BrokerCommand):
         else:
             params = lookup_target(session, logger, plenaries, hostname, ip,
                                    cluster, resourcegroup, service_address,
-                                   alias)
+                                   alias, fqdn)
 
         for dbinstance in dbinstances:
             # Validate existing service clients
@@ -89,6 +89,7 @@ class CommandUnbindServer(BrokerCommand):
             if dbsrv.alias:
                 # Validating service providers
                 cm.consider(dbsrv.alias.target)
+            # TODO, do I need to do something here with dbsrv.address ?
             dbinstance.servers.remove(dbsrv)
 
             if dbinstance.client_count and not dbinstance.servers:
