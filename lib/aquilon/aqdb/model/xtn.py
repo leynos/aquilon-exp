@@ -188,10 +188,10 @@ def start_xtn(session, xtn_id, username, command, is_readonly, details, ignore):
         if isinstance(value, list):
             for item in value:
                 session.add(XtnDetail(xtn_id=xtn_id, name=key,
-                                      value=sanitized_string(item)))
+                                      value=sanitized_string(item)[:2599]))
         else:
             session.add(XtnDetail(xtn_id=xtn_id, name=key,
-                                  value=sanitized_string(value)))
+                                  value=sanitized_string(value)[:2599]))
 
     try:
         session.commit()
