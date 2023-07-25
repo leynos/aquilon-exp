@@ -26,6 +26,7 @@ if __name__ == "__main__":
 from broker.brokertest import TestBrokerCommand
 from networktest import DummyIP
 from machinetest import MachineTestMixin
+from mock_ib_services import ib_expect_add_address, ib_expect_del_address
 
 
 class TestAddHost(MachineTestMixin, TestBrokerCommand):
@@ -1016,18 +1017,56 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         # Reuse host in bunker bucket2.ut
         ip = self.net["ut_bucket2_localvip"].usable[0]
         mac = self.net["hp_eth0"].usable[17].mac
-        self.dsdb_expect_add("aquilon67.aqd-unittest.ms.com",
+        fqdn = "aquilon67.aqd-unittest.ms.com"
+        self.dsdb_expect_add(fqdn,
                              ip, "eth0",
                              mac)
-        self.noouttest(["add_host", "--hostname", "aquilon67.aqd-unittest.ms.com",
+        ib_expect_add_address(fqdn, ip)
+        self.noouttest(["add_host", "--hostname", fqdn,
                         "--archetype", "aquilon",
                         "--machine", "ut9s03p17",
                         "--ipfromtype", "localvip", "--sandbox", "%s/utsandbox" % self.user])
         self.dsdb_verify()
-        command = ["show", "host", "--hostname", "aquilon67.aqd-unittest.ms.com"]
+        self.ib_verify()
+        command = ["show", "host", "--hostname", fqdn]
         out = self.commandtest(command)
-        self.matchoutput(out, "Provides: aquilon67.aqd-unittest.ms.com [{}]".format(ip), command)
+        self.matchoutput(out, "Provides: {} [{}]".format(fqdn, ip), command)
 
+    def test_815_host_rollback_setup(self):
+        ip = self.net["ut_bucket2_localvip"].usable[0]
+        self.dsdb_expect_delete(ip)
+        self.statustest(["del_host", "--hostname", "aquilon67.aqd-unittest.ms.com"])
+
+    def test_820_add_host_rollback(self):
+        ip = self.net["ut_bucket2_localvip"].usable[0]
+        mac = self.net["hp_eth0"].usable[17].mac
+        fqdn = "aquilon67.aqd-unittest.ms.com"
+        self.dsdb_expect_add(fqdn, ip, "eth0", mac)
+
+        # Fail so we can test the rollback
+        ib_expect_add_address(fqdn, ip, fail=True)
+
+        # Test the expected rollback
+        ib_expect_del_address(fqdn, ip)        
+
+        self.failuretest(["add_host", "--hostname", fqdn,
+                        "--archetype", "aquilon",
+                        "--machine", "ut9s03p17",
+                        "--ipfromtype", "localvip", "--sandbox", "%s/utsandbox" % self.user], 5)
+        self.dsdb_verify()
+        self.ib_verify()
+        
+        # Re-add host for later test scripts
+        self.dsdb_expect_add(fqdn,
+                             ip, "eth0",
+                             mac)
+        ib_expect_add_address(fqdn, ip)
+        self.noouttest(["add_host", "--hostname", fqdn,
+                        "--archetype", "aquilon",
+                        "--machine", "ut9s03p17",
+                        "--ipfromtype", "localvip", "--sandbox", "%s/utsandbox" % self.user])
+        self.dsdb_verify()
+        self.ib_verify()
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestAddHost)

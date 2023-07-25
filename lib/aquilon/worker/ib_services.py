@@ -2,6 +2,7 @@ import re
 from urllib import urlencode
 from urlparse import urlparse, urlunparse
 
+from aquilon.aqdb.model import ARecord, Machine
 from aquilon.config import Config
 from aquilon.exceptions_ import ProcessException
 from aquilon.utils import with_timer
@@ -120,6 +121,120 @@ class IBServices(object):
         url = self._generate_url_from_params(url, params)
 
         self._http_request("DELETE", url)
+
+    def snapshot_hw_a_records(self, dbhw_ent):
+        hwdata = {}
+
+        for addr in dbhw_ent.all_addresses():
+            if not addr.network.is_internal:
+                continue
+            if not addr.fqdns:
+                continue
+            if addr.is_shared:
+                continue
+            if not isinstance(addr.ip, IPv4Address):
+                continue
+
+            dns_record = addr.dns_records[0]
+
+            if not isinstance(dns_record, ARecord):
+                continue
+
+            fqdn = str(dns_record.fqdn)
+            ptr = str(dns_record.reverse_ptr) if dns_record.reverse_ptr else None
+
+            hwdata[fqdn] = {
+                "ip":  str(addr.ip),
+                "ptr": ptr,
+                "ttl": dns_record.ttl,
+            }
+
+        # The primary address of Zebra hosts needs extra care. Here, we cheat a
+        # bit - we do not check if the primary name is a service address, but
+        # instead check if it has an IP address and it was not handled above.
+        if (dbhw_ent.primary_ip and str(dbhw_ent.primary_name.fqdn) not in hwdata):
+            ptr = str(dbhw_ent.primary_name.reverse_ptr) if dbhw_ent.primary_name.reverse_ptr else None
+
+            hwdata[str(dbhw_ent.primary_name)] = {
+                "ip":  str(dbhw_ent.primary_ip),
+                "ptr": ptr,
+                "ttl": dbhw_ent.primary_name.ttl,
+            }
+
+        return hwdata
+
+    def bulk_change_a_ptr(self, old_hwdata, new_hwdata):
+        self.log.info("bulk_update_a_ptr(): data before change = {}, data after change = {}".format(old_hwdata, new_hwdata))
+
+        for fqdn in old_hwdata:
+            # Things to delete
+            if fqdn not in new_hwdata:
+                self._delete_a_ptr_from_hwdata(fqdn, old_hwdata, new_hwdata)
+
+            # Things to update
+            elif old_hwdata[fqdn] != new_hwdata[fqdn]:
+                self._update_a_ptr_from_hwdata(fqdn, old_hwdata, new_hwdata)
+ 
+        # Things to add
+        for fqdn in new_hwdata:
+            if fqdn not in old_hwdata:
+                self._add_a_ptr_from_hwdata(fqdn, old_hwdata, new_hwdata)
+
+    def _add_a_ptr_from_hwdata(self, fqdn, old_hwdata, new_hwdata):
+        ip, new_ptr, new_ttl = (new_hwdata[fqdn][key] for key in ["ip", "ptr", "ttl"])
+        kwargs = {}
+
+        if new_ptr:
+            kwargs["assign_ptr_to_fqdn"] = new_ptr
+        if new_ttl:
+            kwargs["ttl"] = new_ttl
+
+        self.group.add_action(
+            lambda fqdn=fqdn, ip=ip, kwargs=kwargs:
+                self.add_a_ptr(fqdn, ip, **kwargs),
+            lambda fqdn=fqdn, ip=ip:
+                self.delete_a_ptr(fqdn, ip)
+        )
+        self.log.info("add_a_ptr({}, {}, {}), rollback delete_a_ptr({}, {})".format(fqdn, ip, kwargs, fqdn, ip))
+
+    def _update_a_ptr_from_hwdata(self, fqdn, old_hwdata, new_hwdata):
+        old_ip, old_ptr, old_ttl = (old_hwdata[fqdn][key] for key in ["ip", "ptr", "ttl"])
+        new_ip, new_ptr, new_ttl = (new_hwdata[fqdn][key] for key in ["ip", "ptr", "ttl"])
+        kwargs = {}
+        rollback_kwargs = {}
+
+        if old_ptr != new_ptr:
+            kwargs["assign_ptr_to_fqdn"] = new_ptr
+            rollback_kwargs["assign_ptr_to_fqdn"] = old_ptr
+        if old_ttl != new_ttl:
+            kwargs["ttl"] = new_ttl
+            rollback_kwargs["ttl"] = old_ttl
+
+        self.group.add_action(
+            lambda fqdn=fqdn, old_ip=old_ip, kwargs=kwargs:
+                self.update_a_ptr(fqdn, old_ip, **kwargs),
+            lambda fqdn=fqdn, new_ip=new_ip, rollback_kwargs=rollback_kwargs:
+                self.update_a_ptr(fqdn, new_ip, **rollback_kwargs)
+        )
+        self.log.info("update_a_ptr({}, {}, {}), rollback update_a_ptr({}, {}, {})".format(fqdn, old_ip, kwargs, fqdn, new_ip, rollback_kwargs))
+
+    def _delete_a_ptr_from_hwdata(self, fqdn, old_hwdata, new_hwdata):
+        ip, old_ptr, old_ttl = (old_hwdata[fqdn][key] for key in ["ip", "ptr", "ttl"])
+        new_ptr, new_ttl     = (new_hwdata[fqdn][key] for key in ["ptr", "ttl"])
+        rollback_kwargs = {}
+
+        if old_ptr != new_ptr:
+            rollback_kwargs["assign_ptr_to_fqdn"] = old_ptr
+        if old_ttl != new_ttl:
+            rollback_kwargs["ttl"] = old_ttl
+
+        self.group.add_action(
+            lambda fqdn=fqdn, ip=ip:
+                self.delete_a_ptr(fqdn, ip),
+            lambda fqdn=fqdn, ip=ip, rollback_kwargs=rollback_kwargs:
+                self.add_a_ptr(fqdn, ip, **rollback_kwargs)
+        )
+        self.log.info("delete_a_ptr({}, {}), rollback add_a_ptr({}, {}, {})".format(fqdn, ip, fqdn, ip, rollback_kwargs))
 
     @with_timer
     def add_dns_alias(self, name, target, ttl=None):

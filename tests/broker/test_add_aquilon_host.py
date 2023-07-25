@@ -26,6 +26,7 @@ if __name__ == "__main__":
 from eventstest import EventsTestMixin
 from brokertest import TestBrokerCommand
 from dnstest import inaddr_ptr
+from mock_ib_services import ib_expect_add_address, ib_expect_update_address
 
 # TODO: this file should be merged into test_add_host.py
 
@@ -196,12 +197,15 @@ class TestAddAquilonHost(EventsTestMixin, TestBrokerCommand):
         self.dsdb_expect_delete(eth1_ip)
         self.dsdb_expect_add(eth1_fqdn, eth1_ip, "eth1",
                              eth1_ip.mac, primary=fqdn)
+        ib_expect_update_address(eth1_fqdn, eth1_ip, reverse_ptr=fqdn)
+        ib_expect_add_address(fqdn, ip, reverse_ptr=None)
         self.noouttest(["add", "host", "--archetype", "aquilon",
                         "--hostname", fqdn,
                         "--ip", ip, "--zebra_interfaces", "eth0,eth1",
                         "--machine", "ut3c5n2", "--domain", "unittest",
                         "--personality", "compileserver"])
         self.dsdb_verify()
+        self.ib_verify()
         self.events_verify()
 
     def test_135_show_unittest20(self):
