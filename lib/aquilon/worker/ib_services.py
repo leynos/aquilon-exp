@@ -27,9 +27,9 @@ class IBServiceGroup(object):
         try:
             # Iterate through the functions, pull off any rollbacks.
             for (action, rollback) in self.functions:
+                action()
                 if rollback:
                     rollbacks.append(rollback)
-                action()
             self.functions = []
         except ProcessException as e:
             # Reverse the rollbacks to start from the last, and run them.

@@ -23,8 +23,10 @@ if __name__ == "__main__":
     import utils
     utils.import_depends()
 
+from broker.utils import MockHub
 from brokertest import TestBrokerCommand
 from machinetest import MachineTestMixin
+from mock_ib_services import ib_expect_update_address
 from networktest import DummyIP
 
 
@@ -537,6 +539,96 @@ class TestAddMachine(MachineTestMixin, TestBrokerCommand):
         out = self.badrequesttest(command)
         self.matchoutput(out, "Machine ut3c1n3 is already using UUID "
                          "a4ceec7b-2b86-4c94-9dd5-cafbd612581a.", command)
+
+    def test_900_ib_update_machine(self):
+        mh = MockHub(self)
+        mh.add_dns_domain('test-infoblox.cc', restricted=False)
+        mh.add_network()
+
+        machine = mh.add_machine("machine")
+        hostname = mh.add_host(machine=machine, dns_domain="test-infoblox.cc")
+        mh.add_address("swap.test-infoblox.cc", "10.25.0.1")
+
+        command = ["update_machine", "--machine", machine, "--swap_ip", "10.25.0.1"]
+
+        self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.6", fail=True)
+        self.dsdberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.6")
+        self.dsdb_expect_update(hostname, iface="eth0", ip="10.25.0.1", fail=True)
+        self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.1")  # Rollback
+        self.dsdberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.6")
+        self.dsdb_expect_update(hostname, iface="eth0", ip="10.25.0.1")
+        self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.5", fail=True)
+        self.dsdb_expect_update(hostname, iface="eth0", ip="10.25.0.5")  # Rollback
+        self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.1")  # Rollback
+        self.dsdberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.6")
+        self.dsdb_expect_update(hostname, iface="eth0", ip="10.25.0.1")
+        self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.5")
+        ib_expect_update_address("swap.test-infoblox.cc", "10.25.0.5", new_ip="10.25.0.6", fail=True)
+        self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.6")  # Rollback
+        self.dsdb_expect_update(hostname, iface="eth0", ip="10.25.0.5")  # Rollback
+        self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.1")  # Rollback
+        self.iberrortest(command)
+        self.dsdb_verify()
+        self.ib_verify()
+
+        self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.6")
+        self.dsdb_expect_update(hostname, iface="eth0", ip="10.25.0.1")
+        self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.5")
+        ib_expect_update_address("swap.test-infoblox.cc", "10.25.0.5", new_ip="10.25.0.6")
+        ib_expect_update_address(hostname, "10.25.0.5", new_ip="10.25.0.1", fail=True)
+        ib_expect_update_address("swap.test-infoblox.cc", "10.25.0.6", new_ip="10.25.0.5")  # Rollback
+        self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.6")  # Rollback
+        self.dsdb_expect_update(hostname, iface="eth0", ip="10.25.0.5")  # Rollback
+        self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.1")  # Rollback
+        self.iberrortest(command)
+        self.dsdb_verify()
+        self.ib_verify()
+
+        self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.6")
+        self.dsdb_expect_update(hostname, iface="eth0", ip="10.25.0.1")
+        self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.5")
+        ib_expect_update_address("swap.test-infoblox.cc", "10.25.0.5", new_ip="10.25.0.6")
+        ib_expect_update_address(hostname, "10.25.0.5", new_ip="10.25.0.1")
+        ib_expect_update_address("swap.test-infoblox.cc", "10.25.0.6", new_ip="10.25.0.5", fail=True)
+        ib_expect_update_address(hostname, "10.25.0.1", new_ip="10.25.0.5")  # Rollback
+        ib_expect_update_address("swap.test-infoblox.cc", "10.25.0.6", new_ip="10.25.0.5")  # Rollback
+        self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.6")  # Rollback
+        self.dsdb_expect_update(hostname, iface="eth0", ip="10.25.0.5")  # Rollback
+        self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.1")  # Rollback
+        self.iberrortest(command)
+        self.dsdb_verify()
+        self.ib_verify()
+
+        self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.6")
+        self.dsdb_expect_update(hostname, iface="eth0", ip="10.25.0.1")
+        self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.5")
+        ib_expect_update_address("swap.test-infoblox.cc", "10.25.0.5", new_ip="10.25.0.6")
+        ib_expect_update_address(hostname, "10.25.0.5", new_ip="10.25.0.1")
+        ib_expect_update_address("swap.test-infoblox.cc", "10.25.0.6", new_ip="10.25.0.5")
+
+        self.noouttest(command)
+
+        # swap the ip back, otherwise mockhub gets confused and fails to delete the machine
+        command = ["update_machine", "--machine", machine, "--swap_ip", "10.25.0.5"]
+        self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.6")
+        self.dsdb_expect_update(hostname, iface="eth0", ip="10.25.0.5")
+        self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.1")
+
+        ib_expect_update_address("swap.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.6")
+        ib_expect_update_address(hostname, "10.25.0.1", new_ip="10.25.0.5")
+        ib_expect_update_address("swap.test-infoblox.cc", "10.25.0.6", new_ip="10.25.0.1")
+        self.noouttest(command)
+
+        mh.delete()
 
     # FIXME: Missing a test for adding a macihne to a chassis where the
     # fqdn given for the chassis isn't *actually* a chassis.
