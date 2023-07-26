@@ -27,6 +27,7 @@ import os
 
 from ipaddress import ip_address, IPv4Network
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import aliased, object_session
 from sqlalchemy.sql.expression import desc, type_coerce
 from sqlalchemy.inspection import inspect
@@ -541,7 +542,12 @@ def get_or_create_interface(session, dbhw_ent, name=None, mac=None,
         default_route = bootable
 
     if not model and not vendor:
-        dbmodel = dbhw_ent.model.nic_model
+        try:
+            dbmodel = dbhw_ent.model.nic_model
+        except IntegrityError as e:
+            args = e.orig.args
+            error_detail = " ".join(e.orig.args)
+            raise ArgumentError("Item already exists: " + error_detail)
     elif not cls.model_allowed:
         raise ArgumentError("Model/vendor can not be set for a %s." %
                             cls._get_class_label(tolower=True))
