@@ -79,6 +79,7 @@ class HardwareEntity(Base):
 
     __table_args__ = (UniqueConstraint(primary_name_id,
                                        name='%s_pri_name_uk' % _TN),
+                      UniqueConstraint(label, name='%s_label_uk' % _TN),
                       {'info': {'unique_fields': ['label']}},)
     __mapper_args__ = {'polymorphic_on': hardware_type}
 
