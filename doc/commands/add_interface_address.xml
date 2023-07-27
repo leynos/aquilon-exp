@@ -33,10 +33,8 @@
             <group choice="req">
                 <arg choice="plain"><option>--hostname <replaceable>HOSTNAME</replaceable></option></arg>
                 <arg choice="plain"><option>--machine <replaceable>MACHINE</replaceable></option></arg>
-                <arg choice="plain"><option>--chassis <replaceable>CHASSIS</replaceable></option></arg>
                 <arg choice="plain"><option>--switch <replaceable>SWITCH</replaceable></option></arg>
                 <arg choice="plain"><option>--network_device <replaceable>NETDEV</replaceable></option></arg>
-                <arg choice="plain"><option>--console_server <replaceable>CONSRV</replaceable></option></arg>
             </group>
             <arg choice="plain"><option>--interface <replaceable>IFACE</replaceable></option></arg>
             <group>
@@ -81,10 +79,8 @@
                 <term>
                     <option>--hostname <replaceable>HOSTNAME</replaceable></option>,
                     <option>--machine <replaceable>MACHINE</replaceable></option>,
-                    <option>--chassis <replaceable>CHASSIS</replaceable></option>,
                     <option>--switch <replaceable>SWITCH</replaceable></option>,
                     <option>--network_device <replaceable>NETDEV</replaceable></option>,
-                    <option>--console_server <replaceable>CONSRV</replaceable></option>
                 </term>
                 <listitem>
                     <para>
