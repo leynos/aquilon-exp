@@ -1920,10 +1920,8 @@
             <optgroup fields="one">
                 <option name="hostname" type="string">Hostname</option>
                 <option name="machine" type="string">Machine name</option>
-                <option name="chassis" type="string">Chassis name</option>
                 <option name="network_device" type="string">Network device name</option>
                 <option name="switch" type="string">[Deprecated] Switch name</option>
-                <option name="console_server" type="string">Console server name</option>
             </optgroup>
             <option name="interface" type="string">Name of the interface.</option>
         </optgroup>
@@ -1959,10 +1957,8 @@
             <optgroup mandatory="True" fields="one">
                 <option name="hostname" type="string">Hostname</option>
                 <option name="machine" type="string">Machine name</option>
-                <option name="chassis" type="string">Chassis name</option>
                 <option name="network_device" type="string">Network device name</option>
                 <option name="switch" type="string">[Deprecated] Switch name</option>
-                <option name="console_server" type="string">Console server name</option>
             </optgroup>
             <option name="interface" type="string">Name of the interface</option>
             <optgroup>
