@@ -62,3 +62,7 @@ class TestIBServicesStart(unittest.TestCase):
             sys.exit(1)
 
         return ibs_broker
+
+if __name__ == '__main__':
+    suite = unittest.TestLoader().loadTestsFromTestCase(TestIBServicesStart)
+    unittest.TextTestRunner(verbosity=2).run(suite)
