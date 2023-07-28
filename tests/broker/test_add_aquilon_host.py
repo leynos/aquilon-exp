@@ -145,7 +145,35 @@ class TestAddAquilonHost(EventsTestMixin, TestBrokerCommand):
         self.noouttest(command)
         self.dsdb_verify()
 
-    def test_132_add_unittest20_good(self):
+    def test_132_add_unittest20_rollback(self):
+        "Test rollback when IB Services call fails"
+
+        ip = self.net["zebra_vip"].usable[2]
+        eth1_ip = self.net["zebra_eth1"].usable[0]
+        fqdn = 'unittest20.aqd-unittest.ms.com'
+        eth1_fqdn = 'unittest20-e1.aqd-unittest.ms.com'
+
+        self.dsdb_expect_add(fqdn, ip, "vip")
+        self.dsdb_expect_delete(eth1_ip)
+        self.dsdb_expect_add(eth1_fqdn, eth1_ip, "eth1",
+                             eth1_ip.mac, primary=fqdn)
+
+        ib_expect_update_address(eth1_fqdn, eth1_ip, reverse_ptr=fqdn)
+        ib_expect_add_address(fqdn, ip, reverse_ptr=None, fail=True)
+
+        # This is the IB rollback.  Only the first update needs to be rolled back
+        # as the add was forced to fail (so didn't happen).
+        ib_expect_update_address(eth1_fqdn, eth1_ip, reverse_ptr=None)
+
+        self.failuretest(["add", "host", "--archetype", "aquilon",
+                        "--hostname", fqdn,
+                        "--ip", ip, "--zebra_interfaces", "eth0,eth1",
+                        "--machine", "ut3c5n2", "--domain", "unittest",
+                        "--personality", "compileserver"], 5)
+        self.dsdb_verify()
+        self.ib_verify()
+
+    def test_133_add_unittest20_good(self):
         ip = self.net["zebra_vip"].usable[2]
         eth1_ip = self.net["zebra_eth1"].usable[0]
         fqdn = 'unittest20.aqd-unittest.ms.com'
