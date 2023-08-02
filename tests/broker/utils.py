@@ -594,9 +594,11 @@ class MockHub(object):
         for i in range(len(hosts)):
             self._engine.successtest(['change_status', '--hostname', hosts[i],
                                       '--buildstatus', 'decommissioned'])
+            ib_expect_del_address(hosts[i], ips[i])
             self._engine.dsdb_expect_delete(ip=ips[i])
             self._engine.successtest(['del_host', '--hostname', hosts[i]])
             self._engine.dsdb_verify()
+            self._engine.ib_verify()
         # Verify if all the hosts in self.hosts have been deleted.
         if verify:
             self._verify_deletion_with_search_hub('host', self.hosts)

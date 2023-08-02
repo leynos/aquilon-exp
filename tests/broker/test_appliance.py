@@ -29,6 +29,7 @@ from brokertest import TestBrokerCommand
 from notificationtest import VerifyNotificationsMixin
 from personalitytest import PersonalityTestMixin
 from eventstest import EventsTestMixin
+from mock_ib_services import ib_expect_del_address
 
 
 class TestAppliance(VerifyNotificationsMixin, PersonalityTestMixin,
@@ -101,11 +102,15 @@ class TestAppliance(VerifyNotificationsMixin, PersonalityTestMixin,
 
     def test_300_del_appl_host(self):
         basetime = datetime.now()
-        self.dsdb_expect_delete(self.net["ut01ga2s02_v713"].usable[1])
-        command = ["del", "host", "--hostname", "utva.aqd-unittest.ms.com"]
+        fqdn = "utva.aqd-unittest.ms.com"
+        ip = self.net["ut01ga2s02_v713"].usable[1]
+        ib_expect_del_address(fqdn, ip)
+        self.dsdb_expect_delete(ip)
+        command = ["del", "host", "--hostname", fqdn]
         self.statustest(command)
         self.wait_notification(basetime, 1)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_310_del_appliance(self):
         command = ["del", "machine", "--machine", self.vapp]

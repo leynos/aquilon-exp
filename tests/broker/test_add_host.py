@@ -809,9 +809,13 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
     def _clean_up_after_500(self, cases):
         # Clean up.
         for case in cases:
-            command = ['del_host', '--hostname={}'.format(cases[case]['fqhn'])]
-            self.dsdb_expect_delete(cases[case]['ip'])
+            fqdn = cases[case]["fqhn"]
+            ip = cases[case]["ip"]
+            command = ['del_host', '--hostname={}'.format(fqdn)]
+            self.dsdb_expect_delete(ip)
+            ib_expect_del_address(fqdn, ip)
             self.successtest(command)
+            self.ib_verify()
             self.noouttest(['del_machine',
                             '--machine', cases[case]['machine']])
             self.net.dispose_network(self, cases[case]['net'])
@@ -1002,16 +1006,20 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
 
     def test_805_ipfromtype_host_setup(self):
         # Reuse host in bunker bucket2.ut
-        command = ["show", "host", "--hostname", "aquilon67.aqd-unittest.ms.com"]
+        fqdn = "aquilon67.aqd-unittest.ms.com"
+        ip = self.net["hp_eth0"].usable[17]
+        command = ["show", "host", "--hostname", fqdn]
         out = self.commandtest(command)
         self.matchoutput(out, "Bunker: bucket2.ut", command)
-        self.dsdb_expect_delete(self.net["hp_eth0"].usable[17])
+        self.dsdb_expect_delete(ip)
+        ib_expect_del_address(fqdn, ip)
         self.statustest(["del_host", "--hostname", "aquilon67.aqd-unittest.ms.com"])
         command = ["search", "network", "--type", "localvip", "--exact_location", "--bunker", "bucket2.ut", "--fullinfo"]
         out = self.commandtest(command)
         self.matchoutput(out, "Bunker: bucket2.ut", command)
         self.matchoutput(out, "Network: ut_bucket2_localvip", command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_810_ipfromtype_host(self):
         # Reuse host in bunker bucket2.ut

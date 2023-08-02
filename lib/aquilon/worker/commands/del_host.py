@@ -17,12 +17,13 @@
 # limitations under the License.
 """Contains the logic for `aq del host`."""
 
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.worker.logger import CLIENT_INFO
 from aquilon.notify.index import trigger_notifications
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.host import hostname_to_host, remove_host
 from aquilon.worker.dbwrappers.dns import delete_dns_record
+from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.aqdb.model import Machine, ServiceAddress
@@ -126,8 +127,11 @@ class CommandDelHost(BrokerCommand):
         # Any service bindings that we need to clean up afterwards
 
         oldinfo = None
+        ib_services = IBServices(logger)
+        ib_old_snapshot = None
         if dbhost.archetype.name != 'aurora':
             oldinfo = DSDBRunner.snapshot_hw(dbmachine)
+            ib_old_snapshot = ib_services.snapshot_hw_a_records(dbmachine)
 
         remove_host(logger, dbmachine, plenaries)
 
@@ -161,6 +165,16 @@ class CommandDelHost(BrokerCommand):
             else:
                 logger.client_info("WARNING: removing host %s from AQDB and "
                                    "*not* changing DSDB." % hostname)
+
+            if ib_old_snapshot and ib_services.feature_enabled("host"):
+                    ib_services.bulk_change_a_ptr(ib_old_snapshot, ib_services.snapshot_hw_a_records(dbmachine))
+
+                    try:
+                        ib_services.group.commit_or_rollback()
+                    except ProcessException as e:
+                        if dsdb_runner:
+                            dsdb_runner.rollback()
+                        raise e
 
         trigger_notifications(self.config, logger, CLIENT_INFO)
 

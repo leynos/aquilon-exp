@@ -26,7 +26,7 @@ if __name__ == "__main__":
 from broker.utils import MockHub
 from brokertest import TestBrokerCommand
 from machinetest import MachineTestMixin
-from mock_ib_services import ib_expect_update_address
+from mock_ib_services import ib_expect_update_address, ib_expect_del_address
 from networktest import DummyIP
 
 

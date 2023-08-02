@@ -794,12 +794,15 @@ class TestAddVirtualHardware(EventsTestMixin, TestBrokerCommand):
 
     # Drop evm26 for appliance reuse
     def test_290_del_ivirt17(self):
+        fqdn = "ivirt17.aqd-unittest.ms.com"
         ip = self.net["ut01ga2s02_v713"].usable[1]
-        command = ["del_host", "--hostname", "ivirt17.aqd-unittest.ms.com"]
+        command = ["del_host", "--hostname", fqdn]
 
+        ib_expect_del_address(fqdn, ip)
         self.dsdb_expect_delete(ip)
         self.statustest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_291_del_evm26(self):
         machine = "evm26"
