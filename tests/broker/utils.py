@@ -1193,8 +1193,10 @@ class MockHub(object):
             command.extend(['--buildstatus', build_status])
         command.extend(extra_arguments or [])
         self._engine.dsdb_expect_add(hostname, ip, 'eth0', mac)
+        ib_expect_add_address(hostname, ip)
         self._engine.successtest(command)
         self._engine.dsdb_verify()
+        self._engine.ib_verify()
         self.hosts[hostname] = {'machine': machine, 'dns_domain': dns_domain,
                                 'building': building, 'desk': desk}
         return hostname

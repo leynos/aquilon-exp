@@ -214,7 +214,7 @@ class CommandAddHost(BrokerCommand):
             if oldinfo:
                 dsdb_runner.update_host(dbmachine, oldinfo)
                 dsdb_runner.commit_or_rollback("Could not add host to DSDB")
-            if ib_old_snapshot and ib_services.feature_enabled("host"):
+            if ib_old_snapshot is not None and ib_services.feature_enabled("host"):
                     ib_services.bulk_change_a_ptr(ib_old_snapshot, ib_services.snapshot_hw_a_records(dbmachine))
 
                     try:

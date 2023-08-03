@@ -166,7 +166,7 @@ class CommandDelHost(BrokerCommand):
                 logger.client_info("WARNING: removing host %s from AQDB and "
                                    "*not* changing DSDB." % hostname)
 
-            if ib_old_snapshot and ib_services.feature_enabled("host"):
+            if ib_old_snapshot is not None and ib_services.feature_enabled("host"):
                     ib_services.bulk_change_a_ptr(ib_old_snapshot, ib_services.snapshot_hw_a_records(dbmachine))
 
                     try:

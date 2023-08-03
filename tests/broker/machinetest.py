@@ -366,10 +366,10 @@ class MachineTestMixin(EventsTestMixin):
                 comments = orig_kwargs["eth0_comments"]
             else:
                 comments = machdef.comments
-            # terrible, referring to functions only available via multiple-inheritance of TestBrokerCommand
             self.dsdb_expect_add(hostname, ip, "eth0", ip.mac, comments=comments)
             command.extend(["--ip", ip])
 
+        ib_expect_add_address(hostname, ip)
         self.noouttest(command)
 
         for nic_name, params in machdef.interfaces.items():
@@ -390,7 +390,6 @@ class MachineTestMixin(EventsTestMixin):
                              "--interface", nic_name, "--ip", params["ip"],
                              "--fqdn", fqdn])
 
-        # terrible, referring to functions only available via multiple-inheritance of TestBrokerCommand
         self.dsdb_verify()
         self.ib_verify()
 
