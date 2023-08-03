@@ -214,9 +214,15 @@ class CommandAddHost(BrokerCommand):
             if oldinfo:
                 dsdb_runner.update_host(dbmachine, oldinfo)
                 dsdb_runner.commit_or_rollback("Could not add host to DSDB")
-            if ib_old_snapshot:
-                ib_services.bulk_change_a_ptr(ib_old_snapshot, ib_services.snapshot_hw_a_records(dbmachine))
-                ib_services.group.commit_or_rollback()
+            if ib_old_snapshot is not None and ib_services.feature_enabled("host"):
+                    ib_services.bulk_change_a_ptr(ib_old_snapshot, ib_services.snapshot_hw_a_records(dbmachine))
+
+                    try:
+                        ib_services.group.commit_or_rollback()
+                    except ProcessException as e:
+                        if dsdb_runner:
+                            dsdb_runner.rollback()
+                        raise e
 
         for name, value in audit_results:
             self.audit_result(session, name, value, **arguments)

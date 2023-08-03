@@ -25,6 +25,7 @@ if __name__ == "__main__":
 
 from brokertest import TestBrokerCommand
 from eventstest import EventsTestMixin
+from mock_ib_services import ib_expect_del_address
 
 
 class TestDelVirtualHardware(EventsTestMixin, TestBrokerCommand):
@@ -89,11 +90,14 @@ class TestDelVirtualHardware(EventsTestMixin, TestBrokerCommand):
         self.noouttest(["del", "machine", "--machine", "evm42"])
 
     def test_140_del_utmc9_hosts(self):
+        fqdn = "evm50.aqd-unittest.ms.com"
         ip = self.net["autopg2"].usable[0]
+        ib_expect_del_address(fqdn, ip)
         self.dsdb_expect_delete(ip)
-        command = ["del", "host", "--hostname", "evm50.aqd-unittest.ms.com"]
+        command = ["del", "host", "--hostname", fqdn]
         self.statustest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_145_del_utmc9_machines(self):
         self.noouttest(["del", "machine", "--machine", "evm50"])

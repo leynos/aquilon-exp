@@ -35,7 +35,7 @@ enable = True
 
 [ib-services]
 enable = True
-enabled_features = address, address_alias, alias, chassis, console_server, interface_address, machine, network_device, router_address, service_address
+enabled_features = address, address_alias, alias, chassis, console_server, host, interface_address, machine, network_device, router_address, service_address
 urls = https://ib-services.l0.ms.com
 
 [change_management]

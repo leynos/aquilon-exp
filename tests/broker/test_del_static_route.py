@@ -109,10 +109,9 @@ class TestDelStaticRoute(MachineTestMixin, TestBrokerCommand):
     def testdelunittest27(self):
         eth0_ip = self.net["unknown0"].usable[37]
         eth1_ip = self.net["routing1"].usable[1]
-        ib_expect_del_address("unittest27-e1.aqd-unittest.ms.com", str(eth1_ip))
+
         self.delete_host("unittest27.aqd-unittest.ms.com", eth0_ip, "ut3c5n9",
-                         eth1_ip=eth1_ip, sync_ib=False)
-        self.ib_verify()
+                         eth1_ip=eth1_ip)
 
 
 if __name__ == '__main__':

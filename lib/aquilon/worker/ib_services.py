@@ -218,14 +218,8 @@ class IBServices(object):
         self.log.info("update_a_ptr({}, {}, {}), rollback update_a_ptr({}, {}, {})".format(fqdn, old_ip, kwargs, fqdn, new_ip, rollback_kwargs))
 
     def _delete_a_ptr_from_hwdata(self, fqdn, old_hwdata, new_hwdata):
-        ip, old_ptr, old_ttl = (old_hwdata[fqdn][key] for key in ["ip", "ptr", "ttl"])
-        new_ptr, new_ttl     = (new_hwdata[fqdn][key] for key in ["ptr", "ttl"])
-        rollback_kwargs = {}
-
-        if old_ptr != new_ptr:
-            rollback_kwargs["assign_ptr_to_fqdn"] = old_ptr
-        if old_ttl != new_ttl:
-            rollback_kwargs["ttl"] = old_ttl
+        ip, ptr, ttl = (old_hwdata[fqdn][key] for key in ["ip", "ptr", "ttl"])
+        rollback_kwargs = { "ptr": ptr, "ttl": ttl }
 
         self.group.add_action(
             lambda fqdn=fqdn, ip=ip:

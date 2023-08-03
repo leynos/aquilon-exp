@@ -49,12 +49,15 @@ class TestDelHost(VerifyNotificationsMixin, MachineTestMixin,
              '--osversion', 'generic'])
 
     def test_100_del_unittest02(self):
-        self.dsdb_expect_delete(self.net['unknown0'].usable[11])
         host = 'unittest02.one-nyp.ms.com'
+        ip = self.net['unknown0'].usable[11]
+        ib_expect_del_address(host, ip)
+        self.dsdb_expect_delete(ip)
         self.to_windows(host)
         command = ['del_host', '--hostname', host]
         self.statustest(command)
         self.dsdb_verify()
+        self.ib_verify()
         self.verify_buildfiles('unittest', host,
                                want_exist=False, command='del_host')
 
@@ -69,19 +72,21 @@ class TestDelHost(VerifyNotificationsMixin, MachineTestMixin,
         self.matchclean(out, "unittest02", command)
 
     def test_110_del_unittest00(self):
-        dsdb_command = "delete_host -ip_address {0}".\
-            format(self.net["unknown0"].usable[2])
-        errstr = "Host with IP address {0} is not defined".\
-            format(self.net["unknown0"].usable[2])
+        fqdn = "unittest00.one-nyp.ms.com"
+        ip = self.net["unknown0"].usable[2]
+        dsdb_command = "delete_host -ip_address {0}".format(ip)
+        errstr = "Host with IP address {0} is not defined".format(ip)
         self.dsdb_expect(dsdb_command, True, errstr)
+        ib_expect_del_address(fqdn, ip)
 
-        command = ['del_host', '--hostname', 'unittest00.one-nyp.ms.com']
+        command = ['del_host', '--hostname', fqdn]
         err = self.statustest(command)
         self.matchoutput(err,
                          "DSDB did not have a host with this IP address, "
                          "proceeding.",
                          command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_115_verify_del_unittest00(self):
         command = "show host --hostname unittest00.one-nyp.ms.com"
@@ -146,22 +151,28 @@ class TestDelHost(VerifyNotificationsMixin, MachineTestMixin,
         self.notfoundtest(command.split(" "))
 
     def test_155_del_windows_default_os(self):
+        fqdn = "test-windows-default-os.msad.ms.com"
         ip = self.net["tor_net_0"].usable[5]
         self.dsdb_expect_delete(ip)
-        command = "del host --hostname test-windows-default-os.msad.ms.com --quiet"
+        ib_expect_del_address(fqdn, ip)
+        command = "del host --hostname {} --quiet".format(fqdn)
         self.noouttest(command.split(" "))
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_156_verify_del_windows_default_os(self):
         command = "show host --hostname test-windows-default-os.msad.ms.com"
         self.notfoundtest(command.split(" "))
 
     def test_160_del_jack(self):
+        fqdn = "jack.cards.example.com"
         ip = self.net["tor_net_0"].usable[9]
+        ib_expect_del_address(fqdn, ip)
         self.dsdb_expect_delete(ip)
-        command = "del host --hostname jack.cards.example.com"
+        command = "del host --hostname {}".format(fqdn)
         self.statustest(command.split(" "))
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_165_verify_del_jack(self):
         command = "show host --hostname jack.cards.example.ms.com"
@@ -180,12 +191,14 @@ class TestDelHost(VerifyNotificationsMixin, MachineTestMixin,
     def test_171_del_notify(self):
         hostname = self.config.get("unittest", "hostname")
         self.to_windows(hostname)
+        ib_expect_del_address(hostname, "127.0.0.1")
         self.dsdb_expect_delete("127.0.0.1")
         basetime = datetime.now()
         command = ["del", "host", "--hostname", hostname]
         self.statustest(command)
         self.wait_notification(basetime, 0)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_200_allowed_by_default_for_selected_states(self):
         # It should be only allowed for states specified in
@@ -203,9 +216,11 @@ class TestDelHost(VerifyNotificationsMixin, MachineTestMixin,
             machine = mh.hosts[host]['machine']
             net = mh.networks[mh.machines[machine]['network']]['net']
             ip = net.usable[mh.machines[machine]['net_index']]
+            ib_expect_del_address(host, ip)
             self.dsdb_expect_delete(ip=ip)
             self.successtest(['del_host', '--hostname', host])
             self.dsdb_verify()
+            self.ib_verify()
             del mh.hosts[host]
             self.notfoundtest(['show_host', '--hostname', host])
         mh.delete()
@@ -263,11 +278,9 @@ class TestDelHost(VerifyNotificationsMixin, MachineTestMixin,
                          self.net["tor_net_0"].usable[2], "ut8s02p2")
 
     def test_300_del_unittest17(self):
-        ib_expect_del_address("unittest17r.aqd-unittest.ms.com", "4.2.30.8")
         self.delete_host("unittest17.aqd-unittest.ms.com",
                          self.net["tor_net_0"].usable[3], "ut8s02p3",
-                         manager_ip=self.net["ut8_oob"].usable[3], sync_ib=False)
-        self.ib_verify()
+                         manager_ip=self.net["ut8_oob"].usable[3])
 
     def test_300_del_unittest18(self):
         self.delete_host("unittest18.aqd-unittest.ms.com",
@@ -318,41 +331,33 @@ class TestDelHost(VerifyNotificationsMixin, MachineTestMixin,
         eth0_ip = self.net["unknown0"].usable[33]
         eth1_ip = self.net["unknown1"].usable[34]
         ip = self.net["zebra_vip"].usable[0]
-        ib_expect_del_address("infra1-e0.aqd-unittest.ms.com", str(eth0_ip))
-        ib_expect_del_address("infra1-e1.aqd-unittest.ms.com", str(eth1_ip))
+
         self.delete_host("infra1.aqd-unittest.ms.com", ip, "ut3c5n13",
-                         eth0_ip=eth0_ip, eth1_ip=eth1_ip, sync_ib=False)
-        self.ib_verify()
+                         eth0_ip=eth0_ip, eth1_ip=eth1_ip)
 
     def test_300_del_utinfra2(self):
         eth0_ip = self.net["unknown0"].usable[38]
         eth1_ip = self.net["unknown1"].usable[37]
         ip = self.net["zebra_vip"].usable[1]
-        ib_expect_del_address("infra2-e0.aqd-unittest.ms.com", str(eth0_ip))
-        ib_expect_del_address("infra2-e1.aqd-unittest.ms.com", str(eth1_ip))
+
         self.delete_host("infra2.aqd-unittest.ms.com", ip, "ut3c5n14",
-                         eth0_ip=eth0_ip, eth1_ip=eth1_ip, sync_ib=False)
-        self.ib_verify()
+                         eth0_ip=eth0_ip, eth1_ip=eth1_ip)
 
     def test_300_del_npinfra1(self):
         eth0_ip = self.net["unknown0"].usable[35]
         eth1_ip = self.net["unknown1"].usable[36]
         ip = self.net["zebra_vip2"].usable[0]
-        ib_expect_del_address("infra1-e0.one-nyp.ms.com", "4.2.1.40")
-        ib_expect_del_address("infra1-e1.one-nyp.ms.com", "4.2.1.105")
+
         self.delete_host("infra1.one-nyp.ms.com", ip, "np3c5n13",
-                         eth0_ip=eth0_ip, eth1_ip=eth1_ip, sync_ib=False)
-        self.ib_verify()
+                         eth0_ip=eth0_ip, eth1_ip=eth1_ip)
 
     def test_300_del_npinfra2(self):
         eth0_ip = self.net["unknown0"].usable[43]
         eth1_ip = self.net["unknown1"].usable[39]
         ip = self.net["zebra_vip2"].usable[1]
-        ib_expect_del_address("infra2-e0.one-nyp.ms.com", "4.2.1.48")
-        ib_expect_del_address("infra2-e1.one-nyp.ms.com", "4.2.1.108")
+
         self.delete_host("infra2.one-nyp.ms.com", ip, "np3c5n14",
-                         eth0_ip=eth0_ip, eth1_ip=eth1_ip, sync_ib=False)
-        self.ib_verify()
+                         eth0_ip=eth0_ip, eth1_ip=eth1_ip)
 
     def test_290_setup_personality(self):
         # test_300_del_hp_rack_hosts will move a number of hosts to the generic
@@ -399,11 +404,10 @@ class TestDelHost(VerifyNotificationsMixin, MachineTestMixin,
                 self.to_windows(hostname, personality='genericaqd')
             else:
                 self.to_windows(hostname)
-            ib_expect_del_address(fqdn, str(mgmt_net.usable[port]))
+
             self.delete_host(hostname, ip, machine,
                              manager_ip=mgmt_net.usable[port],
-                             justification=True, sync_ib=False)
-            self.ib_verify()
+                             justification=True)
 
     def test_300_del_ut10_hosts(self):
         net = self.net["ut10_eth0"]
@@ -413,10 +417,9 @@ class TestDelHost(VerifyNotificationsMixin, MachineTestMixin,
             hostname = "evh%d.aqd-unittest.ms.com" % port
             fqdn = "evh%dr.aqd-unittest.ms.com" % port
             machine = "ut10s04p%d" % port
-            ib_expect_del_address(fqdn, str(mgmt_net.usable[port]))
+
             self.delete_host(hostname, net.usable[port], machine,
-                             manager_ip=mgmt_net.usable[port], sync_ib=False)
-            self.ib_verify()
+                             manager_ip=mgmt_net.usable[port])
 
     def test_300_del_10gig_rack_hosts(self):
         net = self.net["vmotion_net"]
@@ -431,36 +434,29 @@ class TestDelHost(VerifyNotificationsMixin, MachineTestMixin,
                 port = i - 12
                 machine = "ut12s02p%d" % (i - 12)
                 mgmt_net = self.net["ut12_oob"]
-            ib_expect_del_address(fqdn, str(mgmt_net[port]))
+
             self.delete_host(hostname, net.usable[i + 1], machine,
-                             manager_ip=mgmt_net[port], sync_ib=False)
-            self.ib_verify()
+                             manager_ip=mgmt_net[port])
 
     def test_300_del_utmc8_hosts(self):
-        ib_expect_del_address("evh80-eth1.aqd-unittest.ms.com", str(self.net["vm_storage_net"].usable[26]))
-        ib_expect_del_address("evh80r.aqd-unittest.ms.com", str(self.net["ut14_oob"].usable[0]))
         self.delete_host("evh80.aqd-unittest.ms.com",
                          self.net["ut14_net"].usable[0], "ut14s1p0",
                          eth1_ip=self.net["vm_storage_net"].usable[26],
-                         manager_ip=self.net["ut14_oob"].usable[0], sync_ib=False)
-        ib_expect_del_address("evh81-eth1.aqd-unittest.ms.com", str(self.net["vm_storage_net"].usable[27]))
-        ib_expect_del_address("evh81r.aqd-unittest.ms.com", str(self.net["ut14_oob"].usable[1]))
+                         manager_ip=self.net["ut14_oob"].usable[0])
+
         self.delete_host("evh81.aqd-unittest.ms.com",
                          self.net["ut14_net"].usable[1], "ut14s1p1",
                          eth1_ip=self.net["vm_storage_net"].usable[27],
-                         manager_ip=self.net["ut14_oob"].usable[1], sync_ib=False)
-        self.ib_verify()
+                         manager_ip=self.net["ut14_oob"].usable[1])
 
     def test_300_del_utmc9_hosts(self):
-        ib_expect_del_address("evh82r.aqd-unittest.ms.com", str(self.net["ut14_oob"].usable[2]))
         self.delete_host("evh82.aqd-unittest.ms.com",
                          self.net["ut14_net"].usable[2], "ut14s1p2",
-                         manager_ip=self.net["ut14_oob"].usable[2], sync_ib=False)
-        ib_expect_del_address("evh83r.aqd-unittest.ms.com", str(self.net["ut14_oob"].usable[3]))
+                         manager_ip=self.net["ut14_oob"].usable[2])
+
         self.delete_host("evh83.aqd-unittest.ms.com",
                          self.net["ut14_net"].usable[3], "ut14s1p3",
-                         manager_ip=self.net["ut14_oob"].usable[3], sync_ib=False)
-        self.ib_verify()
+                         manager_ip=self.net["ut14_oob"].usable[3])
 
     def test_310_del_network_device(self):
         command = ["del", "host", "--hostname", "ut3gd1r04.aqd-unittest.ms.com"]

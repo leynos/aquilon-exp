@@ -34,12 +34,15 @@ from mock_ib_services import ib_expect_add_address, ib_expect_update_address
 class TestAddAquilonHost(EventsTestMixin, TestBrokerCommand):
     def test_100_add_unittest00(self):
         ip = self.net["unknown0"].usable[2]
-        self.dsdb_expect_add("unittest00.one-nyp.ms.com", ip, "eth0", ip.mac)
+        fqdn = "unittest00.one-nyp.ms.com"
+        ib_expect_add_address(fqdn, ip)
+        self.dsdb_expect_add(fqdn, ip, "eth0", ip.mac)
         self.noouttest(["add", "host", "--archetype", "aquilon",
                         "--hostname", "unittest00.one-nyp.ms.com", "--ip", ip,
                         "--machine", "ut3c1n3", "--domain", "unittest",
                         "--personality", "inventory", "--buildstatus", "blind"])
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_105_show_unittest00(self):
         command = "show host --hostname unittest00.one-nyp.ms.com"
@@ -90,13 +93,15 @@ class TestAddAquilonHost(EventsTestMixin, TestBrokerCommand):
 
     def test_110_add_unittest12(self):
         ip = self.net["unknown0"].usable[7]
-        self.dsdb_expect_add("unittest12.aqd-unittest.ms.com", ip, "eth0",
-                             ip.mac)
+        fqdn = "unittest12.aqd-unittest.ms.com"
+        ib_expect_add_address(fqdn, ip)
+        self.dsdb_expect_add(fqdn, ip, "eth0", ip.mac)
         self.noouttest(["add", "host", "--archetype", "aquilon",
                         "--hostname", "unittest12.aqd-unittest.ms.com",
                         "--ip", ip, "--buildstatus", "blind",
                         "--machine", "ut3s01p1", "--domain", "unittest"])
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_115_show_unittest12(self):
         command = "show host --hostname unittest12.aqd-unittest.ms.com"
@@ -303,7 +308,9 @@ class TestAddAquilonHost(EventsTestMixin, TestBrokerCommand):
 
     def test_140_add_unittest21(self):
         ip = self.net["zebra_eth0"].usable[1]
-        self.dsdb_expect_add("unittest21.aqd-unittest.ms.com", ip, "bond0")
+        fqdn = "unittest21.aqd-unittest.ms.com"
+        ib_expect_add_address(fqdn, ip)
+        self.dsdb_expect_add(fqdn, ip, "bond0")
         self.noouttest(["add", "host", "--archetype", "aquilon",
                         "--hostname", "unittest21.aqd-unittest.ms.com",
                         "--ip", ip, "--machine", "ut3c5n3",
@@ -311,6 +318,7 @@ class TestAddAquilonHost(EventsTestMixin, TestBrokerCommand):
                         "--personality", "compileserver",
                         "--grn", "grn:/ms/ei/aquilon/unittest"])
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_145_verify_unittest21_network(self):
         net = self.net["zebra_eth0"]
@@ -337,13 +345,16 @@ class TestAddAquilonHost(EventsTestMixin, TestBrokerCommand):
 
     def test_150_add_unittest22(self):
         ip = self.net["zebra_eth0"].usable[2]
-        self.dsdb_expect_add("unittest22.aqd-unittest.ms.com", ip, "br0")
+        fqdn = "unittest22.aqd-unittest.ms.com"
+        ib_expect_add_address(fqdn, ip)
+        self.dsdb_expect_add(fqdn, ip, "br0")
         self.noouttest(["add", "host", "--archetype", "aquilon",
                         "--hostname", "unittest22.aqd-unittest.ms.com",
                         "--ip", ip, "--machine", "ut3c5n4",
                         "--domain", "unittest",
                         "--personality", "compileserver"])
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_155_verify_unittest22_network(self):
         net = self.net["zebra_eth0"]
@@ -370,47 +381,55 @@ class TestAddAquilonHost(EventsTestMixin, TestBrokerCommand):
 
     def test_160_add_unittest23(self):
         ip = self.net["vpls"].usable[1]
-        self.dsdb_expect_add("unittest23.aqd-unittest.ms.com", ip, "eth0",
-                             ip.mac)
+        fqdn = "unittest23.aqd-unittest.ms.com"
+        ib_expect_add_address(fqdn, ip)
+        self.dsdb_expect_add(fqdn, ip, "eth0", ip.mac)
         self.noouttest(["add", "host", "--archetype", "aquilon",
                         "--hostname", "unittest23.aqd-unittest.ms.com",
                         "--ip", ip, "--machine", "ut3c5n5",
                         "--domain", "unittest",
                         "--personality", "compileserver"])
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_161_add_unittest24(self):
         ip = self.net["vpls"].usable[2]
-        self.dsdb_expect_add("unittest24.one-nyp.ms.com", ip, "eth0",
-                             ip.mac)
+        fqdn = "unittest24.one-nyp.ms.com"
+        ib_expect_add_address(fqdn, ip)
+        self.dsdb_expect_add(fqdn, ip, "eth0", ip.mac)
         self.noouttest(["add", "host", "--archetype", "aquilon",
                         "--hostname", "unittest24.one-nyp.ms.com",
                         "--ip", ip, "--machine", "np3c5n5",
                         "--domain", "unittest",
                         "--personality", "compileserver"])
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_162_add_unittest25(self):
         ip = self.net["unknown0"].usable[20]
-        self.dsdb_expect_add("unittest25.aqd-unittest.ms.com", ip, "eth0",
-                             ip.mac)
+        fqdn = "unittest25.aqd-unittest.ms.com"
+        ib_expect_add_address(fqdn, ip)
+        self.dsdb_expect_add(fqdn, ip, "eth0", ip.mac)
         self.noouttest(["add", "host", "--archetype", "aquilon",
                         "--hostname", "unittest25.aqd-unittest.ms.com",
                         "--ip", ip, "--machine", "ut3c5n7",
                         "--domain", "unittest",
                         "--personality", "compileserver"])
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_163_add_unittest26(self):
         ip = self.net["unknown0"].usable[23]
-        self.dsdb_expect_add("unittest26.aqd-unittest.ms.com", ip, "eth0",
-                             ip.mac)
+        fqdn = "unittest26.aqd-unittest.ms.com"
+        ib_expect_add_address(fqdn, ip)
+        self.dsdb_expect_add(fqdn, ip, "eth0", ip.mac)
         self.noouttest(["add", "host", "--archetype", "aquilon",
                         "--hostname", "unittest26.aqd-unittest.ms.com",
                         "--ip", ip, "--machine", "ut3c5n8",
                         "--domain", "unittest",
                         "--personality", "compileserver"])
         self.dsdb_verify()
+        self.ib_verify()
 
 
 if __name__ == '__main__':

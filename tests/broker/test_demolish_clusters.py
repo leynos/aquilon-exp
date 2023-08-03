@@ -52,8 +52,7 @@ class TestDemolishClusters(MachineTestMixin, TestBrokerCommand):
         """ Remove hosts that were added for the use case """
         for host in config["host"]:
             args = config["host"][host]
-            self.delete_host(host_fqdn(host), config["ip"][host],
-                             args["machine"])
+            self.delete_host(host_fqdn(host), config["ip"][host], args["machine"])
 
     def test_130_del_rack(self):
         """ Remove racks that were added for the use case """
