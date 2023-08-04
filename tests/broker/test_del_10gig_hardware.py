@@ -46,10 +46,12 @@ class TestDel10GigHardware(TestBrokerCommand):
                 net_index = ((i - 9) % 4) + 4
                 usable_index = (i - 9) // 4
             ip = nets[net_index].usable[usable_index]
+            ib_expect_del_address(hostname, ip)
             self.dsdb_expect_delete(ip)
 
             self.statustest(command.split(" "))
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_300_delaux(self):
         for i in range(1, 25):

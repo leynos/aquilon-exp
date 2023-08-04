@@ -157,12 +157,13 @@ class TestCluster(TestBrokerCommand):
         # Now we have a problem - vmhosts do not compile without a cluster,
         # which is a bug, but it means we cannot just switch the archetype. We
         # need to delete & re-add the host instead. Sigh...
-        self.dsdb_expect_delete(self.net["hp_eth0"].usable[11])
+        ip = self.net["hp_eth0"].usable[11]
+        ib_expect_del_address(fqdn, ip)
+        self.dsdb_expect_delete(ip)
         self.statustest(["del_host", "--hostname", fqdn])
         self.dsdb_expect_add(fqdn,
                              self.net["hp_eth0"].usable[11], "eth0",
                              self.net["hp_eth0"].usable[11].mac)
-        ip = self.net["hp_eth0"].usable[11]
         ib_expect_add_address(fqdn, ip)
         self.noouttest(["add_host", "--hostname", fqdn,
                         "--archetype", "vmhost", "--personality", "esx_server",

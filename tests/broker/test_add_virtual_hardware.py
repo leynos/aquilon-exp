@@ -726,6 +726,7 @@ class TestAddVirtualHardware(EventsTestMixin, TestBrokerCommand):
                 usable_index = (i - 9) // 4
             ip = nets[net_index].usable[usable_index]
 
+            ib_expect_add_address(hostname, ip)
             # FIXME: the MAC check is fragile...
             self.dsdb_expect_add(hostname, ip, "eth0",
                                  "%s:%02x" % (mac_prefix, mac_idx))
@@ -736,11 +737,14 @@ class TestAddVirtualHardware(EventsTestMixin, TestBrokerCommand):
                        "--archetype=aquilon", "--personality=inventory"]
             self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_271_add_host_prefix(self):
+        fqdn = "ivirt17.aqd-unittest.ms.com"
         ip = self.net["ut01ga2s02_v713"].usable[1]
         mac = "00:50:56:01:20:17"
-        self.dsdb_expect_add("ivirt17.aqd-unittest.ms.com", ip, "eth0", mac)
+        ib_expect_add_address(fqdn, ip)
+        self.dsdb_expect_add(fqdn, ip, "eth0", mac)
         command = ["add", "host", "--prefix", "ivirt", "--machine", "evm26",
                    "--autoip", "--domain", "unittest",
                    "--archetype", "aquilon", "--personality", "inventory"]
@@ -794,12 +798,15 @@ class TestAddVirtualHardware(EventsTestMixin, TestBrokerCommand):
 
     # Drop evm26 for appliance reuse
     def test_290_del_ivirt17(self):
+        fqdn = "ivirt17.aqd-unittest.ms.com"
         ip = self.net["ut01ga2s02_v713"].usable[1]
-        command = ["del_host", "--hostname", "ivirt17.aqd-unittest.ms.com"]
+        command = ["del_host", "--hostname", fqdn]
 
+        ib_expect_del_address(fqdn, ip)
         self.dsdb_expect_delete(ip)
         self.statustest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_291_del_evm26(self):
         machine = "evm26"
@@ -1082,7 +1089,9 @@ class TestAddVirtualHardware(EventsTestMixin, TestBrokerCommand):
 
     def test_450_add_utmc9_host(self):
         net = self.net["autopg2"]
+        fqdn = "evm50.aqd-unittest.ms.com"
         ip = self.net["unknown0"].usable[-1]
+        ib_expect_add_address(fqdn, ip)
         self.dsdb_expect_add("evm50.aqd-unittest.ms.com", ip, "eth0",
                              "00:50:56:01:20:19")
         command = ["add", "host", "--hostname", "evm50.aqd-unittest.ms.com",
@@ -1100,6 +1109,7 @@ class TestAddVirtualHardware(EventsTestMixin, TestBrokerCommand):
                          (net, ip),
                          command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_451_fix_pg_mismatch(self):
         old_ip = str(self.net["unknown0"].usable[-1])
