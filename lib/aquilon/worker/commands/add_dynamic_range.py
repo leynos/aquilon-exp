@@ -114,7 +114,6 @@ class CommandAddDynamicRange(BrokerCommand):
                                              network=startnet, range_class=range_class)
                 session.add(dbdynamic_stub)
 
-
                 if exporter:
                     if any(
                             dr != dbdynamic_stub and
@@ -135,7 +134,7 @@ class CommandAddDynamicRange(BrokerCommand):
         dsdb_runner.commit_or_rollback("Could not add addresses to DSDB",
                                        verbose=True)
 
-        if ib_services.feature_enabled("dynamic_range"):
+        if ib_services.feature_enabled("dynamic_range") and range_class == "infoblox_managed":
             try:
                 ib_services.group.commit_or_rollback()
             except Exception as e:

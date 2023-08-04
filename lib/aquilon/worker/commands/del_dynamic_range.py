@@ -80,6 +80,8 @@ class CommandDelDynamicRange(BrokerCommand):
         self.del_dynamic_stubs(session, logger, dbstubs, exporter)
 
     def del_dynamic_stubs(self, session, logger, dbstubs, exporter):
+        range_class = dbstubs[0].range_class
+
         for stub in dbstubs:
             delete_dns_record(stub, locked=True, exporter=exporter)
 
@@ -115,7 +117,7 @@ class CommandDelDynamicRange(BrokerCommand):
         # This may take some time if the range is big, so be verbose
         dsdb_runner.commit_or_rollback(verbose=True)
 
-        if ib_services.feature_enabled("dynamic_range"):
+        if ib_services.feature_enabled("dynamic_range") and range_class == "infoblox_managed":
             try:
                 ib_services.group.commit_or_rollback()
             except Exception as e:

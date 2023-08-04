@@ -62,6 +62,7 @@ class TestAddDynamicRange(TestBrokerCommand):
         command = ["add_dynamic_range",
                    "--startip=%s" % startip,
                    "--endip=%s" % endip,
+                   "--range_class=infoblox_managed",
                    "--dns_domain=aqd-unittest.ms.com"] + self.valid_just_tcm
         err = self.statustest(command)
         for message in messages:
@@ -70,10 +71,6 @@ class TestAddDynamicRange(TestBrokerCommand):
         self.ib_verify()
 
     def test_101_add_range_class(self):
-        startip = str(self.net["dyndhcp5"].usable[2])
-        endip = str(self.net["dyndhcp5"].usable[-3])
-        ib_expect_add_range("dynamic-{}-{}".format(startip, endip), startip, endip)
-
         messages = []
         for ip in range(int(self.net["dyndhcp5"].usable[2]),
                         int(self.net["dyndhcp5"].usable[-3]) + 1):
@@ -82,9 +79,8 @@ class TestAddDynamicRange(TestBrokerCommand):
             self.dsdb_expect_add(hostname, address)
             messages.append("DSDB: add_host -host_name %s -ip_address %s "
                             "-status aq" % (hostname, address))
-            ib_expect_add_address(hostname, str(address))
 
-        range_class = "fab"
+        range_class = "vm"
 
         command = ["add_dynamic_range",
                    "--startip=%s" % self.net["dyndhcp5"].usable[2],
@@ -95,7 +91,6 @@ class TestAddDynamicRange(TestBrokerCommand):
         for message in messages:
             self.matchoutput(err, message, command)
         self.dsdb_verify()
-        self.ib_verify()
 
     def test_105_verify_range(self):
         command = "search_dns --record_type=dynamic_stub"
@@ -122,7 +117,7 @@ class TestAddDynamicRange(TestBrokerCommand):
         self.matchoutput(out, "Dynamic Range: %s - %s" % (start, end), command)
         self.matchoutput(out, "Network: %s [%s]" % (net.name, net),
                          command)
-        self.matchoutput(out, "Range Class: %s" % "vm", command)
+        self.matchoutput(out, "Range Class: %s" % "infoblox_managed", command)
 
     def test_105_show_range_notfound(self):
         ip = str(self.net['unknown0'].usable[13])
@@ -141,12 +136,12 @@ class TestAddDynamicRange(TestBrokerCommand):
         self.matchoutput(out, "Dynamic Range: %s - %s" % (start, end), command)
         self.matchoutput(out, "Network: %s [%s]" % (net.name, net),
                          command)
-        self.matchoutput(out, "Range Class: %s" % "vm", command)
+        self.matchoutput(out, "Range Class: %s" % "infoblox_managed", command)
 
     def test_105_verify_network(self):
         command = "show_network --ip %s" % self.net["dyndhcp0"].ip
         out = self.commandtest(command.split(" "))
-        self.matchoutput(out, "Dynamic Ranges: %s-%s (vm)" %
+        self.matchoutput(out, "Dynamic Ranges: %s-%s (infoblox_managed)" %
                          (self.net["dyndhcp0"].usable[2],
                           self.net["dyndhcp0"].usable[-3]), command)
 
@@ -159,7 +154,7 @@ class TestAddDynamicRange(TestBrokerCommand):
         self.assertEqual(len(network.dynamic_ranges), 1)
         self.assertEqual(network.dynamic_ranges[0].start, str(start))
         self.assertEqual(network.dynamic_ranges[0].end, str(end))
-        self.assertEqual(network.dynamic_ranges[0].range_class, "vm")
+        self.assertEqual(network.dynamic_ranges[0].range_class, "infoblox_managed")
 
     def test_106_verify_range_class(self):
         command = "search_dns --record_type=dynamic_stub"
@@ -186,14 +181,14 @@ class TestAddDynamicRange(TestBrokerCommand):
         self.matchoutput(out, "Dynamic Range: %s - %s" % (start, end), command)
         self.matchoutput(out, "Network: %s [%s]" % (net.name, net),
                          command)
-        self.matchoutput(out, "Range Class: %s" % "fab", command)
+        self.matchoutput(out, "Range Class: %s" % "vm", command)
 
     def test_106_verify_show_dynamic_range_proto_format(self):
         net = self.net["dyndhcp5"]
         start = net.usable[2]
         end = net.usable[-3]
         command = ["show_dynamic_range", "--ip", IPv4Address(int(start) + 1), "--format", "proto"]
-        range_class = "fab"
+        range_class = "vm"
         dyn_range = self.protobuftest(command, expect=1)[0]
         self.assertEqual(dyn_range.start, str(start))
         self.assertEqual(dyn_range.end, str(end))
@@ -202,7 +197,7 @@ class TestAddDynamicRange(TestBrokerCommand):
     def test_106_verify_network_range_class(self):
         command = "show network --ip %s" % self.net["dyndhcp5"].ip
         out = self.commandtest(command.split(" "))
-        self.matchoutput(out, "Dynamic Ranges: %s-%s (fab)" %
+        self.matchoutput(out, "Dynamic Ranges: %s-%s (vm)" %
                          (self.net["dyndhcp5"].usable[2],
                           self.net["dyndhcp5"].usable[-3]), command)
 
@@ -211,7 +206,7 @@ class TestAddDynamicRange(TestBrokerCommand):
         network = self.protobuftest(command.split(" "), expect=1)[0]
         start = self.net["dyndhcp5"].usable[2]
         end = self.net["dyndhcp5"].usable[-3]
-        range_class = "fab"
+        range_class = "vm"
         self.assertEqual(len(network.hosts), 0)
         self.assertEqual(len(network.dynamic_ranges), 1)
         self.assertEqual(network.dynamic_ranges[0].start, str(start))
@@ -227,6 +222,7 @@ class TestAddDynamicRange(TestBrokerCommand):
         self.dsdb_expect_add(hostname, ip)
         ib_expect_add_address(hostname, ip_s)
         command = ["add_dynamic_range", "--startip", ip, "--endip", ip,
+                   "--range_class", "infoblox_managed",
                    "--dns_domain=aqd-unittest.ms.com"] + self.valid_just_tcm
         err = self.statustest(command)
         self.matchoutput(err,
@@ -296,13 +292,10 @@ class TestAddDynamicRange(TestBrokerCommand):
         net = self.net["dyndhcp3"]
         ip = str(net.usable[5])
         hostname = self.dynname(ip, domain="one-nyp.ms.com")
-        ib_expect_del_address(hostname, ip)
-        ib_expect_del_range(ip, ip)
         self.dsdb_expect_delete(ip)
         command = ["del_dynamic_range", "--start", ip, "--end", ip] + self.valid_just_tcm
         self.statustest(command)
         self.dsdb_verify()
-        self.ib_verify()
 
     def test_126_show_net(self):
         net = self.net["dyndhcp3"]
