@@ -209,8 +209,8 @@ disk_controller_types = cciss, fibrechannel, flash, ide, nvme, sas, sata, scsi
 disk_technology_types = hdd, ssd, nvme
 disk_usage_types = os, data, swap, cache, capacity
 
-dynamic_range_classes = vm, fab
-default_dynamic_range_class = vm
+dynamic_range_classes = infoblox_managed, vm, fab
+default_dynamic_range_class = infoblox_managed
 
 # EON ID and GRN for AQD
 aqd_eonid = 1156

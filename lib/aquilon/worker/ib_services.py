@@ -267,6 +267,23 @@ class IBServices(object):
 
         self._http_request("PATCH", url, payload)
 
+    @with_timer
+    def add_dynamic_range(self, name, start_address, end_address):
+        payload = {
+            "name":          name,
+            "start_address": str(start_address),
+            "end_address":   str(end_address),
+        }
+        url = "/ranges"
+
+        self._http_request("POST", url, payload)
+
+    @with_timer
+    def delete_dynamic_range(self, start_address, end_address):
+        url = "/ranges/{}/{}".format(start_address, end_address)
+
+        self._http_request("DELETE", url)
+
     def _http_request(self, http_cmd, url, data=None):
         if not self.enabled:
             return

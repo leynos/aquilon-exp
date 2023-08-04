@@ -175,3 +175,19 @@ def ib_expect_del_alias(fqdn, response_code=204, response_body="", fail=False):
         "/dns/aliases/{}?eonid={}".format(fqdn, eonid),
         None, response_code, response_body)
     http_monitor.expect(test_case)
+
+def ib_expect_add_range(name, start_address, end_address, response_code=201, response_body="", fail=False):
+    if fail:
+        response_code = 400
+    payload = {"name": name, "start_address": start_address, "end_address": end_address}
+    test_case = ib_test_case("POST", "/ranges", payload, response_code, response_body)
+    http_monitor.expect(test_case)
+
+def ib_expect_del_range(start_address, end_address, response_code=204, response_body="", fail=False):
+    if fail:
+        response_code = 400
+    test_case = ib_test_case(
+        "DELETE",
+        "/ranges/{}/{}".format(start_address, end_address),
+        None, response_code, response_body)
+    http_monitor.expect(test_case)

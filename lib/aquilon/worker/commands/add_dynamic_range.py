@@ -25,6 +25,7 @@ from aquilon.aqdb.model.network import get_net_id_from_ip
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.interface import check_ip_restrictions
 from aquilon.worker.dbwrappers.location import get_default_dns_domain
+from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
 
@@ -92,6 +93,14 @@ class CommandAddDynamicRange(BrokerCommand):
                                 "\n".join(format(c, "a") for c in conflicts))
 
         dsdb_runner = DSDBRunner(logger=logger)
+        ib_services = IBServices(logger)
+        ib_services.group.add_action(
+            lambda prefix=prefix, startip=str(startip), endip=str(endip): ib_services.add_dynamic_range(
+                "{}-{}-{}".format(prefix, startip, endip), startip, endip
+            ),
+            lambda startip=str(startip), endip=str(endip):
+                ib_services.delete_dynamic_range(startip, endip)
+        )
         with session.no_autoflush:
             for ipint in range(int(startip), int(endip) + 1):
                 ip = ip_address(ipint)
@@ -116,10 +125,21 @@ class CommandAddDynamicRange(BrokerCommand):
                         exporter.create(dbfqdn)
 
                 dsdb_runner.add_host_details(dbfqdn, ip)
+                ib_services.group.add_action(
+                    lambda fqdn=str(dbfqdn), ip=ip: ib_services.add_a_ptr(fqdn, ip),
+                    lambda fqdn=str(dbfqdn), ip=ip: ib_services.del_a_ptr(fqdn, ip)
+                )
 
         session.flush()
         # This may take some time if the range is big, so be verbose
         dsdb_runner.commit_or_rollback("Could not add addresses to DSDB",
                                        verbose=True)
+
+        if ib_services.feature_enabled("dynamic_range"):
+            try:
+                ib_services.group.commit_or_rollback()
+            except Exception as e:
+                dsdb_runner.rollback()
+                raise e
 
         return
