@@ -21,6 +21,7 @@ from aquilon.worker.broker import BrokerCommand
 from aquilon.aqdb.model import DnsDomain, Fqdn, ARecord, NetworkEnvironment
 from aquilon.aqdb.model.network import get_net_id_from_ip
 from aquilon.exceptions_ import ArgumentError
+from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
@@ -64,25 +65,64 @@ class CommandDelDynamicRange(BrokerCommand):
                       joinedload('fqdn.aliases'),
                       joinedload('fqdn.srv_records'),
                       joinedload('reverse_ptr'))
-        existing = q.all()
-        if not existing:
+        dbstubs = q.all()
+        if not dbstubs:
             raise ArgumentError("Nothing found in range.")
-        if existing[0].ip != startip:
+        if dbstubs[0].ip != startip:
             raise ArgumentError("No system found with IP address %s." % startip)
-        if existing[-1].ip != endip:
+        if dbstubs[-1].ip != endip:
             raise ArgumentError("No system found with IP address %s." % endip)
-        invalid = [s for s in existing if s.dns_record_type != 'dynamic_stub']
+        invalid = [s for s in dbstubs if s.dns_record_type != 'dynamic_stub']
         if invalid:
             raise ArgumentError("The range contains non-dynamic systems:\n" +
                                 "\n".join(format(i, "a") for i in invalid))
-        self.del_dynamic_stubs(session, logger, existing, exporter)
+
+        self.del_dynamic_stubs(session, logger, dbstubs, exporter)
 
     def del_dynamic_stubs(self, session, logger, dbstubs, exporter):
-        dsdb_runner = DSDBRunner(logger=logger)
+        range_class = dbstubs[0].range_class
+
         for stub in dbstubs:
-            dsdb_runner.delete_host_details(str(stub.fqdn), stub.ip)
             delete_dns_record(stub, locked=True, exporter=exporter)
+
         session.flush()
+
+        # A second loop, so we only send data to other systems once the AQ change is
+        # confirmed to be successful.
+        dsdb_runner = DSDBRunner(logger=logger)
+        ib_services = IBServices(logger)
+        for stub in dbstubs:
+            fqdn = str(stub.fqdn)
+            dsdb_runner.delete_host_details(fqdn, stub.ip)
+
+            ip = str(stub.ip)
+
+            # We do this in all cases, whatever the range_class value.
+            ib_services.group.add_action(
+                lambda fqdn=fqdn, ip=ip: ib_services.delete_a_ptr(fqdn, ip),
+                lambda fqdn=fqdn, ip=ip: ib_services.add_a_ptr(fqdn, ip)
+            )
+
+        prefix = str(dbstubs[0]).split("-", 1)
+        startip = str(dbstubs[0].ip)
+        endip = str(dbstubs[-1].ip)
+
+        if range_class == "infoblox_managed":
+            ib_services.group.add_action(
+                lambda startip=startip, endip=endip:
+                    ib_services.delete_dynamic_range(startip, endip),
+                lambda prefix=prefix, startip=startip, endip=endip:
+                    ib_services.add_dynamic_range(
+                        "{}-{}-{}".format(prefix, startip, endip), startip, endip
+                    )
+            )
 
         # This may take some time if the range is big, so be verbose
         dsdb_runner.commit_or_rollback(verbose=True)
+
+        if ib_services.feature_enabled("dynamic_range"):
+            try:
+                ib_services.group.commit_or_rollback()
+            except Exception as e:
+                dsdb_runner.rollback()
+                raise e

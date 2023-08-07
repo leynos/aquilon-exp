@@ -19,6 +19,8 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_del_address, ib_expect_del_range
+
 if __name__ == "__main__":
     import utils
     utils.import_depends()
@@ -82,30 +84,36 @@ class TestDelDynamicRange(TestBrokerCommand):
                          command)
 
     def test_200_del_range(self):
+        startip = self.net["dyndhcp0"].usable[2]
+        endip = self.net["dyndhcp0"].usable[-3]
         messages = []
-        for ip in range(int(self.net["dyndhcp0"].usable[2]),
-                        int(self.net["dyndhcp0"].usable[-3]) + 1):
+        for ip in range(int(startip), int(endip) + 1):
             address = IPv4Address(ip)
             self.dsdb_expect_delete(address)
             messages.append("DSDB: delete_host -ip_address %s" % address)
+            ib_expect_del_address(self.dynname(address, domain="aqd-unittest.ms.com"), address)
+        ib_expect_del_range(str(startip), str(endip))
         command = ["del_dynamic_range",
-                   "--startip", self.net["dyndhcp0"].usable[2],
-                   "--endip", self.net["dyndhcp0"].usable[-3]] + self.valid_just_tcm
+                   "--startip", startip,
+                   "--endip", endip] + self.valid_just_tcm
         err = self.statustest(command)
         for message in messages:
             self.matchoutput(err, message, command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_200_del_range_proto(self):
+        startip = self.net["dyndhcp5"].usable[2]
+        endip = self.net["dyndhcp5"].usable[-3]
         messages = []
-        for ip in range(int(self.net["dyndhcp5"].usable[2]),
-                        int(self.net["dyndhcp5"].usable[-3]) + 1):
+        for ip in range(int(startip), int(endip) + 1):
             address = IPv4Address(ip)
             self.dsdb_expect_delete(address)
             messages.append("DSDB: delete_host -ip_address %s" % address)
+            ib_expect_del_address(self.dynname(address, domain="aqd-unittest.ms.com"), address)
         command = ["del_dynamic_range",
-                   "--startip", self.net["dyndhcp5"].usable[2],
-                   "--endip", self.net["dyndhcp5"].usable[-3]] + self.valid_just_tcm
+                   "--startip", startip,
+                   "--endip", endip] + self.valid_just_tcm
         err = self.statustest(command)
         for message in messages:
             self.matchoutput(err, message, command)
@@ -113,11 +121,14 @@ class TestDelDynamicRange(TestBrokerCommand):
 
     def test_210_del_end_in_range(self):
         ip = self.net["dyndhcp1"].usable[-1]
+        ib_expect_del_address(self.dynname(ip, domain="aqd-unittest.ms.com"), ip)
+        ib_expect_del_range(str(ip), str(ip))
         self.dsdb_expect_delete(ip)
         command = ["del_dynamic_range", "--startip", ip, "--endip", ip] + self.valid_just_tcm
         err = self.statustest(command)
         self.matchoutput(err, "DSDB: delete_host -ip_address %s" % ip, command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_220_clearnetwork(self):
         messages = []
@@ -128,8 +139,11 @@ class TestDelDynamicRange(TestBrokerCommand):
                 continue
 
             address = IPv4Address(ip)
+            ib_expect_del_address(self.dynname(str(address), domain="one-nyp.ms.com"), str(address))
             self.dsdb_expect_delete(address)
             messages.append("DSDB: delete_host -ip_address %s" % address)
+
+        ib_expect_del_range(net.usable[0], net.usable[-1])
         command = ["del_dynamic_range",
                    "--clearnetwork", self.net["dyndhcp3"].ip] + self.valid_just_tcm
         err = self.statustest(command)
@@ -153,6 +167,7 @@ class TestDelDynamicRange(TestBrokerCommand):
         self.net.dispose_network(self, "dyndhcp2")
         self.net.dispose_network(self, "dyndhcp3")
         self.net.dispose_network(self, "dyndhcp5")
+
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestDelDynamicRange)
