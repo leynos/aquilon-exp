@@ -94,13 +94,16 @@ class CommandAddDynamicRange(BrokerCommand):
 
         dsdb_runner = DSDBRunner(logger=logger)
         ib_services = IBServices(logger)
-        ib_services.group.add_action(
-            lambda prefix=prefix, startip=str(startip), endip=str(endip): ib_services.add_dynamic_range(
-                "{}-{}-{}".format(prefix, startip, endip), startip, endip
-            ),
-            lambda startip=str(startip), endip=str(endip):
-                ib_services.delete_dynamic_range(startip, endip)
-        )
+        range_class = range_class if range_class else self.config.get("broker", "default_dynamic_range_class")
+
+        if range_class == "infoblox_managed":
+            ib_services.group.add_action(
+                lambda prefix=prefix, startip=str(startip), endip=str(endip): ib_services.add_dynamic_range(
+                    "{}-{}-{}".format(prefix, startip, endip), startip, endip
+                ),
+                lambda startip=str(startip), endip=str(endip):
+                    ib_services.delete_dynamic_range(startip, endip)
+            )
         with session.no_autoflush:
             for ipint in range(int(startip), int(endip) + 1):
                 ip = ip_address(ipint)
@@ -124,6 +127,8 @@ class CommandAddDynamicRange(BrokerCommand):
                         exporter.create(dbfqdn)
 
                 dsdb_runner.add_host_details(dbfqdn, ip)
+
+                # We do this in all cases, whatever the range_class value.
                 ib_services.group.add_action(
                     lambda fqdn=str(dbfqdn), ip=ip: ib_services.add_a_ptr(fqdn, ip),
                     lambda fqdn=str(dbfqdn), ip=ip: ib_services.del_a_ptr(fqdn, ip)
@@ -134,7 +139,7 @@ class CommandAddDynamicRange(BrokerCommand):
         dsdb_runner.commit_or_rollback("Could not add addresses to DSDB",
                                        verbose=True)
 
-        if ib_services.feature_enabled("dynamic_range") and range_class == "infoblox_managed":
+        if ib_services.feature_enabled("dynamic_range"):
             try:
                 ib_services.group.commit_or_rollback()
             except Exception as e:

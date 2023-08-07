@@ -110,6 +110,7 @@ class TestDelDynamicRange(TestBrokerCommand):
             address = IPv4Address(ip)
             self.dsdb_expect_delete(address)
             messages.append("DSDB: delete_host -ip_address %s" % address)
+            ib_expect_del_address(self.dynname(address, domain="aqd-unittest.ms.com"), address)
         command = ["del_dynamic_range",
                    "--startip", startip,
                    "--endip", endip] + self.valid_just_tcm

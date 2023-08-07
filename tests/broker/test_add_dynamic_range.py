@@ -79,6 +79,7 @@ class TestAddDynamicRange(TestBrokerCommand):
             self.dsdb_expect_add(hostname, address)
             messages.append("DSDB: add_host -host_name %s -ip_address %s "
                             "-status aq" % (hostname, address))
+            ib_expect_add_address(hostname, str(address))
 
         range_class = "vm"
 
@@ -235,7 +236,6 @@ class TestAddDynamicRange(TestBrokerCommand):
     def test_120_fillnetwork_default_domain(self):
         startip = str(self.net["dyndhcp3"].usable[0])
         endip = str(self.net["dyndhcp3"].usable[-1])
-        ib_expect_add_range("dynamic-{}-{}".format(startip, endip), startip, endip)
 
         messages = []
         for ip in range(int(self.net["dyndhcp3"].usable[0]),
@@ -292,10 +292,13 @@ class TestAddDynamicRange(TestBrokerCommand):
         net = self.net["dyndhcp3"]
         ip = str(net.usable[5])
         hostname = self.dynname(ip, domain="one-nyp.ms.com")
+
+        ib_expect_del_address(hostname, ip)
         self.dsdb_expect_delete(ip)
         command = ["del_dynamic_range", "--start", ip, "--end", ip] + self.valid_just_tcm
         self.statustest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_126_show_net(self):
         net = self.net["dyndhcp3"]

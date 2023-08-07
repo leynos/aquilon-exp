@@ -96,6 +96,8 @@ class CommandDelDynamicRange(BrokerCommand):
             dsdb_runner.delete_host_details(fqdn, stub.ip)
 
             ip = str(stub.ip)
+
+            # We do this in all cases, whatever the range_class value.
             ib_services.group.add_action(
                 lambda fqdn=fqdn, ip=ip: ib_services.delete_a_ptr(fqdn, ip),
                 lambda fqdn=fqdn, ip=ip: ib_services.add_a_ptr(fqdn, ip)
@@ -105,19 +107,20 @@ class CommandDelDynamicRange(BrokerCommand):
         startip = str(dbstubs[0].ip)
         endip = str(dbstubs[-1].ip)
 
-        ib_services.group.add_action(
-            lambda startip=startip, endip=endip:
-                ib_services.delete_dynamic_range(startip, endip),
-            lambda prefix=prefix, startip=startip, endip=endip:
-                ib_services.add_dynamic_range(
-                    "{}-{}-{}".format(prefix, startip, endip), startip, endip
-                )
-        )
+        if range_class == "infoblox_managed":
+            ib_services.group.add_action(
+                lambda startip=startip, endip=endip:
+                    ib_services.delete_dynamic_range(startip, endip),
+                lambda prefix=prefix, startip=startip, endip=endip:
+                    ib_services.add_dynamic_range(
+                        "{}-{}-{}".format(prefix, startip, endip), startip, endip
+                    )
+            )
 
         # This may take some time if the range is big, so be verbose
         dsdb_runner.commit_or_rollback(verbose=True)
 
-        if ib_services.feature_enabled("dynamic_range") and range_class == "infoblox_managed":
+        if ib_services.feature_enabled("dynamic_range"):
             try:
                 ib_services.group.commit_or_rollback()
             except Exception as e:
