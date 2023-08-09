@@ -153,7 +153,7 @@ class CommandUpdateAlias(BrokerCommand):
                     if (clear_ttl or ttl or old_target is not None):
                         ib_services.update_dns_alias(
                             str(dbalias.fqdn),
-                            new_target=str(dbalias.target) if old_target is not None else None,
+                            new_target=str(dbalias.target),
                             ttl=-1 if clear_ttl else ttl)
             except ProcessException as e:
                 if dsdb_runner:

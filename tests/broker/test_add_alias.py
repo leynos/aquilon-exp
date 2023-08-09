@@ -529,9 +529,10 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
                        '--ttl', 100,
                        '--dns_environment', dns_environment] + self.valid_just_tcm
             if dns_environment == 'internal':
-                ib_expect_update_alias("alias-fqdn.test-infoblox.cc", ttl=100, fail=True)
+                ib_expect_update_alias("alias-fqdn.test-infoblox.cc", target="alias-target-1.test-infoblox.cc", ttl=100,
+                                       fail=True)
                 self.iberrortest(command)
-                ib_expect_update_alias("alias-fqdn.test-infoblox.cc", ttl=100)
+                ib_expect_update_alias("alias-fqdn.test-infoblox.cc", target="alias-target-1.test-infoblox.cc", ttl=100)
             self.noouttest(command)
 
             command = ['update_alias',

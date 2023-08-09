@@ -155,7 +155,7 @@ def ib_expect_add_alias(fqdn, target, ttl=None, response_code=201, response_body
 def ib_expect_update_alias(fqdn, target=None, ttl=None, response_code=204, response_body="", fail=False):
     if fail:
         response_code = 400
-    payload = {"eonid": eonid}
+    payload = {"eonid": eonid, "create_if_doesnt_exist": True}
     if target:
         payload["target"] = target
     if ttl:
