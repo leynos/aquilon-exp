@@ -143,7 +143,7 @@ def add_disk(dbmachine, disk, controller, share=None, filesystem=None,
              disk_tech=None, diskgroup_key=None, model_key=None,
              usage=None, vsan_policy_key=None, comments=None):
     for dbdisk in dbmachine.disks:
-        if dbdisk.device_name == disk:
+        if dbdisk.device_name == disk.lower():
             raise ArgumentError("{0} already has a disk named {1!s}."
                                 .format(dbmachine, dbdisk.device_name))
         if dbdisk.bootable:
@@ -152,6 +152,9 @@ def add_disk(dbmachine, disk, controller, share=None, filesystem=None,
             elif boot:
                 raise ArgumentError("{0} already has a boot disk."
                                     .format(dbmachine))
+        if address and address.lower() == dbdisk.address:
+            raise ArgumentError("Machine {0} SCSI address {1} is already in use by disk {2!s}."
+                                .format(dbmachine, address, dbdisk.device_name))
 
     if boot is None:
         # Backward compatibility: "sda"/"c0d0" is bootable, except if there
