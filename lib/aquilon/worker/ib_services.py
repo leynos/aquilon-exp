@@ -264,6 +264,7 @@ class IBServices(object):
     @with_timer
     def add_dynamic_range(self, name, start_address, end_address):
         payload = {
+            "eonid":         self.eonid,
             "name":          name,
             "start_address": str(start_address),
             "end_address":   str(end_address),
@@ -274,9 +275,17 @@ class IBServices(object):
 
     @with_timer
     def delete_dynamic_range(self, start_address, end_address):
+        params = { "eonid": self.eonid }
         url = "/ranges/{}/{}".format(start_address, end_address)
+        url = self._generate_url_from_params(url, params)
 
         self._http_request("DELETE", url)
+
+    @with_timer
+    def show_dynamic_range(self, start_address, end_address):
+        url = "/ranges/{}/{}".format(str(start_address), str(end_address))
+
+        return self._http_request("GET", url)
 
     def _http_request(self, http_cmd, url, data=None):
         if not self.enabled:

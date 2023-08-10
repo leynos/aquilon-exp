@@ -5224,6 +5224,25 @@
         <transport trigger="fillnetwork" method="post" path="dynamic_range/fill/%(fillnetwork)s"/>
     </command>
 
+    <command name="update_dynamic_range">
+        Update an existing range of dynamic hosts, that is, hosts whose IP address
+        is assigned dynamically via DHCP, with a generated hostname.  The first or
+        last IP in the range, or any IP in-between can be specified to identify it.
+        <p/>
+        The only field that can be updated is the range_class.  Changes to or
+        from a class of "infoblox_managed" will result in Infoblox updates.
+        <optgroup mandatory = "True" fields="all">
+            <option name="ip" type="ip">Any IP address within the dynamic range to change</option>
+            <option name="range_class" type="string">Class of the dynamic range:  "vm" or "infoblox_managed"</option>
+        </optgroup>
+        <optgroup>
+            <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
+            <option name="reason" type="string">Human readable description of why the operation was performed</option>
+            <option name="cm_check" type="flag">Do a dry-run, and report the objects in-scope for change-management.</option>
+        </optgroup>
+        <transport method="post" path="dynamic_range/%(ip)s"/>
+    </command>
+
     <command name="del_dynamic_range">
         Delete the allocated range of dynamic hosts.  The start and end
         IP addresses are inclusive.  The IPs must be on the same network.

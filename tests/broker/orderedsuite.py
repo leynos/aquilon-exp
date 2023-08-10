@@ -310,6 +310,7 @@ from .test_update_cluster_systemlist import TestUpdateClusterSystemList
 from .test_update_console_server import TestUpdateConsoleServer
 from .test_update_disk import TestUpdateDisk
 from .test_update_dns_environment import TestUpdateDnsEnvironment
+from .test_update_dynamic_range import TestUpdateDynamicRange
 from .test_update_entitlement_type import TestUpdateEntitlementType
 from .test_update_esx_cluster import TestUpdateESXCluster
 from .test_update_feature import TestUpdateFeature
@@ -395,6 +396,7 @@ class BrokerTestSuite(unittest.TestSuite):
                  TestAddMachine, TestAddDisk, TestAddInterface,
                  TestAddAddress,
                  TestAddRouterAddress, TestAddDynamicRange,
+                 TestUpdateDynamicRange,
                  TestAddAquilonHost, TestAddWindowsHost, TestAddAuroraHost,
                  TestPollNetworkDevice,
                  TestUpdateNetworkDeviceMac,
