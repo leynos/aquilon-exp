@@ -17,7 +17,7 @@
 # limitations under the License.
 """Module for testing the add dynamic range command."""
 
-from ipaddress import ip_address, IPv4Network
+from ipaddress import ip_address, IPv4Address, IPv4Network
 import re
 import unittest
 
