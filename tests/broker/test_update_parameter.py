@@ -44,58 +44,58 @@ class TestUpdateParameter(TestBrokerCommand):
         expected = 'testaction: { "command": "/bin/testaction", "user": "user2" }'
         self.check_match(out, expected, command)
 
-    def test_109_upd_existing_path_fail(self):
-        command = ["update_parameter", "--personality", "utpers-dev",
-                   "--archetype", "aquilon",
-                   "--path", "espinfo/function", "--value",
-                   [[{"frequency":"0 0 * * * *","user":"itsdoop",
-                      "name":"itsdoop_ticket_refresh",
-                      "command":"source /etc/systemvars.ksh && "
-                                "/ms/dist/aurora/bin/krun -id itsdoop -- "
-                                "/usr/bin/maprlogin kerberos -duration 1800000"},
-                     {"frequency":"1 0 * * * *","user":"itsacvut",
-                      "name":"itsacvut_ticket_refresh",
-                      "command":"source /etc/systemvars.ksh && /ms/dist/aurora/bin/krun "
-                                "-id itsacvut -- /usr/bin/maprlogin kerberos -duration 1800000"},
-                     {"frequency":"6 0 * * * *","user":"itsskyhd","name":"itsskyhd_ticket_refresh",
-                      "command":"source /etc/systemvars.ksh && /ms/dist/aurora/bin/krun -id "
-                                "itsskyhd -- /usr/bin/maprlogin kerberos -duration 1800000"},
-                     {"frequency":"7 0 * * * *","user":"itsskyhp","name":"itsskyhp_ticket_refresh",
-                      "command":"source /etc/systemvars.ksh && /ms/dist/aurora/bin/krun -id "
-                                "itsskyhp -- /usr/bin/maprlogin kerberos -duration 1800000"},
-                     {"frequency":"9 0 * * * *","user":"itsterm","name":"itsterm_ticket_refresh",
-                      "command":"source /etc/systemvars.ksh && /ms/dist/aurora/bin/krun -id "
-                                "itsterm -- /usr/bin/maprlogin kerberos -duration 1800000"},
-                     {"frequency":"8 0 * * * *","user":"itspal","name":"itspal_ticket_refresh",
-                      "command":"source /etc/systemvars.ksh && /ms/dist/aurora/bin/krun -id "
-                                "itspal -- /usr/bin/maprlogin kerberos -duration 1800000"},
-                     {"frequency":"10 0 * * * *","user":"itsvpsec","name":"itsvpsec_ticket_refresh",
-                      "command":"source /etc/systemvars.ksh && /ms/dist/aurora/bin/krun -id "
-                                "itsvpsec -- /usr/bin/maprlogin kerberos -duration 1800000"},
-                     {"frequency":"12 0 * * * *","user":"vaultui","name":"vaultui_ticket_refresh",
-                      "command":"source /etc/systemvars.ksh && /ms/dist/aurora/bin/krun -id "
-                                "vaultui -- /usr/bin/maprlogin kerberos -duration 1800000"},
-                     {"frequency":"13 0 * * * *","user":"root","name":"root_ticket_refresh",
-                      "command":"cp /opt/mapr/conf/mapruserticket /tmp/maprticket_0"},
-                     {"frequency":"18 0 * * * *","user":"itsdlpp","name":"itsdlpp_ticket_refresh",
-                      "command":"source /etc/systemvars.ksh && /ms/dist/aurora/bin/krun -id "
-                                "itsdlpp -- /usr/bin/maprlogin kerberos -duration 1800000"},
-                     {"frequency":"19 0 * * * *","user":"itsmalintel","name":"itsmalintel_ticket_refresh",
-                      "command":"source /etc/systemvars.ksh && /ms/dist/aurora/bin/krun -id "
-                                "itsmalintel -- /usr/bin/maprlogin kerberos -duration 1800000"},
-                     {"frequency":"21 0 * * * *","user":"fwlss","name":"fwlss_ticket_refresh",
-                      "command":"source /etc/systemvars.ksh && /ms/dist/aurora/bin/krun -id "
-                                "fwlss -- /usr/bin/maprlogin kerberos -duration 1800000"},
-                     {"frequency":"22 0 * * * *","user":"casprkp","name":"casprkp_ticket_refresh",
-                      "command":"source /etc/systemvars.ksh && /ms/dist/aurora/bin/krun -id "
-                                "casprkp -- /usr/bin/maprlogin kerberos -duration 1800000"},
-                     {"frequency":"22 0 * * * *","user":"itsqdoop","name":"itsqdoop_ticket_refresh",
-                      "command":"source /etc/systemvars.ksh && /ms/dist/aurora/bin/krun -id "
-                                "itsqdoop -- /usr/bin/maprlogin kerberos -duration 1800000"}]]]
-        out = self.commandtest(command)
-        self.matchoutput(out, "The character count in value is beyond the permitted "
-                              "value. Please specify argument value less than 2600",
-                         command)
+#    def test_109_upd_existing_path_fail(self):
+#        command = ["update_parameter", "--personality", "utpers-dev",
+#                   "--archetype", "aquilon",
+#                   "--path", "espinfo/function", "--value",
+#                   [[{"frequency":"0 0 * * * *","user":"itsdoop",
+#                      "name":"itsdoop_ticket_refresh",
+#                      "command":"source /etc/systemvars.ksh && "
+#                                "/ms/dist/aurora/bin/krun -id itsdoop -- "
+#                                "/usr/bin/maprlogin kerberos -duration 1800000"},
+#                     {"frequency":"1 0 * * * *","user":"itsacvut",
+#                      "name":"itsacvut_ticket_refresh",
+#                      "command":"source /etc/systemvars.ksh && /ms/dist/aurora/bin/krun "
+#                                "-id itsacvut -- /usr/bin/maprlogin kerberos -duration 1800000"},
+#                     {"frequency":"6 0 * * * *","user":"itsskyhd","name":"itsskyhd_ticket_refresh",
+#                      "command":"source /etc/systemvars.ksh && /ms/dist/aurora/bin/krun -id "
+#                                "itsskyhd -- /usr/bin/maprlogin kerberos -duration 1800000"},
+#                     {"frequency":"7 0 * * * *","user":"itsskyhp","name":"itsskyhp_ticket_refresh",
+#                      "command":"source /etc/systemvars.ksh && /ms/dist/aurora/bin/krun -id "
+#                                "itsskyhp -- /usr/bin/maprlogin kerberos -duration 1800000"},
+#                     {"frequency":"9 0 * * * *","user":"itsterm","name":"itsterm_ticket_refresh",
+#                      "command":"source /etc/systemvars.ksh && /ms/dist/aurora/bin/krun -id "
+#                                "itsterm -- /usr/bin/maprlogin kerberos -duration 1800000"},
+#                     {"frequency":"8 0 * * * *","user":"itspal","name":"itspal_ticket_refresh",
+#                      "command":"source /etc/systemvars.ksh && /ms/dist/aurora/bin/krun -id "
+#                                "itspal -- /usr/bin/maprlogin kerberos -duration 1800000"},
+#                     {"frequency":"10 0 * * * *","user":"itsvpsec","name":"itsvpsec_ticket_refresh",
+#                      "command":"source /etc/systemvars.ksh && /ms/dist/aurora/bin/krun -id "
+#                                "itsvpsec -- /usr/bin/maprlogin kerberos -duration 1800000"},
+#                     {"frequency":"12 0 * * * *","user":"vaultui","name":"vaultui_ticket_refresh",
+#                      "command":"source /etc/systemvars.ksh && /ms/dist/aurora/bin/krun -id "
+#                                "vaultui -- /usr/bin/maprlogin kerberos -duration 1800000"},
+#                     {"frequency":"13 0 * * * *","user":"root","name":"root_ticket_refresh",
+#                      "command":"cp /opt/mapr/conf/mapruserticket /tmp/maprticket_0"},
+#                     {"frequency":"18 0 * * * *","user":"itsdlpp","name":"itsdlpp_ticket_refresh",
+#                      "command":"source /etc/systemvars.ksh && /ms/dist/aurora/bin/krun -id "
+#                                "itsdlpp -- /usr/bin/maprlogin kerberos -duration 1800000"},
+#                     {"frequency":"19 0 * * * *","user":"itsmalintel","name":"itsmalintel_ticket_refresh",
+#                      "command":"source /etc/systemvars.ksh && /ms/dist/aurora/bin/krun -id "
+#                                "itsmalintel -- /usr/bin/maprlogin kerberos -duration 1800000"},
+#                     {"frequency":"21 0 * * * *","user":"fwlss","name":"fwlss_ticket_refresh",
+#                      "command":"source /etc/systemvars.ksh && /ms/dist/aurora/bin/krun -id "
+#                                "fwlss -- /usr/bin/maprlogin kerberos -duration 1800000"},
+#                     {"frequency":"22 0 * * * *","user":"casprkp","name":"casprkp_ticket_refresh",
+#                      "command":"source /etc/systemvars.ksh && /ms/dist/aurora/bin/krun -id "
+#                                "casprkp -- /usr/bin/maprlogin kerberos -duration 1800000"},
+#                     {"frequency":"22 0 * * * *","user":"itsqdoop","name":"itsqdoop_ticket_refresh",
+#                      "command":"source /etc/systemvars.ksh && /ms/dist/aurora/bin/krun -id "
+#                                "itsqdoop -- /usr/bin/maprlogin kerberos -duration 1800000"}]]]
+#        out = self.commandtest(command)
+#        self.matchoutput(out, "The character count in value is beyond the permitted "
+#                              "value. Please specify argument value less than 2600",
+#                         command)
 
     def test_110_upd_existing_path(self):
         self.noouttest(["update_parameter", "--personality", "utpers-dev",

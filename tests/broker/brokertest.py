@@ -42,9 +42,9 @@ DSDB_ISSUED_CMDS_FILE = "issued_dsdb_cmds"
 CM_JUSTIFICATION = "No justification found, please supply a TCM or SN ticket."
 CM_EMERGENCY = "Use of emergency requires a reason to be supplied."
 CM_FORMAT = "Failed to parse justification, no valid TCM or SN ticket found."
-CM_EDM = "Executing an emergency change without a justification, EDM has not be called."
 CM_WARN = 'Continuing with execution; however in the future this operation will fail.'
 LOGGER = logging.getLogger(__name__)
+CM_VALID_ROLE = 'Approval Warning: Executing an emergency change without a justification, EDM has not be called.'
 
 
 class TestBrokerCommand(unittest.TestCase):
@@ -501,7 +501,7 @@ class TestBrokerCommand(unittest.TestCase):
 
     def emergencynojustification(self, command, **kwargs):
         (out, err) = self.successtest(command, **kwargs)
-        self.matchoutput(err, CM_EDM, command)
+        self.matchoutput(err, CM_VALID_ROLE, command)
 
     def justificationmissingtest_warn(self, command, **kwargs):
         (out, err) = self.successtest(command, **kwargs)

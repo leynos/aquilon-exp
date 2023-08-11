@@ -16,8 +16,10 @@
 # limitations under the License.
 """Contains the logic for `aq update service --instance`."""
 
+from aquilon.aqdb.model import Service
+from aquilon.aqdb.model import ServiceInstance
+from aquilon.exceptions_ import ArgumentError
 from aquilon.worker.broker import BrokerCommand
-from aquilon.aqdb.model import Service, ServiceInstance
 
 
 class CommandUpdateServiceInstance(BrokerCommand):
@@ -26,7 +28,14 @@ class CommandUpdateServiceInstance(BrokerCommand):
     required_parameters = ["service", "instance"]
 
     def render(self, session, plenaries, service, instance, max_clients, default,
-               comments, **_):
+               comments, need_client_list=None, allow_alias_bindings=None, **_):
+
+        if need_client_list is not None:
+            raise ArgumentError("The --need_client_list option cannot be used with the --instance option")
+
+        if allow_alias_bindings is not None:
+            raise ArgumentError("The --allow_alias_bindings option cannot be used with the --instance option")
+
         dbservice = Service.get_unique(session, name=service, compel=True)
         dbsi = ServiceInstance.get_unique(session, service=dbservice,
                                           name=instance, compel=True)
