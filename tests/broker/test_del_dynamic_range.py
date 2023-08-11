@@ -130,6 +130,25 @@ class TestDelDynamicRange(TestBrokerCommand):
         self.dsdb_verify()
         self.ib_verify()
 
+    def test_215_del_range(self):
+        startip = self.net["dyndhcp9"].usable[2]
+        endip = self.net["dyndhcp9"].usable[-3]
+        messages = []
+        for ip in range(int(startip), int(endip) + 1):
+            address = IPv4Address(ip)
+            self.dsdb_expect_delete(address)
+            messages.append("DSDB: delete_host -ip_address %s" % address)
+            ib_expect_del_address(self.dynname(address, domain="aqd-unittest.ms.com"), address)
+        ib_expect_del_range(str(startip), str(endip))
+        command = ["del_dynamic_range",
+                   "--startip", startip,
+                   "--endip", endip] + self.valid_just_tcm
+        err = self.statustest(command)
+        for message in messages:
+            self.matchoutput(err, message, command)
+        self.dsdb_verify()
+        self.ib_verify()
+
     def test_220_clearnetwork(self):
         messages = []
         net = self.net["dyndhcp3"]
@@ -167,6 +186,8 @@ class TestDelDynamicRange(TestBrokerCommand):
         self.net.dispose_network(self, "dyndhcp2")
         self.net.dispose_network(self, "dyndhcp3")
         self.net.dispose_network(self, "dyndhcp5")
+        self.net.dispose_network(self, "dyndhcp8")
+        self.net.dispose_network(self, "dyndhcp9")
 
 
 if __name__ == '__main__':
