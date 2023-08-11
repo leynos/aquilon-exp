@@ -1008,13 +1008,6 @@ class MockHub(object):
         self.buildings.append(name)
         return name
 
-    def add_buildings(self, count=1, city=None):
-        city = self.get_or_create_city(city)
-        buildings = []
-        for i in range(count):
-            buildings.append(self.add_building(city=city))
-        return buildings
-
     def add_rack(self, row=None, column=None, building=None):
         row = self.get_or_create_name(row, length=4)
         column = self.get_or_create_name(column, length=4)
@@ -1033,6 +1026,13 @@ class MockHub(object):
         for rack in self.racks:
             self._engine.noouttest(['del_rack', '--rack', rack])
         self.racks = {}
+
+    def add_buildings(self, count=1, city=None):
+        city = self.get_or_create_city(city)
+        buildings = []
+        for i in range(count):
+            buildings.append(self.add_building(city=city))
+        return buildings
 
     def add_desk(self, name=None, building=None):
         name = self.get_or_create_name(name)
