@@ -391,18 +391,19 @@ class MachineTestMixin(EventsTestMixin):
                              "--fqdn", fqdn])
 
         self.dsdb_verify()
-        self.ib_verify()
 
         if manager_iface:
             command = ["add_manager", "--hostname", hostname,
                        "--interface", manager_iface,
                        "--ip", manager_ip, "--mac", manager_ip.mac]
             short, domain = hostname.split(".", 1)
+            ib_expect_add_address(short + "r." + domain, str(manager_ip))
             self.dsdb_expect_add(short + "r." + domain, manager_ip,
                                  manager_iface, manager_ip.mac)
             self.noouttest(command)
             self.dsdb_verify()
 
+        self.ib_verify()
         show_cmd, show_out = self.verify_show_machine(machine, interfaces,
                                                       zebra=zebra, **kwargs)
         self.matchoutput(show_out, "Primary Name: %s [%s]" % (hostname, ip),

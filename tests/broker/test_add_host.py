@@ -596,6 +596,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                 mgmt_net = self.net["ut12_oob"]
             ip = net.usable[i + 1]
             ib_expect_add_address(hostname, ip)
+            ib_expect_add_address(manager, mgmt_net[port])
             self.dsdb_expect_add(hostname, ip, "eth0", ip.mac)
             self.dsdb_expect_add(manager, mgmt_net[port], "mgmt0",
                                  mgmt_net[port].mac)
