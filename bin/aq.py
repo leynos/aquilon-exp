@@ -386,8 +386,8 @@ if __name__ == "__main__":
             #    sys.exit(0)
         except UnicodeDecodeError as e:
             print("Non-ascii characters detected on command options."
-                  "Only ASCII characters are allowed for --%s" %k)
-            sys.exit(0)
+                  "Only ASCII characters are allowed for --%s" %k, file=sys.stderr)
+            sys.exit(1)
 
     # if a client config file is specified on command line
     # that should overide  env or default options.
