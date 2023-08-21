@@ -250,14 +250,24 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
     def test_160_rename_switch_if(self):
         command = ["update", "interface", "--network_device", "ut3gd1r04",
                    "--interface", "vlan110", "--rename_to", "vlan220"]
-        self.dsdb_expect_rename("ut3gd1r04-vlan110.aqd-unittest.ms.com",
-                                "ut3gd1r04-vlan220.aqd-unittest.ms.com",
-                                "vlan110", "vlan220")
-        self.dsdb_expect_rename("ut3gd1r04-vlan110-hsrp.aqd-unittest.ms.com",
-                                "ut3gd1r04-vlan220-hsrp.aqd-unittest.ms.com",
-                                "vlan110_hsrp", "vlan220_hsrp")
+
+        fqdn_pre       = "ut3gd1r04-vlan110.aqd-unittest.ms.com"
+        fqdn_post      = "ut3gd1r04-vlan220.aqd-unittest.ms.com"
+        fqdn_hsrp_pre  = "ut3gd1r04-vlan110-hsrp.aqd-unittest.ms.com"
+        fqdn_hsrp_post = "ut3gd1r04-vlan220-hsrp.aqd-unittest.ms.com"
+        ip      = str(self.net["unknown1"].usable[44])
+        ip_hsrp = str(self.net["unknown1"].usable[42])
+
+        ib_expect_del_address(fqdn_hsrp_pre, ip_hsrp)
+        ib_expect_del_address(fqdn_pre, ip)
+        ib_expect_add_address(fqdn_post, ip)
+        ib_expect_add_address(fqdn_hsrp_post, ip_hsrp)
+
+        self.dsdb_expect_rename(fqdn_pre, fqdn_post, "vlan110", "vlan220")
+        self.dsdb_expect_rename(fqdn_hsrp_pre, fqdn_hsrp_post, "vlan110_hsrp", "vlan220_hsrp")
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
         self.check_plenary_contents('network_device', 'americas', 'ut', 'ut3gd1r04',
                                     contains='vlan220', clean='vlan110')
         self.check_plenary_contents('hostdata', 'ut3gd1r04.aqd-unittest.ms.com',
