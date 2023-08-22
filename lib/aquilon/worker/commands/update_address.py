@@ -50,18 +50,21 @@ class CommandUpdateAddress(BrokerCommand):
         cm.consider(dbdns_rec.fqdn)
         cm.validate()
 
+        # Save state before making change, mostly for possible rollbacks
         old_ip = dbdns_rec.ip
         old_comments = dbdns_rec.comments
+        old_reverse_ptr = dbdns_rec.reverse_ptr
+        old_ttl = dbdns_rec.ttl
+        fqdn = str(dbdns_rec.fqdn)
 
         if ip:
             dbnetwork = get_net_id_from_ip(session, ip, dbnet_env)
             update_address(session, dbdns_rec, ip, dbnetwork)
 
         if reverse_ptr:
-            old_reverse = dbdns_rec.reverse_ptr
             set_reverse_ptr(session, logger, dbdns_rec, reverse_ptr)
-            if old_reverse and old_reverse != dbdns_rec.reverse_ptr:
-                delete_target_if_needed(session, old_reverse)
+            if old_reverse_ptr and old_reverse_ptr != dbdns_rec.reverse_ptr:
+                delete_target_if_needed(session, old_reverse_ptr)
 
         if ttl is not None:
             dbdns_rec.ttl = ttl
@@ -94,29 +97,28 @@ class CommandUpdateAddress(BrokerCommand):
             dsdb_runner.commit_or_rollback()
 
         ib_services = IBServices(logger)
-        if ib_services.feature_enabled("address") and (ip or reverse_ptr or clear_ttl or ttl):
-            try:
-                a_fqdn = str(dbdns_rec.fqdn)
-                ib_services.update_a_ptr(a_fqdn, old_ip, ip if ip else None, reverse_ptr, -1 if clear_ttl else ttl)
-                if ip:
-                    for address_alias in dbdns_rec.address_aliases:
-                        alias_fqdn = str(address_alias.fqdn)
-                        alias_target = str(address_alias.target)
-                        if alias_target == a_fqdn:
-                            logger.debug("Updating AddressAlias {} -> {} in IB with new IP address {}".format(
-                                alias_fqdn, alias_target, ip)
-                            )
-                            """
-                            We can't guarantee IB will know about the address alias at this stage, because the
-                            address alias calls are not wired into Infoblox. In reality, they should all exist in
-                            Infoblox due to the DNS sync tool, but if an address alias was only just created and has
-                            not been synced by the batch process, it won't exist right now.
+        if ip or reverse_ptr or clear_ttl or ttl:
+            ib_services.group.add_action(
+                lambda fqdn=fqdn, new_ip=ip, reverse_ptr=reverse_ptr, clear_ttl=clear_ttl, ttl=ttl:
+                    ib_services.update_a_ptr(fqdn, old_ip, new_ip, reverse_ptr, -1 if clear_ttl else ttl),
+                lambda fqdn=fqdn, new_ip=ip, old_ip=old_ip, old_reverse_ptr=old_reverse_ptr, old_ttl=old_ttl:
+                    ib_services.update_a_ptr(fqdn, new_ip if new_ip else old_ip, old_ip if new_ip else None, old_reverse_ptr, old_ttl)
+            )
+            if ip:
+                for address_alias in dbdns_rec.address_aliases:
+                    alias_fqdn = str(address_alias.fqdn)
+                    alias_target = str(address_alias.target)
+                    if alias_target == fqdn:
+                        ib_services.group.add_action(
+                            lambda fqdn=alias_fqdn, new_ip=ip, old_ip=old_ip, ttl=ttl, clear_ttl=clear_ttl:
+                                ib_services.update_a_ptr(fqdn, old_ip, new_ip, ttl=-1 if clear_ttl else ttl),
+                            lambda fqdn=alias_fqdn, new_ip=ip, old_ip=old_ip, ttl=ttl, clear_ttl=clear_ttl:
+                                ib_services.update_a_ptr(fqdn, new_ip, old_ip, old_ttl)
+                        )
 
-                            That said, the PATCH /dns/a_ptr currently returns a 204 if no records are found that match,
-                            so any failure (a 400) should invoke a rollback to DSDB, but won't roll back the
-                            update_a_ptr change on the A record.
-                            """
-                            ib_services.update_a_ptr(alias_fqdn, old_ip, dbdns_rec.ip, ttl=-1 if clear_ttl else ttl)
+        if ib_services.feature_enabled("address"):
+            try:
+                ib_services.group.commit_or_rollback()
             except ProcessException as e:
                 if dsdb_runner:
                     dsdb_runner.rollback()

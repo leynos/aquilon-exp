@@ -129,6 +129,13 @@ class CommandDelInterfaceAddress(BrokerCommand):
         if addr.is_shared and not other_uses:
             dsdb_runner.delete_host_details(fqdn, ip)
 
+        ib_services = IBServices(logger)
+        for dns_rec in addr.dns_records:
+            ib_services.group.add_action(
+                lambda fqdn=dns_rec, ip=ip: ib_services.delete_a_ptr(fqdn, ip),
+                lambda fqdn=dns_rec, ip=ip: ib_services.add_a_ptr(fqdn, ip)
+            )
+
         with plenaries.transaction():
             if dbhw_ent.host and dbhw_ent.host.archetype.name == 'aurora':
                 logger.client_info("WARNING: removing IP %s from AQDB and "
@@ -137,12 +144,9 @@ class CommandDelInterfaceAddress(BrokerCommand):
                 dsdb_runner.update_host(dbhw_ent, oldinfo)
                 dsdb_runner.commit_or_rollback("Could not add host to DSDB")
 
-            ib_services = IBServices(logger)
             if ib_services.feature_enabled("interface_address"):
                 try:
-                    # TODO: Disable DHCP in Infoblox
-                    for dns_rec in addr.dns_records:
-                        ib_services.delete_a_ptr(dns_rec, ip)
+                    ib_services.group.commit_or_rollback()
                 except ProcessException as e:
                     dsdb_runner.rollback()
                     raise e

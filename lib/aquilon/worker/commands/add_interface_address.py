@@ -201,7 +201,6 @@ class CommandAddInterfaceAddress(BrokerCommand):
             ib_services = IBServices(logger)
             if newly_created and ib_services.feature_enabled("interface_address"):
                 try:
-                    # TODO: Enable DHCP in Infoblox
                     ib_services.add_a_ptr(
                         fqdn, ip,
                         assign_ptr_to_fqdn=None if dbdns_rec.reverse_ptr is None else str(dbdns_rec.reverse_ptr))
