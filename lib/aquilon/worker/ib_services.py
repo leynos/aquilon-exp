@@ -77,7 +77,7 @@ class IBServices(object):
     def _build_a_ptr_payload(self, name, ip, assign_ptr_to_fqdn, ttl):
         payload = { "eonid": self.eonid }
         if name:
-            payload["name"] = name
+            payload["name"] = str(name)
         if ip:
             payload["address"] = str(ip)
         if assign_ptr_to_fqdn:
