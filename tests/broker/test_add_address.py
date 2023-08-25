@@ -21,6 +21,8 @@ import unittest
 import json
 
 from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_update_address
 
 if __name__ == "__main__":
     from broker import utils
@@ -632,6 +634,55 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         mh.delete_address("add-address-test.test-infoblox.cc", "10.25.0.2", fail_dsdb=True)
         mh.delete_address("add-address-test.test-infoblox.cc", "10.25.0.2", fail_ib=True)
         mh.delete_address("add-address-test.test-infoblox.cc", "10.25.0.2")
+        mh.delete()
+
+    def test_910_address_with_alias(self):
+        # This test checks that when we update an address which has address alias
+        # both the address and address alias records are updated in infoblox
+        # It also checks that if anything fails, the expected rollback commands will execute
+        mh = MockHub(self)
+
+        mh.add_dns_domain('test-infoblox.cc', restricted=False)
+        mh.add_network()
+        mh.add_address("address.test-infoblox.cc", "10.25.0.1")
+
+        command = ["add_address_alias", "--fqdn", "address-alias.test-infoblox.cc",
+                   "--target", "address.test-infoblox.cc"] + self.valid_just_tcm
+        ib_expect_add_address("address-alias.test-infoblox.cc", "10.25.0.1", create_ptr=False)
+        self.noouttest(command)
+
+        command = ["update_address", "--fqdn", "address.test-infoblox.cc",
+                   "--ip", "10.25.0.2"] + self.valid_just_tcm
+
+        self.dsdb_expect_update("address.test-infoblox.cc", ip="10.25.0.2", fail=True)
+        self.dsdberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_update("address.test-infoblox.cc", ip="10.25.0.2")
+        ib_expect_update_address("address.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2", fail=True)
+        self.dsdb_expect_update("address.test-infoblox.cc", ip="10.25.0.1")  # Rollback dsdb call
+        self.iberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_update("address.test-infoblox.cc", ip="10.25.0.2")
+        ib_expect_update_address("address.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2")
+        ib_expect_update_address("address-alias.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2", fail=True)
+        self.dsdb_expect_update("address.test-infoblox.cc", ip="10.25.0.1")  # Rollback dsdb call
+        ib_expect_update_address("address.test-infoblox.cc", "10.25.0.2", new_ip="10.25.0.1")  # Rolback first ib call
+        self.iberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_update("address.test-infoblox.cc", ip="10.25.0.2")
+        ib_expect_update_address("address.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2")
+        ib_expect_update_address("address-alias.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2")
+        self.noouttest(command)
+        mh.addresses["address.test-infoblox.cc", "internal"] = {"ip": "10.25.0.2"}
+        self.dsdb_verify()
+
+        command = ["del_address_alias", "--fqdn", "address-alias.test-infoblox.cc"] + self.valid_just_tcm
+        ib_expect_del_address("address-alias.test-infoblox.cc", "10.25.0.2", delete_ptr=False)
+        self.noouttest(command)
+
         mh.delete()
 
 
