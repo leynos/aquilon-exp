@@ -28,6 +28,8 @@ from aquilon.exceptions_ import ProcessException
 from broker.brokertest import TestBrokerCommand
 from broker.utils import MockHub
 
+from ipaddress import IPv4Address
+
 from requests.adapters import HTTPAdapter
 from requests.adapters import Retry
 from requests import Session
@@ -111,6 +113,16 @@ class IBServicesClient(object):
     def delete_dns_alias(self, fqdn):
         url = "/dns/aliases/{}".format(fqdn)
         self._http_request("DELETE", url)
+
+    def delete_dynamic_range(self, start_address, end_address):
+        url = "/ranges/{}/{}".format(start_address, end_address)
+
+        self._http_request("DELETE", url, ignore_statuses=[404])
+
+    def show_dynamic_range(self, start_address, end_address):
+        url = "/ranges/{}/{}".format(str(start_address), str(end_address))
+
+        return self._http_request("GET", url, ignore_statuses=[404])
 
     def _http_request(self, http_cmd, url, data=None, ignore_statuses=[]):
         response = None
@@ -248,7 +260,7 @@ class TestIBEndToEnd(TestBrokerCommand):
         super(TestIBEndToEnd, self).tearDown(*args, **kwargs)
         self._clean_ib_services()
 
-    def test_100_ib_end_to_end(self):
+    def test_100_aptr_cname(self):
         mh = MockHub(self)
         dns_checker = DnsChecker(self)
 
@@ -394,6 +406,61 @@ class TestIBEndToEnd(TestBrokerCommand):
 
         self.noouttest(['del_network', '--ip', '2.3.4.0'])
 
+        mh.delete()
+
+    def test_200_dynamic_range(self):
+        mh = MockHub(self)
+
+        mh.add_dns_domain(self.test_domain, restricted=False)
+        building = mh.add_building()
+        self.noouttest(['add_network', '--network', 'ib-testing', '--ip', self.test_network_obj['ip'],
+                        '--prefixlen', self.test_network_obj['prefixlen'], '--building', building])
+
+        start_ip = "2.3.4.100"
+        end_ip = "2.3.4.103"
+
+        # Make sure the dynamic range we are about to create was not left lingering from a previous test run
+        self.ib_services.delete_dynamic_range(start_ip, end_ip)
+
+        messages = []
+        for ip in range(int(IPv4Address(start_ip.decode('UTF-8'))),
+                        int(IPv4Address(end_ip.decode('UTF-8'))) + 1):
+            address = IPv4Address(ip)
+            hostname = self.dynname(address, domain=self.test_domain)
+            self.dsdb_expect_add(hostname, address)
+            messages.append("DSDB: add_host -host_name %s -ip_address %s "
+                            "-status aq" % (hostname, address))
+
+        command = ['add_dynamic_range',
+                   '--startip', start_ip,
+                   '--endip', end_ip,
+                   '--range_class', 'infoblox_managed',
+                   '--dns_domain', self.test_domain] + self.valid_just_tcm
+        err = self.statustest(command)
+        for message in messages:
+            self.matchoutput(err, message, command)
+        self.dsdb_verify()
+
+        if not self.ib_services.show_dynamic_range(start_ip, end_ip).ok:
+            self.fail("Expected dynamic range does not exist in infoblox")
+
+        command = ['del_dynamic_range',
+                   '--clearnetwork', self.test_network_obj['ip']]
+        messages = []
+        for ip in range(int(IPv4Address(start_ip.decode('UTF-8'))),
+                        int(IPv4Address(end_ip.decode('UTF-8'))) + 1):
+            address = IPv4Address(ip)
+            messages.append("DSDB: delete_host -ip_address %s" % address)
+            self.dsdb_expect_delete(address)
+        err = self.statustest(command)
+        for message in messages:
+            self.matchoutput(err, message, command)
+        self.dsdb_verify()
+
+        if self.ib_services.show_dynamic_range(start_ip, end_ip).status_code != 404:
+            self.fail("Expected dynamic range to be not found in infoblox")
+
+        self.noouttest(['del_network', '--ip', self.test_network_obj['ip']])
         mh.delete()
 
 
