@@ -47,7 +47,10 @@ class ServiceInstanceServerFormatter(ObjectFormatter):
         if attrs:
             msg += " [" + ", ".join(attrs) + "]"
 
-        return indent + "Server Binding: %s" % msg
+        if srv.address:
+            return indent + "FQDN Binding: %s" % msg
+        else:
+            return indent + "Server Binding: %s" % msg
 
 ObjectFormatter.handlers[ServiceInstanceServer] = ServiceInstanceServerFormatter()
 
@@ -149,11 +152,19 @@ class ServiceInstanceFormatter(ObjectFormatter):
                     self.redirect_proto(srv.service_address, srv_msg.service_address)
                     target_ip = str(srv.service_address.ip)
                     target_fqdn = str(srv.service_address.dns_record.fqdn)
+                elif srv.address:
+                    target_ip = str(srv.address.ip)
+                    target_fqdn = str(srv.address.fqdn)
 
                 # Finally add the target ip and fqdn
                 if target_ip:
                     srv_msg.target_ip = target_ip
-                srv_msg.target_fqdn = target_fqdn
+                if target_fqdn:
+                    # We never expect target_fqdn to be None
+                    # If it is, is because there is an error in the logic above somewhere
+                    # We check anyway to stop the broker from failing with an exception
+                    # which would impair downstream processes
+                    srv_msg.target_fqdn = target_fqdn
 
     # Applies to service_instance/share as well.
     @classmethod

@@ -390,6 +390,26 @@ class TestBindServer(TestBrokerCommand):
         out = self.badrequesttest(command)
         self.matchoutput(out, "The server binding already exists.", command)
 
+        command = ['show_service', '--service', 'test-service', '--instance', 'test-service-instance']
+        out = self.commandtest(command)
+        self.matchclean(out, "Server Binding:", command)
+        self.matchoutput(out, "FQDN Binding: xyz.test-bind-service.cc [IP: 10.25.0.1]", command)
+
+        command = ['show_service', '--service', 'test-service', '--instance', 'test-service-instance',
+                   '--format', 'proto']
+        svc = self.protobuftest(command, expect=1)[0]
+        self.assertEqual(svc.name, "test-service",
+                         "Service name mismatch: %s instead of test-service\n".format(svc.name))
+        si = svc.serviceinstances[0]
+        self.assertEqual(len(si.provider), 1)
+        self.assertEqual(si.name, "test-service-instance",
+                         "Service instance name mismatch: %s instead of test-service-instance\n".format(si.name))
+        self.assertEqual(si.provider[0].target_ip, "10.25.0.1",
+                         "Service target ip mismatch: %s instead of 10.25.0.1\n".format(si.provider[0].target_ip))
+        self.assertEqual(si.provider[0].target_fqdn, "xyz.test-bind-service.cc",
+                         "Service target fqdn mismatch: %s instead of xyz.test-bind-service.cc\n".format(
+                            si.provider[0].target_fqdn))
+
         out = self.commandtest(['cat', '--service', 'test-service', '--instance', 'test-service-instance'])
         self.searchoutput(out,
                           r'"servers" = list\(\s*'
