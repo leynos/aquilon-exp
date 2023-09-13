@@ -691,14 +691,14 @@ class MockHub:
         # Delete domains.
         self.delete_domains(verify)
         # Delete SRV Records
-        for k in self.srvrecords.keys():
+        for k in list(self.srvrecords):
             self.delete_srvrecord(self.srvrecords[k]['service'],
                                   self.srvrecords[k]['dns_domain'])
         # Delete Aliases
-        for fqdn in self.aliases.keys():
+        for fqdn in list(self.aliases):
             self.delete_alias(fqdn)
         # Delete Addresses
-        for fqdn in self.addresses.keys():
+        for fqdn in list(self.addresses):
             self.delete_address(fqdn, self.addresses[fqdn]['ip'])
         # Delete DNS domains.
         for dns_domain in self.dns_domains[:]:

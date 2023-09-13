@@ -205,7 +205,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         out = self.badrequesttest(command)
         self.matchoutput(out,
                          "Expected an IP address for --ip: "
-                         "u'not-an-ip-address' does not appear to be an IPv4 or IPv6 address.",
+                         "'not-an-ip-address' does not appear to be an IPv4 or IPv6 address.",
                          command)
 
     def test_122_add_unittest16_bad_domain(self):

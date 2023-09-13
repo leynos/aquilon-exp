@@ -106,7 +106,7 @@ class StreamLoggerThread(Thread):
 
                 if self.context:
                     callWithContext(self.context, self.logger.log,
-                                    self.loglevel, data.rstrip())
+                                    self.loglevel, (data.rstrip()).encode())
                 else:
                     self.logger.log(self.loglevel, data.rstrip())
 
@@ -180,7 +180,7 @@ def run_command(args, env=None, path="/", logger=LOGGER, loglevel=logging.INFO,
 
     with _popen_lock:
         p = Popen(args=command_args, stdin=proc_stdin, stdout=PIPE, stderr=PIPE,
-                  cwd=path, env=shell_env, text=True)
+                  cwd=path, env=shell_env, universal_newlines=True)
 
     # If we want to stream the command's output back to the client while the
     # command is still executing, then we have to doit ourselves. Otherwise,

@@ -117,7 +117,6 @@ def parse_sandbox(session, sandbox, default_author=None):
             dbauthor = User.get_unique(session, default_author, compel=True)
         else:
             dbauthor = None
-    print("branch", branch)
     # This function may be called when the branch does not exist (yet) in the
     # DB, so we need to do the normalization manually
     branch = AqStr.normalize(branch)

@@ -65,5 +65,5 @@ def flatten_entitlements(lines, dbobj, prefix=''):
     for entit_type, entit_values in list(entitlements.items()):
         for k, v in list(entit_values.items()):
             path = '{}system/entitlements/{}/{}'.format(prefix, entit_type, k)
-            for entry in sorted(dict(vv) for vv in v):
+            for entry in (dict(vv) for vv in v):
                 pan_append(lines, path, entry)

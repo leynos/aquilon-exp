@@ -26,6 +26,7 @@ if __name__ == "__main__":
 from six.moves.urllib_parse import urlencode, quote  # pylint: disable=F0401
 from six.moves.urllib_request import urlopen  # pylint: disable=F0401
 from six.moves.urllib_error import HTTPError  # pylint: disable=F0401
+import urllib.request
 
 from .brokertest import TestBrokerCommand
 
@@ -49,12 +50,12 @@ class TestClientBypass(TestBrokerCommand):
                     arglist.append("%s=%s" % (quote(key), quote(value)))
                 if arglist:
                     url += "?" + "&".join(arglist)
-                stream = urlopen(url)
+                stream = urllib.request.urlopen(url)
             status = stream.getcode()
-            output = stream.read()
+            output = stream.read().decode()
         except HTTPError as err:
             status = err.code
-            output = err.read()
+            output = err.read().decode()
 
         self.assertEqual(status, expect_status,
                          "HTTP status code for %s (%s) was %d instead of %d"

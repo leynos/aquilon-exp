@@ -342,12 +342,15 @@ class BrokerCommand:
     def pre_render(self, request, requestid, **command_kwargs):
         com_kwargs = {}
         for k, v in command_kwargs.items():
-            if isinstance(v, bytes):
-                com_kwargs[str(k)] = v.decode()
-            elif isinstance(v, list):
-                com_kwargs[str(k)] = [i.decode() for i in v]
-            else:
-                com_kwargs[str(k)] = v
+            try:
+                if isinstance(v, bytes):
+                    com_kwargs[str(k)] = v.decode()
+                elif isinstance(v, list) and not isinstance(v, bytes):
+                    com_kwargs[str(k)] = [i.decode() for i in v]
+                else:
+                    com_kwargs[str(k)] = v
+            except Exception:
+                com_kwargs[k] = v
 
         user = request.getPrincipal()
         request.status.create_description(user=user, command=self.command,

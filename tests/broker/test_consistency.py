@@ -70,7 +70,7 @@ class TestConsistency(TestBrokerCommand):
         env = os.environ.copy()
         env['AQDCONF'] = self.config.baseconfig
         out, err = Popen(checker, stdout=PIPE, stderr=PIPE,
-                         env=env).communicate()
+                         env=env, universal_newlines=True).communicate()
         self.assertEmptyErr(err, command)
 
         # 1. BranchChecker
@@ -119,7 +119,8 @@ class TestConsistency(TestBrokerCommand):
         env = os.environ.copy()
         env['AQDCONF'] = self.config.baseconfig
         out, err = Popen([checker, "--repair", "--only=BranchChecker"],
-                         stdout=PIPE, stderr=PIPE, env=env).communicate()
+                         stdout=PIPE, stderr=PIPE,
+                         env=env, universal_newlines=True).communicate()
         self.assertEmptyErr(err, command)
 
         self.matchoutput(out, "Deleting branch branch-only", command)
@@ -142,7 +143,8 @@ class TestConsistency(TestBrokerCommand):
         env = os.environ.copy()
         env['AQDCONF'] = self.config.baseconfig
         out, err = Popen([checker, "--repair", "--only=DomainChecker"],
-                         stdout=PIPE, stderr=PIPE, env=env).communicate()
+                         stdout=PIPE, stderr=PIPE, env=env,
+                         universal_newlines=True).communicate()
         self.assertEmptyErr(err, command)
 
         dir = os.path.join(self.config.get("broker", "domainsdir"),

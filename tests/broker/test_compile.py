@@ -381,7 +381,8 @@ class TestCompile(VerifyNotificationsMixin, TestBrokerCommand):
                 "--batch_size", "10"]
         if self.config.getboolean('panc', 'gzip_output'):
             args.append("--compress_output")
-        p = Popen(args, stdout=PIPE, stderr=PIPE)
+        p = Popen(args, stdout=PIPE, stderr=PIPE,
+                  universal_newlines=True)
         out, err = p.communicate()
         self.assertEqual(p.returncode, 0,
                          "Non-0 return code %s for %s, "

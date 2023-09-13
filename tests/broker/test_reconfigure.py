@@ -386,7 +386,7 @@ class TestReconfigure(VerifyGrnsMixin, VerifyNotificationsMixin,
     def test_1010_reconfigurelist_grn_pre(self):
         hosts = {"aquilon95.aqd-unittest.ms.com": "grn:/ms/ei/aquilon/unittest",
                  "aquilon91.aqd-unittest.ms.com": "grn:/ms/ei/aquilon/aqd"}
-        for h, grn in hosts.iteritems():
+        for h, grn in hosts.items():
             command = "show host --hostname %s" % h
             out = self.commandtest(command.split(" "))
             self.matchoutput(out, "Owned by GRN: %s" % grn, command)

@@ -64,7 +64,7 @@ class Base:
         label = self.__class__.__name__
         attrs = []
         mapper = inspect(self.__class__)
-        for field, prop in list(mapper.column_attrs.items()):
+        for field, prop in mapper.column_attrs.items():
             # Do not load deferred columns, they can't be that interesting
             if prop.deferred:
                 continue
@@ -112,7 +112,11 @@ class Base:
         clsname = self.__class__._get_class_label(tolower=lowercase)
         if class_only:
             return clsname.__format__(passthrough)
-        val = "{} {}".format(clsname, instance)
+        val_int = "{} {}".format(clsname, instance)
+        if not val_int.startswith("Fqdn"):
+            val =val_int.replace("Fqdn ", "")
+        else:
+            val = val_int
         return val.__format__(passthrough)
 
     def __format__(self, format_spec):
@@ -280,7 +284,7 @@ class Base:
 
             # If we've looked up an attribute recursively, then don't throw it
             # away
-            for rel, value in list(attr_cache.items()):
+            for rel, value in attr_cache.items():
                 set_committed_value(obj, rel, value)
             return obj
         except NoResultFound:

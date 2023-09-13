@@ -735,7 +735,7 @@ class TestBrokerCommand(unittest.TestCase):
                             "STDOUT:\n@@@\n'%s'\n@@@\n"
                             "STDERR:\n@@@\n'%s'\n@@@\n"
                             % (command, out, err))
-        return (out, err)
+        return (out.decode(), err.decode())
 
     def check_git_merge_health(self, repo):
         command = "merge HEAD"

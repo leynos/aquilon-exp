@@ -263,7 +263,7 @@ class UserSync(object):
         )
 
         # Yield each line found on the standard output
-        for line in iter(run_script.stdout.readline, b''):
+        for line in run_script.stdout.readlines():
             yield line.strip()
 
         # At the end of the run, show each line found on the standard error

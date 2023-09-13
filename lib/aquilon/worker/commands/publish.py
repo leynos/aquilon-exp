@@ -63,13 +63,11 @@ class CommandPublish(BrokerCommand):
 
         # Most of the logic here is duplicated in deploy
         kingdir = self.config.get("broker", "kingdir")
-        # print("kingdir", kingdir)
         tmpfile = NamedTemporaryFile()
         tmpfile.write(b64decode(bundle))
         tmpfile.flush()
 
         kingrepo = GitRepo(kingdir, logger)
-        # print("kingrepo", kingrepo)
         try:
             with kingrepo.temp_clone(dbsandbox.name) as temprepo:
                 temprepo.run(["bundle", "verify", tmpfile.name])

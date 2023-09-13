@@ -252,7 +252,6 @@ class ChangeManagement(object):
                     "enforce_validation": self.enforce_validation,
                     }
         cmd.extend(["--metadata", json.dumps(metadata)])
-        print("cmd", cmd)
         out = run_command(cmd)
         try:
             out_dict = json.loads(out)

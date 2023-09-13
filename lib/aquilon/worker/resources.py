@@ -159,6 +159,8 @@ class ResponsePage(resource.Resource):
             # one might want to merge the lists, instead of overwriting with
             # the new.  Not sure if that matters right now.
             request.args.update(parse_qs(request.content.read().decode()))
+
+        request.args.update(parse_qs(request.content.read().decode()))
         # FIXME: This breaks HEAD and OPTIONS handling...
         handler = self.handlers.get(request.method.decode(), None)
         if not handler:
@@ -169,6 +171,8 @@ class ResponsePage(resource.Resource):
         # Retrieve the instance from the handler and hook up the logger
         broker_command = handler.broker_command
         request.logger.add_command_handler(broker_command.module_logger)
+        if b"requestid" in request.args:
+            request.args["requestid"] = [request.args[b"requestid"][0].decode("ascii")]
 
         # Process requestid early, so we can keep track of the request even if
         # parsing the rest of the arguments fail

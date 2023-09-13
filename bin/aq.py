@@ -166,7 +166,7 @@ class CustomAction:
             print("\nThe following changes will be included in this push:\n",
                   file=sys.stdout)
             print("------------------------", file=sys.stdout)
-            print(str(out), file=sys.stdout)
+            print(out.decode(), file=sys.stdout)
             print("------------------------", file=sys.stdout)
         else:
             print("\nYou haven't made any changes on this branch\n",

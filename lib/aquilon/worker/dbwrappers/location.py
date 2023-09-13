@@ -80,10 +80,11 @@ def get_locations(session, query_options=None, compel=False,
 
     # Extract location-specific options from kwargs
     location_args = {}
-    for key, mapper in list(Location.__mapper__.polymorphic_map.items()):
+    for key, mapper in Location.__mapper__.polymorphic_map.items():
         if kwargs.get(locfunc(key)) is not None:
             # If the data is not a list, put it in a form of one
             values = kwargs[locfunc(key)]
+
             if not isinstance(values, list):
                 values = [values, ]
 

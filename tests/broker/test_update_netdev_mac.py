@@ -150,14 +150,14 @@ class TestUpdateNetworkDeviceMac(TestBrokerCommand):
         command = ["update_network_device", "--network_device",
                    "ut3gd1r01.aqd-unittest.ms.com", "--discovered_macs", data]
         out = self.badrequesttest(command)
-        self.matchoutput(out, "Failed validating u'pattern'", command)
+        self.matchoutput(out, "Failed validating 'pattern'", command)
 
     def testmissingport(self):
         data = json.dumps([("00:11:22:33:44:55",)])
         command = ["update_network_device", "--network_device",
                    "ut3gd1r01.aqd-unittest.ms.com", "--discovered_macs", data]
         out = self.badrequesttest(command)
-        self.matchoutput(out, "Failed validating u'minItems'", command)
+        self.matchoutput(out, "Failed validating 'minItems'", command)
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestUpdateNetworkDeviceMac)

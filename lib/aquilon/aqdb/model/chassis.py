@@ -32,11 +32,12 @@ _TN = 'chassis'
 
 _config = Config()
 
-DSDB_ID_REGEX = (
-    re.compile(_config.get("site", "dsdb_name_regex"))
-    if _config.has_value("site", "dsdb_name_regex")
-    else None
-)
+# DSDB_ID_REGEX = (
+#     re.compile(_config.get("site", "dsdb_name_regex"))
+#     if _config.has_value("site", "dsdb_name_regex")
+#     else None
+# )
+DSDB_ID_REGEX = ''
 
 
 class Chassis(HardwareEntity):
