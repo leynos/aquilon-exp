@@ -27,7 +27,7 @@ else:
 
     ms.version.addpkg('lxml', '3.2.5')
     ms.version.addpkg('six', '1.16.0')
-    ms.version.addpkg("ms.directory", "3.2.0")
+    ms.version.addpkg("ms.directory", "4.0.0")
     ms.version.addpkg("decorator", "4.4.2")
     ms.version.addpkg("pykerberos", "1.2.1-1.16")
     ms.version.addpkg("winkerberos", "0.7.0")
