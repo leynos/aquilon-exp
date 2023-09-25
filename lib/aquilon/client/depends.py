@@ -25,10 +25,10 @@ except ImportError:
 else:
     import sys
 
-    # ms.version.addpkg('lxml', '4.5.1-2.9.3-py37')
     ms.version.addpkg('lxml', '4.5.1-2.9.3')
-    ms.version.addpkg('six', '1.15.0')
+    ms.version.addpkg('six', '1.16.0')
     ms.version.addpkg("requests-kerberos", "0.12.0")
+    ms.version.addpkg("ms.directory", "4.0.0")
     ms.version.addpkg("pykerberos", "1.2.1-1.16")
     ms.version.addpkg("urllib3", "2.0.2")
     ms.version.addpkg("chardet", "3.0.4")
