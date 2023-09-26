@@ -38,7 +38,7 @@ else:
     ms.version.addpkg('cdb', '0.34')
     ms.version.addpkg('six', '1.9.0')
     ms.version.addpkg('jsonschema', '2.3.0')
-    ms.version.addpkg("ms.directory", "3.2.0")
+    ms.version.addpkg("ms.directory", "4.0.0")
     ms.version.addpkg("decorator", "4.4.2")
     ms.version.addpkg("pykerberos", "1.2.1-1.16")
     ms.version.addpkg("winkerberos", "0.7.0")
