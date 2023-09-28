@@ -27,11 +27,6 @@ and 'unbind', 'map' and 'unmap', etc.
 from __future__ import absolute_import
 
 import unittest
-import os
-from subprocess import Popen
-
-from aquilon.config import Config
-
 from .test_add_address import TestAddAddress
 from .test_add_address_alias import TestAddAddressAlias
 from .test_add_alias import TestAddAlias
@@ -230,6 +225,7 @@ from .test_flush import TestFlush
 from .test_get import TestGet
 from .test_grns import TestGrns
 from .test_hub import TestHub
+from .test_ib_services_start import TestIBServicesStart
 from .test_justification import TestJustification
 from .test_make import TestMake
 from .test_make_aquilon import TestMakeAquilon
@@ -314,6 +310,7 @@ from .test_update_cluster_systemlist import TestUpdateClusterSystemList
 from .test_update_console_server import TestUpdateConsoleServer
 from .test_update_disk import TestUpdateDisk
 from .test_update_dns_environment import TestUpdateDnsEnvironment
+from .test_update_dynamic_range import TestUpdateDynamicRange
 from .test_update_entitlement_type import TestUpdateEntitlementType
 from .test_update_esx_cluster import TestUpdateESXCluster
 from .test_update_feature import TestUpdateFeature
@@ -346,6 +343,7 @@ from .test_vm_migration import TestVMMigration
 from .test_vulcan2 import TestVulcan20
 from .test_vulcan_localdisk import TestVulcanLocalDisk
 
+from .test_ib_end_to_end import TestIBEndToEnd
 
 class BrokerTestSuite(unittest.TestSuite):
     """Set up the broker's unit tests in an order that allows full coverage.
@@ -356,11 +354,85 @@ class BrokerTestSuite(unittest.TestSuite):
     are not have explicit tests between add and delete.
 
     """
-    test_start = [TestBrokerStart,
-                  TestPing, TestStatus]
-    test_restart = [TestBrokerReStart,
-                    TestPing, TestStatus]
     test_stop = [TestBrokerStop]
+
+    def __init__(self, start=None, resume=False, single=False,
+                 *args, **kwargs):
+        if resume and not start:
+            raise ValueError('Cannot resume without a start test given.')
+        # Initialise.
+        unittest.TestSuite.__init__(self, *args, **kwargs)
+
+        # Add the required set of non-optional, initialising tests depending on
+        # whether the testing is to be resumed after a prior failed test run or
+        # not.  NB: this set of tests precedes the test given with 'start' (or
+        # test 0 if 'start' not given).
+        for case in (self.test_start, self.test_restart)[resume]:
+            self.addTest(unittest.TestLoader().loadTestsFromTestCase(case))
+        # Load the first (after the required start/restart set) test (and the
+        # remaining tests in case of single not true.  This is either test 0 or
+        # the test given with 'start'.
+        if start:
+            # Find indices for the given (in the 'TestCase.test_method format')
+            # start method.  The first index we need points to the given test
+            # case (stored in self.test_list).  The second one is the index of
+            # the given test method (on a sorted list of all test methods
+            # defined in the test case class).
+            start_indices = self._get_case_and_method_indices(start)
+        else:
+            start_indices = 0, 0
+        # Load the given start, or the test with index 0, 0.
+        method_list = list(
+            unittest.TestLoader().loadTestsFromTestCase(
+                self.test_list[start_indices[0]])
+        )
+        # We want all the subsequent methods from the selected test
+        # case unless single is True, in which case we do not want to load any
+        # more methods.
+        last_method_index = start_indices[1] + 1 if single else None
+        self.addTests(
+            list(method_list)[start_indices[1]:last_method_index]
+        )
+
+        # When appropriate, load tests from all the remaining (sans stop) test
+        # cases.
+        # We do not want to load any other (than the stop) tests in case of
+        # single.
+        if single:
+            end_case_index = start_indices[0]
+        else:
+            end_case_index = len(self.test_list)
+        for i in range(start_indices[0] + 1, end_case_index):
+            self.addTest(unittest.TestLoader().loadTestsFromTestCase(
+                self.test_list[i]))
+
+        # Add the required end test(s).
+        for case in self.test_stop:
+            self.addTest(unittest.TestLoader().loadTestsFromTestCase(case))
+
+    def _get_case_and_method_indices(self, case_and_method):
+        try:
+            case_name, method_name = case_and_method.split('.')
+            case_index = [test.__name__ for test in self.test_list
+                          ].index(case_name)
+            method_list = list(
+                unittest.TestLoader().loadTestsFromTestCase(
+                    self.test_list[case_index])
+            )
+            # noinspection PyProtectedMember
+            method_index = [method._testMethodName for method in method_list
+                            ].index(method_name)
+        except ValueError:
+            raise ValueError(
+                'Invalid value of the "start" parameter. Please pass --start '
+                'YourSelectedTestCase.your_selected_test_method, to [re]start '
+                'testing from the specified test.')
+        return case_index, method_index
+
+
+class BrokerIntegrationTestSuite(BrokerTestSuite):
+    test_start = [TestBrokerStart, TestPing, TestStatus, TestIBServicesStart]
+    test_restart = [TestBrokerReStart, TestPing, TestStatus, TestIBServicesStart]
     test_list = [TestAddRole, TestPermission,
                  TestAddDnsDomain, TestAddDnsEnvironment,
                  TestAddUserType, TestAddUser, TestShowPermission,
@@ -399,6 +471,7 @@ class BrokerTestSuite(unittest.TestSuite):
                  TestAddMachine, TestAddDisk, TestAddInterface,
                  TestAddAddress,
                  TestAddRouterAddress, TestAddDynamicRange,
+                 TestUpdateDynamicRange,
                  TestAddAquilonHost, TestAddWindowsHost, TestAddAuroraHost,
                  TestPollNetworkDevice,
                  TestUpdateNetworkDeviceMac,
@@ -546,75 +619,8 @@ class BrokerTestSuite(unittest.TestSuite):
                  TestClientFailure, TestAudit, TestShowActiveCommands,
                  TestDocumentation]
 
-    def __init__(self, start=None, resume=False, single=False,
-                 *args, **kwargs):
-        if resume and not start:
-            raise ValueError('Cannot resume without a start test given.')
-        # Initialise.
-        unittest.TestSuite.__init__(self, *args, **kwargs)
 
-        # Add the required set of non-optional, initialising tests depending on
-        # whether the testing is to be resumed after a prior failed test run or
-        # not.  NB: this set of tests precedes the test given with 'start' (or
-        # test 0 if 'start' not given).
-        for case in (self.test_start, self.test_restart)[resume]:
-            self.addTest(unittest.TestLoader().loadTestsFromTestCase(case))
-        # Load the first (after the required start/restart set) test (and the
-        # remaining tests in case of single not true.  This is either test 0 or
-        # the test given with 'start'.
-        if start:
-            # Find indices for the given (in the 'TestCase.test_method format')
-            # start method.  The first index we need points to the given test
-            # case (stored in self.test_list).  The second one is the index of
-            # the given test method (on a sorted list of all test methods
-            # defined in the test case class).
-            start_indices = self._get_case_and_method_indices(start)
-        else:
-            start_indices = 0, 0
-        # Load the given start, or the test with index 0, 0.
-        method_list = list(
-            unittest.TestLoader().loadTestsFromTestCase(
-                self.test_list[start_indices[0]])
-        )
-        # We want all the subsequent methods from the selected test
-        # case unless single is True, in which case we do not want to load any
-        # more methods.
-        last_method_index = start_indices[1] + 1 if single else None
-        self.addTests(
-            list(method_list)[start_indices[1]:last_method_index]
-        )
-
-        # When appropriate, load tests from all the remaining (sans stop) test
-        # cases.
-        # We do not want to load any other (than the stop) tests in case of
-        # single.
-        if single:
-            end_case_index = start_indices[0]
-        else:
-            end_case_index = len(self.test_list)
-        for i in range(start_indices[0] + 1, end_case_index):
-            self.addTest(unittest.TestLoader().loadTestsFromTestCase(
-                self.test_list[i]))
-
-        # Add the required end test(s).
-        for case in self.test_stop:
-            self.addTest(unittest.TestLoader().loadTestsFromTestCase(case))
-
-    def _get_case_and_method_indices(self, case_and_method):
-        try:
-            case_name, method_name = case_and_method.split('.')
-            case_index = [test.__name__ for test in self.test_list
-                          ].index(case_name)
-            method_list = list(
-                unittest.TestLoader().loadTestsFromTestCase(
-                    self.test_list[case_index])
-            )
-            # noinspection PyProtectedMember
-            method_index = [method._testMethodName for method in method_list
-                            ].index(method_name)
-        except ValueError:
-            raise ValueError(
-                'Invalid value of the "start" parameter. Please pass --start '
-                'YourSelectedTestCase.your_selected_test_method, to [re]start '
-                'testing from the specified test.')
-        return case_index, method_index
+class InfobloxIntegrationTestSuite(BrokerTestSuite):
+    test_start = [TestBrokerStart]
+    test_restart = [TestBrokerReStart]
+    test_list = [TestIBEndToEnd]

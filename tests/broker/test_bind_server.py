@@ -26,6 +26,7 @@ the TestPrebindServer tests.
 import unittest
 
 from broker.utils import MockHub
+from mock_ib_services import ib_expect_add_alias
 
 if __name__ == "__main__":
     import utils
@@ -59,10 +60,14 @@ class TestBindServer(TestBrokerCommand):
                         "--service", "utsvc", "--instance", "utsi2"])
 
     def test_140_add_alias(self):
+        ib_expect_add_alias("srv-alias.one-nyp.ms.com", "unittest00.one-nyp.ms.com")
         self.noouttest(["add_alias", "--fqdn", "srv-alias.one-nyp.ms.com",
                         "--target", "unittest00.one-nyp.ms.com"])
+        self.ib_verify()
+        ib_expect_add_alias("srv-alias2.one-nyp.ms.com", "unittest00.one-nyp.ms.com")
         self.noouttest(["add_alias", "--fqdn", "srv-alias2.one-nyp.ms.com",
                         "--target", "unittest00.one-nyp.ms.com"])
+        self.ib_verify()
 
     def test_141_bind_aliased_server(self):
         command = ["bind_server", "--alias", "srv-alias.one-nyp.ms.com",

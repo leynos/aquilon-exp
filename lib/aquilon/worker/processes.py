@@ -43,12 +43,13 @@ from aquilon.exceptions_ import (ProcessException, AquilonError, ArgumentError,
                                  InternalError)
 from aquilon.config import Config, running_from_source
 from aquilon.aqdb.model import Machine
-from aquilon.utils import remove_dir
+from aquilon.utils import remove_dir, with_timer
 
 LOGGER = logging.getLogger(__name__)
 config = Config()
 
 DSDB_ENABLED = config.getboolean("dsdb", "enable")
+
 if DSDB_ENABLED:
     try:
         import ms.version
@@ -60,17 +61,10 @@ if DSDB_ENABLED:
         # sys.path for python modules when running tests
         # DSDB python client
         import ms.version
-        ms.version.addpkg("requests-kerberos", "0.11.0")
-        ms.version.addpkg("kerberos", "1.3.1-1.16-ms1-py27-64")
         ms.version.addpkg("cryptography", "2.8-py27-64")
         ms.version.addpkg("enum34", "1.1.6")
         ms.version.addpkg("dns", "1.10.0")
-        ms.version.addpkg('urllib3', '1.25.5')
-        ms.version.addpkg('chardet', '3.0.4')
-        ms.version.addpkg('certifi', '2019.6.16')
-        ms.version.addpkg("idna", "2.8")
-        ms.version.addpkg("requests", "2.26.0")
-        ms.version.addpkg('ms.dsdb', '6.0.32')
+        ms.version.addpkg('ms.dsdb', '6.0.39')
     import ms.dsdb.client
 
 # subprocess.Popen is not thread-safe in Python 2, so we need locking
@@ -444,12 +438,13 @@ class DSDBEnabledMeta(type):
         if DSDB_ENABLED:
             if instance.dsdb_use_testdb:
                 os.environ['DSDB_USE_TESTDB'] = "1"
+                os.environ["DSDB_BROKER_URL"] = "http://dsdb.webfarm-qa.ms.com"
 
             # a timeout of zero in the broker config means "no timeout";  for ms.dsdb,
             # zero means immediate timeout (i.e. non-blocking operation).
             use_timeout = config.lookup_tool_timeout('dsdb') or None
 
-            instance.dsdbclient = ms.dsdb.client.DSDB(plant='prod',
+            instance.dsdbclient = ms.dsdb.client.DSDB(plant="prod",
                                                       timeout=use_timeout)
         return instance
 
@@ -463,7 +458,7 @@ class DSDBRunner(object):
         self.dsdb_use_testdb = config.getboolean("dsdb", "dsdb_use_testdb")
         self.actions = []
         self.rollback_list = []
-        self.manager_grn = config.get('dsdb', 'manager_grn')
+        self.manager_grn = config.get('broker', 'manager_grn')
 
     def normalize_iface(self, iface):
         return INVALID_NAME_RE.sub("_", iface)
@@ -506,7 +501,7 @@ class DSDBRunner(object):
                 if cmd_line:
                     cmd = ["dsdb"]
                     cmd.extend(args)
-                    self.logger.client_info("DSDB: %s" %
+                    self.logger.client_info("Rollback DSDB transaction: %s" %
                                             " ".join(str(a) for a in args))
                     run_command(cmd, env=self.getenv(), logger=self.logger)
                 else:
@@ -1067,6 +1062,7 @@ class DSDBRunner(object):
         return fields
 
     def show_chassis(self, chassis):
+        self.logger.info("Invoking show_chassis {}".format(chassis))
         chassis_data = self.dsdbclient.show_chassis(chassis_name=chassis).results()
         fields = {}
         if len(chassis_data) > 1:

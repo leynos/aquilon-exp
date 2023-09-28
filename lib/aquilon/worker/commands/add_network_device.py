@@ -18,8 +18,8 @@
 
 from sqlalchemy.orm import subqueryload
 
-from aquilon.exceptions_ import ArgumentError
-from aquilon.aqdb.model import NetworkDevice, Model, Archetype, Chassis, NetworkDeviceChassisSlot
+from aquilon.exceptions_ import ArgumentError, ProcessException
+from aquilon.aqdb.model import NetworkDevice, Model, Archetype, Chassis, NetworkDeviceChassisSlot, ARecord
 from aquilon.aqdb.model.network import get_net_id_from_ip
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import grab_address
@@ -28,9 +28,13 @@ from aquilon.worker.dbwrappers.interface import (get_or_create_interface,
                                                  assign_address,
                                                  check_netdev_iftype)
 from aquilon.worker.dbwrappers.host import create_host
+from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
 from aquilon.worker.templates.switchdata import PlenarySwitchData
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+
+# The render function unhelpfully shadows this function
+f_type = type
 
 
 class CommandAddNetworkDevice(BrokerCommand):
@@ -136,4 +140,10 @@ class CommandAddNetworkDevice(BrokerCommand):
             dsdb_runner.update_host(dbnetdev, None)
             dsdb_runner.commit_or_rollback("Could not add network device to DSDB")
 
-        return
+            ib_services = IBServices(logger)
+            if f_type(dbdns_rec) == ARecord and ib_services.feature_enabled("network_device"):
+                try:
+                    ib_services.add_a_ptr(str(dbdns_rec.fqdn), ip)
+                except ProcessException as e:
+                    dsdb_runner.rollback()
+                    raise e

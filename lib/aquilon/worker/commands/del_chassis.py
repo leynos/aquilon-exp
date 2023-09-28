@@ -16,12 +16,13 @@
 # limitations under the License.
 """Contains the logic for `aq del chassis`."""
 
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.worker.broker import BrokerCommand
-from aquilon.aqdb.model import Chassis
-from aquilon.worker.processes import DSDBRunner
+from aquilon.aqdb.model import Chassis, ARecord
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.hardware_entity import check_only_primary_ip
+from aquilon.worker.ib_services import IBServices
+from aquilon.worker.processes import DSDBRunner
 
 
 class CommandDelChassis(BrokerCommand):
@@ -53,4 +54,12 @@ class CommandDelChassis(BrokerCommand):
 
         dsdb_runner.commit_or_rollback("Could not remove chassis from DSDB")
 
-        return
+        # chassis may not hve a primary interface assigned
+        ip = dbchassis.primary_name.ip if type(dbchassis.primary_name) == ARecord else None
+        ib_services = IBServices(logger)
+        if ib_services.feature_enabled("chassis") and ip:
+            try:
+                ib_services.delete_a_ptr(str(dbchassis.primary_name.fqdn), ip)
+            except ProcessException as e:
+                dsdb_runner.rollback()
+                raise e

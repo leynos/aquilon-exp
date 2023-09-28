@@ -24,6 +24,8 @@ if __name__ == "__main__":
     utils.import_depends()
 
 from brokertest import TestBrokerCommand
+from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_del_address
 
 
 class TestSearchHost(TestBrokerCommand):
@@ -662,13 +664,13 @@ class TestSearchHost(TestBrokerCommand):
 
     def testdomainmismatch(self):
         ip = self.net["unknown0"].usable[34]
-        self.dsdb_expect_add("mismatch.one-nyp.ms.com", ip,
-                             "eth0_mismatch",
-                             primary="infra1.aqd-unittest.ms.com")
+        fqdn = "mismatch.one-nyp.ms.com"
+        ib_expect_add_address(fqdn, str(ip), reverse_ptr="infra1.aqd-unittest.ms.com")
+        self.dsdb_expect_add(fqdn, ip, "eth0_mismatch", primary="infra1.aqd-unittest.ms.com")
         self.noouttest(["add_interface_address",
                         "--machine", "infra1.aqd-unittest.ms.com",
                         "--interface", "eth0", "--label", "mismatch",
-                        "--fqdn", "mismatch.one-nyp.ms.com", "--ip", ip])
+                        "--fqdn", fqdn, "--ip", ip])
 
         command = ["search_host", "--hostname", "infra1.aqd-unittest.ms.com"]
         out = self.commandtest(command)
@@ -685,11 +687,13 @@ class TestSearchHost(TestBrokerCommand):
             infra1.one-nyp.ms.com
             """, command)
 
+        ib_expect_del_address(fqdn, str(ip))
         self.dsdb_expect_delete(ip)
         self.noouttest(["del_interface_address",
                         "--machine", "infra1.aqd-unittest.ms.com",
                         "--interface", "eth0", "--label", "mismatch"])
         self.dsdb_verify()
+        self.ib_verify()
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestSearchHost)

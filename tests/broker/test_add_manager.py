@@ -24,6 +24,7 @@ if __name__ == "__main__":
     utils.import_depends()
 
 from brokertest import TestBrokerCommand
+from mock_ib_services import ib_expect_add_address
 
 
 class TestAddManager(TestBrokerCommand):
@@ -52,11 +53,14 @@ class TestAddManager(TestBrokerCommand):
     # Note: If changing this, also change testverifyshowmissingmanager
     # in test_add_aquilon_host.py.
     def testaddunittest00r(self):
+        fqdn = "unittest00r.one-nyp.ms.com"
         ip = self.net["unknown0"].usable[4]
-        self.dsdb_expect_add("unittest00r.one-nyp.ms.com", ip, "bmc", ip.mac)
+        ib_expect_add_address(fqdn, ip)
+        self.dsdb_expect_add(fqdn, ip, "bmc", ip.mac)
         self.noouttest(["add", "manager", "--ip", ip,
                         "--hostname", "unittest00.one-nyp.ms.com"])
         self.dsdb_verify()
+        self.ib_verify()
 
     def testaddunittest00ragain(self):
         ip = self.net["unknown0"].usable[4]
@@ -109,13 +113,16 @@ class TestAddManager(TestBrokerCommand):
                           command)
 
     def testaddunittest02rsa(self):
+        fqdn = "unittest02rsa.one-nyp.ms.com"
         ip = self.net["unknown0"].usable[9]
-        self.dsdb_expect_add("unittest02rsa.one-nyp.ms.com", ip, "ilo", ip.mac)
+        ib_expect_add_address(fqdn, ip)
+        self.dsdb_expect_add(fqdn, ip, "ilo", ip.mac)
         self.noouttest(["add", "manager", "--interface", "ilo",
                         "--ip", ip, "--mac", ip.mac,
                         "--hostname", "unittest02.one-nyp.ms.com",
                         "--manager", "unittest02rsa.one-nyp.ms.com"])
         self.dsdb_verify()
+        self.ib_verify()
 
     def testverifyaddunittest02rsa(self):
         command = "show manager --manager unittest02rsa.one-nyp.ms.com"
@@ -164,14 +171,17 @@ class TestAddManager(TestBrokerCommand):
                          command)
 
     def testaddunittest12bmc(self):
+        fqdn = "unittest12r.aqd-unittest.ms.com"
         ip = self.net["unknown0"].usable[8]
-        self.dsdb_expect_add("unittest12r.aqd-unittest.ms.com", ip, "mgmt0",
+        ib_expect_add_address(fqdn, ip)
+        self.dsdb_expect_add(fqdn, ip, "mgmt0",
                              ip.mac)
         command = ["add", "manager", "--interface", "mgmt0",
                    "--hostname", "unittest12.aqd-unittest.ms.com",
                    "--ip", ip, "--mac", ip.mac]
         self.successtest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     # Test that the interface cannot be removed as long as the manager exists
     def testdelinterface(self):
@@ -200,12 +210,15 @@ class TestAddManager(TestBrokerCommand):
 
     def testaddunittest17(self):
         net = self.net["ut8_oob"]
+        fqdn = "unittest17r.aqd-unittest.ms.com"
         ip = net.usable[3]
-        self.dsdb_expect_add("unittest17r.aqd-unittest.ms.com", ip, "mgmt0", ip.mac)
+        ib_expect_add_address(fqdn, ip)
+        self.dsdb_expect_add(fqdn, ip, "mgmt0", ip.mac)
         command = ["add_manager", "--hostname", "unittest17.aqd-unittest.ms.com",
                    "--interface", "mgmt0", "--mac", ip.mac, "--ip", ip]
         out = self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def testverifymanagerall(self):
         command = ["show", "manager", "--all"]

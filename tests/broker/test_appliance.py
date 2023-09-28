@@ -29,6 +29,7 @@ from brokertest import TestBrokerCommand
 from notificationtest import VerifyNotificationsMixin
 from personalitytest import PersonalityTestMixin
 from eventstest import EventsTestMixin
+from mock_ib_services import ib_expect_add_address, ib_expect_del_address
 
 
 class TestAppliance(VerifyNotificationsMixin, PersonalityTestMixin,
@@ -82,8 +83,9 @@ class TestAppliance(VerifyNotificationsMixin, PersonalityTestMixin,
 
     def test_210_add_appliance_host(self):
         ip = self.net["ut01ga2s02_v713"].usable[1]
-        self.dsdb_expect_add("utva.aqd-unittest.ms.com", ip, "eth0",
-                             "00:50:56:01:20:1b")
+        fqdn = "utva.aqd-unittest.ms.com"
+        ib_expect_add_address(fqdn, ip)
+        self.dsdb_expect_add(fqdn, ip, "eth0", "00:50:56:01:20:1b")
         command = ["add", "host", "--hostname", "utva.aqd-unittest.ms.com",
                    "--ip", ip,
                    "--machine", self.vapp,
@@ -93,6 +95,7 @@ class TestAppliance(VerifyNotificationsMixin, PersonalityTestMixin,
                    "--osname", "utos", "--osversion", "1.0"]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     # TODO do we need this?
     # def test_280_makecluster(self):
@@ -101,11 +104,15 @@ class TestAppliance(VerifyNotificationsMixin, PersonalityTestMixin,
 
     def test_300_del_appl_host(self):
         basetime = datetime.now()
-        self.dsdb_expect_delete(self.net["ut01ga2s02_v713"].usable[1])
-        command = ["del", "host", "--hostname", "utva.aqd-unittest.ms.com"]
+        fqdn = "utva.aqd-unittest.ms.com"
+        ip = self.net["ut01ga2s02_v713"].usable[1]
+        ib_expect_del_address(fqdn, ip)
+        self.dsdb_expect_delete(ip)
+        command = ["del", "host", "--hostname", fqdn]
         self.statustest(command)
         self.wait_notification(basetime, 1)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_310_del_appliance(self):
         command = ["del", "machine", "--machine", self.vapp]

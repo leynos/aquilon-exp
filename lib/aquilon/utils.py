@@ -33,6 +33,7 @@ from tempfile import mkstemp
 from uuid import UUID
 
 from ipaddress import IPv6Address, ip_address
+from functools import wraps
 import jsonschema
 
 from six.moves import cStringIO as StringIO  # pylint: disable=F0401
@@ -391,3 +392,22 @@ def validate_json(config, data, schema_name, msg):
                             format_checker=format_checker)
     except jsonschema.ValidationError as err:
         raise ArgumentError("Failed to validate %s: %s" % (msg, err))
+
+
+def with_timer(f):
+    """
+    Decorator to measure the time taken in seconds by a decorated function.
+    """
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        try:
+            result = f(*args, **kwargs)
+        except Exception as e:
+            LOGGER.warning(str(e))
+            raise e
+        finally:
+            end = time.time()
+            LOGGER.info("%r took %2.4f sec" %(f.__name__, end-start))
+        return result
+    return wrapper
