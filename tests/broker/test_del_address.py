@@ -68,13 +68,10 @@ class TestDelAddress(TestBrokerCommand):
         self.notfoundtest(command)
 
     def testutenvenv(self):
-        # TODO, how is this going to work with IB ? We're deleting the same FQDN/IP in different envs ?
-        ib_expect_del_address("arecord14.aqd-unittest.ms.com", self.net["unknown1"].usable[14])
         command = ["del_address", "--ip", self.net["unknown1"].usable[14],
                    "--fqdn", "arecord14.aqd-unittest.ms.com",
                    "--dns_environment", "ut-env"] + self.valid_just_tcm
         self.noouttest(command)
-        self.ib_verify()
 
     def testverifyutenvenv(self):
         command = ["show_address", "--fqdn", "arecord14.aqd-unittest.ms.com",
@@ -139,13 +136,11 @@ class TestDelAddress(TestBrokerCommand):
     def test_delip_with_network_env(self):
         ip = "192.168.3.1"
         fqdn = "cardenvtest600.aqd-unittest.ms.com"
-        ib_expect_del_address(fqdn, ip)
         command = ["del", "address", "--ip", ip,
                    "--network_environment", "cardenv"] + self.valid_just_tcm
         self.noouttest(command)
         # External IP addresses should not be added to DSDB
         self.dsdb_verify(empty=True)
-        self.ib_verify()
 
         command = ["show_address", "--fqdn", fqdn,
                    "--network_environment", "cardenv"]
@@ -174,13 +169,11 @@ class TestDelAddress(TestBrokerCommand):
 
     def test_610_addipfromip_with_network_env(self):
         fqdn = "cardenvtest610.aqd-unittest.ms.com"
-        ib_expect_del_address(fqdn, "192.168.3.5")
         command = ["del", "address", "--fqdn", fqdn,
                    "--network_environment", "cardenv"] + self.valid_just_tcm
         self.noouttest(command)
         # External IP addresses should not be added to DSDB
         self.dsdb_verify(empty=True)
-        self.ib_verify()
 
         command = ["show_address", "--fqdn=%s" % fqdn]
         self.notfoundtest(command)
@@ -231,12 +224,10 @@ class TestDelAddress(TestBrokerCommand):
         fqdn = "1record42.aqd-unittest.ms.com"
         ip = "4.2.1.47"
         dns_env = "external"
-        ib_expect_del_address(fqdn, ip)
         command = ["del", "address", "--fqdn", fqdn,
                    "--dns_environment", dns_env] + self.valid_just_tcm
         self.noouttest(command)
         self.dsdb_verify(empty=True)
-        self.ib_verify()
 
         command = ["show", "address", "--fqdn", fqdn,
                    "--dns_environment", dns_env]

@@ -70,14 +70,14 @@ class CommandAddAddress(BrokerCommand):
             dsdb_runner.add_host_details(dbdns_rec.fqdn, ip, comments=comments)
             dsdb_runner.commit_or_rollback("Could not add address to DSDB")
 
+            ib_services = IBServices(logger)
+            if ib_services.feature_enabled("address"):
+                try:
+                    ib_services.add_a_ptr(str(dbdns_rec.fqdn), ip, reverse_ptr, ttl)
+                except ProcessException as e:
+                    if dsdb_runner:
+                        dsdb_runner.rollback()
+                    raise e
+
         for name, value in audit_results:
             self.audit_result(session, name, value, **arguments)
-
-        ib_services = IBServices(logger)
-        if ib_services.feature_enabled("address"):
-            try:
-                ib_services.add_a_ptr(str(dbdns_rec.fqdn), ip, reverse_ptr, ttl)
-            except ProcessException as e:
-                if dsdb_runner:
-                    dsdb_runner.rollback()
-                raise e

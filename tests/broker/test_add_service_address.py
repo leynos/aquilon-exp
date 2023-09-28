@@ -229,7 +229,6 @@ class TestAddServiceAddress(TestBrokerCommand):
 
     def test_610_add_extserviceaddress(self):
         # check that adding an external service address does not invoke DSDB
-        ib_expect_add_address("external-unittest20.aqd-unittest.ms.com", "192.168.5.25")
         command = ["add_service_address", "--ip", "192.168.5.25",
                    "--hostname", "unittest20.aqd-unittest.ms.com",
                    "--interfaces", "eth2", "--name", "et-unittest20",
@@ -242,7 +241,6 @@ class TestAddServiceAddress(TestBrokerCommand):
                          command)
         # External IP service addresses should not be added to DSDB
         self.dsdb_verify(empty=True)
-        self.ib_verify()
 
     def test_620_add_service_address_ipfromtype_vip_setup(self):
         ip = self.net["np_bucket2_vip"].network_address
