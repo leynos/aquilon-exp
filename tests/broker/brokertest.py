@@ -17,23 +17,22 @@
 # limitations under the License.
 """Basic module for running tests on broker commands."""
 
-import pwd
+import logging
 import os
+import pwd
+import re
 import sys
 import unittest
-from subprocess import Popen, PIPE
-import re
 from difflib import unified_diff
+from subprocess import Popen, PIPE
 from textwrap import dedent
 
+from aquilon.config import Config, lookup_file_path
 from lxml import etree
 from six import string_types
-
-from aquilon.config import Config, lookup_file_path
-from aquilon.worker import depends  # pylint: disable=W0611
+from mock_ib_services import http_monitor
 
 from aqdb.utils import copy_sqldb
-
 from networktest import DummyNetworks
 
 DSDB_EXPECT_SUCCESS_FILE = "expected_dsdb_cmds"
@@ -44,6 +43,7 @@ CM_JUSTIFICATION = "No justification found, please supply a TCM or SN ticket."
 CM_EMERGENCY = "Use of emergency requires a reason to be supplied."
 CM_FORMAT = "Failed to parse justification, no valid TCM or SN ticket found."
 CM_WARN = 'Continuing with execution; however in the future this operation will fail.'
+LOGGER = logging.getLogger(__name__)
 CM_VALID_ROLE = 'Approval Warning: Executing an emergency change without a justification, EDM has not be called.'
 
 
@@ -78,7 +78,11 @@ class TestBrokerCommand(unittest.TestCase):
         cls.net = DummyNetworks(cls.config)
 
         cls.scratchdir = cls.config.get("unittest", "scratchdir")
+        LOGGER.debug("Scratch directory: {}".format(cls.scratchdir))
+        # Required by external scripts such as fake_dsdb
+        os.environ["AQTEST_SCRATCHDIR"] = cls.scratchdir
         cls.dsdb_coverage_dir = os.path.join(cls.scratchdir, "dsdb_coverage")
+        LOGGER.debug("DSDB coverage directory: {}".format(cls.dsdb_coverage_dir))
 
         dirs = [cls.scratchdir, cls.dsdb_coverage_dir]
         for dir in dirs:
@@ -140,9 +144,12 @@ class TestBrokerCommand(unittest.TestCase):
                      DSDB_ISSUED_CMDS_FILE, DSDB_EXPECT_FAILURE_ERROR]:
             path = os.path.join(self.dsdb_coverage_dir, name)
             try:
+                LOGGER.debug("Deleting path {}".format(path))
                 os.remove(path)
             except OSError:
                 pass
+
+        http_monitor.reset()
 
     def tearDown(self):
         if not os.environ.get("AQD_UNITTEST_FAILFAST"):
@@ -179,12 +186,11 @@ class TestBrokerCommand(unittest.TestCase):
                              "Plenary directory '%s' still exists" % dir)
 
     def check_plenary_contents(self, *path, **kwargs):
-        # Passing lists as a keyword arg triggrest a type error
+        # Passing lists as a keyword arg triggered a type error
         contains = kwargs.pop('contains', None)
         clean = kwargs.pop('clean', None)
         if not contains and not clean:
-            self.assertTrue(0, "check_plenary_contents called without "
-                            "contains or clean")
+            self.fail("check_plenary_contents called without contains, not_contains, or clean")
 
         self.check_plenary_exists(*path)
         plenary = self.plenary_name(*path)
@@ -273,13 +279,15 @@ class TestBrokerCommand(unittest.TestCase):
             if 'USER' not in env:
                 env['USER'] = os.environ.get('USER', '')
             kwargs["env"] = env
+        LOGGER.debug("Running command {}".format(args))
         p = Popen(args, stdout=PIPE, stderr=PIPE, **kwargs)
         (out, err) = p.communicate()
+        if err:
+            LOGGER.debug(err)
         # Strip any msversion dev warnings out of STDERR
         err = self.msversion_dev_re.sub('', err)
         # Lock messages are pretty common...
-        err = err.replace('Client status messages disabled, '
-                          'retries exceeded.\n', '')
+        err = err.replace('Client status messages disabled, retries exceeded.\n', '')
         return (p, out, err)
 
     def successtest(self, command, **kwargs):
@@ -316,8 +324,10 @@ class TestBrokerCommand(unittest.TestCase):
     def assertEmptyOut(self, contents, command):
         self.assertEmptyStream("STDOUT", contents, command)
 
-    def commandtest(self, command, **kwargs):
+    def commandtest(self, command, exclude_err_str=None, **kwargs):
         (p, out, err) = self.runcommand(command, **kwargs)
+        if exclude_err_str:
+            err = err.replace(exclude_err_str, '')
         self.assertEmptyErr(err, command)
         self.assertEqual(p.returncode, 0,
                          "Non-zero return code for %s, "
@@ -325,8 +335,8 @@ class TestBrokerCommand(unittest.TestCase):
                          % (command, out))
         return out
 
-    def noouttest(self, command, **kwargs):
-        out = self.commandtest(command, **kwargs)
+    def noouttest(self, command, exclude_err_str=None, **kwargs):
+        out = self.commandtest(command, exclude_err_str, **kwargs)
         self.assertEqual(out, "",
                          "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n"
                          % (command, out))
@@ -367,13 +377,13 @@ class TestBrokerCommand(unittest.TestCase):
                             (command, err))
         return err
 
-    def badrequesttest(self, command, ignoreout=False, **kwargs):
+    def badrequesttest(self, command, ignoreout=False, expected_code=4, **kwargs):
         (p, out, err) = self.runcommand(command, **kwargs)
-        self.assertEqual(p.returncode, 4,
+        self.assertEqual(p.returncode, expected_code,
                          "Return code for %s was %d instead of %d"
                          "\nSTDOUT:\n@@@\n'%s'\n@@@"
                          "\nSTDERR:\n@@@\n'%s'\n@@@" %
-                         (command, p.returncode, 4, out, err))
+                         (command, p.returncode, expected_code, out, err))
         self.assertTrue(err.find("Bad Request") >= 0,
                         "STDERR for %s did not include Bad Request:"
                         "\n@@@\n'%s'\n@@@\n" %
@@ -383,6 +393,14 @@ class TestBrokerCommand(unittest.TestCase):
                              "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n" %
                              (command, out))
         return err
+
+    def dsdberrortest(self, command, **kwargs):
+        err = self.badrequesttest(command, **kwargs)
+        self.matchoutput(err, "DSDB", command)
+
+    def iberrortest(self, command, **kwargs):
+        err = self.badrequesttest(command, expected_code=5, **kwargs)
+        self.matchoutput(err, "Infoblox error", command)
 
     def unauthorizedtest(self, command, auth=False, msgcheck=True, **kwargs):
         (p, out, err) = self.runcommand(command, auth=auth, **kwargs)
@@ -814,7 +832,7 @@ class TestBrokerCommand(unittest.TestCase):
             command.extend(["-primary_host_name", primary])
         else:
             command.extend(["-manager_grn",
-                           self.config.get('dsdb', 'manager_grn')])
+                           self.config.get('broker', 'manager_grn')])
         if comments:
             command.extend(["-comments", comments])
 
@@ -880,6 +898,7 @@ class TestBrokerCommand(unittest.TestCase):
                 with open(expected_name, "r") as fp:
                     for line in fp:
                         expected[line.rstrip("\n")] = True
+                os.remove(expected_name)
             except IOError:
                 pass
 
@@ -893,6 +912,7 @@ class TestBrokerCommand(unittest.TestCase):
             with open(issued_name, "r") as fp:
                 for line in fp:
                     issued[line.rstrip("\n")] = True
+            os.remove(issued_name)
         except IOError:
             pass
 
@@ -901,6 +921,10 @@ class TestBrokerCommand(unittest.TestCase):
             if cmd not in issued:
                 errors.append("'%s'" % cmd)
         # Unexpected DSDB commands are caught by the fake_dsdb script
+
+        full_path = os.path.join(self.dsdb_coverage_dir, DSDB_EXPECT_FAILURE_ERROR)
+        if os.path.exists(full_path):
+            os.remove(full_path)
 
         if errors:
             self.fail("The following expected DSDB commands were not called:"
@@ -976,3 +1000,11 @@ class TestBrokerCommand(unittest.TestCase):
     @staticmethod
     def dynname(ip, domain="aqd-unittest.ms.com"):
         return "dynamic-%s.%s" % (str(ip).replace(".", "-"), domain)
+
+    def ib_verify(self, empty=False):
+        if empty and http_monitor.invoked_without_expected_test:
+            self.fail("ib-services invoked when no HTTP requests were expected")
+        if http_monitor.expects:
+            self.fail("Expected HTTP requests to ib-services have not been consumed:\n{}".format(
+                "\n".join([str(payload) for payload in http_monitor.expects])
+            ))

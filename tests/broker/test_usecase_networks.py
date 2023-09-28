@@ -26,6 +26,8 @@ if __name__ == "__main__":
 from six import iteritems
 
 from brokertest import TestBrokerCommand
+from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_del_address
 
 # This test case sets up a network that look like the following:
 #
@@ -250,6 +252,7 @@ class TestUsecaseNetworks(TestBrokerCommand):
             ip = net[if_attrs['ipidx']]
             iftype = if_attrs['type'] if 'type' in if_attrs else 'loopback'
             self.dsdb_expect_add(fqdn, ip, interface)
+            ib_expect_add_address(fqdn, str(ip))
             self.successtest(["add", "network_device", "--type", "misc",
                               "--network_device", fqdn,
                               "--ip", ip, "--interface", interface,
@@ -258,6 +261,7 @@ class TestUsecaseNetworks(TestBrokerCommand):
                               "--model", dev_attrs['model']])
             if 'skip_dsdb' not in flags:
                 self.dsdb_verify()
+            self.ib_verify()
 
     def test_202_add_interfaces(self):
         if 'skip_add' in flags:
@@ -285,12 +289,14 @@ class TestUsecaseNetworks(TestBrokerCommand):
                 ip = net[if_attrs['ipidx']]
                 if_fqdn = dev_name + '-' + if_name + '.' + config['domain']
                 self.dsdb_expect_add(if_fqdn, ip, if_name, primary=fqdn)
+                ib_expect_add_address(if_fqdn, str(ip))
                 command = ["add", "interface", "address",
                            "--network_device", fqdn,
                            "--interface", if_name, "--ip", ip]
                 self.noouttest(command)
                 if 'skip_dsdb' not in flags:
                     self.dsdb_verify()
+                self.ib_verify()
 
     def test_204_add_hsrp(self):
         if 'skip_add' in flags:
@@ -305,6 +311,7 @@ class TestUsecaseNetworks(TestBrokerCommand):
                 # Note, this only happens the first time an address is added
                 if priority == 100:
                     self.dsdb_expect_add(gw_fqdn, ip)
+                    ib_expect_add_address(gw_fqdn, str(ip))
                 # We only specify the FQDN when creating the first interface
                 command = ["add", "interface", "address",
                            "--network_device", fqdn,
@@ -314,6 +321,8 @@ class TestUsecaseNetworks(TestBrokerCommand):
                 self.noouttest(command)
                 if 'skip_dsdb' not in flags and priority == 100:
                     self.dsdb_verify()
+                if priority == 100:
+                    self.ib_verify()
                 priority = priority + 1
 
     def test_205_add_default_route(self):
@@ -324,15 +333,19 @@ class TestUsecaseNetworks(TestBrokerCommand):
 
         for network in net_list[:5]:
             fqdn = '-'.join(network.name.split('_')[1:] + ['gateway']) + '.' + config['domain']
+            ib_expect_add_address(fqdn, str(network[1]))
             command = ["add_router_address", "--fqdn", fqdn]
             self.noouttest(command)
 
         for network in net_list[5:10]:
+            fqdn = '-'.join(network.name.split('_')[1:] + ['gateway']) + '.' + config['domain']
+            ib_expect_add_address(fqdn, str(network[1]))
             command = ["add_router_address", "--ip", network[1]]
             self.noouttest(command)
 
         for network in net_list[10:]:
             fqdn = '-'.join(network.name.split('_')[1:] + ['gateway']) + '.' + config['domain']
+            ib_expect_add_address(fqdn, str(network[1]))
             command = ["add_router_address", "--fqdn", fqdn, "--ip", network[1]]
             self.noouttest(command)
 
@@ -353,7 +366,6 @@ class TestUsecaseNetworks(TestBrokerCommand):
             sec_router_if = net_attrs[1][1]
             _sec_router_ip = config['devices'][sec_router]['interfaces'][sec_router_if]
             sec_router_ip = self.net[_sec_router_ip['net']][_sec_router_ip['ipidx']]
-
             command = ["cat", "--networkip", str(net.ip)]
             out = self.commandtest(command)
 
@@ -388,6 +400,7 @@ class TestUsecaseNetworks(TestBrokerCommand):
         command = ['add_interface', '--iftype', 'virtual', '--interface', 'v700',
                    '--network_device', 'ut3gd1r01.aqd-unittest.ms.com']
         self.noouttest(command)
+        ib_expect_add_address("ut3gd1r01-v700.aqd-unittest.ms.com", str(ip))
         self.dsdb_expect_add("ut3gd1r01-v700.aqd-unittest.ms.com", ip,
                              "v700", primary="ut3gd1r01.aqd-unittest.ms.com")
         command = ['add_interface_address', '--interface', 'v700', '--ip',
@@ -399,6 +412,7 @@ class TestUsecaseNetworks(TestBrokerCommand):
                          "tor_net_12 [{}] is not bunkerized.".format(net),
                          command)
         self.dsdb_verify()
+        self.ib_verify()
         command = ['add_router_address', '--ip', ip]
         self.noouttest(command)
 
@@ -416,10 +430,12 @@ class TestUsecaseNetworks(TestBrokerCommand):
     def test_307_test_router_address_using_netdev_del(self):
         ip = self.net["tor_net_12"][1]
         self.dsdb_expect_delete(ip)
+        ib_expect_del_address("ut3gd1r01-v700.aqd-unittest.ms.com", str(ip))
         command = ['del_interface_address', '--interface', 'v700', '--ip',
                    ip, '--network_device', 'ut3gd1r01.aqd-unittest.ms.com']
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
         command = ['del_interface', '--interface', 'v700', '--network_device', 'ut3gd1r01.aqd-unittest.ms.com']
         self.noouttest(command)
 
@@ -445,8 +461,10 @@ class TestUsecaseNetworks(TestBrokerCommand):
             if network.nettype == 'management':
                 continue
             fqdn = '-'.join(network.name.split('_')[1:] + ['gateway']) + '.' + config['domain']
+            ib_expect_del_address(fqdn, str(network[1]))
             command = ["del_router_address", "--fqdn", fqdn]
             self.noouttest(command)
+            self.ib_verify()
 
     def test_805_del_hsrp(self):
         if 'skip_delete' in flags:
@@ -456,7 +474,10 @@ class TestUsecaseNetworks(TestBrokerCommand):
             ip = net[1] # Always use first address
             if 'skip_dsdb' not in flags:
                 self.dsdb_expect_delete(ip)
+            gw_fqdn = '-'.join(net_name.split('_')[1:] + ['gateway']) + '.' + config['domain']
             for (dev_name, if_name) in gateways:
+                # TODO, we are sending the same delete twice to IB ?
+                ib_expect_del_address(gw_fqdn, str(ip))
                 fqdn = dev_name + '.' + config['domain']
                 # We only specify the FQDN when creating the first interface
                 command = ["del", "interface", "address",
@@ -466,6 +487,7 @@ class TestUsecaseNetworks(TestBrokerCommand):
                 self.noouttest(command)
             if 'skip_dsdb' not in flags:
                 self.dsdb_verify()
+            self.ib_verify()
 
     def test_806_del_addresses(self):
         if 'skip_delete' in flags:
@@ -476,7 +498,9 @@ class TestUsecaseNetworks(TestBrokerCommand):
                 if if_name == dev_attrs['mgmt_interface']:
                     continue
                 net = self.net[if_attrs['net']]
+                if_fqdn = dev_name + '-' + if_name + '.' + config['domain']
                 ip = net[if_attrs['ipidx']]
+                ib_expect_del_address(if_fqdn, str(ip))
                 self.dsdb_expect_delete(ip)
                 command = ["del", "interface", "address",
                            "--network_device", fqdn,
@@ -484,6 +508,7 @@ class TestUsecaseNetworks(TestBrokerCommand):
                 self.noouttest(command)
                 if 'skip_dsdb' not in flags:
                     self.dsdb_verify()
+                self.ib_verify()
 
     def test_807_del_interfaces(self):
         if 'skip_delete' in flags:
@@ -506,11 +531,13 @@ class TestUsecaseNetworks(TestBrokerCommand):
             if_attrs = dev_attrs['interfaces'][interface]
             net = self.net[if_attrs['net']]
             ip = net[if_attrs['ipidx']]
+            ib_expect_del_address(fqdn, str(ip))
             self.dsdb_expect_delete(ip)
             command = "del network_device --network_device %s" % fqdn
             self.noouttest(command.split(" "))
             if 'skip_dsdb' not in flags:
                 self.dsdb_verify()
+            self.ib_verify()
 
     def test_809_del_networks(self):
         if 'skip_delete' in flags:
@@ -542,4 +569,3 @@ class TestUsecaseNetworks(TestBrokerCommand):
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestUsecaseNetworks)
     unittest.TextTestRunner(verbosity=2).run(suite)
-

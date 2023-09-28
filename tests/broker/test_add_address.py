@@ -20,10 +20,15 @@
 import unittest
 import json
 
+from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_update_address
+
 if __name__ == "__main__":
     from broker import utils
     utils.import_depends()
 
+from broker.utils import MockHub
 from ipaddress import IPv6Address, ip_address
 
 from broker.brokertest import TestBrokerCommand
@@ -88,11 +93,12 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
             ip=str(self.net['unknown0'].usable[13]),
             dns_environment='internal',
         )
-        self.dsdb_expect_add("arecord13.aqd-unittest.ms.com",
-                             self.net["unknown0"].usable[13])
         command = ["add_address", "--ip=%s" % self.net["unknown0"].usable[13],
                    "--fqdn=arecord13.aqd-unittest.ms.com"] + self.valid_just_tcm
         out = self.badrequesttest(command)
+        # check no dsdb nor infoblox requests sent
+        self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
         self.matchoutput(out, "Please provide a GRN/EON_ID!", command)
 
     def test_101_basic_grn(self):
@@ -103,11 +109,14 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         )
         self.dsdb_expect_add("arecord13.aqd-unittest.ms.com",
                              self.net["unknown0"].usable[13])
+        ib_expect_add_address("arecord13.aqd-unittest.ms.com",
+                              str(self.net['unknown0'].usable[13]))
         command = ["add_address", "--ip=%s" % self.net["unknown0"].usable[13],
                    "--fqdn=arecord13.aqd-unittest.ms.com",
                    "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_tcm
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
         self.events_verify()
 
     def test_105_verifybasic(self):
@@ -131,8 +140,10 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         command = ["add_address", "--ip", self.net["ipv6_test"].usable[1],
                    "--fqdn", "ipv6test.aqd-unittest.ms.com",
                    "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_tcm
-        self.noouttest(command)
+        exclude_err_str = "IP not valid for IBServices:  if supplied, it must be an IPv4Address object or correctly formatted IPv4 string.\n"
+        self.noouttest(command, exclude_err_str=exclude_err_str)
         self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
         self.events_verify()
 
     def test_115_verify_basic_ipv6(self):
@@ -150,15 +161,18 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
             reverse='arecord13.aqd-unittest.ms.com',
             dns_environment=default,
         )
-        self.dsdb_expect_add("arecord14.aqd-unittest.ms.com",
-                             self.net["unknown0"].usable[14])
+        hostname = "arecord14.aqd-unittest.ms.com"
+        reverse_hostname = "arecord13.aqd-unittest.ms.com"
+        self.dsdb_expect_add(hostname, self.net["unknown0"].usable[14])
+        ib_expect_add_address(hostname, str(self.net["unknown0"].usable[14]), reverse_hostname)
         command = ["add_address", "--ip=%s" % self.net["unknown0"].usable[14],
-                   "--fqdn=arecord14.aqd-unittest.ms.com",
-                   "--reverse_ptr=arecord13.aqd-unittest.ms.com",
+                   "--fqdn="+hostname,
+                   "--reverse_ptr="+reverse_hostname,
                    "--dns_environment=%s" % default,
                    "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_tcm
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
         self.events_verify()
 
     def test_210_add_utenv_noreverse(self):
@@ -171,6 +185,7 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         out = self.notfoundtest(command)
         self.matchoutput(out, "Target FQDN arecord13.aqd-unittest.ms.com does "
                          "not exist in DNS environment ut-env.", command)
+        self.ib_verify(empty=True)  # No requests sent to InfoBlox
 
     def test_220_add_utenv(self):
         self.event_add_arecord(
@@ -178,12 +193,15 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
             ip=str(self.net['unknown1'].usable[14]),
             dns_environment='ut-env',
         )
+        ib_expect_add_address("arecord14.aqd-unittest.ms.com",
+                              str(self.net["unknown1"].usable[14]))
         # Different IP in this environment
         command = ["add_address", "--ip", self.net["unknown1"].usable[14],
                    "--fqdn", "arecord14.aqd-unittest.ms.com",
                    "--dns_environment", "ut-env",
                    "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_tcm
         self.noouttest(command)
+        self.ib_verify()
         self.events_verify()
 
     def test_230_verifydefaultenv(self):
@@ -217,12 +235,15 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         )
         self.dsdb_expect_add("arecord15.aqd-unittest.ms.com",
                              self.net["unknown0"].usable[15])
+        ib_expect_add_address("arecord15.aqd-unittest.ms.com",
+                              str(self.net["unknown0"].usable[15]))
         command = ["add_address", "--ipalgorithm=max",
                    "--ipfromip=%s" % self.net["unknown0"].ip,
                    "--fqdn=arecord15.aqd-unittest.ms.com",
                    "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_tcm
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
         self.events_verify()
 
     def test_310_verifyipfromip(self):
@@ -251,10 +272,12 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
             ip=str(ip),
             dns_environment=dns_env,
         )
+        ib_expect_add_address(fqdn, str(ip))
         command = ["add_address", "--ip", ip, "--fqdn", fqdn,
                    "--dns_environment", dns_env,
                    "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_tcm
         self.noouttest(command)
+        self.ib_verify()
 
         command = ["show_address", "--fqdn", fqdn,
                    "--dns_environment", dns_env]
@@ -273,6 +296,7 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         out = self.badrequesttest(command)
         self.matchoutput(out, "Could not add address to DSDB", command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # When dsdb fails, ib should not get any requests
 
     def test_410_verifydsdbfailure(self):
         command = ["search", "dns", "--fqdn", "arecord16.aqd-unittest.ms.com"]
@@ -358,24 +382,25 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
 
     def test_470_restricted_reverse(self):
         ip = self.net["unknown0"].usable[32]
+        reverse_hostname = 'reverse.restrict.aqd-unittest.ms.com'
         self.event_add_arecord(
             fqdn='arecord17.aqd-unittest.ms.com',
             ip=str(ip),
-            reverse='reverse.restrict.aqd-unittest.ms.com',
+            reverse=reverse_hostname,
             dns_environment='internal',
         )
-        self.dsdb_expect_add("arecord17.aqd-unittest.ms.com", ip)
-        command = ["add", "address", "--fqdn", "arecord17.aqd-unittest.ms.com",
-                   "--reverse_ptr", "reverse.restrict.aqd-unittest.ms.com",
+        hostname = "arecord17.aqd-unittest.ms.com"
+        ib_expect_add_address(hostname, str(ip), reverse_hostname)
+        self.dsdb_expect_add(hostname, ip)
+        command = ["add", "address", "--fqdn", hostname,
+                   "--reverse_ptr", reverse_hostname,
                    "--ip", ip, "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_tcm
         err = self.statustest(command)
-        self.matchoutput(err,
-                         "WARNING: Will create a reference to "
-                         "reverse.restrict.aqd-unittest.ms.com, but trying to "
-                         "resolve it resulted in an error: Name or service "
-                         "not known",
+        self.matchoutput(err, "WARNING: Will create a reference to {}, but trying to resolve it resulted in an error: "
+                              "Name or service not known".format(reverse_hostname),
                          command)
         self.dsdb_verify()
+        self.ib_verify()
         self.events_verify()
 
     def test_471_verify_reverse(self):
@@ -414,10 +439,12 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
             dns_environment='internal',
         )
         self.dsdb_expect_add(fqdn, ip)
+        ib_expect_add_address(fqdn, str(ip))
         command = ["add", "address", "--ip", ip, "--fqdn", fqdn,
                    "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_tcm
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
         self.events_verify()
 
     def test_600_addip_with_network_env(self):
@@ -430,12 +457,14 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
             network_environment='cardenv',
             reverse_dns_environment='ut-env',
         )
+        ib_expect_add_address(fqdn, str(ip))
         command = ["add", "address", "--ip", ip, "--fqdn", fqdn,
                    "--network_environment", "cardenv",
                    "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_tcm
         self.noouttest(command)
         # External IP addresses should not be added to DSDB
         self.dsdb_verify(empty=True)
+        self.ib_verify()
 
         command = ["show_address", "--fqdn=%s" % fqdn,
                    "--network_environment", "cardenv"]
@@ -458,12 +487,14 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
             network_environment='cardenv',
             reverse_dns_environment='ut-env',
         )
+        ib_expect_add_address(fqdn, "192.168.3.5")
         command = ["add", "address", "--ipfromip", "192.168.3.0",
                    "--fqdn", fqdn, "--network_environment", "cardenv",
                    "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_tcm
         self.noouttest(command)
         # External IP addresses should not be added to DSDB
         self.dsdb_verify(empty=True)
+        self.ib_verify()
 
         command = ["show_address", "--fqdn=%s" % fqdn,
                    "--network_environment", "cardenv"]
@@ -489,20 +520,20 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         self.matchoutput(out, "Entering external IP addresses to the internal DNS environment is not allowed", command)
 
     def test_700_ttl(self):
+        hostname = "arecord40.aqd-unittest.ms.com"
+        ip = str(self.net["unknown0"].usable[40])
         self.event_add_arecord(
-            fqdn='arecord40.aqd-unittest.ms.com',
-            ip=str(self.net['unknown0'].usable[40]),
-            ttl=300,
-            dns_environment='internal',
+            fqdn=hostname, ip=ip, ttl=300, dns_environment='internal',
         )
-        self.dsdb_expect_add("arecord40.aqd-unittest.ms.com",
-                             self.net["unknown0"].usable[40])
+        ib_expect_add_address(hostname, str(ip), ttl=300)
+        self.dsdb_expect_add("arecord40.aqd-unittest.ms.com", ip)
         command = ["add_address", "--ip=%s" % self.net["unknown0"].usable[40],
                    "--fqdn=arecord40.aqd-unittest.ms.com",
                    "--ttl", 300,
                    "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_tcm
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
         self.events_verify()
 
     def test_720_verifyttl(self):
@@ -534,11 +565,14 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         )
         self.dsdb_expect_add("arecord50.aqd-unittest.ms.com",
                              self.net["unknown0"].usable[50])
+        ib_expect_add_address("arecord50.aqd-unittest.ms.com",
+                              str(self.net["unknown0"].usable[50]))
         command = ["add_address", "--ip=%s" % self.net["unknown0"].usable[50],
                    "--fqdn=arecord50.aqd-unittest.ms.com",
                    "--grn", "grn:/ms/ei/aquilon/aqd"] + self.valid_just_tcm
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
         self.events_verify()
 
     def test_820_verifygrn(self):
@@ -561,11 +595,14 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         )
         self.dsdb_expect_add("arecord51.aqd-unittest.ms.com",
                              self.net["unknown0"].usable[51])
+        ib_expect_add_address("arecord51.aqd-unittest.ms.com",
+                              str(self.net["unknown0"].usable[51]))
         command = ["add_address", "--ip=%s" % self.net["unknown0"].usable[51],
                    "--fqdn=arecord51.aqd-unittest.ms.com",
                    "--eon_id", "3"] + self.valid_just_tcm
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
         self.events_verify()
 
     def test_840_verifygrn(self):
@@ -579,6 +616,75 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         self.matchoutput(out, "Network Environment: internal", command)
         self.matchoutput(out, "Owned by GRN: grn:/ms/ei/aquilon/unittest", command)
         self.matchclean(out, "Reverse", command)
+
+    def test_900_add_address_ib(self):
+        mh = MockHub(self)
+
+        mh.add_dns_domain('test-infoblox.cc', restricted=False)
+        mh.add_network()
+
+        mh.add_address("add-address-test.test-infoblox.cc", "10.25.0.1", fail_dsdb=True)
+        mh.add_address("add-address-test.test-infoblox.cc", "10.25.0.1", fail_ib=True)
+        mh.add_address("add-address-test.test-infoblox.cc", "10.25.0.1")
+
+        mh.update_address("add-address-test.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2", fail_dsdb=True)
+        mh.update_address("add-address-test.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2", fail_ib=True)
+        mh.update_address("add-address-test.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2")
+
+        mh.delete_address("add-address-test.test-infoblox.cc", "10.25.0.2", fail_dsdb=True)
+        mh.delete_address("add-address-test.test-infoblox.cc", "10.25.0.2", fail_ib=True)
+        mh.delete_address("add-address-test.test-infoblox.cc", "10.25.0.2")
+        mh.delete()
+
+    def test_910_address_with_alias(self):
+        # This test checks that when we update an address which has address alias
+        # both the address and address alias records are updated in infoblox
+        # It also checks that if anything fails, the expected rollback commands will execute
+        mh = MockHub(self)
+
+        mh.add_dns_domain('test-infoblox.cc', restricted=False)
+        mh.add_network()
+        mh.add_address("address.test-infoblox.cc", "10.25.0.1")
+
+        command = ["add_address_alias", "--fqdn", "address-alias.test-infoblox.cc",
+                   "--target", "address.test-infoblox.cc"] + self.valid_just_tcm
+        ib_expect_add_address("address-alias.test-infoblox.cc", "10.25.0.1", create_ptr=False)
+        self.noouttest(command)
+
+        command = ["update_address", "--fqdn", "address.test-infoblox.cc",
+                   "--ip", "10.25.0.2"] + self.valid_just_tcm
+
+        self.dsdb_expect_update("address.test-infoblox.cc", ip="10.25.0.2", fail=True)
+        self.dsdberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_update("address.test-infoblox.cc", ip="10.25.0.2")
+        ib_expect_update_address("address.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2", fail=True)
+        self.dsdb_expect_update("address.test-infoblox.cc", ip="10.25.0.1")  # Rollback dsdb call
+        self.iberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_update("address.test-infoblox.cc", ip="10.25.0.2")
+        ib_expect_update_address("address.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2")
+        ib_expect_update_address("address-alias.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2", fail=True)
+        self.dsdb_expect_update("address.test-infoblox.cc", ip="10.25.0.1")  # Rollback dsdb call
+        ib_expect_update_address("address.test-infoblox.cc", "10.25.0.2", new_ip="10.25.0.1")  # Rolback first ib call
+        self.iberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_update("address.test-infoblox.cc", ip="10.25.0.2")
+        ib_expect_update_address("address.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2")
+        ib_expect_update_address("address-alias.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2")
+        self.noouttest(command)
+        mh.addresses["address.test-infoblox.cc", "internal"] = {"ip": "10.25.0.2"}
+        self.dsdb_verify()
+
+        command = ["del_address_alias", "--fqdn", "address-alias.test-infoblox.cc"] + self.valid_just_tcm
+        ib_expect_del_address("address-alias.test-infoblox.cc", "10.25.0.2", delete_ptr=False)
+        self.noouttest(command)
+
+        mh.delete()
+
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestAddAddress)

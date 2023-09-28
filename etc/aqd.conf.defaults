@@ -209,13 +209,23 @@ disk_controller_types = cciss, fibrechannel, flash, ide, nvme, sas, sata, scsi
 disk_technology_types = hdd, ssd, nvme
 disk_usage_types = os, data, swap, cache, capacity
 
-dynamic_range_classes = vm, fab
+dynamic_range_classes = vm, infoblox_managed, fab
 default_dynamic_range_class = vm
+
+# EON ID and GRN for AQD
+aqd_eonid = 1156
+manager_grn = grn:/ms/ei/aquilon/aqd
 
 [dsdb]
 enable = True
 dsdb_use_testdb = False
-manager_grn = grn:/ms/ei/aquilon/aqd
+
+[ib-services]
+ca_chain = /etc/pki/ms/certs/ms-ca-chain.crt
+timeout = 120
+enable = False
+enabled_features =
+urls =
 
 [change_management]
 # The contents of --justification will not be validated externally

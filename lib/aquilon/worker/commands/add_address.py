@@ -17,13 +17,15 @@
 """Contains the logic for `aq add address`."""
 
 from aquilon.aqdb.model.network_environment import get_net_dns_env
+from aquilon.exceptions_ import ProcessException
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import (grab_address,
                                            set_reverse_ptr)
 from aquilon.worker.dbwrappers.grn import lookup_grn
 from aquilon.worker.dbwrappers.interface import generate_ip
-from aquilon.worker.processes import DSDBRunner
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from aquilon.worker.ib_services import IBServices
+from aquilon.worker.processes import DSDBRunner
 
 
 class CommandAddAddress(BrokerCommand):
@@ -62,6 +64,7 @@ class CommandAddAddress(BrokerCommand):
 
         session.flush()
 
+        dsdb_runner = None
         if dbdns_rec.fqdn.dns_environment.is_default:
             dsdb_runner = DSDBRunner(logger=logger)
             dsdb_runner.add_host_details(dbdns_rec.fqdn, ip, comments=comments)
@@ -69,4 +72,12 @@ class CommandAddAddress(BrokerCommand):
 
         for name, value in audit_results:
             self.audit_result(session, name, value, **arguments)
-        return
+
+        ib_services = IBServices(logger)
+        if ib_services.feature_enabled("address"):
+            try:
+                ib_services.add_a_ptr(str(dbdns_rec.fqdn), ip, reverse_ptr, ttl)
+            except ProcessException as e:
+                if dsdb_runner:
+                    dsdb_runner.rollback()
+                raise e

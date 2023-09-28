@@ -19,6 +19,7 @@
 
 from __future__ import print_function
 
+import logging
 import os
 import re
 import sys
@@ -34,12 +35,13 @@ BINDIR = os.path.dirname(os.path.realpath(__file__))
 SRCDIR = os.path.join(BINDIR, "..")
 sys.path.append(os.path.join(SRCDIR, "lib"))
 
+from aqdb.orderedsuite import DatabaseTestSuite
 from aquilon.config import Config
 from aquilon.utils import kill_from_pid_file
 from verbose_text_test import VerboseTextTestRunner
 from aqdb.utils import copy_sqldb
-from broker.orderedsuite import BrokerTestSuite
-from aqdb.orderedsuite import DatabaseTestSuite
+from broker.orderedsuite import BrokerIntegrationTestSuite
+from broker.orderedsuite import InfobloxIntegrationTestSuite
 
 default_configfile = os.path.join(BINDIR, "unittest.conf")
 
@@ -54,6 +56,12 @@ epilog = """
     code into the directory given in the mirrordir option of the unittest
     section of the config and then re-launches the tests from there.
     """ % default_configfile
+
+
+def setup_logger(level = logging.INFO):
+    logging.basicConfig(format="%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s",
+                        datefmt='%H:%M:%S',
+                        level=level)
 
 
 def force_yes(msg):
@@ -118,6 +126,8 @@ def get_options(epilog):
                         type=str.lower, default=[],
                         help='Do not run any tests of the given type (choices:'
                              ' unit, integration)')
+    parser.add_argument('-i', '--infoblox-integration', action='store_true', default=False, dest='infoblox_integration',
+                        help='Run the infoblox integration tests.')
     options = parser.parse_args()
     if options.resume and not options.start:
         raise argparse.ArgumentError('Option --resume requires --start.')
@@ -125,6 +135,8 @@ def get_options(epilog):
 
 
 opts = get_options(epilog)
+setup_logger(logging.DEBUG if "-v" in opts else logging.INFO)
+logging.getLogger().warning(str(opts))
 
 if not os.path.exists(opts.config):
     print("configfile %s does not exist" % opts.config, file=sys.stderr)
@@ -268,7 +280,7 @@ for dirname in dirs:
 scratchdir = config.get("unittest", "scratchdir")
 os.environ["AQTEST_SCRATCHDIR"] = scratchdir
 
-if not opts.resume and not opts.single and 'unit' not in opts.exclude:
+if not opts.resume and not opts.single and 'unit' not in opts.exclude and not opts.infoblox_integration:
     # Real unit tests are fast.  Run them before any other tests.
     if run_unit_tests(opts.interactive) != 0:
         sys.exit('Unit tests fail.  Aborting functional tests.')
@@ -283,7 +295,10 @@ if 'integration' not in opts.exclude:
             copy_sqldb(config, target='DB')
     else:
         suite.addTest(DatabaseTestSuite())
-    suite.addTest(BrokerTestSuite(opts.start, opts.resume, opts.single))
+    if opts.infoblox_integration:
+        suite.addTest(InfobloxIntegrationTestSuite(opts.start, opts.resume, opts.single))
+    else:
+        suite.addTest(BrokerIntegrationTestSuite(opts.start, opts.resume, opts.single))
     if opts.failfast:
         result = VerboseTextTestRunner(
             config=config, verbosity=opts.verbose, failfast=True).run(suite)
