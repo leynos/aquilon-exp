@@ -193,15 +193,12 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
             ip=str(self.net['unknown1'].usable[14]),
             dns_environment='ut-env',
         )
-        ib_expect_add_address("arecord14.aqd-unittest.ms.com",
-                              str(self.net["unknown1"].usable[14]))
         # Different IP in this environment
         command = ["add_address", "--ip", self.net["unknown1"].usable[14],
                    "--fqdn", "arecord14.aqd-unittest.ms.com",
                    "--dns_environment", "ut-env",
                    "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_tcm
         self.noouttest(command)
-        self.ib_verify()
         self.events_verify()
 
     def test_230_verifydefaultenv(self):
@@ -272,12 +269,10 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
             ip=str(ip),
             dns_environment=dns_env,
         )
-        ib_expect_add_address(fqdn, str(ip))
         command = ["add_address", "--ip", ip, "--fqdn", fqdn,
                    "--dns_environment", dns_env,
                    "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_tcm
         self.noouttest(command)
-        self.ib_verify()
 
         command = ["show_address", "--fqdn", fqdn,
                    "--dns_environment", dns_env]
@@ -457,14 +452,12 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
             network_environment='cardenv',
             reverse_dns_environment='ut-env',
         )
-        ib_expect_add_address(fqdn, str(ip))
         command = ["add", "address", "--ip", ip, "--fqdn", fqdn,
                    "--network_environment", "cardenv",
                    "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_tcm
         self.noouttest(command)
         # External IP addresses should not be added to DSDB
         self.dsdb_verify(empty=True)
-        self.ib_verify()
 
         command = ["show_address", "--fqdn=%s" % fqdn,
                    "--network_environment", "cardenv"]
@@ -487,14 +480,12 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
             network_environment='cardenv',
             reverse_dns_environment='ut-env',
         )
-        ib_expect_add_address(fqdn, "192.168.3.5")
         command = ["add", "address", "--ipfromip", "192.168.3.0",
                    "--fqdn", fqdn, "--network_environment", "cardenv",
                    "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_tcm
         self.noouttest(command)
         # External IP addresses should not be added to DSDB
         self.dsdb_verify(empty=True)
-        self.ib_verify()
 
         command = ["show_address", "--fqdn=%s" % fqdn,
                    "--network_environment", "cardenv"]
