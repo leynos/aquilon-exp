@@ -292,7 +292,7 @@ class CommandAddServiceAddress(BrokerCommand):
 
             dsdb_runner.commit_or_rollback("Could not add host to DSDB")
 
-            if ib_services.feature_enabled("service_address"):
+            if ib_services.feature_enabled("service_address") and dbdns_rec.fqdn.dns_environment.is_default:
                 try:
                     ib_services.group.commit_or_rollback()
                 except ProcessException as e:

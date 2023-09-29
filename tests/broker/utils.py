@@ -262,8 +262,8 @@ class MockHub(object):
             if fail_ib:
                 self._engine.dsdb_expect_delete(ip)
 
-        if not fail_dsdb:
-            ib_expect_add_address(fqdn, ip, reverse_ptr=reverse_ptr, ttl=ttl, create_ptr=create_ptr, fail=fail_ib)
+            if not fail_dsdb:
+                ib_expect_add_address(fqdn, ip, reverse_ptr=reverse_ptr, ttl=ttl, create_ptr=create_ptr, fail=fail_ib)
 
         command = ['add_address', '--fqdn', fqdn,
                    '--ip', ip,
@@ -335,8 +335,8 @@ class MockHub(object):
             self._engine.dsdb_expect_delete(ip, fail=fail_dsdb)
             if fail_ib:
                 self._engine.dsdb_expect_add(fqdn, ip)
-        if not fail_dsdb:
-            ib_expect_del_address(fqdn, ip, fail=fail_ib)
+            if not fail_dsdb:
+                ib_expect_del_address(fqdn, ip, fail=fail_ib)
 
         command = ['del_address', '--fqdn', fqdn, '--ip', ip]
         if dns_environment is not None:

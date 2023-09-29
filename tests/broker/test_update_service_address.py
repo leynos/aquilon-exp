@@ -176,14 +176,12 @@ class TestUpdateServiceAddress(TestBrokerCommand):
     def test_300_update_ext_service_address(self):
         # check that updating external service addresses do not invoke DSDB
         fqdn = "unittest20.aqd-unittest.ms.com"
-        ib_expect_update_address("external-" + fqdn, original_ip="192.168.5.25", new_ip="192.168.5.26")
         command = ["update_service_address", "--ip", "192.168.5.26",
                    "--hostname", fqdn,
                    "--interfaces", "eth2", "--name", "et-unittest20",
                    "--network_environment", "excx"]
         self.noouttest(command)
         self.dsdb_verify(empty=True)
-        self.ib_verify(empty=False)
 
 
 if __name__ == '__main__':
