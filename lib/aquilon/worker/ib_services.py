@@ -45,6 +45,7 @@ class IBServices(object):
     config = Config()
 
     enabled = config.getboolean("ib-services", "enable")
+    transactional = config.getboolean("ib-services", "transactional")
     urls = re.split(r"\s*,\s*", config.get("ib-services", "urls"))
     timeout = float(config.get("ib-services", "timeout"))
     ca_chain = config.get("ib-services", "ca_chain")
@@ -294,47 +295,54 @@ class IBServices(object):
         response = None
         full_url = ""
 
-        for base_url in self.urls:
-            full_url = base_url + url
+        try:
+            for base_url in self.urls:
+                full_url = base_url + url
 
-            try:
-                log_msg = "Sending request {} {}".format(http_cmd, full_url)
-                if data:
-                    log_msg += " with data {}".format(data)
-                self.log.info(log_msg)
+                try:
+                    log_msg = "Sending request {} {}".format(http_cmd, full_url)
+                    if data:
+                        log_msg += " with data {}".format(data)
+                    self.log.info(log_msg)
 
-                response = self.session.request(http_cmd, full_url, json=data, timeout=self.timeout)
-            except Timeout:
-                self.log.warning("Request to {} timed out after {}s.".format(full_url, self.timeout))
+                    response = self.session.request(http_cmd, full_url, json=data, timeout=self.timeout)
+                except Timeout:
+                    self.log.warning("Request to {} timed out after {}s.".format(full_url, self.timeout))
 
-            # There are several possible other exception types.  Not all possibilities are known.
-            # In all cases, the logic depends on another pass through the loop to try any remaining URLs.
-            except Exception as e:
-                self.log.warning("Request to {} failed with exception {}".format(full_url, e))
+                # There are several possible other exception types.  Not all possibilities are known.
+                # In all cases, the logic depends on another pass through the loop to try any remaining URLs.
+                except Exception as e:
+                    self.log.warning("Request to {} failed with exception {}".format(full_url, e))
 
-            # Stop trying URLs if there was no exception.
+                # Stop trying URLs if there was no exception.
+                else:
+                    break
+
+            if response is None:
+                raise ProcessException("Infoblox returned errors or no Infoblox servers could be reached, aborting change")
+
+            response_str = "{} {}".format(response.status_code, response.reason)
+
+            if response.ok:
+                self.log.info("Successful response from Infoblox: got {} for {} {} {})".format(response_str, http_cmd, full_url, data))
+                if http_cmd == "GET":
+                    return response
             else:
-                break
+                error_msg = ""
+                try:
+                    error_msg = response.json().get("message")
+                except ValueError:
+                    # Probably a JSON decode error.  Fall back to showing whole body of response.
+                    error_msg = response.text
 
-        if response is None:
-            raise ProcessException("Infoblox returned errors or no Infoblox servers could be reached, aborting change")
+                message = "Infoblox error: '{}' ({}) for {} {} {})".format(error_msg, response_str, http_cmd, full_url, data)
+                raise ProcessException(message)
 
-        response_str = "{} {}".format(response.status_code, response.reason)
-
-        if response.ok:
-            self.log.info("Successful response from Infoblox: got {} for {} {} {})".format(response_str, http_cmd, full_url, data))
-            if http_cmd == "GET":
-                return response
-        else:
-            error_msg = ""
-            try:
-                error_msg = response.json().get("message")
-            except ValueError:
-                # Probably a JSON decode error.  Fall back to showing whole body of response.
-                error_msg = response.text
-
-            message = "Infoblox error: '{}' ({}) for {} {} {})".format(error_msg, response_str, http_cmd, full_url, data)
-            raise ProcessException(message)
+        except Exception as e:
+            if self.transactional:
+                raise e
+            else:
+                self.log.warning("{} (but proceeding with change as non-transactional mode is set).".format(e))
 
     def feature_enabled(self, name):
         enabled = False
