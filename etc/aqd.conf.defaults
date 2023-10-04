@@ -225,7 +225,12 @@ ca_chain = /etc/pki/ms/certs/ms-ca-chain.crt
 enable = False
 enabled_features =
 timeout = 120
+
+# The transactional flag is a boolean.  If True, an Infoblox error results in
+# the AQ change being rolled back.  If False, the error is logged but otherwise
+# ignored.
 transactional = False
+
 urls =
 
 [change_management]
