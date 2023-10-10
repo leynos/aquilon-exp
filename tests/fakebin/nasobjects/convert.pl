@@ -15,10 +15,10 @@
 # limitations under the License.
 
 use MSDW::Version
-	'CDB_File'          => '0.97',
+	'CDB_File'          => '0.99',
 	'FreezeThaw'        => '0.43',
-	'XML-SAX'           => '0.15',
-	'XML-LibXML'        => '1.90-2.7.8',
+	'XML-SAX'           => '0.96',
+	'XML-LibXML'        => '2.0206-2.9.10',
 	'storage/stormap'   => '1.6',
 ;
 
