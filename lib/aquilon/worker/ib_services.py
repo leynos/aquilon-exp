@@ -6,7 +6,6 @@ from aquilon.config import Config
 from aquilon.exceptions_ import ProcessException
 from aquilon.utils import with_timer
 from ipaddress import IPv4Address
-from requests.adapters import HTTPAdapter, Retry
 from requests import Session, Timeout
 from requests_kerberos import DISABLED, HTTPKerberosAuth
 
@@ -58,8 +57,6 @@ class IBServices:
         if self.ca_chain:
             self.session.auth = HTTPKerberosAuth(mutual_authentication=DISABLED, force_preemptive=True)
             self.session.verify = self.ca_chain
-        retries = Retry(total=1, status_forcelist=(500, 501, 502, 503, 504))
-        self.session.mount("https://", HTTPAdapter(max_retries=retries))
 
     def _assert_ip(self, ip):
         if not ip or isinstance(ip, IPv4Address) or (isinstance(ip, str) and re.match(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip)):
