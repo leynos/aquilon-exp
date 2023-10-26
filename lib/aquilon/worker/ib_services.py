@@ -1,13 +1,13 @@
+from ipaddress import IPv4Address
+from requests import Session, Timeout
+from requests_kerberos import DISABLED, HTTPKerberosAuth
 import re
-from urllib.parse import urlencode, urlparse, urlunparse
+from urllib.parse import urlencode, urlparse, urlunparse, quote
 
 from aquilon.aqdb.model import ARecord, Machine
 from aquilon.config import Config
 from aquilon.exceptions_ import ProcessException
 from aquilon.utils import with_timer
-from ipaddress import IPv4Address
-from requests import Session, Timeout
-from requests_kerberos import DISABLED, HTTPKerberosAuth
 
 
 class IBServiceGroup:
@@ -85,25 +85,26 @@ class IBServices:
 
     @with_timer
     def add_a_ptr(self, name, ip, assign_ptr_to_fqdn=None, ttl=None, create_ptr=True):
-        if not self._assert_ip(ip):
-            return
-        payload = self._build_a_ptr_payload(name, ip, assign_ptr_to_fqdn, ttl)
-        payload["create_ptr"] = create_ptr
-        url = "/dns/a_ptr"
-
-        self._http_request("POST", url, payload)
+        return self.update_a_ptr(name, ip,
+            new_ip=ip, # We have to specify this again to force creation.
+            assign_ptr_to_fqdn=assign_ptr_to_fqdn,
+            ttl=ttl,
+            create_ptr=create_ptr,
+            update_ptr=False,
+        )
 
     @with_timer
-    def update_a_ptr(self, name, ip, new_ip=None, assign_ptr_to_fqdn=None, ttl=None, update_ptr=True):
+    def update_a_ptr(self, name, ip, new_ip=None, assign_ptr_to_fqdn=None, ttl=None, update_ptr=True, create_ptr=False):
         if not self._assert_ip(ip):
             return
 
         payload = self._build_a_ptr_payload(None, new_ip, assign_ptr_to_fqdn, ttl)
         payload["create_if_doesnt_exist"] = True
+        payload["create_ptr"] = create_ptr
         payload["update_ptr"] = update_ptr
         url = f"/dns/a_ptr/{name}/{ip}"
 
-        self._http_request("PATCH", url, payload)
+        return self._http_request("PATCH", url, payload)
 
     @with_timer
     def delete_a_ptr(self, name, ip, delete_ptr=True):
@@ -116,7 +117,18 @@ class IBServices:
         url = f"/dns/a_ptr/{str(name)}/{str(ip)}"
         url = self._generate_url_from_params(url, params)
 
-        self._http_request("DELETE", url)
+        return self._http_request("DELETE", url)
+
+    @with_timer
+    def show_a_ptr(self, name, ip):
+        params = {
+            "name":    str(name),
+            "address": str(ip),
+        }
+        url = "/dns/a_ptr"
+        url = self._generate_url_from_params(url, params)
+
+        return self._http_request("GET", url)
 
     def snapshot_hw_a_records(self, dbhw_ent):
         hwdata = {}
@@ -228,24 +240,21 @@ class IBServices:
 
     @with_timer
     def add_dns_alias(self, name, target, ttl=None):
-        url = "/dns/aliases"
-        payload = {
-            "eonid":  self.eonid,
-            "name":   name,
-            "target": target,
+        args = {
+            "new_target": target,
         }
         if ttl:
-            payload["ttl"] = ttl
+            args["ttl"] = ttl
 
-        self._http_request("POST", url, payload)
+        return self.update_dns_alias(name, **args)
 
     @with_timer
-    def del_dns_alias(self, name):
+    def delete_dns_alias(self, name):
         params = { "eonid": self.eonid }
         url = f"/dns/aliases/{str(name)}"
         url = self._generate_url_from_params(url, params)
 
-        self._http_request("DELETE", url)
+        return self._http_request("DELETE", url)
 
     @with_timer
     def update_dns_alias(self, name, new_target=None, ttl=None):
@@ -256,7 +265,7 @@ class IBServices:
             payload["ttl"] = ttl
         url = f"/dns/aliases/{name}"
 
-        self._http_request("PATCH", url, payload)
+        return self._http_request("PATCH", url, payload)
 
     @with_timer
     def add_dynamic_range(self, name, start_address, end_address):
@@ -268,7 +277,7 @@ class IBServices:
         }
         url = "/ranges"
 
-        self._http_request("POST", url, payload)
+        self._http_request("POST", url, payload, ignore_statuses=[409])
 
     @with_timer
     def delete_dynamic_range(self, start_address, end_address):
@@ -284,7 +293,43 @@ class IBServices:
 
         return self._http_request("GET", url)
 
-    def _http_request(self, http_cmd, url, data=None):
+    def add_network(self, network, name, compartment=None, side=None, sysloc=None):
+        url = "/networks/{}".format(quote(network, safe=''))
+
+        payload = {
+            "name": name,
+            "compartment": compartment,
+            "side": side,
+            "sysloc": sysloc,
+        }
+
+        self._http_request("POST", url, payload)
+
+    def show_network(self, network):
+        url = "/networks/{}".format(quote(network, safe=''))
+
+        return self._http_request("GET", url, ignore_statuses=[404])
+
+    def delete_network(self, network):
+        url = "/networks/{}".format(quote(network, safe=''))
+
+        self._http_request("DELETE", url)
+
+    def add_zone(self, fqdn, city=None):
+        url = "/dns/zones/"
+        payload = {"fqdn": fqdn, "city": city, "eonid": self.eonid}
+        self._http_request("POST", url, payload)
+
+    def show_zone(self, fqdn):
+        url = "/dns/zones/{}".format(fqdn)
+
+        return self._http_request("GET", url, ignore_statuses=[404])
+
+    def delete_zone(self, fqdn):
+        url = "/dns/zones/{}".format(fqdn)
+        self._http_request("DELETE", url)
+
+    def _http_request(self, http_cmd, url, data=None, ignore_statuses=[]):
         if not self.enabled:
             return
 
@@ -314,25 +359,26 @@ class IBServices:
                 else:
                     break
 
-            if response is None:
-                raise ProcessException("Infoblox returned errors or no Infoblox servers could be reached, aborting change")
+            if response is not None:
+                response_str = "{} {}".format(response.status_code, response.reason)
 
-            response_str = "{} {}".format(response.status_code, response.reason)
-
-            if response.ok:
-                self.log.info("Successful response from Infoblox: got {} for {} {} {})".format(response_str, http_cmd, full_url, data))
-                if http_cmd == "GET":
+                if response.ok or response.status_code in ignore_statuses:
+                    self.log.info("Successful response from Infoblox: got {} for {} {} {})".format(
+                                     response_str, http_cmd, full_url, data))
                     return response
-            else:
-                error_msg = ""
-                try:
-                    error_msg = response.json().get("message")
-                except ValueError:
-                    # Probably a JSON decode error.  Fall back to showing whole body of response.
-                    error_msg = response.text
+                else:
+                    error_msg = ""
+                    try:
+                        error_msg = response.json().get("message")
+                    except ValueError:
+                        # Probably a JSON decode error.  Fall back to showing whole body of response.
+                        error_msg = response.text
 
-                message = "Infoblox error: '{}' ({}) for {} {} {})".format(error_msg, response_str, http_cmd, full_url, data)
-                raise ProcessException(message)
+                    message = "Infoblox error: '{}' ({}) for {} {} {})".format(
+                              error_msg, response_str, http_cmd, full_url, data)
+                    raise ProcessException(message)
+            else:
+                raise ProcessException("Infoblox returned errors or no Infoblox servers could be reached, aborting change")
 
         except Exception as e:
             if self.transactional:
