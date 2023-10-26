@@ -423,7 +423,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                              eth0_mac=eth0_mac,
                              eth1_mac=eth1_mac, eth1_ip=eth1_ip,
                              manager_iface="mgmt0", manager_ip=mgmt_ip,
-                             osname="esxi", osversion="5.0.0",
+                             osname="esxi", osversion="7.0.3",
                              archetype="vmhost", personality="vulcan2-server-dev")
 
     def test_185_add_utmc9_vmhosts(self):
@@ -434,7 +434,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                          manager_iface="mgmt0",
                          manager_ip=self.net["ut14_oob"].usable[2],
                          archetype="vmhost", personality="vulcan-local-disk",
-                         osname="esxi", osversion="5.0.0",
+                         osname="esxi", osversion="7.0.3",
                          domain="alt-unittest")
         self.create_host("evh83.aqd-unittest.ms.com",
                          self.net["ut14_net"].usable[3],
@@ -442,7 +442,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                          manager_iface="mgmt0",
                          manager_ip=self.net["ut14_oob"].usable[3],
                          archetype="vmhost", personality="vulcan-local-disk",
-                         osname="esxi", osversion="5.0.0",
+                         osname="esxi", osversion="7.0.3",
                          domain="alt-unittest")
 
     def test_200_machine_reuse(self):
@@ -550,7 +550,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                              manager_iface="mgmt0", manager_ip=mgmt_ip,
                              archetype="vmhost",
                              personality="vulcan-10g-server-prod",
-                             osname="esxi", osversion="5.0.0")
+                             osname="esxi", osversion="7.0.3")
 
     def test_320_add_10gig_racks(self):
         for port in range(1, 13):
@@ -603,7 +603,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
             command = ["add", "host", "--hostname", hostname, "--autoip",
                        "--machine", machine,
                        "--domain", "unittest",
-                       "--osname", "esxi", "--osversion", "5.0.0",
+                       "--osname", "esxi", "--osversion", "7.0.3",
                        "--archetype", "vmhost", "--personality", "vulcan-10g-server-prod"]
             self.noouttest(command)
             command = ["add_manager", "--hostname", hostname, "--interface", "mgmt0",
@@ -659,7 +659,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         self.assertEqual(host.personality.archetype.name, "vmhost")
         self.assertEqual(host.operating_system.archetype.name, "vmhost")
         self.assertEqual(host.operating_system.name, "esxi")
-        self.assertEqual(host.operating_system.version, "5.0.0")
+        self.assertEqual(host.operating_system.version, "7.0.3")
         self.assertEqual(host.ip, str(self.net["ut10_eth0"].usable[1]))
         self.assertEqual(host.machine.name, "ut10s04p1")
         self.assertEqual(len(host.machine.interfaces), 3)
