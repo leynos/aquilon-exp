@@ -247,6 +247,12 @@ class TestUnbindFeature(TestBrokerCommand):
                          "personality aquilon/compileserver, interface bond0.",
                          command)
 
+    def test_300_unbind_vulcan(self):
+        for personality in ["vulcan-10g-server-prod", "vulcan-local-disk", "vulcan2-server-dev"]:
+            cmd = ["unbind_feature", "--feature", "vulcan/vulcan31",
+                   "--personality", personality, "--archetype", "vmhost"]
+            self.successtest(cmd)
+
     def test_900_verify_no_bindings(self):
         # Leftover bindings will cause subsequent compiles to fail as we don't
         # have the templates, so make sure nothing is left
