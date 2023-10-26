@@ -40,8 +40,6 @@ from aquilon.config import Config
 from aquilon.utils import kill_from_pid_file
 from verbose_text_test import VerboseTextTestRunner
 from aqdb.utils import copy_sqldb
-from broker.orderedsuite import BrokerIntegrationTestSuite
-from broker.orderedsuite import InfobloxIntegrationTestSuite
 
 default_configfile = os.path.join(BINDIR, "unittest.conf")
 
@@ -160,6 +158,10 @@ if opts.coverage:
     config.set("unittest", "coverage", "True")
 if opts.profile:
     config.set("unittest", "profile", "True")
+
+# Do this import after the Config object has been instantiated, otherwise the test suites may use
+# a default value rather than opt.config.
+from broker.orderedsuite import BrokerIntegrationTestSuite, InfobloxIntegrationTestSuite
 
 hostname = config.get("unittest", "hostname")
 if hostname.find(".") < 0:
