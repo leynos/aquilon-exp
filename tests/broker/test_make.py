@@ -279,7 +279,7 @@ class TestMake(TestBrokerCommand):
     def test_130_make_vm_hosts(self):
         for i in range(1, 6):
             command = ["make", "--hostname", "evh%s.aqd-unittest.ms.com" % i,
-                       "--osname", "esxi", "--osversion", "5.0.0"] + self.valid_just_tcm
+                       "--osname", "esxi", "--osversion", "7.0.3"] + self.valid_just_tcm
             err = self.statustest(command)
             self.matchclean(err, "removing binding", command)
 
@@ -297,6 +297,11 @@ class TestMake(TestBrokerCommand):
                                         servicedir])
             self.assertTrue(results, "No service plenary data that includes"
                             "evh%s.aqd-unittest.ms.com" % i)
+
+    def test_132_utmc9_bind_required_feature(self):
+        command = ["bind_feature", "--feature", "vulcan/vulcan31",
+                   "--personality", "vulcan-local-disk", "--archetype", "vmhost"]
+        self.successtest(command)
 
     def test_135_make_utmc9(self):
         command = ["make", "--hostname", "evh82.aqd-unittest.ms.com"]
