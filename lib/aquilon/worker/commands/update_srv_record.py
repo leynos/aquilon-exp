@@ -23,6 +23,7 @@ from aquilon.aqdb.model import Fqdn, SrvRecord, DnsDomain, DnsEnvironment
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.grn import lookup_grn
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from aquilon.worker.ib_services import IBServices
 
 
 class CommandUpdateSrvRecord(BrokerCommand):
@@ -49,8 +50,22 @@ class CommandUpdateSrvRecord(BrokerCommand):
             records = self.get_records_in_rrset(session, name,
                                                 dbdns_domain, dbdns_env)
             dbdns_records.extend(records)
-            if len(dbdns_records) == 0:
-                raise ArgumentError("No SRV record found.")
+
+        if len(dbdns_records) == 0:
+            raise ArgumentError("No SRV record found.")
+
+        old_data = []
+        for dbsrv_rec in dbdns_records:
+            old_data.append({
+                "service":  dbsrv_rec.service,
+                "protocol": dbsrv_rec.protocol,
+                "domain":   str(dbsrv_rec.fqdn.dns_domain),
+                "target":   str(dbsrv_rec.target),
+                "priority": dbsrv_rec.priority,
+                "weight":   dbsrv_rec.weight,
+                "port":     dbsrv_rec.port,
+                "ttl":      dbsrv_rec.ttl,
+            })
 
         dbgrn = None
         update_grn = False
@@ -61,8 +76,9 @@ class CommandUpdateSrvRecord(BrokerCommand):
         elif clear_grn:
             update_grn = True
 
-        # Validate ChangeManagement
+        ib_services = IBServices(logger)
         cm = ChangeManagement(session, user, justification, reason, logger, self.command, **arguments)
+        i = 0
         for dbsrv_rec in dbdns_records:
             cm.consider(dbsrv_rec.fqdn)
 
@@ -84,7 +100,13 @@ class CommandUpdateSrvRecord(BrokerCommand):
             if comments is not None:
                 dbsrv_rec.comments = comments
 
+            self.update_infoblox(ib_services, old_data[i], dbsrv_rec)
+            i += 1
+
         cm.validate()
+
+        if ib_services.feature_enabled("srv_record"):
+            ib_services.group.commit_or_rollback()
 
         session.flush()
         return
@@ -98,5 +120,31 @@ class CommandUpdateSrvRecord(BrokerCommand):
         q = q.filter_by(dns_domain=dbdns_domain)
         q = q.filter_by(name=name)
         q = q.filter_by(dns_environment=dbdns_env)
+        q = q.order_by(SrvRecord.target)
 
         return q.all()
+
+    def update_infoblox(self, ib_services, old, dbsrv_rec):
+        new = {
+            "service":  dbsrv_rec.service,
+            "protocol": dbsrv_rec.protocol,
+            "domain":   str(dbsrv_rec.fqdn.dns_domain),
+            "target":   str(dbsrv_rec.target),
+            "priority": dbsrv_rec.priority,
+            "weight":   dbsrv_rec.weight,
+            "port":     dbsrv_rec.port,
+            "ttl":      dbsrv_rec.ttl,
+        }
+
+        # The service, protocol and domain fields are always defined.
+        # For the remaining fields, send Infoblox the old values if the field isn't being changed.
+        # The ttl field is excluded here as if the user sets "clear_ttl", it will be None here
+        # and we don't want to override that.
+        for field in ("target", "priority", "weight", "port"):
+            new[field] = new[field] if new[field] is not None else old[field]
+
+        if (old != new):
+            ib_services.group.add_action(
+                lambda: ib_services.update_dns_srv_record(new),
+                lambda: ib_services.update_dns_srv_record(old)
+            )

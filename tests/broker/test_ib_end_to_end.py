@@ -23,150 +23,19 @@ if __name__ == "__main__":
     from broker import utils
     utils.import_depends()
 
-from aquilon.config import Config
-from aquilon.exceptions_ import ProcessException
+import aquilon.worker.depends
+from aquilon.worker.ib_services import IBServices
 from broker.brokertest import TestBrokerCommand
 from broker.utils import MockHub
 
 from ipaddress import IPv4Address
 
-from requests.adapters import HTTPAdapter
-from requests.adapters import Retry
-from requests import Session
-from requests import Timeout
-from requests_kerberos import DISABLED
-from requests_kerberos import HTTPKerberosAuth
 from subprocess import PIPE
 from subprocess import Popen
 from urllib import quote
 
 import logging as log
 import time
-
-
-class IBServicesClient(object):
-
-    def __init__(self):
-        config = Config()
-
-        self.base_url = config.get("ib-services", "urls")
-        self.timeout = float(config.get("ib-services", "timeout"))
-        self.eonid = config.get("broker", "aqd_eonid")
-        self.ca_chain = config.get("ib-services", "ca_chain")
-
-        self.session = Session()
-        self.session.auth = HTTPKerberosAuth(mutual_authentication=DISABLED, force_preemptive=True)
-        self.session.verify = self.ca_chain
-        retries = Retry(total=1, status_forcelist=(500, 501, 502, 503, 504))
-        self.session.mount("https://", HTTPAdapter(max_retries=retries))
-
-    def add_network(self, network, name, compartment="interior.lab.access", side="a", sysloc="np.ny.na"):
-        url = "/networks/{}".format(quote(network, safe=''))
-
-        payload = {
-            "name": name,
-            "compartment": compartment,
-            "side": side,
-            "sysloc": sysloc,
-        }
-
-        self._http_request("POST", url, payload)
-
-    def get_network(self, network):
-        url = "/networks/{}".format(quote(network, safe=''))
-
-        return self._http_request("GET", url, ignore_statuses=[404])
-
-    def delete_network(self, network):
-        url = "/networks/{}".format(quote(network, safe=''))
-
-        self._http_request("DELETE", url)
-
-    def add_zone(self, fqdn, city="ny"):
-        url = "/dns/zones/"
-        payload = {"fqdn": fqdn, "city": city, "eonid": self.eonid}
-        self._http_request("POST", url, payload)
-
-    def get_zone(self, fqdn):
-        url = "/dns/zones/{}".format(fqdn)
-
-        return self._http_request("GET", url, ignore_statuses=[404])
-
-    def delete_zone(self, fqdn):
-        url = "/dns/zones/{}".format(fqdn)
-        self._http_request("DELETE", url)
-
-    def add_a_ptr(self, fqdn, ip):
-        url = "/dns/a_ptr/"
-        payload = {"name": fqdn, "address": ip, "eonid": self.eonid}
-        self._http_request("POST", url, payload)
-
-    def delete_a_ptr(self, fqdn, ip):
-        url = "/dns/a_ptr/{}/{}".format(fqdn, ip)
-        self._http_request("DELETE", url)
-
-    def add_dns_alias(self, fqdn, target):
-        url = "/dns/aliases/".format(fqdn)
-        payload = {"name": fqdn, "target": target, "eonid": self.eonid}
-        self._http_request("POST", url, payload)
-
-    def delete_dns_alias(self, fqdn):
-        url = "/dns/aliases/{}".format(fqdn)
-        self._http_request("DELETE", url)
-
-    def delete_dynamic_range(self, start_address, end_address):
-        url = "/ranges/{}/{}".format(start_address, end_address)
-
-        self._http_request("DELETE", url, ignore_statuses=[404])
-
-    def show_dynamic_range(self, start_address, end_address):
-        url = "/ranges/{}/{}".format(str(start_address), str(end_address))
-
-        return self._http_request("GET", url, ignore_statuses=[404])
-
-    def _http_request(self, http_cmd, url, data=None, ignore_statuses=[]):
-        response = None
-
-        full_url = self.base_url + url
-
-        try:
-            log_msg = "Sending request {} {}".format(http_cmd, full_url)
-            if data:
-                log_msg += " with data {}".format(data)
-            log.info(log_msg)
-
-            response = self.session.request(http_cmd, full_url, json=data, timeout=self.timeout)
-        except Timeout:
-            log.warning("Request to {} timed out after {}s.".format(full_url, self.timeout))
-
-        # There are several possible other exception types.  Not all possibilities are known.
-        # In all cases, the logic depends on another pass through the loop to try any remaining URLs.
-        except Exception as e:
-            log.warning("Request to {} failed with exception {}".format(full_url, e))
-
-        if response is None:
-            raise ProcessException("Infoblox returned errors or no Infoblox servers could be reached, aborting change")
-
-        response_str = "{} {}".format(response.status_code, response.reason)
-
-        if response.ok:
-            log.info("Successful response from Infoblox: got {} for {} {} {})".format(response_str, http_cmd, full_url,
-                                                                                      data))
-            if http_cmd == "GET":
-                return response
-        else:
-            if response.status_code in ignore_statuses:
-                return response
-            error_msg = ""
-            try:
-                error_msg = response.json().get("message")
-            except ValueError:
-                # Probably a JSON decode error.  Fall back to showing whole body of response.
-                error_msg = response.text
-
-            message = "Infoblox error: '{}' ({}) for {} {} {})".format(error_msg, response_str, http_cmd, full_url,
-                                                                       data)
-            raise ProcessException(message)
 
 
 class DnsChecker(object):
@@ -235,26 +104,28 @@ class TestIBEndToEnd(TestBrokerCommand):
 
     def __init__(self, *args, **kwargs):
         super(TestIBEndToEnd, self).__init__(*args, **kwargs)
-        self.ib_services = IBServicesClient()
-        if not self.ib_services.get_zone(self.test_domain).ok:
+        self.ib_services = IBServices(log)
+        if not self.ib_services.show_zone(self.test_domain).ok:
             self.fail("Required test zone {} does not exist in IB instance.".format(self.test_domain))
 
     def _clean_ib_services(self):
-        if self.ib_services.get_network(self.test_network).status_code != 404:
+        response = self.ib_services.show_network(self.test_network)
+        if response and response.status_code != 404:
             self.ib_services.delete_network(network=self.test_network)
 
         # TODO: hard-coded dns zone
-        # if self.ib_services.get_zone(self.test_domain).status_code != 404:
+        # if self.ib_services.show_zone(self.test_domain).status_code != 404:
         #     self.ib_services.delete_zone(fqdn=self.test_domain)
 
     def setUp(self, *args, **kwargs):
         super(TestIBEndToEnd, self).setUp(*args, **kwargs)
 
         self._clean_ib_services()
-        self.ib_services.add_network(network=self.test_network, name="aqd-unittest")
+        self.ib_services.add_network(network=self.test_network, name="aqd-unittest", side="a", sysloc="np.ny.na",
+                                     compartment="interior.lab.access")
         # TODO: Zone changes in the l2 IB instance require a restart of the dns server before domains in that zone can
         # be resolved, so for now rely on a previously created zone instead
-        # self.ib_services.add_zone(fqdn=self.test_domain)
+        # self.ib_services.add_zone(fqdn=self.test_domain, city="ny")
 
     def tearDown(self, *args, **kwargs):
         super(TestIBEndToEnd, self).tearDown(*args, **kwargs)
@@ -457,9 +328,56 @@ class TestIBEndToEnd(TestBrokerCommand):
             self.matchoutput(err, message, command)
         self.dsdb_verify()
 
-        if self.ib_services.show_dynamic_range(start_ip, end_ip).status_code != 404:
+        response = self.ib_services.show_dynamic_range(start_ip, end_ip)
+        if response: # FIXME check for 404?
             self.fail("Expected dynamic range to be not found in infoblox")
 
+        self.noouttest(['del_network', '--ip', self.test_network_obj['ip']])
+        mh.delete()
+
+
+    def test_300_srv_records(self):
+        mh = MockHub(self)
+
+        mh.add_dns_domain(self.test_domain, restricted=False)
+        building = mh.add_building()
+        self.noouttest(['add_network', '--network', 'ib-testing', '--ip', self.test_network_obj['ip'],
+                        '--prefixlen', self.test_network_obj['prefixlen'], '--building', building])
+
+        test_fqdn = "aqd-ib-srv-test01." + self.test_domain
+        test_ip = "2.3.4.1"
+
+        #TODO more cleanup of existing records
+        self.ib_services.delete_a_ptr(test_fqdn, test_ip)
+        self.runcommand(['del_address', '--fqdn', test_fqdn, '--ip', test_ip] + self.valid_just_tcm)
+
+        self.dsdb_expect_add(test_fqdn, test_ip)
+        command = ["add_address", "--fqdn", test_fqdn, "--ip", test_ip, '--grn', mh.grn] + self.valid_just_tcm
+        self.dsdb_verify()
+
+        err = self.statustest(command)
+
+        args = {
+            'service': 'kerberos',
+            'protocol': 'tcp',
+            'dns_domain': self.test_domain,
+            'target': test_fqdn,
+            'priority': 10,
+            'weight': 10,
+            'port': 88,
+        }
+        command = ["add_srv_record"] + list(chain.from_iterable([("--{}".format(key), args[key]) for key in args]))
+#        log.info("Command list = '{}'".format(command))
+
+        err = self.statustest(command)
+        log.info("Ran '{}'.  Got stderr '{}'".format(command, err))
+
+        command = ["del_srv_record", "--service", "kerberos", "--protocol", "tcp", "--dns_domain", self.test_domain, "--target", test_fqdn]
+        log.info("Running {}".format(command))
+        self.statustest(command)
+
+#        self.dsdb_expect_delete(test_fqdn, test_ip)
+        self.noouttest(['del_address', '--fqdn', test_fqdn, '--ip', test_ip] + self.valid_just_tcm)
         self.noouttest(['del_network', '--ip', self.test_network_obj['ip']])
         mh.delete()
 

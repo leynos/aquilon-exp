@@ -1,15 +1,14 @@
+from ipaddress import IPv4Address
+from requests import Session, Timeout
+from requests_kerberos import DISABLED, HTTPKerberosAuth
 import re
-from urllib import urlencode
+from urllib import quote, urlencode
 from urlparse import urlparse, urlunparse
 
 from aquilon.aqdb.model import ARecord, Machine
 from aquilon.config import Config
 from aquilon.exceptions_ import ProcessException
 from aquilon.utils import with_timer
-from ipaddress import IPv4Address
-from requests.adapters import HTTPAdapter, Retry
-from requests import Session, Timeout
-from requests_kerberos import DISABLED, HTTPKerberosAuth
 
 
 class IBServiceGroup(object):
@@ -45,6 +44,7 @@ class IBServices(object):
     config = Config()
 
     enabled = config.getboolean("ib-services", "enable")
+    transactional = config.getboolean("ib-services", "transactional")
     urls = re.split(r"\s*,\s*", config.get("ib-services", "urls"))
     timeout = float(config.get("ib-services", "timeout"))
     ca_chain = config.get("ib-services", "ca_chain")
@@ -58,8 +58,6 @@ class IBServices(object):
         if self.ca_chain:
             self.session.auth = HTTPKerberosAuth(mutual_authentication=DISABLED, force_preemptive=True)
             self.session.verify = self.ca_chain
-        retries = Retry(total=1, status_forcelist=(500, 501, 502, 503, 504))
-        self.session.mount("https://", HTTPAdapter(max_retries=retries))
 
     def _assert_ip(self, ip):
         if not ip or isinstance(ip, IPv4Address) or (isinstance(ip, str) and re.match(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", ip)):
@@ -88,25 +86,26 @@ class IBServices(object):
 
     @with_timer
     def add_a_ptr(self, name, ip, assign_ptr_to_fqdn=None, ttl=None, create_ptr=True):
-        if not self._assert_ip(ip):
-            return
-        payload = self._build_a_ptr_payload(name, ip, assign_ptr_to_fqdn, ttl)
-        payload["create_ptr"] = create_ptr
-        url = "/dns/a_ptr"
-
-        self._http_request("POST", url, payload)
+        return self.update_a_ptr(name, ip,
+            new_ip=ip, # We have to specify this again to force creation.
+            assign_ptr_to_fqdn=assign_ptr_to_fqdn,
+            ttl=ttl,
+            create_ptr=create_ptr,
+            update_ptr=False,
+        )
 
     @with_timer
-    def update_a_ptr(self, name, ip, new_ip=None, assign_ptr_to_fqdn=None, ttl=None, update_ptr=True):
+    def update_a_ptr(self, name, ip, new_ip=None, assign_ptr_to_fqdn=None, ttl=None, update_ptr=True, create_ptr=False):
         if not self._assert_ip(ip):
             return
 
         payload = self._build_a_ptr_payload(None, new_ip, assign_ptr_to_fqdn, ttl)
         payload["create_if_doesnt_exist"] = True
+        payload["create_ptr"] = create_ptr
         payload["update_ptr"] = update_ptr
         url = "/dns/a_ptr/{}/{}".format(name, ip)
 
-        self._http_request("PATCH", url, payload)
+        return self._http_request("PATCH", url, payload)
 
     @with_timer
     def delete_a_ptr(self, name, ip, delete_ptr=True):
@@ -119,7 +118,18 @@ class IBServices(object):
         url = "/dns/a_ptr/{}/{}".format(str(name), str(ip))
         url = self._generate_url_from_params(url, params)
 
-        self._http_request("DELETE", url)
+        return self._http_request("DELETE", url)
+
+    @with_timer
+    def show_a_ptr(self, name, ip):
+        params = {
+            "name":    str(name),
+            "address": str(ip),
+        }
+        url = "/dns/a_ptr"
+        url = self._generate_url_from_params(url, params)
+
+        return self._http_request("GET", url)
 
     def snapshot_hw_a_records(self, dbhw_ent):
         hwdata = {}
@@ -231,24 +241,21 @@ class IBServices(object):
 
     @with_timer
     def add_dns_alias(self, name, target, ttl=None):
-        url = "/dns/aliases"
-        payload = {
-            "eonid":  self.eonid,
-            "name":   name,
-            "target": target,
+        args = {
+            "new_target": target,
         }
         if ttl:
-            payload["ttl"] = ttl
+            args["ttl"] = ttl
 
-        self._http_request("POST", url, payload)
+        return self.update_dns_alias(name, **args)
 
     @with_timer
-    def del_dns_alias(self, name):
+    def delete_dns_alias(self, name):
         params = { "eonid": self.eonid }
         url = "/dns/aliases/{}".format(str(name))
         url = self._generate_url_from_params(url, params)
 
-        self._http_request("DELETE", url)
+        return self._http_request("DELETE", url)
 
     @with_timer
     def update_dns_alias(self, name, new_target=None, ttl=None):
@@ -259,7 +266,7 @@ class IBServices(object):
             payload["ttl"] = ttl
         url = "/dns/aliases/{}".format(name)
 
-        self._http_request("PATCH", url, payload)
+        return self._http_request("PATCH", url, payload)
 
     @with_timer
     def add_dynamic_range(self, name, start_address, end_address):
@@ -271,7 +278,7 @@ class IBServices(object):
         }
         url = "/ranges"
 
-        self._http_request("POST", url, payload)
+        self._http_request("POST", url, payload, ignore_statuses=[409])
 
     @with_timer
     def delete_dynamic_range(self, start_address, end_address):
@@ -287,54 +294,181 @@ class IBServices(object):
 
         return self._http_request("GET", url)
 
-    def _http_request(self, http_cmd, url, data=None):
+    @with_timer
+    def add_dns_srv_record(self, service, protocol, dns_domain, target, port, priority, weight, ttl=None):
+        url = "/dns/srv"
+        payload = {
+            "eonid":    self.eonid,
+            "service":  service,
+            "protocol": protocol,
+            "domain":   str(dns_domain),
+            "target":   target,
+            "port":     port,
+            "priority": priority,
+            "weight":   weight,
+        }
+        if target is not None:
+            payload["target"] = str(target)
+        if ttl:
+            payload["ttl"] = ttl
+
+        self._http_request("POST", url, payload)
+
+    @with_timer
+    def del_dns_srv_record(self, service, protocol, dns_domain, target, port, priority, weight):
+        options = {
+            "eonid":    self.eonid,
+            "service":  service,
+            "protocol": protocol,
+            "domain":   str(dns_domain),
+            "target":   target,
+            "port":     port,
+            "priority": priority,
+            "weight":   weight,
+        }
+        if target is not None:
+            options["target"] = str(target)
+        ordered_options = ("domain", "protocol", "target", "service", "eonid", "weight", "priority", "port")
+        params = ("{}={}".format(field, options[field]) for field in ordered_options if options[field] is not None)
+
+        url = "/dns/srv?{}".format("&".join(params))
+
+        self._http_request("DELETE", url)
+
+    @with_timer
+    def update_dns_srv_record(self, args):
+        required_fields = ("service", "protocol", "domain", "port", "target", "priority", "weight")
+        payload = {}
+
+        for field in required_fields:
+            if args[field] is None:
+                raise ArgumentError("Required argument '{}' is missing".format(field))
+            payload[field] = args[field]
+
+        if args["ttl"] is not None:
+            payload["ttl"] = args["ttl"]
+        payload["domain"] = str(payload["domain"])
+        payload["target"] = str(payload["target"])
+        payload["eonid"] = self.eonid
+
+        url = "/dns/srv"
+
+        self._http_request("patch", url, payload)
+
+    @with_timer
+    def show_dns_srv_record(self, service, dns_domain, target, port, priority, weight, protocol):
+        params = {
+            "service":  service,
+            "protocol": protocol,
+            "domain":   str(dns_domain),
+            "target":   str(target),
+        }
+
+        optional_params = {
+            "port":     port,
+            "priority": priority,
+            "weight":   weight,
+        }
+        for field in optional_params:
+            if optional_params[field] is not None:
+                params[field] = optional_params[field]
+
+        url = self._generate_url_from_params("/dns/srv", params)
+
+        return self._http_request("GET", url)
+
+    def add_network(self, network, name, compartment=None, side=None, sysloc=None):
+        url = "/networks/{}".format(quote(network, safe=''))
+
+        payload = {
+            "name": name,
+            "compartment": compartment,
+            "side": side,
+            "sysloc": sysloc,
+        }
+
+        self._http_request("POST", url, payload)
+
+    def show_network(self, network):
+        url = "/networks/{}".format(quote(network, safe=''))
+
+        return self._http_request("GET", url, ignore_statuses=[404])
+
+    def delete_network(self, network):
+        url = "/networks/{}".format(quote(network, safe=''))
+
+        self._http_request("DELETE", url)
+
+    def add_zone(self, fqdn, city=None):
+        url = "/dns/zones/"
+        payload = {"fqdn": fqdn, "city": city, "eonid": self.eonid}
+        self._http_request("POST", url, payload)
+
+    def show_zone(self, fqdn):
+        url = "/dns/zones/{}".format(fqdn)
+
+        return self._http_request("GET", url, ignore_statuses=[404])
+
+    def delete_zone(self, fqdn):
+        url = "/dns/zones/{}".format(fqdn)
+        self._http_request("DELETE", url)
+
+    def _http_request(self, http_cmd, url, data=None, ignore_statuses=[]):
         if not self.enabled:
             return
 
         response = None
         full_url = ""
 
-        for base_url in self.urls:
-            full_url = base_url + url
+        try:
+            for base_url in self.urls:
+                full_url = base_url + url
 
-            try:
-                log_msg = "Sending request {} {}".format(http_cmd, full_url)
-                if data:
-                    log_msg += " with data {}".format(data)
-                self.log.info(log_msg)
+                try:
+                    log_msg = "Sending request {} {}".format(http_cmd, full_url)
+                    if data:
+                        log_msg += " with data {}".format(data)
+                    self.log.info(log_msg)
 
-                response = self.session.request(http_cmd, full_url, json=data, timeout=self.timeout)
-            except Timeout:
-                self.log.warning("Request to {} timed out after {}s.".format(full_url, self.timeout))
+                    response = self.session.request(http_cmd, full_url, json=data, timeout=self.timeout)
+                except Timeout:
+                    self.log.warning("Request to {} timed out after {}s.".format(full_url, self.timeout))
 
-            # There are several possible other exception types.  Not all possibilities are known.
-            # In all cases, the logic depends on another pass through the loop to try any remaining URLs.
-            except Exception as e:
-                self.log.warning("Request to {} failed with exception {}".format(full_url, e))
+                # There are several possible other exception types.  Not all possibilities are known.
+                # In all cases, the logic depends on another pass through the loop to try any remaining URLs.
+                except Exception as e:
+                    self.log.warning("Request to {} failed with exception {}".format(full_url, e))
 
-            # Stop trying URLs if there was no exception.
+                # Stop trying URLs if there was no exception.
+                else:
+                    break
+
+            if response is not None:
+                response_str = "{} {}".format(response.status_code, response.reason)
+
+                if response.ok or response.status_code in ignore_statuses:
+                    self.log.info("Successful response from Infoblox: got {} for {} {} {})".format(
+                                     response_str, http_cmd, full_url, data))
+                    return response
+                else:
+                    error_msg = ""
+                    try:
+                        error_msg = response.json().get("message")
+                    except ValueError:
+                        # Probably a JSON decode error.  Fall back to showing whole body of response.
+                        error_msg = response.text
+
+                    message = "Infoblox error: '{}' ({}) for {} {} {})".format(
+                              error_msg, response_str, http_cmd, full_url, data)
+                    raise ProcessException(message)
             else:
-                break
+                raise ProcessException("Infoblox returned errors or no Infoblox servers could be reached, aborting change")
 
-        if response is None:
-            raise ProcessException("Infoblox returned errors or no Infoblox servers could be reached, aborting change")
-
-        response_str = "{} {}".format(response.status_code, response.reason)
-
-        if response.ok:
-            self.log.info("Successful response from Infoblox: got {} for {} {} {})".format(response_str, http_cmd, full_url, data))
-            if http_cmd == "GET":
-                return response
-        else:
-            error_msg = ""
-            try:
-                error_msg = response.json().get("message")
-            except ValueError:
-                # Probably a JSON decode error.  Fall back to showing whole body of response.
-                error_msg = response.text
-
-            message = "Infoblox error: '{}' ({}) for {} {} {})".format(error_msg, response_str, http_cmd, full_url, data)
-            raise ProcessException(message)
+        except Exception as e:
+            if self.transactional:
+                raise e
+            else:
+                self.log.warning("{} (but proceeding with change as non-transactional mode is set).".format(e))
 
     def feature_enabled(self, name):
         enabled = False

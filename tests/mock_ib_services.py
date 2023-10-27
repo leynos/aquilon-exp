@@ -97,18 +97,25 @@ def ib_expect_add_address(fqdn, ip, reverse_ptr=None, create_ptr=True, ttl=None,
     ip = str(ip)
     if fail:
         response_code = 400
-    payload = {"name": fqdn, "create_ptr": create_ptr, "address": ip, "eonid": eonid}
+    payload = {
+        "create_ptr": create_ptr,
+        "address": ip,
+        "eonid": eonid, 
+        "create_if_doesnt_exist": True,
+        "update_ptr": False,
+    }
     if ttl:
         payload["ttl"] = ttl
     if reverse_ptr:
         payload["assign_ptr_to_fqdn"] = reverse_ptr
-    test_case = ib_test_case("POST", "/dns/a_ptr", payload, response_code, response_body)
+
+    test_case = ib_test_case("PATCH", "/dns/a_ptr/{}/{}".format(fqdn, ip), payload, response_code, response_body)
     http_monitor.expect(test_case)
 
 
 def ib_expect_update_address(fqdn, original_ip, new_ip=None, reverse_ptr=None,
                              new_ttl=None, response_code=204, response_body="", update_ptr=True,
-                             fail = False):
+                             create_ptr=False, fail = False):
     original_ip = str(original_ip)
     if fail:
         response_code = 400
@@ -117,6 +124,7 @@ def ib_expect_update_address(fqdn, original_ip, new_ip=None, reverse_ptr=None,
         payload["address"] = str(new_ip)
     if reverse_ptr is not None:
         payload["assign_ptr_to_fqdn"] = reverse_ptr
+    payload["create_ptr"] = create_ptr
     payload["update_ptr"] = update_ptr
     if new_ttl:
         payload["ttl"] = new_ttl
@@ -139,17 +147,9 @@ def ib_expect_del_address(fqdn, ip, delete_ptr=True, response_code=204, response
     http_monitor.expect(test_case)
 
 
-def ib_expect_add_alias(fqdn, target, ttl=None, response_code=201, response_body="", fail=False):
-    if fail:
-        response_code = 400
-    payload = {"name": fqdn, "target": target, "eonid": eonid}
-    if ttl:
-        payload["ttl"] = ttl
-    test_case = ib_test_case(
-        "POST",
-        "/dns/aliases",
-        payload, response_code, response_body)
-    http_monitor.expect(test_case)
+def ib_expect_add_alias(fqdn, target, ttl=None, response_code=204, response_body="", fail=False):
+    return ib_expect_update_alias(fqdn, target=target, ttl=ttl, response_code=response_code,
+                                  response_body=response_body, fail=fail)
 
 
 def ib_expect_update_alias(fqdn, target=None, ttl=None, response_code=204, response_body="", fail=False):
@@ -199,4 +199,69 @@ def ib_expect_show_range(start_address, end_address, response_code=200, response
         "GET",
         "/ranges/{}/{}".format(start_address, end_address),
         None, response_code, response_body)
+    http_monitor.expect(test_case)
+
+def ib_expect_add_dns_srv_record(service, protocol, dns_domain, target, port, priority, weight, ttl=None,
+                                 response_code=201, response_body="", fail=False):
+    if fail:
+        response_code = 400
+    payload = {
+        "eonid":    eonid,
+        "service":  service,
+        "domain":   str(dns_domain),
+        "target":   str(target),
+        "port":     port,
+        "priority": priority,
+        "weight":   weight,
+        "protocol": protocol,
+    }
+    if ttl:
+        payload["ttl"] = ttl
+
+    test_case = ib_test_case("POST", "/dns/srv", payload, response_code, response_body)
+    http_monitor.expect(test_case)
+
+def ib_expect_update_dns_srv_record(args, response_code=204, response_body="", fail=False):
+    if fail:
+        response_code = 400
+
+    required_fields = ("service", "protocol", "domain", "port", "target", "priority", "weight")
+    payload = {}
+
+    for field in required_fields:
+        if args[field] is None:
+            raise ArgumentError("Required argument '{}' is missing".format(field))
+        payload[field] = args[field]
+
+    if args.get("ttl", None) is not None:
+        payload["ttl"] = args["ttl"]
+    payload["eonid"] = eonid
+
+    url = "/dns/srv"
+
+    test_case = ib_test_case("PATCH", url, payload, response_code, response_body)
+    http_monitor.expect(test_case)
+
+def ib_expect_del_dns_srv_record(service, protocol, dns_domain, target, port=None, priority=None, weight=None, 
+                                 response_code=204, response_body="", fail=False):
+    if fail:
+        response_code = 400
+
+    options = {
+        "eonid":    eonid,
+        "service":  service,
+        "protocol": protocol,
+        "domain":   dns_domain,
+        "target":   target,
+        "port":     port,
+        "priority": priority,
+        "weight":   weight,
+    }
+    ordered_options = ("domain", "protocol", "target", "service", "eonid", "weight", "priority", "port")
+
+    params = ("{}={}".format(field, options[field]) for field in ordered_options if options[field] is not None)
+
+    url = "/dns/srv?{}".format("&".join(params))
+
+    test_case = ib_test_case("DELETE", url, None, response_code, response_body)
     http_monitor.expect(test_case)
