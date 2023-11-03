@@ -260,7 +260,8 @@ class ResponsePage(resource.Resource):
         return
 
     def logFailure(self, failure, request):
-        request.logger.info("%s: %s", type(failure.value).__name__, failure.value)
+        if request.logger.handlers:
+            request.logger.info("%s: %s", type(failure.value).__name__, failure.value)
 
         # Pass through
         return failure
