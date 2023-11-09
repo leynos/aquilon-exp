@@ -56,7 +56,7 @@ class CommandUpdateSrvRecord(BrokerCommand):
 
         old_data = []
         for dbsrv_rec in dbdns_records:
-            old_data.append({
+            record = {
                 "service":  dbsrv_rec.service,
                 "protocol": dbsrv_rec.protocol,
                 "domain":   str(dbsrv_rec.fqdn.dns_domain),
@@ -64,8 +64,10 @@ class CommandUpdateSrvRecord(BrokerCommand):
                 "priority": dbsrv_rec.priority,
                 "weight":   dbsrv_rec.weight,
                 "port":     dbsrv_rec.port,
-                "ttl":      dbsrv_rec.ttl,
-            })
+            }
+            if dbsrv_rec.ttl is not None:
+                record["ttl"] = dbsrv_rec.ttl
+            old_data.append(record)
 
         dbgrn = None
         update_grn = False
@@ -133,8 +135,9 @@ class CommandUpdateSrvRecord(BrokerCommand):
             "priority": dbsrv_rec.priority,
             "weight":   dbsrv_rec.weight,
             "port":     dbsrv_rec.port,
-            "ttl":      dbsrv_rec.ttl,
         }
+        if dbsrv_rec.ttl is not None or old.get("ttl", None) is not None:
+            new["ttl"] = dbsrv_rec.ttl
 
         # The service, protocol and domain fields are always defined.
         # For the remaining fields, send Infoblox the old values if the field isn't being changed.
@@ -142,9 +145,9 @@ class CommandUpdateSrvRecord(BrokerCommand):
         # and we don't want to override that.
         for field in ("target", "priority", "weight", "port"):
             new[field] = new[field] if new[field] is not None else old[field]
-
+        
         if (old != new):
             ib_services.group.add_action(
-                lambda: ib_services.update_dns_srv_record(new),
-                lambda: ib_services.update_dns_srv_record(old)
+                lambda: ib_services.update_dns_srv_record(old, new),
+                lambda: ib_services.update_dns_srv_record(new, old)
             )

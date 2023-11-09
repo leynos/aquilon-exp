@@ -1,6 +1,7 @@
 import json
 import logging
 
+from aquilon.exceptions_ import ArgumentError
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 from SocketServer import TCPServer
 
@@ -221,7 +222,7 @@ def ib_expect_add_dns_srv_record(service, protocol, dns_domain, target, port, pr
     test_case = ib_test_case("POST", "/dns/srv", payload, response_code, response_body)
     http_monitor.expect(test_case)
 
-def ib_expect_update_dns_srv_record(args, response_code=204, response_body="", fail=False):
+def ib_expect_update_dns_srv_record(old, new, response_code=204, response_body="", fail=False):
     if fail:
         response_code = 400
 
@@ -229,15 +230,22 @@ def ib_expect_update_dns_srv_record(args, response_code=204, response_body="", f
     payload = {}
 
     for field in required_fields:
-        if args[field] is None:
+        if old.get(field, None) is None:
             raise ArgumentError("Required argument '{}' is missing".format(field))
-        payload[field] = args[field]
+        payload[field] = new[field] if new.get(field, None) else old[field]
 
-    if args.get("ttl", None) is not None:
-        payload["ttl"] = args["ttl"]
+    if new.get("ttl", None):
+        payload["ttl"] = new["ttl"]
+    if payload.get("domain", None):
+        payload["domain"] = str(payload["domain"])
+    if payload.get("target", None):
+        payload["target"] = str(payload["target"])
     payload["eonid"] = eonid
 
-    url = "/dns/srv"
+    ordered_options = ("domain", "protocol", "target", "service", "weight", "priority", "port")
+    params = ("{}={}".format(field, old[field]) for field in ordered_options if old[field] is not None)
+
+    url = "/dns/srv?{}".format("&".join(params))
 
     test_case = ib_test_case("PATCH", url, payload, response_code, response_body)
     http_monitor.expect(test_case)

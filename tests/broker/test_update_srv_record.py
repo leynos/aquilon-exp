@@ -30,21 +30,27 @@ from mock_ib_services import ib_expect_update_dns_srv_record
 class TestUpdateSrvRecord(TestBrokerCommand):
 
     def test_100_update(self):
-        ib_args = {
+        old = {
             "service": "kerberos",
             "protocol": "tcp",
             "domain": "aqd-unittest.ms.com",
             "target": "arecord14.aqd-unittest.ms.com",
+            "weight": 20,
+            "priority": 10,
+            "port": 88,
+        }
+        new = {
             "weight": 15,
             "priority": 25,
             "port": 8888,
         }
-        ib_expect_update_dns_srv_record(ib_args)
+        ib_expect_update_dns_srv_record(old, new)
         command = ["update", "srv", "record", "--service", "kerberos",
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com",
                    "--target", "arecord14.aqd-unittest.ms.com",
                    "--weight", 15, "--priority", 25, "--port", "8888",
                    "--comments", "New SRV record comments"] + self.valid_just_tcm
+
         self.noouttest(command)
         self.ib_verify()
 
@@ -70,7 +76,7 @@ class TestUpdateSrvRecord(TestBrokerCommand):
                          command)
 
     def test_400_update_ttl(self):
-        ib_args = {
+        old = {
             "service": "kerberos",
             "protocol": "tcp",
             "domain": "aqd-unittest.ms.com",
@@ -78,9 +84,11 @@ class TestUpdateSrvRecord(TestBrokerCommand):
             "weight": 20,
             "priority": 10,
             "port": 88,
+        }
+        new = {
             "ttl": 1800,
         }
-        ib_expect_update_dns_srv_record(ib_args)
+        ib_expect_update_dns_srv_record(old, new)
         command = ["update", "srv", "record", "--service", "kerberos",
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com",
                    "--target", "arecord15.aqd-unittest.ms.com",
@@ -95,7 +103,7 @@ class TestUpdateSrvRecord(TestBrokerCommand):
         self.matchoutput(out, "TTL: 1800", command)
 
     def test_500_clear_ttl(self):
-        ib_args = {
+        old = {
             "service": "kerberos",
             "protocol": "tcp",
             "domain": "aqd-unittest.ms.com",
@@ -103,9 +111,12 @@ class TestUpdateSrvRecord(TestBrokerCommand):
             "weight": 20,
             "priority": 10,
             "port": 88,
+            "ttl": 1800,
+        }
+        new = {
             "ttl": None,
         }
-        ib_expect_update_dns_srv_record(ib_args)
+        ib_expect_update_dns_srv_record(old, new)
         command = ["update", "srv", "record", "--service", "kerberos",
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com",
                    "--target", "arecord15.aqd-unittest.ms.com",
@@ -153,7 +164,7 @@ class TestUpdateSrvRecord(TestBrokerCommand):
                         command)
 
     def test_620_update_eon_id(self):
-        ib_args = {
+        old = {
             "service": "sip",
             "protocol": "tcp",
             "domain": "aqd-unittest.ms.com",
@@ -162,8 +173,9 @@ class TestUpdateSrvRecord(TestBrokerCommand):
             "port": 5060,
         }
         for n in ("13", "14", "50"):
-            ib_args["target"] = "arecord{}.aqd-unittest.ms.com".format(n)
-            ib_expect_update_dns_srv_record(ib_args)
+            old["target"] = "arecord{}.aqd-unittest.ms.com".format(n)
+
+            ib_expect_update_dns_srv_record(old, {})
 
         command = ["update", "srv", "record", "--service", "sip",
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com",

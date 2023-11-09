@@ -7,7 +7,7 @@ from urlparse import urlparse, urlunparse
 
 from aquilon.aqdb.model import ARecord, Machine
 from aquilon.config import Config
-from aquilon.exceptions_ import ProcessException
+from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.utils import with_timer
 
 
@@ -312,7 +312,7 @@ class IBServices(object):
         if ttl:
             payload["ttl"] = ttl
 
-        self._http_request("POST", url, payload)
+        return self._http_request("POST", url, payload, ignore_statuses=[409])
 
     @with_timer
     def del_dns_srv_record(self, service, protocol, dns_domain, target, port, priority, weight):
@@ -333,30 +333,35 @@ class IBServices(object):
 
         url = "/dns/srv?{}".format("&".join(params))
 
-        self._http_request("DELETE", url)
+        return self._http_request("DELETE", url)
 
     @with_timer
-    def update_dns_srv_record(self, args):
+    def update_dns_srv_record(self, old, new):
         required_fields = ("service", "protocol", "domain", "port", "target", "priority", "weight")
         payload = {}
 
         for field in required_fields:
-            if args[field] is None:
+            if old[field] is None:
                 raise ArgumentError("Required argument '{}' is missing".format(field))
-            payload[field] = args[field]
+            payload[field] = new[field] if field in new else old[field]
 
-        if args["ttl"] is not None:
-            payload["ttl"] = args["ttl"]
-        payload["domain"] = str(payload["domain"])
-        payload["target"] = str(payload["target"])
+        if new.get("ttl", None):
+            payload["ttl"] = new["ttl"]
+        if payload.get("domain", None):
+            payload["domain"] = str(payload["domain"])
+        if payload.get("target", None):
+            payload["target"] = str(payload["target"])
         payload["eonid"] = self.eonid
 
-        url = "/dns/srv"
+        ordered_options = ("domain", "protocol", "target", "service", "weight", "priority", "port")
+        params = ("{}={}".format(field, old[field]) for field in ordered_options if old[field] is not None)
 
-        self._http_request("patch", url, payload)
+        url = "/dns/srv?{}".format("&".join(params))
+
+        return self._http_request("PATCH", url, payload)
 
     @with_timer
-    def show_dns_srv_record(self, service, dns_domain, target, port, priority, weight, protocol):
+    def show_dns_srv_record(self, service, protocol, dns_domain, target, port=None, priority=None, weight=None):
         params = {
             "service":  service,
             "protocol": protocol,
@@ -375,7 +380,7 @@ class IBServices(object):
 
         url = self._generate_url_from_params("/dns/srv", params)
 
-        return self._http_request("GET", url)
+        return self._http_request("GET", url, ignore_statuses=[404])
 
     def add_network(self, network, name, compartment=None, side=None, sysloc=None):
         url = "/networks/{}".format(quote(network, safe=''))
@@ -444,11 +449,8 @@ class IBServices(object):
                     break
 
             if response is not None:
-                response_str = "{} {}".format(response.status_code, response.reason)
-
                 if response.ok or response.status_code in ignore_statuses:
-                    self.log.info("Successful response from Infoblox: got {} for {} {} {})".format(
-                                     response_str, http_cmd, full_url, data))
+                    self._log_ib_result("Successful response from Infoblox: ", http_cmd, full_url, data, response)
                     return response
                 else:
                     error_msg = ""
@@ -458,9 +460,8 @@ class IBServices(object):
                         # Probably a JSON decode error.  Fall back to showing whole body of response.
                         error_msg = response.text
 
-                    message = "Infoblox error: '{}' ({}) for {} {} {})".format(
-                              error_msg, response_str, http_cmd, full_url, data)
-                    raise ProcessException(message)
+                    msg = self._log_ib_result("Infoblox error: '{}'".format(error_msg), http_cmd, full_url, data, response)
+                    raise ProcessException(msg)
             else:
                 raise ProcessException("Infoblox returned errors or no Infoblox servers could be reached, aborting change")
 
@@ -469,6 +470,17 @@ class IBServices(object):
                 raise e
             else:
                 self.log.warning("{} (but proceeding with change as non-transactional mode is set).".format(e))
+
+    def _log_ib_result(self, msg, http_cmd, full_url, request_data, response):
+        response_str = "{} {}".format(response.status_code, response.reason)
+        msg += "got {} for {} {}".format(response_str, http_cmd, full_url)
+
+        if request_data:
+            msg += " (request body '{}')".format(request_data)
+        if response.text and response.text != "{}":
+            msg += " (response body '{}')".format(response.text)
+        self.log.info(msg)
+        return msg
 
     def feature_enabled(self, name):
         enabled = False
