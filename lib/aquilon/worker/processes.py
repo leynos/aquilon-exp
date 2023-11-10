@@ -486,7 +486,8 @@ class DSDBRunner(metaclass=DSDBEnabledMeta):
                 else:
                     self.invoke_dsdb_module(args, verbose=verbose)
             except ProcessException as err:
-                if error_filter and err.out and error_filter.search(err.out):
+                if error_filter and (err.out or err.err) and \
+                   (error_filter.search(err.out) or error_filter.search(err.err)):
                     self.logger.warning(ignore_msg)
                 else:
                     raise
