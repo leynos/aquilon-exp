@@ -36,7 +36,7 @@ fi
 if grep -q "^$*\$" "${AQTEST_DSDB_COVERAGE_DIR}/fail_expected_dsdb_cmds" 2>/dev/null; then
 	# Yes, it's stdout, not stderr
 	if [ -s "${AQTEST_DSDB_COVERAGE_DIR}/fail_expected_dsdb_error" ]; then
-	   cat "${AQTEST_DSDB_COVERAGE_DIR}/fail_expected_dsdb_error"
+	   cat "${AQTEST_DSDB_COVERAGE_DIR}/fail_expected_dsdb_error" 1>&2
 	   exit 255
 	fi
 	echo "Your query returned no data!"
