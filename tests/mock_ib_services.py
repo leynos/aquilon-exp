@@ -1,6 +1,7 @@
 import json
 import logging
 
+from aquilon.exceptions_ import ArgumentError
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 from SocketServer import TCPServer
 
@@ -199,4 +200,76 @@ def ib_expect_show_range(start_address, end_address, response_code=200, response
         "GET",
         "/ranges/{}/{}".format(start_address, end_address),
         None, response_code, response_body)
+    http_monitor.expect(test_case)
+
+def ib_expect_add_dns_srv_record(service, protocol, dns_domain, target, port, priority, weight, ttl=None,
+                                 response_code=201, response_body="", fail=False):
+    if fail:
+        response_code = 400
+    payload = {
+        "eonid":    eonid,
+        "service":  service,
+        "domain":   str(dns_domain),
+        "target":   str(target),
+        "port":     port,
+        "priority": priority,
+        "weight":   weight,
+        "protocol": protocol,
+    }
+    if ttl:
+        payload["ttl"] = ttl
+
+    test_case = ib_test_case("POST", "/dns/srv", payload, response_code, response_body)
+    http_monitor.expect(test_case)
+
+def ib_expect_update_dns_srv_record(old, new, response_code=204, response_body="", fail=False):
+    if fail:
+        response_code = 400
+
+    required_fields = ("service", "protocol", "domain", "port", "target", "priority", "weight")
+    payload = {}
+
+    for field in required_fields:
+        if old.get(field, None) is None:
+            raise ArgumentError("Required argument '{}' is missing".format(field))
+        payload[field] = new[field] if new.get(field, None) else old[field]
+
+    if new.get("ttl", None):
+        payload["ttl"] = new["ttl"]
+    if payload.get("domain", None):
+        payload["domain"] = str(payload["domain"])
+    if payload.get("target", None):
+        payload["target"] = str(payload["target"])
+    payload["eonid"] = eonid
+
+    ordered_options = ("domain", "protocol", "target", "service", "weight", "priority", "port")
+    params = ("{}={}".format(field, old[field]) for field in ordered_options if old[field] is not None)
+
+    url = "/dns/srv?{}".format("&".join(params))
+
+    test_case = ib_test_case("PATCH", url, payload, response_code, response_body)
+    http_monitor.expect(test_case)
+
+def ib_expect_del_dns_srv_record(service, protocol, dns_domain, target, port=None, priority=None, weight=None, 
+                                 response_code=204, response_body="", fail=False):
+    if fail:
+        response_code = 400
+
+    options = {
+        "eonid":    eonid,
+        "service":  service,
+        "protocol": protocol,
+        "domain":   dns_domain,
+        "target":   target,
+        "port":     port,
+        "priority": priority,
+        "weight":   weight,
+    }
+    ordered_options = ("domain", "protocol", "target", "service", "eonid", "weight", "priority", "port")
+
+    params = ("{}={}".format(field, options[field]) for field in ordered_options if options[field] is not None)
+
+    url = "/dns/srv?{}".format("&".join(params))
+
+    test_case = ib_test_case("DELETE", url, None, response_code, response_body)
     http_monitor.expect(test_case)

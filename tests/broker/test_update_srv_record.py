@@ -24,17 +24,35 @@ if __name__ == "__main__":
     utils.import_depends()
 
 from brokertest import TestBrokerCommand
+from mock_ib_services import ib_expect_update_dns_srv_record
 
 
 class TestUpdateSrvRecord(TestBrokerCommand):
 
     def test_100_update(self):
+        old = {
+            "service": "kerberos",
+            "protocol": "tcp",
+            "domain": "aqd-unittest.ms.com",
+            "target": "arecord14.aqd-unittest.ms.com",
+            "weight": 20,
+            "priority": 10,
+            "port": 88,
+        }
+        new = {
+            "weight": 15,
+            "priority": 25,
+            "port": 8888,
+        }
+        ib_expect_update_dns_srv_record(old, new)
         command = ["update", "srv", "record", "--service", "kerberos",
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com",
                    "--target", "arecord14.aqd-unittest.ms.com",
                    "--weight", 15, "--priority", 25, "--port", "8888",
                    "--comments", "New SRV record comments"] + self.valid_just_tcm
+
         self.noouttest(command)
+        self.ib_verify()
 
     def test_200_verify(self):
         command = ["search", "dns", "--fullinfo", "--record_type", "srv",
@@ -58,11 +76,25 @@ class TestUpdateSrvRecord(TestBrokerCommand):
                          command)
 
     def test_400_update_ttl(self):
+        old = {
+            "service": "kerberos",
+            "protocol": "tcp",
+            "domain": "aqd-unittest.ms.com",
+            "target": "arecord15.aqd-unittest.ms.com",
+            "weight": 20,
+            "priority": 10,
+            "port": 88,
+        }
+        new = {
+            "ttl": 1800,
+        }
+        ib_expect_update_dns_srv_record(old, new)
         command = ["update", "srv", "record", "--service", "kerberos",
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com",
                    "--target", "arecord15.aqd-unittest.ms.com",
                    "--ttl", 1800] + self.valid_just_tcm
         self.noouttest(command)
+        self.ib_verify()
 
     def test_420_verify(self):
         command = ["search", "dns", "--fullinfo", "--record_type", "srv",
@@ -71,11 +103,26 @@ class TestUpdateSrvRecord(TestBrokerCommand):
         self.matchoutput(out, "TTL: 1800", command)
 
     def test_500_clear_ttl(self):
+        old = {
+            "service": "kerberos",
+            "protocol": "tcp",
+            "domain": "aqd-unittest.ms.com",
+            "target": "arecord15.aqd-unittest.ms.com",
+            "weight": 20,
+            "priority": 10,
+            "port": 88,
+            "ttl": 1800,
+        }
+        new = {
+            "ttl": None,
+        }
+        ib_expect_update_dns_srv_record(old, new)
         command = ["update", "srv", "record", "--service", "kerberos",
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com",
                    "--target", "arecord15.aqd-unittest.ms.com",
                    "--clear_ttl"] + self.valid_just_tcm
         self.noouttest(command)
+        self.ib_verify()
 
     def test_520_verify(self):
         command = ["search", "dns", "--fullinfo", "--record_type", "srv",
@@ -88,6 +135,7 @@ class TestUpdateSrvRecord(TestBrokerCommand):
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com",
                    "--grn", "grn:/ms/ei/aquilon/unittest"] + self.valid_just_tcm
         self.noouttest(command)
+        self.ib_verify(empty=True)
 
     def test_605_verify_update_grn(self):
         command = ["show", "srv", "record", "--service", "sip",
@@ -105,6 +153,7 @@ class TestUpdateSrvRecord(TestBrokerCommand):
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com",
                    "--clear_grn"] + self.valid_just_tcm
         self.noouttest(command)
+        self.ib_verify(empty=True)
 
     def test_615_verify_clear_grn(self):
         command = ["show", "srv", "record", "--service", "sip",
@@ -115,6 +164,19 @@ class TestUpdateSrvRecord(TestBrokerCommand):
                         command)
 
     def test_620_update_eon_id(self):
+        old = {
+            "service": "sip",
+            "protocol": "tcp",
+            "domain": "aqd-unittest.ms.com",
+            "weight": 10,
+            "priority": 10,
+            "port": 5060,
+        }
+        for n in ("13", "14", "50"):
+            old["target"] = "arecord{}.aqd-unittest.ms.com".format(n)
+
+            ib_expect_update_dns_srv_record(old, {})
+
         command = ["update", "srv", "record", "--service", "sip",
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com",
                    "--eon_id", "2"] + self.valid_just_tcm
