@@ -6,12 +6,15 @@
 basedir = /var
 quattordir = %(basedir)s/quattor
 
-[database_oracle]
-dbuser = cdb
-server = NYPO_AQUILON
+[database_postgresql]
+dbname=aqd
+dbuser=broker_user
+pool_max_overflow = 0
+dsn = postgresql+psycopg2:///?service=aquilon_postgres
+audit_schema = aqaudit
 
 [database]
-database_section = database_oracle
+database_section = database_postgresql
 
 [broker]
 umask = 0022
