@@ -37,20 +37,6 @@ basedir = /var
 # hostname = # config.py supplies socket.gethostname() as a default
 quattordir = %(basedir)s/quattor
 
-[database_oracle]
-server = LNTO_AQUILON_NY
-# Set the username to empty to use Kerberos
-#dbuser = %(user)s
-dbuser =
-#password_file =
-# Default schema, if different from what's configured at the DB level
-#default_schema = %(user)s
-# Schema the xtn_log tables exist in, if separate from the rest of the tables.
-# There is no default - the value is only used if set.
-#audit_schema = %(user)s
-dsn = oracle://%(dbuser)s:PASSWORD@%(server)s
-module = orcl/client/12.2.0.1.0
-
 # There are two pools - one for commands that use locks and one for
 # commands that don't.  These values apply to each pool.
 #

@@ -3,9 +3,9 @@
 # it must be explicitly set to an empty value here.
 #
 # This should work "out of the box" for development purposes.
-# To connect to an oracle database, copy this file and adjust the
-# [database_oracle] parameters as appropriate.  Then, change
-# database_section to point to database_oracle.
+# To connect to an Postgres database, copy this file and adjust the
+# [database_postgres] parameters as appropriate.  Then, change
+# database_section to point to database_postgres.
 
 [DEFAULT]
 basedir = /var/tmp/%(user)s
