@@ -30,6 +30,7 @@ class CommandDelAddressAlias(BrokerCommand):
     def render(self, session, fqdn, target, dns_environment, target_environment,
                exporter, user, justification, reason, logger, **arguments):
 
+        requestid = arguments.get("requestid")
         if not target_environment:
             target_environment = dns_environment
 
@@ -69,7 +70,7 @@ class CommandDelAddressAlias(BrokerCommand):
 
         cm.validate()
 
-        ib_services = IBServices(logger)
+        ib_services = IBServices(logger, requestid)
         if ib_services.feature_enabled("address_alias"):
             try:
                 for dns_rec in rrs:

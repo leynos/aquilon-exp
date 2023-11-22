@@ -231,12 +231,13 @@ class CommandUpdateMachine(BrokerCommand):
                cluster, metacluster, allow_metacluster_change, cpuname,
                cpuvendor, cpucount, memory, recipe, ip, autoip, swap_ip, uri,
                remap_disk, comments, user, justification, reason, **arguments):
+        requestid = arguments.get("requestid")
         dsdb_runner = DSDBRunner(logger=logger)
         dbmachine = Machine.get_unique(session, machine, compel=True)
         oldinfo = DSDBRunner.snapshot_hw(dbmachine)
         old_location = dbmachine.location
 
-        ib_services = IBServices(logger)
+        ib_services = IBServices(logger, requestid)
 
         # Validate ChangeManagement
         cm = ChangeManagement(session, user, justification, reason, logger, self.command, **arguments)

@@ -32,6 +32,7 @@ class CommandDelRouterAddress(BrokerCommand):
 
     def render(self, session, plenaries, dbuser, ip, fqdn,
                network_environment, exporter, user, justification, reason, logger, **arguments):
+        requestid = arguments.get("requestid")
         dbnet_env = NetworkEnvironment.get_unique_or_default(session,
                                                              network_environment)
         self.az.check_network_environment(dbuser, dbnet_env)
@@ -74,7 +75,7 @@ class CommandDelRouterAddress(BrokerCommand):
         plenaries.add(dbnetwork)
 
         with plenaries.transaction():
-            ib_services = IBServices(logger)
+            ib_services = IBServices(logger, requestid)
             if ib_services.feature_enabled("router_address"):
                 # If FQDN not passed then look it up from the DNS records associated with the router
                 if not fqdn:

@@ -39,6 +39,7 @@ class CommandUpdateInterface(BrokerCommand):
 
     def render(self, session, logger, plenaries, interface, mac, model, vendor,
                comments, rename_to, iftype, user, justification, reason, **arguments):
+        requestid = arguments.get("requestid")
         dbhw_ent = get_hardware(session, **arguments)
         dbinterface = Interface.get_unique(session, hardware_entity=dbhw_ent,
                                            name=interface, compel=True)
@@ -55,7 +56,7 @@ class CommandUpdateInterface(BrokerCommand):
                                          (arg, dbhw_ent._get_class_label(True)))
 
         oldinfo = DSDBRunner.snapshot_hw(dbhw_ent)
-        ib_services = IBServices(logger)
+        ib_services = IBServices(logger, requestid)
         ib_old_snapshot = ib_services.snapshot_hw_a_records(dbhw_ent)
 
         if iftype:

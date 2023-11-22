@@ -50,8 +50,11 @@ class IBServices(object):
     ca_chain = config.get("ib-services", "ca_chain")
     eonid = config.get("broker", "aqd_eonid")
 
-    def __init__(self, logger):
+    transaction_id_header = "X-MS-Unique-ID"
+
+    def __init__(self, logger, requestid=None):
         self.log = logger
+        self.requestid = requestid
         self.group = IBServiceGroup()
 
         self.session = Session()
@@ -425,6 +428,12 @@ class IBServices(object):
         response = None
         full_url = ""
 
+        headers = {}
+        if self.requestid:
+            headers[self.transaction_id_header] = str(self.requestid)
+        else:
+            self.log.info("No requestid found!!")
+
         try:
             for base_url in self.urls:
                 full_url = base_url + url
@@ -435,14 +444,15 @@ class IBServices(object):
                         log_msg += " with data {}".format(data)
                     self.log.info(log_msg)
 
-                    response = self.session.request(http_cmd, full_url, json=data, timeout=self.timeout)
+                    response = self.session.request(http_cmd, full_url, json=data, timeout=self.timeout,
+                                                    headers=headers)
                 except Timeout:
-                    self.log.warning("Request to {} timed out after {}s.".format(full_url, self.timeout))
+                    self.log.warning("Infoblox error: request to {} timed out after {}s.".format(full_url, self.timeout))
 
                 # There are several possible other exception types.  Not all possibilities are known.
                 # In all cases, the logic depends on another pass through the loop to try any remaining URLs.
                 except Exception as e:
-                    self.log.warning("Request to {} failed with exception {}".format(full_url, e))
+                    self.log.warning("Infoblox error: request to {} failed with exception {}".format(full_url, e))
 
                 # Stop trying URLs if there was no exception.
                 else:
@@ -479,6 +489,11 @@ class IBServices(object):
             msg += " (request body '{}')".format(request_data)
         if response.text and response.text != "{}":
             msg += " (response body '{}')".format(response.text)
+        if self.requestid:
+            msg += " (AQD request ID '{}')".format(self.requestid)
+        ib_request_id = response.headers.get(self.transaction_id_header)
+        if ib_request_id:
+            msg += " (Infoblox request ID '{}')".format(ib_request_id)
         self.log.info(msg)
         return msg
 

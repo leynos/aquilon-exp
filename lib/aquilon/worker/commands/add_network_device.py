@@ -46,6 +46,7 @@ class CommandAddNetworkDevice(BrokerCommand):
     def render(self, session, logger, plenaries, network_device, label, model, type, ip,
                interface, iftype, mac, vendor, serial, comments, exporter, chassis, slot,
                archetype, domain, sandbox, user, justification, reason, **arguments):
+        requestid = arguments.get("requestid")
         dbmodel = Model.get_unique(session, name=model, vendor=vendor,
                                    compel=True)
 
@@ -140,7 +141,7 @@ class CommandAddNetworkDevice(BrokerCommand):
             dsdb_runner.update_host(dbnetdev, None)
             dsdb_runner.commit_or_rollback("Could not add network device to DSDB")
 
-            ib_services = IBServices(logger)
+            ib_services = IBServices(logger, requestid)
             if f_type(dbdns_rec) == ARecord and ib_services.feature_enabled("network_device"):
                 try:
                     ib_services.add_a_ptr(str(dbdns_rec.fqdn), ip)

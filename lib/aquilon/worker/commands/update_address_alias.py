@@ -31,6 +31,7 @@ class CommandUpdateAddressAlias(BrokerCommand):
     def render(self, session, logger, fqdn, target, ttl, clear_ttl, comments,
                dns_environment, target_environment, grn, eon_id, clear_grn,
                exporter, user, justification, reason, **arguments):
+        requestid = arguments.get("requestid")
         if not target_environment:
             target_environment = dns_environment
 
@@ -79,7 +80,7 @@ class CommandUpdateAddressAlias(BrokerCommand):
 
         cm.validate()
 
-        ib_services = IBServices(logger)
+        ib_services = IBServices(logger, requestid)
         if ib_services.feature_enabled("address_alias") and ttl:
             try:
                 for dns_rec in dbdns_records:

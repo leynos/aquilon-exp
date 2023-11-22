@@ -43,6 +43,7 @@ class CommandUpdateNetworkDevice(BrokerCommand):
     def render(self, session, logger, plenaries, network_device, model, type, ip, vendor,
                serial, rename_to, discovered_macs, clear, discover, comments, chassis, slot,
                clearchassis, multislot, user, justification, reason, exporter, **arguments):
+        requestid = arguments.get("requestid")
         dbnetdev = NetworkDevice.get_unique(session, network_device, compel=True)
 
         # Validate ChangeManagement
@@ -152,7 +153,7 @@ class CommandUpdateNetworkDevice(BrokerCommand):
             dsdb_runner.update_host(dbnetdev, oldinfo)
             dsdb_runner.commit_or_rollback("Could not update network device in DSDB")
 
-            ib_services = IBServices(logger)
+            ib_services = IBServices(logger, requestid)
             if ip and ib_services.feature_enabled("network_device"):
                 try:
                     ib_services.update_a_ptr(str(dbnetdev.primary_name.fqdn), old_ip, ip)

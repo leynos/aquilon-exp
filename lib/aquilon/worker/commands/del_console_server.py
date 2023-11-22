@@ -34,6 +34,7 @@ class CommandDelConsoleServer(BrokerCommand):
 
     def render(self, session, logger, plenaries, console_server, clear_ports,
                user, justification, reason, **arguments):
+        requestid = arguments.get("requestid")
         dbcons = ConsoleServer.get_unique(session, console_server, compel=True)
 
         check_only_primary_ip(dbcons)
@@ -64,7 +65,7 @@ class CommandDelConsoleServer(BrokerCommand):
             dsdb_runner.update_host(None, oldinfo)
             dsdb_runner.commit_or_rollback("Could not remove console server from DSDB")
 
-            ib_services = IBServices(logger)
+            ib_services = IBServices(logger, requestid)
             if ib_services.feature_enabled("console_server"):
                 try:
                     ib_services.delete_a_ptr(str(dbcons.primary_name.fqdn), dbcons.primary_name.ip)

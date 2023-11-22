@@ -35,6 +35,7 @@ class CommandAddManager(BrokerCommand):
 
     def render(self, session, logger, plenaries, hostname, manager, interface, mac,
                comments, user, justification, reason, exporter, **arguments):
+        requestid = arguments.get("requestid")
         dbhost = hostname_to_host(session, hostname)
 
         # Validate ChangeManagement
@@ -80,7 +81,7 @@ class CommandAddManager(BrokerCommand):
             dsdb_runner.update_host(dbmachine, oldinfo)
             dsdb_runner.commit_or_rollback("Could not add host to DSDB")
 
-            ib_services = IBServices(logger)
+            ib_services = IBServices(logger, requestid)
             if ib_services.feature_enabled("manager"):
                 try:
                     ib_services.add_a_ptr(manager, ip)

@@ -34,7 +34,8 @@ class CommandAddChassis(BrokerCommand):
 
     def render(self, session, logger, chassis, label, rack, model, vendor,
                ip, interface, mac, serial, comments, grn, eon_id, exporter,
-               **_):
+               **arguments):
+        requestid = arguments.get("requestid")
         dbdns_rec, _ = grab_address(session, chassis, ip,
                                     allow_restricted_domain=True,
                                     allow_reserved=True, preclude=True,
@@ -64,7 +65,7 @@ class CommandAddChassis(BrokerCommand):
             dsdb_runner.update_host(dbchassis, None)
         dsdb_runner.commit_or_rollback("Could not add chassis to DSDB")
 
-        ib_services = IBServices(logger)
+        ib_services = IBServices(logger, requestid)
         if ib_services.feature_enabled("chassis") and ip:
             try:
                 ib_services.add_a_ptr(str(dbchassis.primary_name.fqdn), ip)

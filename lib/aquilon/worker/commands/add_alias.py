@@ -33,6 +33,7 @@ class CommandAddAlias(BrokerCommand):
     def render(self, session, logger, fqdn, dns_environment, target,
                target_environment, ttl, grn, eon_id, comments, exporter,
                user, justification, reason, **arguments):
+        requestid = arguments.get("requestid")
         dbdns_env = DnsEnvironment.get_unique_or_default(session,
                                                          dns_environment)
         if target_environment:
@@ -85,7 +86,7 @@ class CommandAddAlias(BrokerCommand):
             dsdb_runner.add_alias(fqdn, target, comments)
             dsdb_runner.commit_or_rollback("Could not add alias to DSDB")
 
-        ib_services = IBServices(logger)
+        ib_services = IBServices(logger, requestid)
         if ib_services.feature_enabled("alias"):
             try:
                 if ib_services.assert_dns_environment(db_record.fqdn.dns_environment.name) and \

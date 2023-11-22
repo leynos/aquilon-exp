@@ -35,6 +35,7 @@ class CommandDelAddress(BrokerCommand):
                network_environment, exporter, user, justification, reason, **arguments):
         _, dbdns_env = get_net_dns_env(session, network_environment,
                                        dns_environment)
+        requestid = arguments.get("requestid")
 
         # We can't use get_unique() here, since we always want to filter by
         # DNS environment, even if no FQDN was given
@@ -103,7 +104,7 @@ class CommandDelAddress(BrokerCommand):
                                             comments=old_comments)
             dsdb_runner.commit_or_rollback()
 
-            ib_services = IBServices(logger)
+            ib_services = IBServices(logger, requestid)
             if ib_services.feature_enabled("address"):
                 try:
                     ib_services.delete_a_ptr(old_fqdn, ip)

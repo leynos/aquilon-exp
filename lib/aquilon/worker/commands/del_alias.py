@@ -33,6 +33,7 @@ class CommandDelAlias(BrokerCommand):
 
     def render(self, session, logger, fqdn, dns_environment,
                exporter, user, justification, reason, **arguments):
+        requestid = arguments.get("requestid")
         dbdns_env = DnsEnvironment.get_unique_or_default(session,
                                                          dns_environment)
         dbdns_rec = Alias.get_unique(session, fqdn=fqdn,
@@ -65,7 +66,7 @@ class CommandDelAlias(BrokerCommand):
             dsdb_runner.del_alias(fqdn, old_target_fqdn, old_comments)
             dsdb_runner.commit_or_rollback("Could not delete alias from DSDB")
 
-        ib_services = IBServices(logger)
+        ib_services = IBServices(logger, requestid)
         if ib_services.feature_enabled("alias"):
             try:
                 if ib_services.assert_dns_environment(dbdns_rec.fqdn.dns_environment.name):
