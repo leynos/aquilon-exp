@@ -134,17 +134,18 @@ class TestAddParameter(VerifyGrnsMixin, PersonalityTestMixin,
         out = self.badrequesttest(command)
         self.searchoutput(out,
                           r'Following required parameters have not been specified:\s*'
+                          r'Parameter Definition: testrequired \[required\]\s*'
+                          r'Archetype: aquilon\s*'
+                          r'Value Type: string\s*'
+                          r'Template: foo\s*'
+                          r'Activation: dispatch\s*'
                           r'Parameter Definition: windows \[required\]\s*'
                           r'Archetype: aquilon\s*'
                           r'Value Type: json\s*'
                           r'Schema: {\s*'
                           r'(^    .*\n)+\s*'
                           r'Template: windows\s*'
-                          r'Activation: dispatch\s*'
-                          r'Parameter Definition: testrequired \[required\]\s*'
-                          r'Archetype: aquilon\s*'
-                          r'Value Type: string\s*'
-                          r'Template: foo',
+                          r'Activation: dispatch\s*',
                           command)
 
     def test_140_add_actions(self):

@@ -32,12 +32,11 @@ _TN = 'chassis'
 
 _config = Config()
 
-# DSDB_ID_REGEX = (
-#     re.compile(_config.get("site", "dsdb_name_regex"))
-#     if _config.has_value("site", "dsdb_name_regex")
-#     else None
-# )
-DSDB_ID_REGEX = ''
+DSDB_ID_REGEX = (
+    re.compile(fr'{_config.get("site", "dsdb_name_regex")}')
+    if _config.has_value("site", "dsdb_name_regex")
+    else None
+)
 
 
 class Chassis(HardwareEntity):
@@ -50,14 +49,22 @@ class Chassis(HardwareEntity):
                                            ondelete='CASCADE'),
                                 primary_key=True)
 
+    def __init__(self, location, **kwargs):
+        """init to access location to have it available fpor @validates on label."""
+        self.get_location(location)
+        super().__init__(location=location, **kwargs)
+
+    def get_location(self, location):
+        """Assihgn location."""
+        self.location = location
+
     def check_label(self, label):
         # Adding even more strict chassis name validation
         # Only enforced if site/dsdb_id_regex config option set
         if DSDB_ID_REGEX:
             m = DSDB_ID_REGEX.search(label)
-            if not m or m.group('loc') != f'{self.location.name}c':
-                raise ArgumentError("Invalid chassis name '{}'. Correct name format: "
-                                    "rack ID + 'c' + numeric chassis ID (integer without leading 0).".format(label))
+            if self.location and (not m or m.group('loc') != f'{self.location.name}c'):
+                raise ArgumentError(f"Invalid chassis name '{label}'. Correct name format: rack ID + 'c' + numeric chassis ID (integer without leading 0).")
         else:
             super().check_label(label)
 
