@@ -62,7 +62,7 @@ def get_or_create_chassis(session, logger, model, config, rack, vendor, dbdns_re
             raise ArgumentError("{0} already exists.".format(dbchassis))
     except NoResultFound:
         pass
-    dbchassis = Chassis(label=label, location=dblocation, model=dbmodel,
+    dbchassis = Chassis(location=dblocation, label=label, model=dbmodel,
                         serial_no=serial_no, comments=comments)
     session.add(dbchassis)
     dbchassis.primary_name = dbdns_rec

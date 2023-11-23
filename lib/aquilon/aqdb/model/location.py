@@ -130,8 +130,7 @@ class Location(Base):
         name = AqStr.normalize(name)
         if parent is not None:
             if parent.__class__ not in self.valid_parents:
-                raise AquilonError("{0} cannot be a parent of {1:lc} {2}."
-                                   .format(parent, self, name))
+                raise AquilonError(f"{parent} cannot be a parent of {self:lc} {name}.")
             session = object_session(parent)
             if not session:
                 raise AquilonError("The parent must be persistent")
@@ -148,7 +147,7 @@ class Location(Base):
         if not fullname:
             fullname = name
 
-        super(Location, self).__init__(name=name, fullname=fullname, **kwargs)
+        super().__init__(name=name, fullname=fullname, **kwargs)
         self._parent_dict = None
 
     @reconstructor
@@ -160,8 +159,7 @@ class Location(Base):
         if parent is None:  # pragma: no cover
             raise AquilonError("Parent location can be updated but not removed")
         if parent.__class__ not in self.valid_parents:
-            raise AquilonError("{0} cannot be a parent of {1:l}."
-                               .format(parent, self))
+            raise AquilonError(f"{parent} cannot be a parent of {self:l}.")
 
         # Disable autoflush. We'll make use of SQLA's ability to replace
         # DELETE + INSERT for the same LocationLink with an UPDATE of the

@@ -31,8 +31,6 @@ from tempfile import mkdtemp
 from threading import Thread, Lock
 import types
 
-from six import iteritems
-
 from ipaddress import IPv4Address
 from mako.lookup import TemplateLookup
 from twisted.python import context
@@ -60,20 +58,20 @@ if DSDB_ENABLED:
         # sys.path for python modules when running tests
         # DSDB python client
         import ms.version
-        ms.version.addpkg("requests-kerberos", "0.12.0")
-        ms.version.addpkg("kerberos", "1.3.1-1.16-py37")
-        ms.version.addpkg("cryptography", "3.1-py37")
-        ms.version.addpkg("enum34", "1.1.6")
-        ms.version.addpkg("dnspython", "2.1.0")
-        ms.version.addpkg('urllib3', '1.25.5')
-        ms.version.addpkg('chardet', '3.0.4')
-        ms.version.addpkg('certifi', '2019.6.16')
-        ms.version.addpkg("idna", "2.8")
+        ms.version.addpkg("requests-kerberos", "0.14.0")
+        ms.version.addpkg("kerberos", "1.3.1-1.16")
+        ms.version.addpkg("cryptography", "39.0.0")
+        ms.version.addpkg("enum34", "1.1.10")
+        ms.version.addpkg("dnspython", "2.3.0")
+        ms.version.addpkg('urllib3', '2.0.3')
+        ms.version.addpkg('chardet', '5.1.0')
+        ms.version.addpkg('certifi', '2022.9.24')
+        ms.version.addpkg("idna", "3.4")
         ms.version.addpkg("requests", "2.26.0")
         ms.version.addpkg('ms.dsdb', '6.0.39')
-        ms.version.addpkg('requests-gssapi', '1.0.0')
-        ms.version.addpkg('gssapi', '1.5.1-py37')
-        ms.version.addpkg('decorator', '4.3.2')
+        ms.version.addpkg('requests-gssapi', '1.2.3')
+        ms.version.addpkg('gssapi', '1.8.2')
+        ms.version.addpkg('decorator', '5.1.1')
     import ms.dsdb.client
 
 # subprocess.Popen is not thread-safe in Python, so we need locking

@@ -47,8 +47,7 @@ class Base:
     def __init__(self, **kw):
         for k in kw:
             if not hasattr(type(self), k):  # pragma: no cover
-                msg = "{!r} is an invalid argument for {}".format(
-                    k, type(self).__name__)
+                msg = f"{k!r} is an invalid argument for {type(self).__name__}"
                 raise TypeError(msg)
             setattr(self, k, kw[k])
 
@@ -84,7 +83,7 @@ class Base:
                 field = field[:-3]
             value = getattr(self, field, None)
 
-            attrs.append("{}: {}".format(field, value))
+            attrs.append(f"{field}: {value}")
         return "<{} {}>".format(label, ", ".join(attrs))
 
     def __str__(self):
@@ -112,9 +111,9 @@ class Base:
         clsname = self.__class__._get_class_label(tolower=lowercase)
         if class_only:
             return clsname.__format__(passthrough)
-        val_int = "{} {}".format(clsname, instance)
+        val_int = f"{clsname} {instance}"
         if not val_int.startswith("Fqdn"):
-            val =val_int.replace("Fqdn ", "")
+            val = val_int.replace("Fqdn ", "")
         else:
             val = val_int
         return val.__format__(passthrough)
