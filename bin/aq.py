@@ -316,9 +316,9 @@ def not_ascii(argument):
     """
     Exit if command line contains non-ascii value.
     """
-    print(f"Non-ascii characters detected on command options."
-          f"Only ASCII characters are allowed for --{argument}")
-    sys.exit(0)
+    print(f"Non-ascii characters detected on command options. "
+          f"Only ASCII characters are allowed for --{argument}", file=sys.stderr)
+    sys.exit(1)
 
 
 def get_default_opts(auth_option, conf_file=None, readonly=None,
