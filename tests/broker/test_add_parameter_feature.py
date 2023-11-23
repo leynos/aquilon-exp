@@ -440,14 +440,14 @@ class TestAddParameterFeature(TestBrokerCommand):
                    "--type", "host", "--path", "testjson/values"]
         out = self.commandtest(command)
         self.output_equals(out,
-                           """
-                           Host Personality: inventory Archetype: aquilon
-                             testjson/values: [
-                                                1, 
-                                                2, 
-                                                3
-                                              ]
-                           """, command)
+                           """Host Personality: inventory Archetype: aquilon
+  testjson/values: [
+                     1,
+                     2,
+                     3
+                   ]
+""",
+                           command)
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestAddParameterFeature)

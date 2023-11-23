@@ -665,7 +665,7 @@ class TestJustification(PersonalityTestMixin, TestBrokerCommand):
         command = ["del_domain", "--domain", "deployable"] + self.exception_trigger_just_tcm
         err = self.internalerrortest(command)
         self.matchoutput(err, "Invalid response received for the change "
-                              "management check. No JSON object could be decoded", command)
+                              "management check. Expecting value:", command)
         command = ["update_domain", "--domain", "deployable", "--noarchived"]
         out = self.commandtest(command)
 

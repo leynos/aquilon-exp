@@ -355,7 +355,7 @@ def set_port_group_vm(session, logger, dbinterface, port_group_name):
         selected_pg = first_of(allocator.port_groups,
                                lambda x: x.network_tag == dbvi.vlan_id)
         if not selected_pg:
-            raise ArgumentError(f"Cannot verify port group availability: no record for VLAN {dbvi.vlan_id} on  {allocator:l}.")
+            raise ArgumentError(f"Cannot verify port group availability: no record for VLAN {dbvi.vlan_id} on {allocator:l}.")
 
         # The capacity check below would account this interface twice if we'd
         # try to assign the same port group as it already has
