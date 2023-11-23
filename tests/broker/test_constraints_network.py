@@ -114,8 +114,8 @@ class TestNetworkConstraints(TestBrokerCommand):
         self.searchoutput(out,
                           r"Warning: Rack ut8 is not part of a bunker, but it "
                           r"uses bunkerized networks:\s*"
-                          r"BUCKET1: server9\.aqd-unittest\.ms\.com/eth0\s*"
-                          r"BUCKET2: aquilon91\.aqd-unittest\.ms\.com/eth0, server9\.aqd-unittest\.ms\.com/eth0",
+                          r"BUCKET2: aquilon91\.aqd-unittest\.ms\.com/eth0, server9\.aqd-unittest\.ms\.com/eth0\s*"
+                          r"BUCKET1: server9\.aqd-unittest\.ms\.com/eth0",
                           command)
         self.searchoutput(out,
                           r"Warning: Rack ut9 is part of bunker bucket2.ut, but "

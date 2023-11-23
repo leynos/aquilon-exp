@@ -92,8 +92,8 @@ class TestUpdateParameter(TestBrokerCommand):
                      {"frequency":"22 0 * * * *","user":"itsqdoop","name":"itsqdoop_ticket_refresh",
                       "command":"source /etc/systemvars.ksh && /ms/dist/aurora/bin/krun -id "
                                 "itsqdoop -- /usr/bin/maprlogin kerberos -duration 1800000"}]]]
-        out = self.commandtest(command)
-        self.matchoutput(out, "The character count in value is beyond the permitted "
+        _, err = self.failuretest(command, 1)
+        self.matchoutput(err, "The character count in value is beyond the permitted "
                               "value. Please specify argument value less than 2600",
                          command)
 
