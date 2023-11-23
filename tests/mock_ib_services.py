@@ -38,8 +38,8 @@ class IBServicesRequestHandler(SimpleHTTPRequestHandler, object):
         self._handle_request()
 
     def _handle_request(self):
-        unique_id = str(self.headers.getheader('X-MS-Unique-ID'))
-        assert unique_id is not None and len(unique_id) > 0, "Expected X-MS-Unique-ID header"
+        unique_id = self.headers.getheader('X-MS-Unique-ID')
+        assert unique_id is not None and len(str(unique_id)) > 0, "Expected X-MS-Unique-ID header"
 
         content_length = int(self.headers.getheader('content-length', 0))
         body = self.rfile.read(content_length)
