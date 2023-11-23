@@ -65,6 +65,22 @@ class IBChecker(object):
         self.broker_test.assertIsNotNone(response)
         self.broker_test.assertEqual(response.status_code, 404, "SRV record does not exist")
 
+    def check_headers(self, response):
+        "Check that a header containing the request ID is present and has sane-looking content"
+        self.broker_test.assertIsNotNone(response)
+
+        self._check_header(response.request.headers)
+        self._check_header(response.headers)
+
+    def _check_header(self, headers):
+        self.broker_test.assertIsNotNone(headers)
+
+        transaction_id_header = self.broker_test.ib_services.transaction_id_header
+        header_value = headers.get(transaction_id_header)
+        self.broker_test.assertIsNotNone(header_value)
+
+        self.broker_test.assertRegexpMatches(header_value, r"^[\w-]+$", "Header '{}' contains '{}', seems sane".format(transaction_id_header, header_value))
+
 class DnsChecker(object):
 
     def __init__(self, broker_test):
@@ -128,10 +144,11 @@ class TestIBEndToEnd(TestBrokerCommand):
     test_network_obj = {"ip": "2.3.4.0", "prefixlen": "24"}
     test_network = test_network_obj["ip"] + "/" + test_network_obj["prefixlen"]
     test_domain = "aqd-ib-test.com"
+    dummy_request_id = "7bbf547c-a1c2-4144-b35f-d93f338d9c86"
 
     def __init__(self, *args, **kwargs):
         super(TestIBEndToEnd, self).__init__(*args, **kwargs)
-        self.ib_services = IBServices(log)
+        self.ib_services = IBServices(log, requestid=self.dummy_request_id)
         zone_response = self.ib_services.show_zone(self.test_domain)
 
         if zone_response and not zone_response.ok:
@@ -163,6 +180,7 @@ class TestIBEndToEnd(TestBrokerCommand):
     def test_100_aptr_cname(self):
         mh = MockHub(self)
         dns_checker = DnsChecker(self)
+        ib_checker = IBChecker(self)
 
         test_a_fqdn = 'test.' + self.test_domain
         test_alias_fqdn = 'alias.' + self.test_domain
@@ -238,7 +256,9 @@ class TestIBEndToEnd(TestBrokerCommand):
         dns_checker.notfound(test_a_fqdn)
 
         # Create a-record in ib
-        self.ib_services.add_a_ptr(test_ib_a_fqdn, '2.3.4.4')
+        response = self.ib_services.add_a_ptr(test_ib_a_fqdn, '2.3.4.4')
+        ib_checker.check_headers(response)
+
         # Check it resolves
         dns_checker.a_record(test_ib_a_fqdn, '2.3.4.4')
         # Create same a-record in aq

@@ -93,7 +93,7 @@ class CommandAddDynamicRange(BrokerCommand):
                                 "\n".join(format(c, "a") for c in conflicts))
 
         dsdb_runner = DSDBRunner(logger=logger)
-        ib_services = IBServices(logger)
+        ib_services = IBServices(logger, **arguments)
         range_class = range_class if range_class else self.config.get("broker", "default_dynamic_range_class")
 
         if range_class == "infoblox_managed":

@@ -80,7 +80,7 @@ class CommandUpdateInterfaceMachine(BrokerCommand):
         dbinterface.lock_row()
 
         oldinfo = DSDBRunner.snapshot_hw(dbhw_ent)
-        ib_services = IBServices(logger)
+        ib_services = IBServices(logger, **arguments)
         ib_old_snapshot = ib_services.snapshot_hw_a_records(dbhw_ent)
 
         if arguments.get('hostname', None):

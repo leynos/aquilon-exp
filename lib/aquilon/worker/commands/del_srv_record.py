@@ -65,7 +65,7 @@ class CommandDelSrvRecord(BrokerCommand):
                                     (SrvRecord._get_class_label(), service,
                                      protocol, dns_domain, msg))
 
-        ib_services = IBServices(logger)
+        ib_services = IBServices(logger, **arguments)
         cm = ChangeManagement(session, user, justification, reason, logger, self.command, **arguments)
 
         for dns_rec in rrs:
