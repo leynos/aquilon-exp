@@ -40,7 +40,6 @@ class CommandDelServiceAddress(BrokerCommand):
 
     def render(self, session, logger, plenaries, name, hostname, cluster, metacluster,
                resourcegroup, user, justification, reason, exporter, **arguments):
-        requestid = arguments.get("requestid")
         if name == "hostname":
             raise ArgumentError("The primary address of the host cannot "
                                 "be deleted.")
@@ -67,7 +66,7 @@ class CommandDelServiceAddress(BrokerCommand):
         plenaries.add(dbsrv)
 
         holder.resources.remove(dbsrv)
-        ib_services = IBServices(logger, requestid)
+        ib_services = IBServices(logger, **arguments)
         if not dbdns_rec.service_addresses:
             # if we're in a resource-group and a shared-service-name exists
             # that has sa_aliases set, and there'a an alias pointing at

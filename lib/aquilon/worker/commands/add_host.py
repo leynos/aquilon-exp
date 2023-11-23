@@ -79,7 +79,6 @@ class CommandAddHost(BrokerCommand):
         :raise ArgumentError: on failure (please see the code below to see all
                               the cases when the error is raised)
         """
-        requestid = arguments.get("requestid")
         dbarchetype = Archetype.get_unique(session, archetype, compel=True)
         dbmachine = Machine.get_unique(session, machine, compel=True)
 
@@ -114,7 +113,7 @@ class CommandAddHost(BrokerCommand):
             self._validate_dns_domain(hostname, dbmachine, session)
 
         dsdb_runner = DSDBRunner(logger=logger)
-        ib_services = IBServices(logger, requestid)
+        ib_services = IBServices(logger, **arguments)
         ib_old_snapshot = None
         if dbarchetype.name == 'aurora':
             # For aurora, check that DSDB has a record of the host.

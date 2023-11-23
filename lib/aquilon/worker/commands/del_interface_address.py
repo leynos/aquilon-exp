@@ -41,7 +41,6 @@ class CommandDelInterfaceAddress(BrokerCommand):
 
     def render(self, session, logger, plenaries, interface, fqdn, ip, label,
                network_environment, user, justification, reason, exporter, **kwargs):
-        requestid = kwargs.get("requestid")
         dbhw_ent = get_hardware(session, **kwargs)
 
         # Validate ChangeManagement
@@ -130,7 +129,7 @@ class CommandDelInterfaceAddress(BrokerCommand):
         if addr.is_shared and not other_uses:
             dsdb_runner.delete_host_details(fqdn, ip)
 
-        ib_services = IBServices(logger, requestid)
+        ib_services = IBServices(logger, **kwargs)
         for dns_rec in addr.dns_records:
             ib_services.group.add_action(
                 lambda fqdn=dns_rec, ip=ip: ib_services.delete_a_ptr(fqdn, ip),

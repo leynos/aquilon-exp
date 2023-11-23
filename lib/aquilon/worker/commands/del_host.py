@@ -91,7 +91,6 @@ class CommandDelHost(BrokerCommand):
 
     def render(self, session, logger, plenaries, hostname, user,
                justification, reason, exporter, **arguments):
-        requestid = arguments.get("requestid")
         # Check dependencies, translate into user-friendly message
         dbhost = hostname_to_host(session, hostname)
         dbmachine = dbhost.hardware_entity
@@ -128,7 +127,7 @@ class CommandDelHost(BrokerCommand):
         # Any service bindings that we need to clean up afterwards
 
         oldinfo = None
-        ib_services = IBServices(logger, requestid)
+        ib_services = IBServices(logger, **arguments)
         ib_old_snapshot = None
         if dbhost.archetype.name != 'aurora':
             oldinfo = DSDBRunner.snapshot_hw(dbmachine)

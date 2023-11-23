@@ -35,7 +35,6 @@ class CommandAddAddress(BrokerCommand):
     def render(self, session, logger, fqdn, dns_environment, grn, eon_id,
                network_environment, reverse_ptr, ttl, comments, exporter, user,
                justification, reason, **arguments):
-        requestid = arguments.get("requestid")
         dbnet_env, dbdns_env = get_net_dns_env(session, network_environment,
                                                dns_environment)
         audit_results = []
@@ -71,7 +70,7 @@ class CommandAddAddress(BrokerCommand):
             dsdb_runner.add_host_details(dbdns_rec.fqdn, ip, comments=comments)
             dsdb_runner.commit_or_rollback("Could not add address to DSDB")
 
-            ib_services = IBServices(logger, requestid)
+            ib_services = IBServices(logger, **arguments)
             if ib_services.feature_enabled("address"):
                 try:
                     ib_services.add_a_ptr(str(dbdns_rec.fqdn), ip, reverse_ptr, ttl)

@@ -34,7 +34,6 @@ class CommandUpdateSrvRecord(BrokerCommand):
                priority, weight, port, ttl, clear_ttl, comments,
                dns_environment, grn, eon_id, clear_grn, user,
                justification, reason, **arguments):
-        requestid = arguments.get("requestid")
         name = "_%s._%s" % (service.strip().lower(), protocol.strip().lower())
         dbdns_env = DnsEnvironment.get_unique_or_default(session,
                                                          dns_environment)
@@ -79,7 +78,7 @@ class CommandUpdateSrvRecord(BrokerCommand):
         elif clear_grn:
             update_grn = True
 
-        ib_services = IBServices(logger, requestid)
+        ib_services = IBServices(logger, **arguments)
         cm = ChangeManagement(session, user, justification, reason, logger, self.command, **arguments)
         i = 0
         for dbsrv_rec in dbdns_records:

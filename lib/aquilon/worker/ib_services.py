@@ -52,9 +52,9 @@ class IBServices(object):
 
     transaction_id_header = "X-MS-Unique-ID"
 
-    def __init__(self, logger, requestid=None):
+    def __init__(self, logger, **kwargs):
         self.log = logger
-        self.requestid = requestid
+        self.requestid = kwargs.get("requestid")
         self.group = IBServiceGroup()
 
         self.session = Session()

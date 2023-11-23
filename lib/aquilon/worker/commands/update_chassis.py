@@ -38,7 +38,6 @@ class CommandUpdateChassis(BrokerCommand):
     def render(self, session, logger, chassis, model, rack, ip, vendor, serial,
                comments, user, grn, eon_id, clear_grn, justification, reason,
                **arguments):
-        requestid = arguments.get("requestid")
         dbchassis = Chassis.get_unique(session, chassis, compel=True)
 
         dsdb_runner = DSDBRunner(logger=logger)
@@ -90,7 +89,7 @@ class CommandUpdateChassis(BrokerCommand):
         dsdb_runner.update_host(dbchassis, oldinfo)
         dsdb_runner.commit_or_rollback("Could not update chassis in DSDB")
 
-        ib_services = IBServices(logger, requestid)
+        ib_services = IBServices(logger, **arguments)
         if ib_services.feature_enabled("chassis") and ip:
             try:
                 # If no existing IP, we must now create one.

@@ -34,7 +34,6 @@ class CommandUpdateAlias(BrokerCommand):
     def render(self, session, logger, fqdn, dns_environment, target,
                target_environment, ttl, clear_ttl, grn, eon_id, clear_grn,
                comments, exporter, user, justification, reason, **arguments):
-        requestid = arguments.get("requestid")
         dbdns_env = DnsEnvironment.get_unique_or_default(session,
                                                          dns_environment)
 
@@ -143,7 +142,7 @@ class CommandUpdateAlias(BrokerCommand):
                                      old_comments)
             dsdb_runner.commit_or_rollback("Could not update alias in DSDB")
 
-        ib_services = IBServices(logger, requestid)
+        ib_services = IBServices(logger, **arguments)
         if ib_services.feature_enabled("alias"):
             try:
                 if ib_services.assert_dns_environment(dbalias.fqdn.dns_environment.name) and \

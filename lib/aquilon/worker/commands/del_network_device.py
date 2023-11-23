@@ -35,7 +35,6 @@ class CommandDelNetworkDevice(BrokerCommand):
 
     def render(self, session, logger, plenaries, network_device, user,
                justification, reason, exporter, **arguments):
-        requestid = arguments.get("requestid")
         dbnetdev = NetworkDevice.get_unique(session, network_device, compel=True)
 
         # Validate ChangeManagement
@@ -70,7 +69,7 @@ class CommandDelNetworkDevice(BrokerCommand):
             dsdb_runner.update_host(None, oldinfo)
             dsdb_runner.commit_or_rollback("Could not remove network device from DSDB")
 
-            ib_services = IBServices(logger, requestid)
+            ib_services = IBServices(logger, **arguments)
             if dbdns_rec and ib_services.feature_enabled("network_device"):
                 try:
                     ib_services.delete_a_ptr(str(dbdns_rec.fqdn), dbdns_rec.ip)

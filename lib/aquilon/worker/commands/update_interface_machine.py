@@ -68,7 +68,6 @@ class CommandUpdateInterfaceMachine(BrokerCommand):
                                  autopg=None, comments=None, master=None,
                                  clear_master=None, default_route=None, rename_to=None,
                                  bus_address=None, **arguments):
-        requestid = arguments.get("requestid")
         audit_results = []
 
         dbhw_ent = Machine.get_unique(session, machine, compel=True)
@@ -81,7 +80,7 @@ class CommandUpdateInterfaceMachine(BrokerCommand):
         dbinterface.lock_row()
 
         oldinfo = DSDBRunner.snapshot_hw(dbhw_ent)
-        ib_services = IBServices(logger, requestid)
+        ib_services = IBServices(logger, **arguments)
         ib_old_snapshot = ib_services.snapshot_hw_a_records(dbhw_ent)
 
         if arguments.get('hostname', None):

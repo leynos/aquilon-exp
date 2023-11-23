@@ -101,7 +101,6 @@ class CommandAddServiceAddress(BrokerCommand):
                               the cases when the error is raised)
         """
 
-        requestid = kwargs.get("requestid")
         validate_nlist_key("name", name)
         audit_results = []
 
@@ -246,7 +245,7 @@ class CommandAddServiceAddress(BrokerCommand):
             if dbifaces:
                 dbsrv.interfaces = dbifaces
 
-        ib_services = IBServices(logger, requestid)
+        ib_services = IBServices(logger, **kwargs)
         if newly_created:
             ib_services.group.add_action(
                 lambda: ib_services.add_a_ptr(ip=ip, **ibs_args),

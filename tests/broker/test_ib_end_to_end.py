@@ -148,7 +148,7 @@ class TestIBEndToEnd(TestBrokerCommand):
 
     def __init__(self, *args, **kwargs):
         super(TestIBEndToEnd, self).__init__(*args, **kwargs)
-        self.ib_services = IBServices(log, self.dummy_request_id)
+        self.ib_services = IBServices(log, requestid=self.dummy_request_id)
         zone_response = self.ib_services.show_zone(self.test_domain)
 
         if zone_response and not zone_response.ok:

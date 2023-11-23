@@ -36,7 +36,6 @@ class CommandAddSrvRecord(BrokerCommand):
     def render(self, session, logger, service, protocol, dns_domain, priority,
                weight, target, port, dns_environment, ttl, comments, grn,
                eon_id, target_environment, exporter, user, justification, reason, **arguments):
-        requestid = arguments.get("requestid")
         dbdns_env = DnsEnvironment.get_unique_or_default(session,
                                                          dns_environment)
 
@@ -101,7 +100,7 @@ class CommandAddSrvRecord(BrokerCommand):
             else:
                 exporter.create(dbsrv_rec.fqdn)
 
-        ib_services = IBServices(logger, requestid)
+        ib_services = IBServices(logger, **arguments)
         if ib_services.feature_enabled("srv_record"):
             ib_services.add_dns_srv_record(service, protocol, dbdns_domain, target, port, priority, weight, ttl)
 

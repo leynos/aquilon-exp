@@ -32,7 +32,6 @@ class CommandAddRouterAddress(BrokerCommand):
                fqdn, building, ip, network_environment, comments,
                exporter, user, justification, reason, logger, **arguments):
 
-        requestid = arguments.get("requestid")
         if building:
             dbbuilding = Building.get_unique(session, building, compel=True)
         else:
@@ -78,6 +77,6 @@ class CommandAddRouterAddress(BrokerCommand):
         plenaries.add(dbnetwork)
 
         with plenaries.transaction():
-            ib_services = IBServices(logger, requestid)
+            ib_services = IBServices(logger, **arguments)
             if newly_created and ib_services.feature_enabled("router_address"):
                 ib_services.add_a_ptr(str(dbdns_rec.fqdn), ip)

@@ -34,13 +34,12 @@ class CommandUpdateDynamicRange(BrokerCommand):
                range_class, exporter, user, justification,
                reason, **arguments):
 
-        requestid = arguments.get("requestid")
         dbnetwork, dbstubs, startip, endip, old_range_class = self.fetch_range_details(session, ip)
 
         if old_range_class == range_class:
             raise ArgumentError("The range class of this range is already {}".format(range_class))
 
-        ib_services = IBServices(logger, requestid)
+        ib_services = IBServices(logger, **arguments)
         if ib_services.feature_enabled("dynamic_range") and old_range_class == "infoblox_managed":
             self._check_range_is_in_ib(ib_services, dbstubs, startip, endip)
 

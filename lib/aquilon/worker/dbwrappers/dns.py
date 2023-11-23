@@ -543,7 +543,6 @@ def add_address_alias(session, logger, config, dbsrcfqdn, dbtargetfqdn,
     exception on error.
     """
 
-    requestid = arguments.get("requestid")
     if (dbsrcfqdn.dns_environment.is_default and
             dbsrcfqdn.dns_domain.name == 'ms.com'):
         raise ArgumentError("{0:s} record in DNS domain ms.com, DNS "
@@ -580,7 +579,7 @@ def add_address_alias(session, logger, config, dbsrcfqdn, dbtargetfqdn,
     # create only an A-record in Infoblox.
     # PTR record is not required as it has already been created when the target (which is in fact another A-record)
     # was created.
-    ib_services = IBServices(logger, requestid)
+    ib_services = IBServices(logger, **arguments)
     if ib_services.feature_enabled("address_alias") and sync_ib:
         if ib_services.assert_dns_environment(dbsrcfqdn.dns_environment.name) and \
                 ib_services.assert_dns_environment(dbtargetfqdn.dns_environment.name):

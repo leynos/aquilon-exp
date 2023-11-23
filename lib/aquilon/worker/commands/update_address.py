@@ -34,7 +34,6 @@ class CommandUpdateAddress(BrokerCommand):
     def render(self, session, logger, fqdn, ip, reverse_ptr, dns_environment,
                network_environment, ttl, clear_ttl, grn, eon_id, comments,
                exporter, user, justification, reason, **arguments):
-        requestid = arguments.get("requestid")
         dbnet_env, dbdns_env = get_net_dns_env(session, network_environment,
                                                dns_environment)
         dbdns_rec = ARecord.get_unique(session, fqdn=fqdn,
@@ -88,7 +87,7 @@ class CommandUpdateAddress(BrokerCommand):
 
         session.flush()
 
-        ib_services = IBServices(logger, requestid)
+        ib_services = IBServices(logger, **arguments)
         if ip or reverse_ptr or clear_ttl or ttl:
             ib_services.group.add_action(
                 lambda fqdn=fqdn, new_ip=ip, reverse_ptr=reverse_ptr, clear_ttl=clear_ttl, ttl=ttl:

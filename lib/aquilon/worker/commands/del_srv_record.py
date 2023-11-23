@@ -31,7 +31,6 @@ class CommandDelSrvRecord(BrokerCommand):
     def render(self, session, service, protocol, dns_domain, target,
                dns_environment, target_environment, exporter, user, justification,
                reason, logger, **arguments):
-        requestid = arguments.get("requestid")
         name = "_%s._%s" % (service.strip().lower(), protocol.strip().lower())
         dbfqdn = Fqdn.get_unique(session, name=name, dns_domain=dns_domain,
                                  dns_environment=dns_environment)
@@ -66,7 +65,7 @@ class CommandDelSrvRecord(BrokerCommand):
                                     (SrvRecord._get_class_label(), service,
                                      protocol, dns_domain, msg))
 
-        ib_services = IBServices(logger, requestid)
+        ib_services = IBServices(logger, **arguments)
         cm = ChangeManagement(session, user, justification, reason, logger, self.command, **arguments)
 
         for dns_rec in rrs:

@@ -33,7 +33,6 @@ class CommandUpdateConsoleServer(BrokerCommand):
 
     def render(self, session, logger, console_server, model, ip, vendor, serial,
                user, justification, reason, comments, **arguments):
-        requestid = arguments.get("requestid")
         dbcons = ConsoleServer.get_unique(session, console_server, compel=True)
 
         oldinfo = DSDBRunner.snapshot_hw(dbcons)
@@ -68,7 +67,7 @@ class CommandUpdateConsoleServer(BrokerCommand):
         dsdb_runner.update_host(dbcons, oldinfo)
         dsdb_runner.commit_or_rollback("Could not update console server in DSDB")
 
-        ib_services = IBServices(logger, requestid)
+        ib_services = IBServices(logger, **arguments)
         if ip and ib_services.feature_enabled("console_server"):
             try:
                 ib_services.update_a_ptr(str(dbcons.primary_name.fqdn), old_ip, ip)

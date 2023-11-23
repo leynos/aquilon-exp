@@ -37,7 +37,6 @@ class CommandAddConsoleServer(BrokerCommand):
     def render(self, session, logger, console_server, label, model, ip,
                interface, user, justification, reason, mac, vendor, serial,
                comments, **arguments):
-        requestid = arguments.get("requestid")
         dbmodel = Model.get_unique(session, name=model, vendor=vendor,
                                    model_type=ConsoleServerType.ConsoleServer,
                                    compel=True)
@@ -81,7 +80,7 @@ class CommandAddConsoleServer(BrokerCommand):
             dsdb_runner.commit_or_rollback("Could not add console server to DSDB")
 
             # Oddly the code above assumes ip is optional but it's a required field.
-            ib_services = IBServices(logger, requestid)
+            ib_services = IBServices(logger, **arguments)
             if ib_services.feature_enabled("console_server"):
                 try:
                     ib_services.add_a_ptr(str(dbcons.primary_name.fqdn), ip)

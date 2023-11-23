@@ -37,7 +37,6 @@ class CommandAddDynamicRange(BrokerCommand):
     def render(self, session, logger, startip, endip, dns_domain,
                prefix, range_class, exporter, user, justification,
                reason, **arguments):
-        requestid = arguments.get("requestid")
         if not prefix:
             prefix = 'dynamic'
         dbnet_env, dbdns_env = get_net_dns_env(session)
@@ -94,7 +93,7 @@ class CommandAddDynamicRange(BrokerCommand):
                                 "\n".join(format(c, "a") for c in conflicts))
 
         dsdb_runner = DSDBRunner(logger=logger)
-        ib_services = IBServices(logger, requestid)
+        ib_services = IBServices(logger, **arguments)
         range_class = range_class if range_class else self.config.get("broker", "default_dynamic_range_class")
 
         if range_class == "infoblox_managed":
