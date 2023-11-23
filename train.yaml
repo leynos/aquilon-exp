@@ -6,6 +6,7 @@ tools:
    - msde/git/2.9.5
    - python/core/3.7.9
    - msde/msdlbuild/prod
+   - perl5/core/5.26.1
 
 
 build_types:

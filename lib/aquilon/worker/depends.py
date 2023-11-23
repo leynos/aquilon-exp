@@ -48,5 +48,6 @@ else:
     ms.version.addpkg('pure-cdb', '3.1.0')
     ms.version.addpkg('six', '1.15.0')
     ms.version.addpkg('jsonschema', '3.2.0')
+    ms.version.addpkg("ms.directory", "4.0.0")
     ms.version.addpkg('attrs', '20.3.0')
     ms.version.addpkg('pyrsistent', '0.15.7-py37')

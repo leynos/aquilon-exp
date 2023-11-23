@@ -436,7 +436,7 @@ def db_prompt(session):
     elif engine.dialect.name == 'postgresql':  # pragma: no cover
         stmt = "SELECT current_user"
         user = session.execute(stmt).scalar()
-        host = engine.url.host or ""
+        host = str(engine.url).split("=")[1] or ""
         stmt = "SELECT current_database()"
         dbname = session.execute(stmt).scalar()
         prompt = '%s@%s/%s' % (user, host, dbname)

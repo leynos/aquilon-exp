@@ -50,6 +50,16 @@ class TestCluster(TestBrokerCommand):
             self.matchoutput(out, "Member: evh%d.aqd-unittest.ms.com "
                              "[node_index: %d]" % (i, i - 1), command)
 
+    def test_102_utecl1_add_required_feature(self):
+        command = ["add_feature", "--feature", "vulcan/vulcan31", "--type", "host",
+                   "--activation", "rebuild", "--deactivation", "rebuild", "--grn", "grn:/ms/ei/aquilon/aqd"]
+        self.successtest(command)
+
+    def test_102_utecl1_bind_required_feature(self):
+        command = ["bind_feature", "--feature", "vulcan/vulcan31",
+                   "--personality", "vulcan-10g-server-prod", "--archetype", "vmhost"]
+        self.successtest(command)
+
     def test_102_utecl1_manage_setup(self):
         command = ["change_status", "--cluster", "utecl1", "--buildstatus", "ready"]
         self.successtest(command)
@@ -143,7 +153,7 @@ class TestCluster(TestBrokerCommand):
         # So, make it a compatible archetype and try again
         command = ["reconfigure", "--hostname=aquilon61.aqd-unittest.ms.com",
                    "--personality=esx_server", "--archetype=vmhost",
-                   "--osname", "esxi", "--osversion", "5.0.0",
+                   "--osname", "esxi", "--osversion", "7.0.3",
                    "--buildstatus=build"]
         out = self.badrequesttest(command)
         self.matchoutput(out,
@@ -161,7 +171,7 @@ class TestCluster(TestBrokerCommand):
                              self.net["hp_eth0"].usable[11].mac)
         self.noouttest(["add_host", "--hostname", "aquilon61.aqd-unittest.ms.com",
                         "--archetype", "vmhost", "--personality", "esx_server",
-                        "--osname", "esxi", "--osversion", "5.0.0",
+                        "--osname", "esxi", "--osversion", "7.0.3",
                         "--machine", "ut9s03p11",
                         "--sandbox", "%s/utsandbox" % self.user,
                         "--ip", self.net["hp_eth0"].usable[11]])

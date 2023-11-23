@@ -384,8 +384,8 @@ if __name__ == "__main__":
         if (k != 'list' and isinstance(v, str)) and len(v) > 2599:
             print("The character count in {} is beyond the permitted "
                   "value. Please specify argument value less "
-                  "than 2600".format(k))
-            sys.exit(0)
+                  "than 2600".format(k), file=sys.stderr)
+            sys.exit(1)
 
     # if a client config file is specified on command line
     # that should overide  env or default options.
