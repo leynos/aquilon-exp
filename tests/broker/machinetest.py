@@ -20,6 +20,10 @@ from collections import defaultdict
 import json
 from .eventstest import EventsTestMixin
 
+from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_del_address
+import re
+
 
 class MachineData(object):
     def __init__(self, name, model):
@@ -366,6 +370,7 @@ class MachineTestMixin(EventsTestMixin):
             self.dsdb_expect_add(hostname, ip, "eth0", ip.mac, comments=comments)
             command.extend(["--ip", ip])
 
+        ib_expect_add_address(hostname, ip)
         self.noouttest(command)
 
         for nic_name, params in list(machdef.interfaces.items()):
@@ -379,6 +384,7 @@ class MachineTestMixin(EventsTestMixin):
                 params["fqdn"] = fqdn
                 kwargs[nic_name + "_fqdn"] = fqdn
 
+            ib_expect_add_address(fqdn, str(params["ip"]), reverse_ptr=hostname)
             self.dsdb_expect_add(fqdn, params["ip"], nic_name, params["mac"],
                                  primary=hostname)
             self.statustest(["add_interface_address", "--machine", machine,
@@ -392,11 +398,13 @@ class MachineTestMixin(EventsTestMixin):
                        "--interface", manager_iface,
                        "--ip", manager_ip, "--mac", manager_ip.mac]
             short, domain = hostname.split(".", 1)
+            ib_expect_add_address(short + "r." + domain, str(manager_ip))
             self.dsdb_expect_add(short + "r." + domain, manager_ip,
                                  manager_iface, manager_ip.mac)
             self.noouttest(command)
             self.dsdb_verify()
 
+        self.ib_verify()
         show_cmd, show_out = self.verify_show_machine(machine, interfaces,
                                                       zebra=zebra, **kwargs)
         self.matchoutput(show_out, "Primary Name: %s [%s]" % (hostname, ip),
@@ -418,9 +426,12 @@ class MachineTestMixin(EventsTestMixin):
         if not interfaces:
             interfaces = guess_interfaces(kwargs, eth0_default=False)
 
+        host_map = self._hosts_by_ip_for_machine(machine)
+
         for nic_name in interfaces:
             nic_ip = kwargs.get(nic_name + "_ip", None)
             if nic_ip and nic_ip != ip:
+                ib_expect_del_address(host_map[str(nic_ip)], str(nic_ip))
                 self.dsdb_expect_delete(nic_ip)
                 if justification:
                     command = ["del_interface_address", "--machine", machine,
@@ -431,6 +442,7 @@ class MachineTestMixin(EventsTestMixin):
                                      "--interface", nic_name, "--ip", nic_ip])
                 self.dsdb_verify()
 
+        ib_expect_del_address(hostname, str(ip))
         self.dsdb_expect_delete(ip)
         if justification:
             command = ["del_host", "--hostname", hostname] + self.valid_just_tcm
@@ -440,12 +452,29 @@ class MachineTestMixin(EventsTestMixin):
         if manager_ip:
             self.dsdb_expect_delete(manager_ip)
             short, domain = hostname.split(".", 1)
+            manager_hostname = "{}r.{}".format(short, domain)
+            ib_expect_del_address(manager_hostname, manager_ip)
             if justification:
-                command = ["del_manager", "--manager", "%sr.%s" %
-                          (short, domain)] + self.valid_just_tcm
+                command = ["del_manager", "--manager", "%s" % (manager_hostname)] + self.valid_just_tcm
                 self.noouttest(command)
             else:
-                self.noouttest(["del_manager", "--manager", "%sr.%s" %
-                            (short, domain)])
+                self.noouttest(["del_manager", "--manager", "%s" % (manager_hostname)])
         self.noouttest(["del_machine", "--machine", machine])
         self.dsdb_verify()
+        self.ib_verify()
+
+    def _hosts_by_ip_for_machine(self, machine):
+        "Given a machine name, return a dict of associated hostnames keyed on IP"
+        command = ["show_machine", "--machine", machine]
+        out, err = self.successtest(command)
+
+        host_map = {}
+        for line in out.split("\n"):
+            matches = re.findall(r"[\w\.-]+", line)
+            if matches:
+                if re.match(r"Primary|Manager|Auxiliary", matches[0]) and len(matches) >= 3:
+                    ip = matches[-1]
+                    host = matches[-2]
+                    host_map[ip] = host
+
+        return host_map

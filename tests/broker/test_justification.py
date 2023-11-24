@@ -19,6 +19,8 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_add_alias, ib_expect_del_alias
+
 if __name__ == "__main__":
     from . import utils
     utils.import_depends()
@@ -634,26 +636,34 @@ class TestJustification(PersonalityTestMixin, TestBrokerCommand):
                          command)
         self.matchoutput(out, 'Build Status: ready',
                          command)
+        ib_expect_add_alias("aliasjustreq.aqd-unittest.ms.com", "aquilon91.aqd-unittest.ms.com")
         command = ["add", "alias",
                    "--fqdn", "aliasjustreq.aqd-unittest.ms.com",
                    "--target", "aquilon91.aqd-unittest.ms.com"]
         self.justificationmissingtest_warn(command)
+        self.ib_verify()
+        ib_expect_add_alias("aliasjustreq2.aqd-unittest.ms.com", "aliasjustreq.aqd-unittest.ms.com")
         command = ["add", "alias",
                    "--fqdn", "aliasjustreq2.aqd-unittest.ms.com",
                    "--target", "aliasjustreq.aqd-unittest.ms.com"]
         self.justificationmissingtest_warn(command)
+        self.ib_verify()
         cmd = "show address --fqdn aquilon91.aqd-unittest.ms.com"
         out = self.commandtest(cmd.split(" "))
         self.matchoutput(out, "Aliases: aliasjustreq.aqd-unittest.ms.com, "
                               "aliasjustreq2.aqd-unittest.ms.com", cmd)
 
     def test_905_justification_required(self):
+        ib_expect_del_alias("aliasjustreq2.aqd-unittest.ms.com")
         command = ["del", "alias",
                    "--fqdn", "aliasjustreq2.aqd-unittest.ms.com"]
         self.justificationmissingtest_warn(command)
+        self.ib_verify()
+        ib_expect_del_alias("aliasjustreq.aqd-unittest.ms.com")
         command = ["del", "alias",
                    "--fqdn", "aliasjustreq.aqd-unittest.ms.com"] + self.valid_just_tcm
         self.successtest(command)
+        self.ib_verify()
         cmd = "show address --fqdn aquilon91.aqd-unittest.ms.com"
         out = self.commandtest(cmd.split(" "))
         self.matchclean(out, "Aliases: aliasjustreq.aqd-unittest.ms.com, "

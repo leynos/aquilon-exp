@@ -16,12 +16,13 @@
 # limitations under the License.
 """Contains the logic for `aq del router address`."""
 
-from aquilon.exceptions_ import ArgumentError, NotFoundException
+from aquilon.exceptions_ import ArgumentError, NotFoundException, ProcessException
 from aquilon.aqdb.model import ARecord, NetworkEnvironment
 from aquilon.aqdb.model.network import get_net_id_from_ip
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from aquilon.worker.ib_services import IBServices
 
 
 class CommandDelRouterAddress(BrokerCommand):
@@ -71,6 +72,20 @@ class CommandDelRouterAddress(BrokerCommand):
 
         # TODO: update the templates of Zebra hosts on the network
         plenaries.add(dbnetwork)
-        plenaries.write()
 
-        return
+        with plenaries.transaction():
+            ib_services = IBServices(logger)
+            if ib_services.feature_enabled("router_address"):
+                # If FQDN not passed then look it up from the DNS records associated with the router
+                if not fqdn:
+                    for r in dbrouter.dns_records:
+                        if r.ip == ip:
+                            fqdn = r.fqdn
+                if not fqdn:
+                    logger.debug("Unable to determine FQDN from IP {} and can not remove A/PTR from Infoblox"
+                                 .format(ip))
+                else:
+                    try:
+                        ib_services.delete_a_ptr(fqdn, ip)
+                    except ProcessException as e:
+                        raise e

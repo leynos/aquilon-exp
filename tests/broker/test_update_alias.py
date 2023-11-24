@@ -20,6 +20,10 @@
 import unittest
 import json
 
+from mock_ib_services import ib_expect_add_alias
+from mock_ib_services import ib_expect_del_alias
+from mock_ib_services import ib_expect_update_alias
+
 if __name__ == "__main__":
     from broker import utils
     utils.import_depends()
@@ -31,10 +35,14 @@ from .eventstest import EventsTestMixin
 class TestUpdateAlias(EventsTestMixin, TestBrokerCommand):
 
     def test_100_update(self):
+        fqdn = "alias2host.aqd-unittest.ms.com"
+        target = "arecord14.aqd-unittest.ms.com"
+        ib_expect_update_alias(fqdn, target)
         command = ["update", "alias",
-                   "--fqdn", "alias2host.aqd-unittest.ms.com",
-                   "--target", "arecord14.aqd-unittest.ms.com"]
+                   "--fqdn", fqdn,
+                   "--target", target]
         self.noouttest(command)
+        self.ib_verify()
 
     def test_105_update_self(self):
         command = ["update_alias",
@@ -58,26 +66,30 @@ class TestUpdateAlias(EventsTestMixin, TestBrokerCommand):
                          command)
 
     def test_110_update_mscom(self):
+        fqdn = "alias.ms.com"
+        target = "arecord14.aqd-unittest.ms.com"
         self.event_upd_dns(
-            fqdn='alias.ms.com',
+            fqdn=fqdn,
             dns_environment='internal',
             dns_records=[
                 {
-                    'target': 'arecord14.aqd-unittest.ms.com',
+                    'target': target,
                     'targetEnvironmentName': 'internal',
                     'rrtype': 'CNAME'
                 },
             ],
         )
-        command = ["update", "alias", "--fqdn", "alias.ms.com",
-                   "--target", "arecord14.aqd-unittest.ms.com",
+        command = ["update", "alias", "--fqdn", fqdn,
+                   "--target", target,
                    "--comments", "New alias comments"]
+        ib_expect_update_alias(fqdn, target)
         self.dsdb_expect("update_host_alias "
-                         "-alias alias.ms.com "
-                         "-new_host arecord14.aqd-unittest.ms.com "
+                         "-alias " + fqdn + " "
+                         "-new_host " + target + " "
                          "-new_comments New alias comments")
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
         self.events_verify()
 
     def test_200_missing_target(self):
@@ -195,13 +207,17 @@ class TestUpdateAlias(EventsTestMixin, TestBrokerCommand):
         self.assertEqual(json.loads(out), expected)
 
     def test_400_repoint_restrict1(self):
-        command = ["update", "alias", "--fqdn", "restrict1.aqd-unittest.ms.com",
-                   "--target", "target2.restrict.aqd-unittest.ms.com"]
+        fqdn = "restrict1.aqd-unittest.ms.com"
+        target = "target2.restrict.aqd-unittest.ms.com"
+        ib_expect_update_alias(fqdn, target)
+        command = ["update", "alias", "--fqdn", fqdn,
+                   "--target", target]
         out = self.statustest(command)
         self.matchoutput(out,
-                         "WARNING: Will create a reference to "
-                         "target2.restrict.aqd-unittest.ms.com, but ",
+                         "WARNING: Will create a reference to " +
+                         target + ", but ",
                          command)
+        self.ib_verify()
 
     def test_410_verify_target(self):
         command = ["search", "dns", "--fullinfo",
@@ -218,9 +234,13 @@ class TestUpdateAlias(EventsTestMixin, TestBrokerCommand):
                           command)
 
     def test_420_repoint_restrict2(self):
-        command = ["update", "alias", "--fqdn", "restrict2.aqd-unittest.ms.com",
-                   "--target", "target2.restrict.aqd-unittest.ms.com"]
+        fqdn = "restrict2.aqd-unittest.ms.com"
+        target = "target2.restrict.aqd-unittest.ms.com"
+        ib_expect_update_alias(fqdn, target)
+        command = ["update", "alias", "--fqdn", fqdn,
+                   "--target", target]
         self.noouttest(command)
+        self.ib_verify()
 
     def test_430_verify_target_gone(self):
         command = ["search", "dns", "--fullinfo",
@@ -294,10 +314,15 @@ class TestUpdateAlias(EventsTestMixin, TestBrokerCommand):
         self.matchoutput(out, "DNS Environment: ut-env", command)
 
     def test_600_update_ttl(self):
+        fqdn = "alias2alias.aqd-unittest.ms.com"
+        # Although only the ttl is being updated, we still expect IB to receive the target, in case the alias does not
+        # exist in IB and needs to be created rather than updated.
+        ib_expect_update_alias(fqdn, target="alias2host.aqd-unittest.ms.com", ttl=120)
         command = ["update", "alias",
-                   "--fqdn", "alias2alias.aqd-unittest.ms.com",
+                   "--fqdn", fqdn,
                    "--ttl", 120]
         self.noouttest(command)
+        self.ib_verify()
 
     def test_620_verify_update_ttl(self):
         command = ["search", "dns", "--fullinfo",
@@ -324,10 +349,13 @@ class TestUpdateAlias(EventsTestMixin, TestBrokerCommand):
         self.assertEqual(json.loads(out), expected)
 
     def test_700_remove_ttl(self):
+        fqdn = "alias2alias.aqd-unittest.ms.com"
+        ib_expect_update_alias(fqdn, target="alias2host.aqd-unittest.ms.com", ttl=-1)
         command = ["update", "alias",
-                   "--fqdn", "alias2alias.aqd-unittest.ms.com",
+                   "--fqdn", fqdn,
                    "--clear_ttl"]
         self.noouttest(command)
+        self.ib_verify()
 
     def test_720_verify_remove_ttl(self):
         command = ["search", "dns", "--fullinfo",
@@ -406,13 +434,17 @@ class TestUpdateAlias(EventsTestMixin, TestBrokerCommand):
         self.matchclean(out, "Owned by GRN:", command)
 
     def test_830_update_grn_conflict(self):
+        fqdn = "temp-alias.aqd-unittest.ms.com"
+        target = "unittest00.one-nyp.ms.com"
+        ib_expect_add_alias(fqdn, target)
         command = ["add", "alias",
-                   "--fqdn", "temp-alias.aqd-unittest.ms.com",
-                   "--target", "unittest00.one-nyp.ms.com"]
+                   "--fqdn", fqdn,
+                   "--target", target]
         self.noouttest(command)
+        self.ib_verify()
 
         command = ["update", "alias",
-                   "--fqdn", "temp-alias.aqd-unittest.ms.com",
+                   "--fqdn", fqdn,
                    "--grn", "grn:/ms/ei/aquilon/aqd"]
         out = self.badrequesttest(command)
         self.matchoutput(out,
@@ -424,9 +456,11 @@ class TestUpdateAlias(EventsTestMixin, TestBrokerCommand):
                          "from the device.",
                          command)
 
+        ib_expect_del_alias(fqdn)
         command = ["del", "alias",
-                   "--fqdn", "temp-alias.aqd-unittest.ms.com"]
+                   "--fqdn", fqdn]
         self.noouttest(command)
+        self.ib_verify()
 
     def test_835_grn_conflict_with_primary_name(self):
         command = ["update", "alias",
@@ -476,38 +510,48 @@ class TestUpdateAlias(EventsTestMixin, TestBrokerCommand):
 
     def test_900_add_deep_alias(self):
         # Create alias with max depth
+        ib_expect_add_alias('test.aqd-unittest.ms.com', 'arecord13.aqd-unittest.ms.com')
         cmd = ['add', 'alias', '--fqdn', 'test.aqd-unittest.ms.com',
                '--target', 'arecord13.aqd-unittest.ms.com']
         self.noouttest(cmd)
+        ib_expect_add_alias('test2.aqd-unittest.ms.com', 'test.aqd-unittest.ms.com')
         cmd = ['add', 'alias', '--fqdn', 'test2.aqd-unittest.ms.com',
                '--target', 'test.aqd-unittest.ms.com']
         self.noouttest(cmd)
+        ib_expect_add_alias('test3.aqd-unittest.ms.com', 'test2.aqd-unittest.ms.com')
         cmd = ['add', 'alias', '--fqdn', 'test3.aqd-unittest.ms.com',
                '--target', 'test2.aqd-unittest.ms.com']
         self.noouttest(cmd)
+        ib_expect_add_alias('test4.aqd-unittest.ms.com', 'test3.aqd-unittest.ms.com')
         cmd = ['add', 'alias', '--fqdn', 'test4.aqd-unittest.ms.com',
                '--target', 'test3.aqd-unittest.ms.com']
         self.noouttest(cmd)
         # Create alias with depth 1
+        ib_expect_add_alias('testtest.aqd-unittest.ms.com', 'arecord13.aqd-unittest.ms.com')
         cmd = ['add', 'alias', '--fqdn', 'testtest.aqd-unittest.ms.com',
                '--target', 'arecord13.aqd-unittest.ms.com']
         self.noouttest(cmd)
 
         # Create alias with depth 2
+        ib_expect_add_alias('testtest1.aqd-unittest.ms.com', 'arecord13.aqd-unittest.ms.com')
         cmd = ['add', 'alias', '--fqdn', 'testtest1.aqd-unittest.ms.com',
                '--target', 'arecord13.aqd-unittest.ms.com']
         self.noouttest(cmd)
+        ib_expect_add_alias('testtest2.aqd-unittest.ms.com', 'testtest1.aqd-unittest.ms.com')
         cmd = ['add', 'alias', '--fqdn', 'testtest2.aqd-unittest.ms.com',
                '--target', 'testtest1.aqd-unittest.ms.com']
         self.noouttest(cmd)
 
         # Create alias with depth 3
+        ib_expect_add_alias('testtest3.aqd-unittest.ms.com', 'arecord13.aqd-unittest.ms.com')
         cmd = ['add', 'alias', '--fqdn', 'testtest3.aqd-unittest.ms.com',
                '--target', 'arecord13.aqd-unittest.ms.com']
         self.noouttest(cmd)
+        ib_expect_add_alias('testtest4.aqd-unittest.ms.com', 'testtest3.aqd-unittest.ms.com')
         cmd = ['add', 'alias', '--fqdn', 'testtest4.aqd-unittest.ms.com',
                '--target', 'testtest3.aqd-unittest.ms.com']
         self.noouttest(cmd)
+        ib_expect_add_alias('testtest5.aqd-unittest.ms.com', 'testtest4.aqd-unittest.ms.com')
         cmd = ['add', 'alias', '--fqdn', 'testtest5.aqd-unittest.ms.com',
                '--target', 'testtest4.aqd-unittest.ms.com']
         self.noouttest(cmd)
@@ -541,27 +585,37 @@ class TestUpdateAlias(EventsTestMixin, TestBrokerCommand):
 
     def test_920_delete_deep_alias(self):
         # Delete alias with max depth
+        ib_expect_del_alias('test4.aqd-unittest.ms.com')
         cmd = ['del', 'alias', '--fqdn', 'test4.aqd-unittest.ms.com']
         self.noouttest(cmd)
+        ib_expect_del_alias('test3.aqd-unittest.ms.com')
         cmd = ['del', 'alias', '--fqdn', 'test3.aqd-unittest.ms.com']
         self.noouttest(cmd)
+        ib_expect_del_alias('test2.aqd-unittest.ms.com')
         cmd = ['del', 'alias', '--fqdn', 'test2.aqd-unittest.ms.com']
         self.noouttest(cmd)
+        ib_expect_del_alias('test.aqd-unittest.ms.com')
         cmd = ['del', 'alias', '--fqdn', 'test.aqd-unittest.ms.com']
         self.noouttest(cmd)
         # Delete alias with depth 1
+        ib_expect_del_alias('testtest.aqd-unittest.ms.com')
         cmd = ['del', 'alias', '--fqdn', 'testtest.aqd-unittest.ms.com']
         self.noouttest(cmd)
         # Delete alias with depth 2
+        ib_expect_del_alias('testtest2.aqd-unittest.ms.com')
         cmd = ['del', 'alias', '--fqdn', 'testtest2.aqd-unittest.ms.com']
         self.noouttest(cmd)
+        ib_expect_del_alias('testtest1.aqd-unittest.ms.com')
         cmd = ['del', 'alias', '--fqdn', 'testtest1.aqd-unittest.ms.com']
         self.noouttest(cmd)
         # Delete alias with depth 3
+        ib_expect_del_alias('testtest5.aqd-unittest.ms.com')
         cmd = ['del', 'alias', '--fqdn', 'testtest5.aqd-unittest.ms.com']
         self.noouttest(cmd)
+        ib_expect_del_alias('testtest4.aqd-unittest.ms.com')
         cmd = ['del', 'alias', '--fqdn', 'testtest4.aqd-unittest.ms.com']
         self.noouttest(cmd)
+        ib_expect_del_alias('testtest3.aqd-unittest.ms.com')
         cmd = ['del', 'alias', '--fqdn', 'testtest3.aqd-unittest.ms.com']
         self.noouttest(cmd)
 

@@ -16,13 +16,14 @@
 # limitations under the License.
 """Contains the logic for `aq add alias`."""
 
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.aqdb.model import DnsRecord, Alias, Fqdn, DnsEnvironment
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import create_target_if_needed
 from aquilon.worker.dbwrappers.grn import lookup_grn
-from aquilon.worker.processes import DSDBRunner
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from aquilon.worker.ib_services import IBServices
+from aquilon.worker.processes import DSDBRunner
 
 
 class CommandAddAlias(BrokerCommand):
@@ -78,10 +79,19 @@ class CommandAddAlias(BrokerCommand):
 
         session.flush()
 
-        if dbdns_env.is_default and dbfqdn.dns_domain.name == "ms.com" and \
-           not dbtarget.dns_domain.restricted:
+        dsdb_runner = None
+        if dbdns_env.is_default and dbfqdn.dns_domain.name == "ms.com" and not dbtarget.dns_domain.restricted:
             dsdb_runner = DSDBRunner(logger=logger)
             dsdb_runner.add_alias(fqdn, target, comments)
             dsdb_runner.commit_or_rollback("Could not add alias to DSDB")
 
-        return
+        ib_services = IBServices(logger)
+        if ib_services.feature_enabled("alias"):
+            try:
+                if ib_services.assert_dns_environment(db_record.fqdn.dns_environment.name) and \
+                        ib_services.assert_dns_environment(db_record.target.dns_environment.name):
+                    ib_services.add_dns_alias(str(db_record.fqdn), str(db_record.target), ttl)
+            except ProcessException as e:
+                if dsdb_runner:
+                    dsdb_runner.rollback()
+                raise e

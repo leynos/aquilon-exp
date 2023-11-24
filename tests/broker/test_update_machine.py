@@ -25,6 +25,7 @@ if __name__ == "__main__":
 
 from .brokertest import TestBrokerCommand
 from .eventstest import EventsTestMixin
+from mock_ib_services import ib_expect_update_address
 
 
 class TestUpdateMachine(EventsTestMixin, TestBrokerCommand):
@@ -516,15 +517,24 @@ class TestUpdateMachine(EventsTestMixin, TestBrokerCommand):
     def test_1140_swapip_ut3c5n10(self):
         # This assumes the value returned by next_ip() because it depends on
         # network changes in other tests.
-        self.dsdb_expect_update("arecord13.aqd-unittest.ms.com", ip="4.2.1.5")
-        self.dsdb_expect_update("unittest02.one-nyp.ms.com", iface="eth0",
-                                ip=self.net["unknown0"].usable[13])
-        self.dsdb_expect_update("arecord13.aqd-unittest.ms.com",
-                                ip=self.net["unknown0"].usable[11])
-        command = ["update_machine", "--machine", "ut3c5n10", "--swap_ip",
-                   self.net["unknown0"].usable[13]]
+        temp_ip = "4.2.1.5"
+        swap_ip = self.net["unknown0"].usable[13]
+        old_ip = self.net["unknown0"].usable[11]
+        fqdn = "arecord13.aqd-unittest.ms.com"
+        swap_fqdn = "unittest02.one-nyp.ms.com"
+
+        self.dsdb_expect_update(fqdn, ip=temp_ip)
+        self.dsdb_expect_update(swap_fqdn, iface="eth0", ip=swap_ip)
+        self.dsdb_expect_update(fqdn, ip=old_ip)
+
+        ib_expect_update_address(fqdn, old_ip, new_ip=temp_ip)
+        ib_expect_update_address(swap_fqdn, old_ip, new_ip=swap_ip)
+        ib_expect_update_address(fqdn, temp_ip, new_ip=old_ip)
+
+        command = ["update_machine", "--machine", "ut3c5n10", "--swap_ip", swap_ip]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_1141_swapip_ut3c5n10_verify(self):
         command = ["show_machine", "--machine", "ut3c5n10", "--format",
@@ -534,15 +544,24 @@ class TestUpdateMachine(EventsTestMixin, TestBrokerCommand):
                          "{}".format(self.net["unknown0"].usable[13]))
 
     def test_1142_swapip_ut3c5n10_back(self):
-        self.dsdb_expect_update("arecord13.aqd-unittest.ms.com", ip="4.2.1.5")
-        self.dsdb_expect_update("unittest02.one-nyp.ms.com", iface="eth0",
-                                ip=self.net["unknown0"].usable[11])
-        self.dsdb_expect_update("arecord13.aqd-unittest.ms.com",
-                                ip=self.net["unknown0"].usable[13])
-        command = ["update_machine", "--machine", "ut3c5n10", "--swap_ip",
-                   self.net["unknown0"].usable[11]]
+        temp_ip = "4.2.1.5"
+        swap_ip = ip=self.net["unknown0"].usable[11]
+        old_ip = self.net["unknown0"].usable[13]
+        fqdn = "arecord13.aqd-unittest.ms.com"
+        swap_fqdn = "unittest02.one-nyp.ms.com"
+
+        self.dsdb_expect_update(fqdn, ip=temp_ip)
+        self.dsdb_expect_update(swap_fqdn, iface="eth0", ip=swap_ip)
+        self.dsdb_expect_update(fqdn, ip=old_ip)
+
+        ib_expect_update_address(fqdn, old_ip, new_ip=temp_ip)
+        ib_expect_update_address(swap_fqdn, old_ip, new_ip=swap_ip)
+        ib_expect_update_address(fqdn, temp_ip, new_ip=old_ip)
+
+        command = ["update_machine", "--machine", "ut3c5n10", "--swap_ip", swap_ip]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_1143_swapip_ut3c5n10_verify(self):
         command = ["show_machine", "--machine", "ut3c5n10", "--format",
@@ -645,9 +664,13 @@ class TestUpdateMachine(EventsTestMixin, TestBrokerCommand):
         self.matchoutput(out, "Primary Name: test-aurora-default-os.ms.com [{}]".format(ip), command)
 
     def test_2045_update_aurora_host_machine(self):
+        old_ip = self.net["tor_net_0"].usable[4]
         new_ip = self.net["tor_net_0"].usable[7]
-        command = ["update", "machine", "--hostname", "test-aurora-default-os.ms.com", "--ip", new_ip] + self.valid_just_sn
+        fqdn = "test-aurora-default-os.ms.com"
+        ib_expect_update_address(fqdn, old_ip, new_ip=new_ip)
+        command = ["update", "machine", "--hostname", fqdn, "--ip", new_ip] + self.valid_just_sn
         self.noouttest(command)
+        self.ib_verify()
 
     def test_2050_verify_aurora_host_machine(self):
         ip = self.net["tor_net_0"].usable[7]
@@ -656,9 +679,13 @@ class TestUpdateMachine(EventsTestMixin, TestBrokerCommand):
         self.matchoutput(out, "Primary Name: test-aurora-default-os.ms.com [{}]".format(ip), command)
 
     def test_2055_update_aurora_host_machine_back(self):
-        ip = self.net["tor_net_0"].usable[4]
-        command = ["update", "machine", "--hostname", "test-aurora-default-os.ms.com", "--ip", ip] + self.valid_just_sn
+        old_ip = self.net["tor_net_0"].usable[7]
+        new_ip = self.net["tor_net_0"].usable[4]
+        fqdn = "test-aurora-default-os.ms.com"
+        ib_expect_update_address(fqdn, old_ip, new_ip=new_ip)
+        command = ["update", "machine", "--hostname", fqdn, "--ip", new_ip] + self.valid_just_sn
         self.noouttest(command)
+        self.ib_verify()
 
     # These tests would be nice, but twisted just ignores the permission
     # on the files since we're still the owner.  Which is good, but means

@@ -17,17 +17,18 @@
 """Contains the logic for `aq update chassis`."""
 
 from aquilon.aqdb.types import ChassisType
-from aquilon.aqdb.model import Model, Chassis, HardwareEntity
+from aquilon.aqdb.model import Model, Chassis, ARecord
 from aquilon.worker.broker import BrokerCommand
+from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.dbwrappers.grn import lookup_grn
 from aquilon.worker.dbwrappers.hardware_entity import (
     get_default_chassis_grn_eonid,
     update_primary_ip,
 )
 from aquilon.worker.dbwrappers.location import get_location
-from aquilon.exceptions_ import NotFoundException
+from aquilon.exceptions_ import NotFoundException, ProcessException
+from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
-from aquilon.worker.dbwrappers.change_management import ChangeManagement
 
 
 class CommandUpdateChassis(BrokerCommand):
@@ -66,6 +67,7 @@ class CommandUpdateChassis(BrokerCommand):
         if serial is not None:
             dbchassis.serial_no = serial
 
+        old_ip = dbchassis.primary_name.ip if type(dbchassis.primary_name) == ARecord else None
         if ip:
             update_primary_ip(session, logger, dbchassis, ip)
 
@@ -87,4 +89,14 @@ class CommandUpdateChassis(BrokerCommand):
         dsdb_runner.update_host(dbchassis, oldinfo)
         dsdb_runner.commit_or_rollback("Could not update chassis in DSDB")
 
-        return
+        ib_services = IBServices(logger)
+        if ib_services.feature_enabled("chassis") and ip:
+            try:
+                # If no existing IP, we must now create one.
+                if old_ip:
+                    ib_services.update_a_ptr(str(dbchassis.primary_name.fqdn), old_ip, ip)
+                else:
+                    ib_services.add_a_ptr(str(dbchassis.primary_name.fqdn), ip)
+            except ProcessException as e:
+                dsdb_runner.rollback()
+                raise e

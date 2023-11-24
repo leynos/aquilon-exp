@@ -24,6 +24,11 @@ import string
 
 from broker.brokertest import TestBrokerCommand
 from broker.machinetest import MachineTestMixin
+from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_add_alias
+from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_del_alias
+from mock_ib_services import ib_expect_update_address
 
 
 def import_depends():
@@ -143,6 +148,8 @@ class MockHub:
         self.dns_domains = []
         self.networks = {}
         self.addresses = {}
+        self.resource_groups = {}
+        self.shared_service_names = {}
         self.aliases = {}
         self.srvrecords = {}
         self.create(name)
@@ -247,27 +254,154 @@ class MockHub:
         if fqdn == self.default_dns_domain:
             self.default_dns_domain = None
 
-    def add_address(self, fqdn, ip, ttl=None):
-        self._engine.dsdb_expect('add_host -host_name {} -ip_address {} '
-                                 '-status aq -manager_grn {}'.format(
-                                    fqdn, ip, self.grn))
+    def add_address(self, fqdn, ip, ttl=None, reverse_ptr=None, comments=None, dns_environment="internal",
+                    fail_dsdb=False, fail_ib=False, create_ptr=True):
+
+        if dns_environment == "internal":
+            self._engine.dsdb_expect_add(fqdn, ip, fail=fail_dsdb)
+            if fail_ib:
+                self._engine.dsdb_expect_delete(ip)
+
+        if not fail_dsdb:
+            ib_expect_add_address(fqdn, ip, reverse_ptr=reverse_ptr, ttl=ttl, create_ptr=create_ptr, fail=fail_ib)
+
         command = ['add_address', '--fqdn', fqdn,
                    '--ip', ip,
                    '--grn', self.grn]
         if ttl is not None:
-            command.append('--ttl')
-            command.append(ttl)
-        self._engine.noouttest(command + self._engine.valid_just_tcm)
-        self.addresses[fqdn] = {'ip': ip}
+            command.extend(['--ttl', ttl])
+        if dns_environment is not None:
+            command.extend(['--dns_environment', dns_environment])
 
-    def delete_address(self, fqdn, ip):
-        self._engine.dsdb_expect(f'delete_host -ip_address {ip}')
-        command = ['del_address', '--fqdn', fqdn,
-                   '--ip', ip]
-        self._engine.noouttest(command + self._engine.valid_just_tcm)
-        del self.addresses[fqdn]
+        command += self._engine.valid_just_tcm
+        if fail_dsdb:
+            self._engine.dsdberrortest(command)
+        elif fail_ib:
+            self._engine.iberrortest(command)
+        else:
+            self._engine.noouttest(command)
+            self.addresses[fqdn, dns_environment] = {'ip': ip}
+
+        self._engine.dsdb_verify(True if fail_ib or dns_environment != "internal" else False)
+        self._engine.ib_verify(True if fail_dsdb else False)
+
+    def update_address(self, fqdn, original_ip, new_ip=None, new_ttl=None, reverse_ptr=None, dns_environment="internal",
+                       comments=None, grn=None, fail_dsdb=False, fail_ib=False):
+
+        self._engine.dsdb_expect_update(fqdn, iface=None, ip=new_ip,
+                                        comments=comments, fail=fail_dsdb)
+        if fail_ib:
+            self._engine.dsdb_expect_update(fqdn, ip=original_ip)
+        if not fail_dsdb:
+            ib_expect_update_address(fqdn, original_ip, new_ip=new_ip, reverse_ptr=reverse_ptr,
+                                     new_ttl=new_ttl, fail=fail_ib)
+        command = ['update_address', '--fqdn', fqdn]
+        if dns_environment is not None:
+            command.extend(['--dns_environment', dns_environment])
+        if new_ip is not None:
+            command.extend(['--ip', new_ip])
+        if new_ttl is not None:
+            command.extend(['--ttl', new_ttl])
+        if reverse_ptr is not None:
+            command.extend(['--reverse_ptr', reverse_ptr])
+        if comments is not None:
+            command.extend(['--comments', comments])
+        if grn is not None:
+            command.extend(['--grn', grn])
+        command += self._engine.valid_just_tcm
+
+        if fail_ib:
+            dsdb_rollback_args = {"ip": original_ip}
+            if comments:
+                # TODO, this is wrong, in a rollback case, I need the
+                # original comments, not the new comments
+                dsdb_rollback_args["comments"] = comments
+            self._engine.dsdb_expect_update(fqdn, **dsdb_rollback_args)
+
+        if fail_dsdb:
+            self._engine.dsdberrortest(command)
+        elif fail_ib:
+            self._engine.iberrortest(command)
+        else:
+            self._engine.noouttest(command)
+            if new_ip is not None:
+                self.addresses[fqdn, dns_environment] = {'ip': new_ip}
+
+        self._engine.dsdb_verify(True if fail_ib else False)
+        self._engine.ib_verify(True if fail_dsdb else False)
+
+    def delete_address(self, fqdn, ip, fail_dsdb=False, fail_ib=False, dns_environment="internal"):
+        if dns_environment == "internal":
+            self._engine.dsdb_expect_delete(ip, fail=fail_dsdb)
+            if fail_ib:
+                self._engine.dsdb_expect_add(fqdn, ip)
+        if not fail_dsdb:
+            ib_expect_del_address(fqdn, ip, fail=fail_ib)
+
+        command = ['del_address', '--fqdn', fqdn, '--ip', ip]
+        if dns_environment is not None:
+            command.extend(['--dns_environment', dns_environment])
+        command += self._engine.valid_just_tcm
+
+        if fail_dsdb:
+            self._engine.dsdberrortest(command)
+        elif fail_ib:
+            self._engine.iberrortest(command)
+        else:
+            self._engine.noouttest(command)
+            del self.addresses[fqdn, dns_environment]
+
+        self._engine.dsdb_verify(False if dns_environment == "internal" else True)
+        self._engine.ib_verify()
+
+    def add_resource_group(self, resourcegroup, hostname):
+        if resourcegroup in self.resource_groups:
+            raise ValueError('Resource Group {} already exists.'.format(resourcegroup))
+
+        command = ['add_resourcegroup', '--resourcegroup', resourcegroup, '--hostname', hostname]
+
+        self._engine.noouttest(command)
+
+        self.resource_groups[resourcegroup] = {'hostname': hostname}
+
+    def delete_resource_group(self, resourcegroup):
+        if resourcegroup not in self.resource_groups:
+            raise ValueError('Resource Group {} does not exist.'.format(resourcegroup))
+
+        hostname = self.resource_groups[resourcegroup]['hostname']
+
+        command = ['del_resourcegroup', '--resourcegroup', resourcegroup, '--hostname', hostname]
+        self._engine.noouttest(command)
+
+        del self.resource_groups[resourcegroup]
+
+    def add_shared_service_name(self, sharedservicename, resourcegroup, fqdn, sa_aliases):
+        if resourcegroup not in self.resource_groups:
+            raise ValueError('Resource Group {} does not exist.'.format(resourcegroup))
+        if sharedservicename in self.shared_service_names:
+            raise ValueError('Shared Service Name {} already exists.'.format(sharedservicename))
+
+        command = ['add_shared_service_name', '--name', sharedservicename, '--resourcegroup', resourcegroup,
+                   '--fqdn', fqdn, '--sa_aliases' if sa_aliases else '--nosa_aliases']
+
+        self._engine.noouttest(command)
+
+        self.shared_service_names[sharedservicename] = {'resourcegroup': resourcegroup, 'fqdn': fqdn,
+                                                        'sa_aliases': sa_aliases}
+
+    def delete_shared_service_name(self, sharedservicename):
+        if sharedservicename not in self.shared_service_names:
+            raise ValueError('Shared Service Name {} does not exist.'.format(sharedservicename))
+
+        resourcegroup = self.shared_service_names[sharedservicename]['resourcegroup']
+
+        command = ['del_shared_service_name', '--name', sharedservicename, '--resourcegroup', resourcegroup]
+        self._engine.noouttest(command)
+
+        del self.shared_service_names[sharedservicename]
 
     def add_alias(self, fqdn, target, ttl=None):
+        ib_expect_add_alias(fqdn, target, ttl=ttl)
         command = ['add_alias', '--fqdn', fqdn,
                    '--target', target,
                    '--grn', self.grn]
@@ -276,6 +410,7 @@ class MockHub:
             command.append(ttl)
         self._engine.noouttest(command)
         self.aliases[fqdn] = {'target': target}
+        self._engine.ib_verify()
 
     def delete_alias(self, fqdn):
         command = ['del_alias', '--fqdn', fqdn]
@@ -459,9 +594,11 @@ class MockHub:
         for i in range(len(hosts)):
             self._engine.successtest(['change_status', '--hostname', list(hosts)[i],
                                       '--buildstatus', 'decommissioned'])
+            ib_expect_del_address(hosts[i], ips[i])
             self._engine.dsdb_expect_delete(ip=ips[i])
             self._engine.successtest(['del_host', '--hostname', list(hosts)[i]])
             self._engine.dsdb_verify()
+            self._engine.ib_verify()
         # Verify if all the hosts in self.hosts have been deleted.
         if verify:
             self._verify_deletion_with_search_hub('host', self.hosts)
@@ -669,6 +806,13 @@ class MockHub:
         # defined in this class.
         # Use verify=True to confirm if all objects stored in MockHub have been
         # deleted.
+
+        for sharedservicename in self.shared_service_names.keys():
+            self.delete_shared_service_name(sharedservicename)
+
+        for resource_group in self.resource_groups.keys():
+            self.delete_resource_group(resource_group)
+
         self.delete_hosts(slow, verify)
         # Delete machines.
         self.delete_machines(slow, verify)
@@ -698,10 +842,11 @@ class MockHub:
                                   self.srvrecords[k]['dns_domain'])
         # Delete Aliases
         for fqdn in list(self.aliases):
+            ib_expect_del_alias(fqdn)
             self.delete_alias(fqdn)
         # Delete Addresses
-        for fqdn in list(self.addresses):
-            self.delete_address(fqdn, self.addresses[fqdn]['ip'])
+        for fqdn, dns_environment in self.addresses.keys():
+            self.delete_address(fqdn, self.addresses[fqdn, dns_environment]['ip'], dns_environment=dns_environment)
         # Delete DNS domains.
         for dns_domain in self.dns_domains[:]:
             self.delete_dns_domain(dns_domain)
@@ -726,6 +871,7 @@ class MockHub:
                     'hub', [self._name], 1)
             self._name = None
         self.delete_organisations(verify)
+        self._engine.ib_verify()
 
     def create(self, name=None):
         if self._name is not None:
@@ -861,6 +1007,25 @@ class MockHub:
         self._engine.dsdb_verify()
         self.buildings.append(name)
         return name
+
+    def add_rack(self, row=None, column=None, building=None):
+        row = self.get_or_create_name(row, length=4)
+        column = self.get_or_create_name(column, length=4)
+        building = self.get_or_create_building(building)
+        rack = self._engine.commandtest(['add_rack', '--building', building,
+                                         '--row', row,
+                                         '--column', column]).rstrip()
+        self.racks[rack] = {'row': row, 'column': column, 'building': building}
+        return rack
+
+    def delete_rack(self, rack):
+        self._engine.noouttest(['del_rack', '--rack', rack])
+        del self.racks[rack]
+
+    def delete_racks(self):
+        for rack in self.racks:
+            self._engine.noouttest(['del_rack', '--rack', rack])
+        self.racks = {}
 
     def add_buildings(self, count=1, city=None):
         city = self.get_or_create_city(city)
@@ -1047,8 +1212,10 @@ class MockHub:
             command.extend(['--buildstatus', build_status])
         command.extend(extra_arguments or [])
         self._engine.dsdb_expect_add(hostname, ip, 'eth0', mac)
+        ib_expect_add_address(hostname, ip)
         self._engine.successtest(command)
         self._engine.dsdb_verify()
+        self._engine.ib_verify()
         self.hosts[hostname] = {'machine': machine, 'dns_domain': dns_domain,
                                 'building': building, 'desk': desk}
         return hostname

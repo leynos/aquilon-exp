@@ -16,13 +16,14 @@
 # limitations under the License.
 """Contains the logic for `aq update interface` for simple devices."""
 
-from aquilon.exceptions_ import ArgumentError, UnimplementedError
+from aquilon.exceptions_ import ArgumentError, ProcessException, UnimplementedError
 from aquilon.aqdb.types import NicType
 from aquilon.aqdb.model import Interface, Model
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.hardware_entity import get_hardware
 from aquilon.worker.dbwrappers.interface import (rename_interface,
                                                 update_netdev_iftype)
+from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
 
@@ -54,6 +55,8 @@ class CommandUpdateInterface(BrokerCommand):
                                          (arg, dbhw_ent._get_class_label(True)))
 
         oldinfo = DSDBRunner.snapshot_hw(dbhw_ent)
+        ib_services = IBServices(logger)
+        ib_old_snapshot = ib_services.snapshot_hw_a_records(dbhw_ent)
 
         if iftype:
             dbinterface = update_netdev_iftype(session, dbinterface, iftype)
@@ -86,5 +89,15 @@ class CommandUpdateInterface(BrokerCommand):
             dsdb_runner = DSDBRunner(logger=logger)
             dsdb_runner.update_host(dbhw_ent, oldinfo)
             dsdb_runner.commit_or_rollback("Could not update entry in DSDB")
+
+            if ib_old_snapshot is not None and ib_services.feature_enabled("interface"):
+                    ib_services.bulk_change_a_ptr(ib_old_snapshot, ib_services.snapshot_hw_a_records(dbhw_ent))
+
+                    try:
+                        ib_services.group.commit_or_rollback()
+                    except ProcessException as e:
+                        if dsdb_runner:
+                            dsdb_runner.rollback()
+                        raise e
 
         return

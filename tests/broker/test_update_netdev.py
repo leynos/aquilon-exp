@@ -25,6 +25,7 @@ if __name__ == "__main__":
 
 from .brokertest import TestBrokerCommand
 from .netdevtest import VerifyNetworkDeviceMixin
+from mock_ib_services import ib_expect_update_address
 
 
 class TestUpdateNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
@@ -33,12 +34,14 @@ class TestUpdateNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
         newip = self.net["ut10_eth1"].usable[1]
         self.dsdb_expect_update("ut3gd1r04.aqd-unittest.ms.com", "xge49", newip,
                                 comments="Some new switch comments")
+        ib_expect_update_address("ut3gd1r04.aqd-unittest.ms.com", "4.2.9.8", new_ip=str(newip))
         command = ["update", "network_device", "--type", "bor",
                    "--network_device", "ut3gd1r04.aqd-unittest.ms.com",
                    "--ip", newip, "--model", "uttorswitch",
                    "--comments", "Some new switch comments"]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
         self.check_plenary_contents('network_device', 'americas', 'ut', 'ut3gd1r04',
                                     contains='uttorswitch')
         self.check_plenary_contents('hostdata', 'ut3gd1r04.aqd-unittest.ms.com',
@@ -113,6 +116,7 @@ class TestUpdateNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
     def test_122_update_with_interface(self):
         newip = self.net["ut_net_mgmt"].usable[4]
         self.dsdb_expect_update("ut3gd1r06.aqd-unittest.ms.com", "xge49", newip)
+        ib_expect_update_address("ut3gd1r06.aqd-unittest.ms.com", "4.2.9.134", new_ip=str(newip))
         command = ["update", "network_device",
                    "--network_device", "ut3gd1r06.aqd-unittest.ms.com",
                    "--ip", newip]

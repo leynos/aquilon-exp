@@ -20,6 +20,7 @@
 import os
 import socket
 import pwd
+import re
 import sys
 from six.moves.configparser import ConfigParser  # pylint: disable=F0401
 from six.moves.configparser import NoSectionError, NoOptionError
@@ -147,11 +148,10 @@ class Config(NewStyleClassSafeConfigParser):
         # checked here, pre-empted, checked again elsewhere, and also
         # get here.  If that ever happens, it is only a problem if one
         # passed in a configfile and the other didn't.  Punting for now.
-        if configfile:
-            self.baseconfig = os.path.realpath(configfile)
-        else:
-            self.baseconfig = os.path.realpath(os.environ.get("AQDCONF",
-                                                              "/etc/aqd.conf"))
+        if not configfile:
+            configfile = os.environ.get("AQDCONF", "/etc/aqd.conf")
+        self.baseconfig = os.path.realpath(configfile)
+
         ConfigParser.__init__(self, defaults, allow_no_value=True)
         src_defaults = lookup_file_path("aqd.conf.defaults")
         read_files = self.read([src_defaults, self.baseconfig])

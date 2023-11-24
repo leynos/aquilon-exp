@@ -24,6 +24,7 @@ if __name__ == "__main__":
     utils.import_depends()
 
 from .brokertest import TestBrokerCommand
+from mock_ib_services import ib_expect_del_address
 
 
 class TestDelConsoleServer(TestBrokerCommand):
@@ -37,10 +38,13 @@ class TestDelConsoleServer(TestBrokerCommand):
                          command.split(" "))
 
     def test_101_del_utcs01(self):
-        self.dsdb_expect_delete(self.net["unknown2"].usable[1])
+        ip = self.net["unknown2"].usable[1]
+        ib_expect_del_address("utcs01.aqd-unittest.ms.com", str(ip))
+        self.dsdb_expect_delete(ip)
         command = "del console_server --console_server utcs01.aqd-unittest.ms.com --clear_ports"
         self.noouttest(command.split(" "))
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_105_verify_utcs01(self):
         command = "show console_server --console_server utcs01.aqd-unittest.ms.com"
@@ -57,10 +61,14 @@ class TestDelConsoleServer(TestBrokerCommand):
 
     def test_120_del_ut9_console_servers(self):
         for i in range(2, 8):
-            self.dsdb_expect_delete(self.net["ut9_conservers"].usable[i])
-            command = "del console_server --console_server ut9csa%d.aqd-unittest.ms.com" % i
+            fqdn = "ut9csa%d.aqd-unittest.ms.com" % i
+            ip = self.net["ut9_conservers"].usable[i]
+            ib_expect_del_address(fqdn, str(ip))
+            self.dsdb_expect_delete(ip)
+            command = "del console_server --console_server " + fqdn
             self.noouttest(command.split(" "))
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_125_verify_ut9_chassis(self):
         for i in range(2, 6):

@@ -19,6 +19,9 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_del_address
+
 if __name__ == "__main__":
     from . import utils
     utils.import_depends()
@@ -132,6 +135,7 @@ class TestAddSharedServiceName(TestBrokerCommand):
                               'with the same FQDN', command)
 
     def test_030_pn_dns_sa(self):
+        ib_expect_add_address("utvcs1pn1.aqd-unittest.ms.com", "4.2.1.18", create_ptr=False)
         # ensure that we can add an address-alias record that uses
         # the same FQDN as a shared-service-name with SA-aliases set
         command = ['add_address_alias',
@@ -139,8 +143,10 @@ class TestAddSharedServiceName(TestBrokerCommand):
                    '--target=arecord13.aqd-unittest.ms.com'] \
                   + self.valid_just_sn
         self.successtest(command)
+        self.ib_verify()
 
     def test_035_pn_dns_sa_remove(self):
+        ib_expect_del_address("utvcs1pn1.aqd-unittest.ms.com", "4.2.1.18", delete_ptr=False)
         # remove the address-alias created again the FQDN of a
         # shared-service-name resource above
         command = ['del_address_alias',
@@ -148,6 +154,7 @@ class TestAddSharedServiceName(TestBrokerCommand):
                    '--target=arecord13.aqd-unittest.ms.com'] \
                   + self.valid_just_sn
         self.successtest(command)
+        self.ib_verify()
 
     def test_040_pn_nodns_arec(self):
         # ensure we cannot add a DNS A record that uses the same FQDN
