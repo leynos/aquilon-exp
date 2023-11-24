@@ -25,7 +25,7 @@ class RebootInterventionFormatter(ResourceFormatter):
 
     suppress_name = True
 
-    template_json = "reboot_intervention.mako"   
+    template_json = "reboot_intervention.mako"
 
     def extra_details(self, rs, indent=""):
         details = []

@@ -28,7 +28,7 @@
 #    ./aqdb_migrate sqlite:////path/aquilon.db
 #    ./aqdb_migrate postgresql://<username>@/
 
-
+from __future__ import print_function
 
 import argparse
 import os
@@ -87,7 +87,7 @@ if __name__ == '__main__':
         # The only operation on sequences that all DBs support is getting the
         # next value. Unfortunately that means we have to alter the state of the
         # source database here.
-        for seq in list(Base.metadata._sequences.values()):
+        for seq in Base.metadata._sequences.values():
             nextid = src_session.execute(seq)
             # Make sure the sequence is re-created with the right start index
             seq.drop(dest_engine, checkfirst=True)
@@ -118,33 +118,66 @@ if __name__ == '__main__':
     multirow_insert = db.engine.dialect.supports_multivalues_insert
 
     for table in Base.metadata.sorted_tables:
-        total = src_session.execute(table.count()).scalar()
-        print('Processing %s (%d rows)' % (table, total), end=' ')
-        sys.stdout.flush()
-        cnt = 0
+        # total = src_session.execute(table.count()).scalar()
+        # print('Processing %s (%d rows)' % (table, total), end=' ')
+        # sys.stdout.flush()
+        # cnt = 0
 
-        signal.setitimer(signal.ITIMER_REAL, 5, 5)
-        for rows in chunk(src_session.execute(table.select()), 1000):
-            cnt = cnt + len(rows)
-            if signalled:
-                print("... %d" % cnt, end=' ')
-                sys.stdout.flush()
-                signalled = 0
+        # signal.setitimer(signal.ITIMER_REAL, 5, 5)
+        # for rows in chunk(src_session.execute(table.select()), 1000):
+        #     cnt = cnt + len(rows)
+        #     if signalled:
+        #         print("... %d" % cnt, end=' ')
+        #         sys.stdout.flush()
+        #         signalled = 0
 
-            if multirow_insert:
-                data = [{col.key: getattr(row, col.key)
-                         for col in table.columns}
-                        for row in rows]
+        #     if multirow_insert:
+        #         data = [{col.key: getattr(row, col.key)
+        #                 for col in table.columns}
+        #                 for row in rows]
 
-                dest_session.execute(table.insert().values(data))
-            else:
-                for row in rows:
-                    data = {col.key: getattr(row, col.key) for col in table.columns}
+        #         dest_session.execute(table.insert().values(data))
+        #     else:
+        #         for row in rows:
+        #             data = {col.key: getattr(row, col.key) for col in table.columns}
+
+        #             dest_session.execute(table.insert().values(data))
+
+        # signal.setitimer(signal.ITIMER_REAL, 0)
+        # dest_session.flush()
+        # print()
+
+        if 'xtn_detail' in str(table) or 'xtn_end' in str(table) \
+                or 'xtn' in str(table):
+            print("Ignorng copy of ", str(table))
+        else:
+            total = src_session.execute(table.count()).scalar()
+            print('Processing %s (%d rows)' % (table, total), end=' ')
+            sys.stdout.flush()
+            cnt = 0
+
+            signal.setitimer(signal.ITIMER_REAL, 5, 5)
+            for rows in chunk(src_session.execute(table.select()), 1000):
+                cnt = cnt + len(rows)
+                if signalled:
+                    print("... %d" % cnt, end=' ')
+                    sys.stdout.flush()
+                    signalled = 0
+
+                if multirow_insert:
+                    data = [{col.key: getattr(row, col.key)
+                             for col in table.columns}
+                            for row in rows]
 
                     dest_session.execute(table.insert().values(data))
+                else:
+                    for row in rows:
+                        data = {col.key: getattr(row, col.key) for col in table.columns}
 
-        signal.setitimer(signal.ITIMER_REAL, 0)
-        dest_session.flush()
-        print()
+                        dest_session.execute(table.insert().values(data))
+
+            signal.setitimer(signal.ITIMER_REAL, 0)
+            dest_session.flush()
+            print()
 
     dest_session.commit()

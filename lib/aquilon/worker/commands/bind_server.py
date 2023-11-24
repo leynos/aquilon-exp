@@ -21,12 +21,13 @@ from aquilon.aqdb.model import (ServiceInstance, ServiceInstanceServer,
                                 DnsEnvironment, Cluster, ServiceAddress, Alias)
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from aquilon.worker.dbwrappers.dns import grab_address
 from aquilon.worker.dbwrappers.host import hostname_to_host
 from aquilon.worker.dbwrappers.resources import get_resource_holder
 
 
 def lookup_target(session, logger, plenaries, hostname, ip, cluster,
-                  resourcegroup, service_address, alias):
+                  resourcegroup, service_address, alias, fqdn):
     """
     Check the parameters of the server providing a given service
 
@@ -37,15 +38,19 @@ def lookup_target(session, logger, plenaries, hostname, ip, cluster,
 
     params = {}
 
-    if cluster and hostname:
-        raise ArgumentError("Only one of --cluster and --hostname may be "
-                            "specified.")
+    if (cluster and hostname) or (cluster and fqdn) or (hostname and fqdn):
+        raise ArgumentError("Only one of --cluster, --hostname and fqdn may be specified.")
 
     if alias:
         dbdns_env = DnsEnvironment.get_unique_or_default(session)
         dbdns_rec = Alias.get_unique(session, fqdn=alias,
                                      dns_environment=dbdns_env, compel=True)
         params["alias"] = dbdns_rec
+
+    if fqdn:
+        # TODO, might need to add arguments for network and dns environment ?
+        dbdns_rec, _ = grab_address(session, fqdn=fqdn, ip=None, allow_reserved=False)
+        params["address"] = dbdns_rec
 
     if hostname:
         params["host"] = hostname_to_host(session, hostname)
@@ -95,7 +100,7 @@ def find_server(dbinstance, params):
         # returns
         srv_params = {}
         for attr in ("host", "cluster", "service_address",
-                     "address_assignment", "alias"):
+                     "address_assignment", "alias", "address"):
             value = getattr(srv, attr, None)
             if value:
                 srv_params[attr] = value
@@ -113,7 +118,7 @@ class CommandBindServer(BrokerCommand):
 
     def render(self, session, logger, plenaries, service, instance, position, hostname,
                cluster, ip, resourcegroup, service_address, alias,
-               justification, reason, user, **arguments):
+               justification, reason, user, fqdn, **arguments):
         # Check for invalid combinations. We allow binding as a server:
         # - a host, in which case the primary IP address will be used
         # - an auxiliary IP address of a host
@@ -137,7 +142,7 @@ class CommandBindServer(BrokerCommand):
                                 "bindings." % dbinstance.service)
 
         params = lookup_target(session, logger, plenaries, hostname, ip,
-                               cluster, resourcegroup, service_address, alias)
+                               cluster, resourcegroup, service_address, alias, fqdn)
 
         # Validate ChangeManagement
         # Validating service providers

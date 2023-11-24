@@ -138,6 +138,10 @@ class ChangeManagement(object):
         if self.config.has_option("change_management", "extra_options"):
             self.extra_options = self.config.get("change_management", "extra_options")
 
+        if self.config.has_option("change_management", "allow_emergency_user_roles"):
+            self.allow_emergency_user_roles = (self.config.get(
+                "change_management", "allow_emergency_user_roles")).split()
+
         dbuser = get_or_create_user_principal(session, user, commitoncreate=True)
         self.username = dbuser.name
         self.role_name = dbuser.role.name
@@ -234,6 +238,16 @@ class ChangeManagement(object):
             self.logger.debug('"Status": "Approved", '
                               '"Reason": Proid is exempted from change management controls.')
             return
+
+        if self.justification and 'emergency' in self.justification \
+                and self.reason:
+            if self.role_name in self.allow_emergency_user_roles:
+                self.logger.client_info('Approval Warning: Executing an emergency change '
+                                  'without a justification, EDM has not be called.')
+                return
+            else:
+                raise AuthorizationException('User role is not allowed to execute Emergency '
+                                    'changes.')
 
         # Clean final impacted env list
         self.logger.debug('Prepare impacted envs to call EDM')

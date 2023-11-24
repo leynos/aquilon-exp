@@ -51,6 +51,11 @@ class CommandAddAlias(BrokerCommand):
 
         dbtarget = create_target_if_needed(session, logger, target, dbtgt_env)
 
+        if dns_environment is not None and dns_environment != 'internal' \
+                and justification is None:
+            raise ArgumentError("Please provide valid justification "
+                                "number")
+
         # Validate ChangeManagement
         cm = ChangeManagement(session, user, justification, reason, logger, self.command, **arguments)
         cm.consider(dbtarget)

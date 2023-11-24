@@ -392,7 +392,7 @@ class TestJustification(PersonalityTestMixin, TestBrokerCommand):
                    "--personality", PPROD,
                    "--path", "access/netgroup",
                    "--value", "test"] + self.emergency_tcm_just_with_reason
-        self.noouttest(command)
+        self.emergencynojustification(command)
 
     def test_630_del_parameter_reason(self):
         command = ["del_parameter",
@@ -420,7 +420,7 @@ class TestJustification(PersonalityTestMixin, TestBrokerCommand):
                    "--personality", PPROD,
                    "--grn", GRN,
                    "--target", "esp"] + self.emergency_tcm_just_with_reason
-        self.noouttest(command)
+        self.emergencynojustification(command)
 
     def test_650_map_grn_reason(self):
         command = ["unmap_grn",
@@ -435,7 +435,7 @@ class TestJustification(PersonalityTestMixin, TestBrokerCommand):
                    "--personality", PPROD,
                    "--grn", GRN,
                    "--target", "esp"] + self.emergency_tcm_just_with_reason
-        self.noouttest(command)
+        self.emergencynojustification(command)
 
     def test_660_add_required_svc_reason(self):
         command = ["add_required_service", "--service=chooser1",
@@ -475,7 +475,7 @@ class TestJustification(PersonalityTestMixin, TestBrokerCommand):
         command = ["del_required_service", "--service=chooser1",
                    "--archetype=aquilon", "--osname", "linux", "--osversion",
                    "6.1-x86_64"] + self.emergency_tcm_just_with_reason
-        self.noouttest(command)
+        self.emergencynojustification(command)
 
     def test_680_add_static_route_reason(self):
         gw = self.net["routing1"].usable[-1]

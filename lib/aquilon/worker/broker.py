@@ -41,6 +41,7 @@ from aquilon.worker.templates.base import Plenary, PlenaryCollection
 from aquilon.worker.templates.domain import TemplateDomain
 from aquilon.worker.services import Chooser
 from aquilon.worker.dbwrappers.branch import sync_domain
+import logging
 
 # Things we don't need cluttering up the transaction details table
 _IGNORED_AUDIT_ARGS = ('requestid', 'bundle', 'debug', 'session', 'dbuser')
@@ -68,7 +69,7 @@ class BrokerCommand:
     in __init__, though, so check the docstrings.
 
     """
-
+    module_logger = logging.getLogger(__name__)
     required_parameters = []
     """ This will generally be overridden in the command class.
 

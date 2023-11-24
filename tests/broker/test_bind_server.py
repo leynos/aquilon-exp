@@ -25,6 +25,8 @@ the TestPrebindServer tests.
 
 import unittest
 
+from broker.utils import MockHub
+
 if __name__ == "__main__":
     from . import utils
     utils.import_depends()
@@ -372,6 +374,57 @@ class TestBindServer(TestBrokerCommand):
         command = ['bind_server', '--service', 'test_network_dev', '--instance', 'test',
                    '--hostname', 'switchinbuilding.aqd-unittest.ms.com']
         self.noouttest(command)
+
+    def test_820_bind_by_fqdn(self):
+        mh = MockHub(self)
+        mh.add_network()
+        mh.add_dns_domain('test-bind-service.cc', restricted=False)
+        mh.add_address('xyz.test-bind-service.cc', '10.25.0.1')
+
+        self.noouttest(['add_service', '--service', 'test-service'])
+        self.noouttest(['add_service', '--service', 'test-service', '--instance', 'test-service-instance'])
+
+        command = ['bind_server', '--service', 'test-service', '--instance', 'test-service-instance',
+                   '--fqdn', 'xyz.test-bind-service.cc']
+        self.noouttest(command)
+        out = self.badrequesttest(command)
+        self.matchoutput(out, "The server binding already exists.", command)
+
+        command = ['show_service', '--service', 'test-service', '--instance', 'test-service-instance']
+        out = self.commandtest(command)
+        self.matchclean(out, "Server Binding:", command)
+        self.matchoutput(out, "FQDN Binding: xyz.test-bind-service.cc [IP: 10.25.0.1]", command)
+
+        command = ['show_service', '--service', 'test-service', '--instance', 'test-service-instance',
+                   '--format', 'proto']
+        svc = self.protobuftest(command, expect=1)[0]
+        self.assertEqual(svc.name, "test-service",
+                         "Service name mismatch: %s instead of test-service\n".format(svc.name))
+        si = svc.serviceinstances[0]
+        self.assertEqual(len(si.provider), 1)
+        self.assertEqual(si.name, "test-service-instance",
+                         "Service instance name mismatch: %s instead of test-service-instance\n".format(si.name))
+        self.assertEqual(si.provider[0].target_ip, "10.25.0.1",
+                         "Service target ip mismatch: %s instead of 10.25.0.1\n".format(si.provider[0].target_ip))
+        self.assertEqual(si.provider[0].target_fqdn, "xyz.test-bind-service.cc",
+                         "Service target fqdn mismatch: %s instead of xyz.test-bind-service.cc\n".format(
+                            si.provider[0].target_fqdn))
+
+        out = self.commandtest(['cat', '--service', 'test-service', '--instance', 'test-service-instance'])
+        self.searchoutput(out,
+                          r'"servers" = list\(\s*'
+                          r'"xyz.test-bind-service.cc"\s*\);',
+                          command)
+        self.searchoutput(out,
+                          r'"server_ips" = list\(\s*'
+                          r'"10.25.0.1"\s*\);',
+                          command)
+
+        self.noouttest(['unbind_server', '--service', 'test-service', '--all', '--fqdn', 'xyz.test-bind-service.cc'])
+        self.noouttest(['del_service', '--service', 'test-service', '--instance', 'test-service-instance'])
+        self.noouttest(['del_service', '--service', 'test-service'])
+
+        mh.delete()
 
 
 if __name__ == '__main__':

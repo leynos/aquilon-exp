@@ -22,6 +22,7 @@ from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.service_instance import check_no_provided_service
 from aquilon.worker.processes import DSDBRunner
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from aquilon.exceptions_ import ArgumentError
 
 
 class CommandDelAlias(BrokerCommand):
@@ -34,6 +35,11 @@ class CommandDelAlias(BrokerCommand):
                                                          dns_environment)
         dbdns_rec = Alias.get_unique(session, fqdn=fqdn,
                                      dns_environment=dbdns_env, compel=True)
+
+        if dns_environment is not None and dns_environment != 'internal' \
+                and justification is None:
+            raise ArgumentError("Please provide valid justification "
+                                "number")
 
         # Validate ChangeManagement
         cm = ChangeManagement(session, user, justification, reason, logger, self.command, **arguments)

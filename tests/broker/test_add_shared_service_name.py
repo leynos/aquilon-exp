@@ -125,7 +125,8 @@ class TestAddSharedServiceName(TestBrokerCommand):
         # as a shared-service-name with no-SA-aliases set
         command = ['add_address_alias',
                    '--fqdn=utvcs1pn2.aqd-unittest.ms.com',
-                   '--target=arecord13.aqd-unittest.ms.com']
+                   '--target=arecord13.aqd-unittest.ms.com'] \
+                  + self.valid_just_sn
         err = self.badrequesttest(command)
         self.matchoutput(err, 'SharedServiceName utvcs1pn2 already exists '
                               'with the same FQDN', command)
@@ -135,7 +136,8 @@ class TestAddSharedServiceName(TestBrokerCommand):
         # the same FQDN as a shared-service-name with SA-aliases set
         command = ['add_address_alias',
                    '--fqdn=utvcs1pn1.aqd-unittest.ms.com',
-                   '--target=arecord13.aqd-unittest.ms.com']
+                   '--target=arecord13.aqd-unittest.ms.com'] \
+                  + self.valid_just_sn
         self.successtest(command)
 
     def test_035_pn_dns_sa_remove(self):
@@ -143,7 +145,8 @@ class TestAddSharedServiceName(TestBrokerCommand):
         # shared-service-name resource above
         command = ['del_address_alias',
                    '--fqdn=utvcs1pn1.aqd-unittest.ms.com',
-                   '--target=arecord13.aqd-unittest.ms.com']
+                   '--target=arecord13.aqd-unittest.ms.com'] \
+                  + self.valid_just_sn
         self.successtest(command)
 
     def test_040_pn_nodns_arec(self):

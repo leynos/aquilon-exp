@@ -62,7 +62,7 @@ class TestAddDisk(EventsTestMixin, TestBrokerCommand):
                          command)
 
     def test_200_duplicate_disk(self):
-        command = ["add", "disk", "--machine", "ut3c5n10", "--disk", "sdb",
+        command = ["add", "disk", "--machine", "ut3c5n10", "--disk", "SdB",
                    "--controller", "scsi", "--size", "34"]
         out = self.badrequesttest(command)
         self.matchoutput(out, "Machine ut3c5n10 already has a disk named sdb.",
@@ -83,6 +83,13 @@ class TestAddDisk(EventsTestMixin, TestBrokerCommand):
         self.matchoutput(out,
                          r"Disk address 'bad-address' is not valid, it must "
                          r"match (?:\d+:){3}\d+$.",
+                         command)
+
+    def test_200_duplicate_address(self):
+        command = ["add", "disk", "--machine", "ut3c5n10", "--disk", "sdz",
+                   "--controller", "scsi", "--size", "47", "--address", "0:0:1:0"]
+        out = self.badrequesttest(command)
+        self.matchoutput(out, "Machine ut3c5n10 SCSI address 0:0:1:0 is already in use by disk sdb.",
                          command)
 
     def test_205_add_ut3c5n10_disk_parameters_notvm(self):

@@ -1920,10 +1920,8 @@
             <optgroup fields="one">
                 <option name="hostname" type="string">Hostname</option>
                 <option name="machine" type="string">Machine name</option>
-                <option name="chassis" type="string">Chassis name</option>
                 <option name="network_device" type="string">Network device name</option>
                 <option name="switch" type="string">[Deprecated] Switch name</option>
-                <option name="console_server" type="string">Console server name</option>
             </optgroup>
             <option name="interface" type="string">Name of the interface.</option>
         </optgroup>
@@ -1959,10 +1957,8 @@
             <optgroup mandatory="True" fields="one">
                 <option name="hostname" type="string">Hostname</option>
                 <option name="machine" type="string">Machine name</option>
-                <option name="chassis" type="string">Chassis name</option>
                 <option name="network_device" type="string">Network device name</option>
                 <option name="switch" type="string">[Deprecated] Switch name</option>
-                <option name="console_server" type="string">Console server name</option>
             </optgroup>
             <option name="interface" type="string">Name of the interface</option>
             <optgroup>
@@ -2190,9 +2186,10 @@
             <option name="service" type="string">Service name</option>
             <option name="instance" type="string">Instance name</option>
             <optgroup>
-                <option name="hostname" type="string" conflicts="cluster">Server name</option>
-                <option name="cluster" type="string" conflicts="hostname ip">Cluster name</option>
+                <option name="hostname" type="string" conflicts="cluster fqdn">Server name</option>
+                <option name="cluster" type="string" conflicts="hostname ip fqdn">Cluster name</option>
                 <option name="alias" type="string">Use this alias instead of the real server name when configuring clients</option>
+                <option name="fqdn" type="string" conflicts="cluster hostname ip alias">FQDN</option>
             </optgroup>
         </optgroup>
         <optgroup>
@@ -2216,10 +2213,11 @@
                 <option name="all" type="flag">Remove server from all instances of this service</option>
             </optgroup>
             <optgroup>
-                <option name="position" type="int" conflicts="hostname cluster alias">Server definition at the given position</option>
-                <option name="hostname" type="string" conflicts="cluster position">Server name</option>
-                <option name="cluster" type="string" conflicts="hostname ip position">Cluster name</option>
-                <option name="alias" type="string" conflicts="position">Alias name</option>
+                <option name="position" type="int" conflicts="hostname cluster alias fqdn">Server definition at the given position</option>
+                <option name="hostname" type="string" conflicts="cluster fqdn position">Server name</option>
+                <option name="cluster" type="string" conflicts="hostname ip fqdn position">Cluster name</option>
+                <option name="alias" type="string" conflicts="position fqdn">Alias name</option>
+                <option name="fqdn" type="string" conflicts="cluster position hostname ip alias">FQDN</option>
             </optgroup>
         </optgroup>
         <optgroup>
@@ -5437,6 +5435,7 @@
         <optgroup mandatory="True" fields="all">
             <option name="fqdn" type="string">A fully qualified domain name</option>
             <option name="target" type="string">The target of the A-Record</option>
+            <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
         </optgroup>
         <optgroup>
             <option name="ttl" type="int">TTL</option>
@@ -5447,7 +5446,6 @@
               <option name="grn" type="string">GRN as string</option>
               <option name="eon_id" type="int">Numeric EON ID</option>
             </optgroup>
-            <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
             <option name="reason" type="string">Human readable description of why the operation was performed</option>
             <option name="cm_check" type="flag">Do a dry-run, and report the objects in-scope for change-management.</option>
         </optgroup>
@@ -5458,12 +5456,12 @@
         Delete DNS address aliases.
         <optgroup mandatory="True" fields="all">
             <option name="fqdn" type="string">The fully qualified domain name</option>
+            <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
         </optgroup>
         <optgroup>
             <option name="target" type="string">The target of the A-Record</option>
             <option name="dns_environment" type="string">The name of the environment the address is in (defaults to 'internal')</option>
             <option name="target_environment" type="string">The name of the environment the target is in (defaults to be the same as the alias environment)</option>
-            <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
             <option name="reason" type="string">Human readable description of why the operation was performed</option>
             <option name="cm_check" type="flag">Do a dry-run, and report the objects in-scope for change-management.</option>
         </optgroup>
@@ -5474,6 +5472,7 @@
         Update DNS address aliases.
         <optgroup mandatory="True" fields="all">
             <option name="fqdn" type="string">The fully qualified domain name</option>
+            <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
         </optgroup>
         <optgroup>
             <option name="target" type="string">The target of the A-Record</option>
@@ -5487,7 +5486,6 @@
               <option name="eon_id" type="int" conflicts="target">Numeric EON ID</option>
               <option name="clear_grn" type="flag" conflicts="grn eon_id target">Clear GRN value</option>
             </optgroup>
-            <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
             <option name="reason" type="string">Human readable description of why the operation was performed</option>
             <option name="cm_check" type="flag">Do a dry-run, and report the objects in-scope for change-management.</option>
         </optgroup>

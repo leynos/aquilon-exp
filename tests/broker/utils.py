@@ -136,6 +136,7 @@ class MockHub:
         self.countries = []
         self.cities = []
         self.buildings = []
+        self.racks = {}
         self.desks = []
         self.machines = {}
         self.hosts = {}
@@ -673,6 +674,7 @@ class MockHub:
         self.delete_machines(slow, verify)
         # Delete desks.
         self.delete_desks(verify)
+        self.delete_racks()
         # Delete buildings.
         self.delete_buildings(verify)
         self.delete_clusters(verify)
@@ -754,9 +756,9 @@ class MockHub:
             continents.append(self.add_continent())
         return continents
 
-    def get_or_create_name(self, name=None):
+    def get_or_create_name(self, name=None, length=8):
         if name is None:
-            name = self.random_name()
+            name = self.random_name(length)
         return name
 
     @staticmethod
@@ -866,6 +868,25 @@ class MockHub:
         for i in range(count):
             buildings.append(self.add_building(city=city))
         return buildings
+
+    def add_rack(self, row=None, column=None, building=None):
+        row = self.get_or_create_name(row, length=4)
+        column = self.get_or_create_name(column, length=4)
+        building = self.get_or_create_building(building)
+        rack = self._engine.commandtest(['add_rack', '--building', building,
+                                         '--row', row,
+                                         '--column', column]).rstrip()
+        self.racks[rack] = {'row': row, 'column': column, 'building': building}
+        return rack
+
+    def delete_rack(self, rack):
+        self._engine.noouttest(['del_rack', '--rack', rack])
+        del self.racks[rack]
+
+    def delete_racks(self):
+        for rack in self.racks:
+            self._engine.noouttest(['del_rack', '--rack', rack])
+        self.racks = {}
 
     def add_desk(self, name=None, building=None):
         name = self.get_or_create_name(name)
