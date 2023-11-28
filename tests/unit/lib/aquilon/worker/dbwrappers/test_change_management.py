@@ -112,7 +112,7 @@ class TestCommandUnderChangeManagement(unittest.TestCase):
     def test_validate_if_emergency(
             self, a_mock):
         a_mock.return_value = None
-        expected_objects = sorted([object() for _ in range(3)])
+        expected_objects = [object() for _ in range(3)]
         # noinspection PyArgumentList
         cm_instance = change_management.ChangeManagement()
         cm_instance.impacted_objects = {'ESX Cluster': expected_objects[:]}
@@ -135,7 +135,7 @@ class TestCommandUnderChangeManagement(unittest.TestCase):
     def test_validate_if_emergency_invalid_role(
             self, a_mock):
         a_mock.return_value = None
-        expected_objects = sorted([object() for _ in range(3)])
+        expected_objects = [object() for _ in range(3)]
         # noinspection PyArgumentList
         cm_instance = change_management.ChangeManagement()
         cm_instance.impacted_objects = {'ESX Cluster': expected_objects[:]}
@@ -156,7 +156,7 @@ class TestCommandUnderChangeManagement(unittest.TestCase):
     def test_validate_if_emergency_no_valid_role(
             self, a_mock):
         a_mock.return_value = None
-        expected_objects = sorted([object() for _ in range(3)])
+        expected_objects = [object() for _ in range(3)]
         # noinspection PyArgumentList
         cm_instance = change_management.ChangeManagement()
         cm_instance.impacted_objects = {'ESX Cluster': expected_objects[:]}
@@ -177,94 +177,7 @@ class TestCommandUnderChangeManagement(unittest.TestCase):
     def test_validate_if_emergency_no_valid_reason(
             self, a_mock):
         a_mock.return_value = None
-        expected_objects = sorted([object() for _ in range(3)])
-        # noinspection PyArgumentList
-        cm_instance = change_management.ChangeManagement()
-        cm_instance.impacted_objects = {'ESX Cluster': expected_objects[:]}
-        cm_instance.cm_check = False
-        cm_instance.is_user_exempt = False
-        cm_instance.check_enabled = True
-        cm_instance.allow_emergency_user_roles = []
-        cm_instance.role_name = 'xyz'
-        cm_instance.justification = 'cmrs=emergency,24682468'
-        cm_instance.reason = None
-        buf = io.StringIO()
-        with self.assertRaises(AttributeError) as cm:
-            with contextlib.redirect_stdout(buf):
-                cm_instance.validate()
-            self.assertIn("self.logger.debug('Prepare impacted envs to call EDM')",
-                          buf.getvalue())
-
-    @mock.patch.object(change_management.ChangeManagement, '__init__')
-    def test_validate_if_emergency(
-            self, a_mock):
-        a_mock.return_value = None
-        expected_objects = sorted([object() for _ in range(3)])
-        # noinspection PyArgumentList
-        cm_instance = change_management.ChangeManagement()
-        cm_instance.impacted_objects = {'ESX Cluster': expected_objects[:]}
-        cm_instance.cm_check = False
-        cm_instance.is_user_exempt = False
-        cm_instance.check_enabled = True
-        cm_instance.allow_emergency_user_roles = ['abc', 'def']
-        cm_instance.role_name = 'def'
-        cm_instance.justification = 'cmrs=emergency,12345678'
-        cm_instance.reason = 'Backout of the cmr12345678'
-        buf = io.StringIO()
-        with self.assertRaises(AttributeError) as cm:
-            with contextlib.redirect_stdout(buf):
-                cm_instance.validate()
-            self.assertIn("self.logger.debug('Approval Warning: "
-                          "Executing an emergency change ')",
-                          buf.getvalue())
-
-    @mock.patch.object(change_management.ChangeManagement, '__init__')
-    def test_validate_if_emergency_invalid_role(
-            self, a_mock):
-        a_mock.return_value = None
-        expected_objects = sorted([object() for _ in range(3)])
-        # noinspection PyArgumentList
-        cm_instance = change_management.ChangeManagement()
-        cm_instance.impacted_objects = {'ESX Cluster': expected_objects[:]}
-        cm_instance.cm_check = False
-        cm_instance.is_user_exempt = False
-        cm_instance.check_enabled = True
-        cm_instance.allow_emergency_user_roles = ['abc', 'def']
-        cm_instance.role_name = 'xyz'
-        cm_instance.justification = 'cmrs=emergency,98765432'
-        cm_instance.reason = 'Backout of the cmr98765432'
-        with self.assertRaises(AuthorizationException) as cm:
-            cm_instance.validate()
-        result = str(cm.exception)
-        self.assertIn("User role is not allowed to execute Emergency "
-                      "changes.", result)
-
-    @mock.patch.object(change_management.ChangeManagement, '__init__')
-    def test_validate_if_emergency_no_valid_role(
-            self, a_mock):
-        a_mock.return_value = None
-        expected_objects = sorted([object() for _ in range(3)])
-        # noinspection PyArgumentList
-        cm_instance = change_management.ChangeManagement()
-        cm_instance.impacted_objects = {'ESX Cluster': expected_objects[:]}
-        cm_instance.cm_check = False
-        cm_instance.is_user_exempt = False
-        cm_instance.check_enabled = True
-        cm_instance.allow_emergency_user_roles = []
-        cm_instance.role_name = 'xyz'
-        cm_instance.justification = 'cmrs=emergency,135791357'
-        cm_instance.reason = 'Backout of the cmr135791357'
-        with self.assertRaises(AuthorizationException) as cm:
-            cm_instance.validate()
-        result = str(cm.exception)
-        self.assertIn("User role is not allowed to execute Emergency "
-                      "changes.", result)
-
-    @mock.patch.object(change_management.ChangeManagement, '__init__')
-    def test_validate_if_emergency_no_valid_reason(
-            self, a_mock):
-        a_mock.return_value = None
-        expected_objects = sorted([object() for _ in range(3)])
+        expected_objects = [object() for _ in range(3)]
         # noinspection PyArgumentList
         cm_instance = change_management.ChangeManagement()
         cm_instance.impacted_objects = {'ESX Cluster': expected_objects[:]}

@@ -62,6 +62,7 @@ class IBServicesRequestHandler(SimpleHTTPRequestHandler):
                     r["method"], r["payload"])
 
             self.send_response(code=test_case["response"]["code"])
+            self.end_headers()
         else:
             http_monitor.invoked_without_expected_test = True
             # When this happens is because the test suite sent a request for
