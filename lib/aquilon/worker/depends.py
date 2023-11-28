@@ -51,3 +51,16 @@ else:
     ms.version.addpkg("ms.directory", "4.0.0")
     ms.version.addpkg('attrs', '20.3.0')
     ms.version.addpkg('pyrsistent', '0.15.7-py37')
+    ms.version.addpkg('decorator', '5.1.1')
+    ms.version.addpkg('requests-gssapi', '1.2.3')
+    ms.version.addpkg('gssapi', '1.8.2')
+
+    ms.version.addpkg('chardet', '5.1.0')
+    ms.version.addpkg('certifi', '2022.9.24')
+    ms.version.addpkg("httplib2", "0.22.0")
+    ms.version.addpkg("idna", "3.4")
+    ms.version.addpkg('urllib3', '2.0.3')
+    ms.version.addpkg("requests", "2.26.0")
+    ms.version.addpkg("requests-kerberos", "0.14.0")
+    ms.version.addpkg("kerberos", "1.3.1-1.16-ms2")
+

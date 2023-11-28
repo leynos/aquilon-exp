@@ -19,6 +19,8 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_add_address, ib_expect_del_address, ib_expect_update_address
+
 if __name__ == "__main__":
     from . import utils
     utils.import_depends()
@@ -73,10 +75,12 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
         oldip = self.net["unknown0"].usable[0]
         newip = self.net["unknown0"].usable[11]
         self.dsdb_expect_update(self.badhost, "eth0", newip)
+        ib_expect_update_address(self.badhost, oldip, new_ip=newip)
 
         self.noouttest(["update", "machine", "--machine", "ut3c5n10",
                         "--ip", newip])
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_116_verify_server_plenary(self):
         command = ["cat", "--service", "utsvc", "--instance", "utsi1"]
@@ -246,14 +250,24 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
     def test_160_rename_switch_if(self):
         command = ["update", "interface", "--network_device", "ut3gd1r04",
                    "--interface", "vlan110", "--rename_to", "vlan220"]
-        self.dsdb_expect_rename("ut3gd1r04-vlan110.aqd-unittest.ms.com",
-                                "ut3gd1r04-vlan220.aqd-unittest.ms.com",
-                                "vlan110", "vlan220")
-        self.dsdb_expect_rename("ut3gd1r04-vlan110-hsrp.aqd-unittest.ms.com",
-                                "ut3gd1r04-vlan220-hsrp.aqd-unittest.ms.com",
-                                "vlan110_hsrp", "vlan220_hsrp")
+
+        fqdn_pre       = "ut3gd1r04-vlan110.aqd-unittest.ms.com"
+        fqdn_post      = "ut3gd1r04-vlan220.aqd-unittest.ms.com"
+        fqdn_hsrp_pre  = "ut3gd1r04-vlan110-hsrp.aqd-unittest.ms.com"
+        fqdn_hsrp_post = "ut3gd1r04-vlan220-hsrp.aqd-unittest.ms.com"
+        ip      = str(self.net["unknown1"].usable[44])
+        ip_hsrp = str(self.net["unknown1"].usable[42])
+
+        ib_expect_del_address(fqdn_hsrp_pre, ip_hsrp)
+        ib_expect_del_address(fqdn_pre, ip)
+        ib_expect_add_address(fqdn_post, ip)
+        ib_expect_add_address(fqdn_hsrp_post, ip_hsrp)
+
+        self.dsdb_expect_rename(fqdn_pre, fqdn_post, "vlan110", "vlan220")
+        self.dsdb_expect_rename(fqdn_hsrp_pre, fqdn_hsrp_post, "vlan110_hsrp", "vlan220_hsrp")
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
         self.check_plenary_contents('network_device', 'americas', 'ut', 'ut3gd1r04',
                                     contains='vlan220', clean='vlan110')
         self.check_plenary_contents('hostdata', 'ut3gd1r04.aqd-unittest.ms.com',
@@ -266,8 +280,10 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
                    "--interfaces", "eth0", "--name", "renametest",
                    "--service_address", "renametest-ivirt.aqd-unittest.ms.com"]
         self.dsdb_expect_add("renametest-ivirt.aqd-unittest.ms.com", ip)
+        ib_expect_add_address("renametest-ivirt.aqd-unittest.ms.com", str(ip))
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_171_verify_plenaries(self):
         command = ["cat", "--data", "--hostname", "ivirt11.aqd-unittest.ms.com"]
@@ -324,13 +340,16 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
                           command)
 
     def test_174_cleanup(self):
+        fqdn = "ivirt11.aqd-unittest.ms.com"
         ip = self.net["zebra_vip"].usable[5]
         self.dsdb_expect_delete(ip)
+        ib_expect_del_address("renametest-ivirt.aqd-unittest.ms.com", str(ip))
         self.noouttest(["del_service_address", "--name", "renametest",
-                        "--hostname", "ivirt11.aqd-unittest.ms.com"])
+                        "--hostname", fqdn])
         self.dsdb_verify()
+        self.ib_verify()
 
-        self.notfoundtest(["cat", "--hostname", "ivirt11.aqd-unittest.ms.com",
+        self.notfoundtest(["cat", "--hostname", fqdn,
                            "--service_address", "renametest"])
 
     def test_200_update_bad_mac(self):

@@ -25,6 +25,7 @@ if __name__ == "__main__":
 
 from .brokertest import TestBrokerCommand
 from .machinetest import MachineTestMixin
+from mock_ib_services import ib_expect_add_address
 
 from .test_build_clusters import config, host_fqdn, reset_config
 
@@ -51,8 +52,7 @@ class TestDemolishClusters(MachineTestMixin, TestBrokerCommand):
         """ Remove hosts that were added for the use case """
         for host in config["host"]:
             args = config["host"][host]
-            self.delete_host(host_fqdn(host), config["ip"][host],
-                             args["machine"])
+            self.delete_host(host_fqdn(host), config["ip"][host], args["machine"])
 
     def test_130_del_rack(self):
         """ Remove racks that were added for the use case """

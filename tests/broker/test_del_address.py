@@ -19,6 +19,8 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_del_address
+
 if __name__ == "__main__":
     from . import utils
     utils.import_depends()
@@ -30,9 +32,11 @@ class TestDelAddress(TestBrokerCommand):
 
     def testbasic(self):
         self.dsdb_expect_delete(self.net["unknown0"].usable[13])
+        ib_expect_del_address("arecord13.aqd-unittest.ms.com", self.net["unknown0"].usable[13])
         command = ["del_address", "--ip=%s" % self.net["unknown0"].usable[13]] + self.valid_just_tcm
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def testverifybasic(self):
         command = ["show_address", "--fqdn=arecord13.aqd-unittest.ms.com"]
@@ -40,8 +44,10 @@ class TestDelAddress(TestBrokerCommand):
 
     def testbasicipv6(self):
         command = ["del_address", "--ip=%s" % self.net["ipv6_test"].usable[1]] + self.valid_just_tcm
-        self.noouttest(command)
+        exclude_err_str = "IP not valid for IBServices:  if supplied, it must be an IPv4Address object or correctly formatted IPv4 string.\n"
+        self.noouttest(command, exclude_err_str=exclude_err_str)
         self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
     def testverifybasicipv6(self):
         command = ["show_address", "--fqdn=ipv6test.aqd-unittest.ms.com"]
@@ -49,21 +55,26 @@ class TestDelAddress(TestBrokerCommand):
 
     def testdefaultenv(self):
         self.dsdb_expect_delete(self.net["unknown0"].usable[14])
+        ib_expect_del_address("arecord14.aqd-unittest.ms.com", self.net["unknown0"].usable[14])
         default = self.config.get("site", "default_dns_environment")
         command = ["del_address", "--fqdn", "arecord14.aqd-unittest.ms.com",
                    "--dns_environment", default] + self.valid_just_tcm
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def testverifydefaultenv(self):
         command = ["show_address", "--fqdn=arecord14.aqd-unittest.ms.com"]
         self.notfoundtest(command)
 
     def testutenvenv(self):
+        # TODO, how is this going to work with IB ? We're deleting the same FQDN/IP in different envs ?
+        ib_expect_del_address("arecord14.aqd-unittest.ms.com", self.net["unknown1"].usable[14])
         command = ["del_address", "--ip", self.net["unknown1"].usable[14],
                    "--fqdn", "arecord14.aqd-unittest.ms.com",
                    "--dns_environment", "ut-env"] + self.valid_just_tcm
         self.noouttest(command)
+        self.ib_verify()
 
     def testverifyutenvenv(self):
         command = ["show_address", "--fqdn", "arecord14.aqd-unittest.ms.com",
@@ -77,13 +88,17 @@ class TestDelAddress(TestBrokerCommand):
         out = self.notfoundtest(command)
         self.matchoutput(out, "DNS Record arecord15.aqd-unittest.ms.com, ip "
                          "%s not found." % ip, command)
+        self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
     def testcleanup(self):
         self.dsdb_expect_delete(self.net["unknown0"].usable[15])
+        ib_expect_del_address("arecord15.aqd-unittest.ms.com", self.net["unknown0"].usable[15])
         command = ["del_address", "--ip=%s" % self.net["unknown0"].usable[15],
                    "--fqdn=arecord15.aqd-unittest.ms.com"] + self.valid_just_tcm
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def testfailbadenv(self):
         command = ["del_address", "--ip=%s" % self.net["unknown0"].usable[15],
@@ -93,6 +108,8 @@ class TestDelAddress(TestBrokerCommand):
         self.matchoutput(out,
                          "DNS Environment environment-does-not-exist not found.",
                          command)
+        self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
     def testfailprimary(self):
         ip = self.net["unknown0"].usable[2]
@@ -104,6 +121,8 @@ class TestDelAddress(TestBrokerCommand):
                          "primary name of machine unittest00.one-nyp.ms.com, "
                          "therefore it cannot be deleted." % ip,
                          command)
+        self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
     def testfailipinuse(self):
         ip = self.net["unknown0"].usable[3]
@@ -114,26 +133,34 @@ class TestDelAddress(TestBrokerCommand):
                          "IP address %s is still in use by public interface "
                          "eth1 of machine unittest00.one-nyp.ms.com" % ip,
                          command)
+        self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
     def test_delip_with_network_env(self):
         ip = "192.168.3.1"
         fqdn = "cardenvtest600.aqd-unittest.ms.com"
+        ib_expect_del_address(fqdn, ip)
         command = ["del", "address", "--ip", ip,
                    "--network_environment", "cardenv"] + self.valid_just_tcm
         self.noouttest(command)
         # External IP addresses should not be added to DSDB
         self.dsdb_verify(empty=True)
+        self.ib_verify()
 
         command = ["show_address", "--fqdn", fqdn,
                    "--network_environment", "cardenv"]
         self.notfoundtest(command)
+        self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
     def test_delreservedreverse(self):
         self.dsdb_expect_delete(self.net["unknown0"].usable[32])
+        ib_expect_del_address("arecord17.aqd-unittest.ms.com", self.net["unknown0"].usable[32])
         command = ["del", "address",
                    "--fqdn", "arecord17.aqd-unittest.ms.com"] + self.valid_just_tcm
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_verifydelreserve(self):
         command = ["show", "address",
@@ -147,40 +174,54 @@ class TestDelAddress(TestBrokerCommand):
 
     def test_610_addipfromip_with_network_env(self):
         fqdn = "cardenvtest610.aqd-unittest.ms.com"
+        ib_expect_del_address(fqdn, "192.168.3.5")
         command = ["del", "address", "--fqdn", fqdn,
                    "--network_environment", "cardenv"] + self.valid_just_tcm
         self.noouttest(command)
         # External IP addresses should not be added to DSDB
         self.dsdb_verify(empty=True)
+        self.ib_verify()
 
         command = ["show_address", "--fqdn=%s" % fqdn]
         self.notfoundtest(command)
 
     def test_700_del_address_with_ttl(self):
-        self.dsdb_expect_delete(self.net["unknown0"].usable[40])
-        command = ["del", "address", "--ip=%s" % self.net["unknown0"].usable[40]] + self.valid_just_tcm
+        fqdn = "arecord40.aqd-unittest.ms.com"
+        ip = self.net["unknown0"].usable[40]
+        self.dsdb_expect_delete(ip)
+        ib_expect_del_address(fqdn, str(ip))
+        command = ["del", "address", "--ip=%s" % ip] + self.valid_just_tcm
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_720_verify_delete_with_ttl(self):
         command = ["show_address", "--fqdn=arecord40.aqd-unittest.ms.com"]
         self.notfoundtest(command)
 
     def test_800_del_address_with_grn(self):
-        self.dsdb_expect_delete(self.net["unknown0"].usable[50])
-        command = ["del", "address", "--ip=%s" % self.net["unknown0"].usable[50]] + self.valid_just_tcm
+        fqdn = "arecord50.aqd-unittest.ms.com"
+        ip = self.net["unknown0"].usable[50]
+        self.dsdb_expect_delete(ip)
+        ib_expect_del_address(fqdn, str(ip))
+        command = ["del", "address", "--ip=%s" % ip] + self.valid_just_tcm
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_820_verify_delete_with_grn(self):
         command = ["show_address", "--fqdn=arecord50.aqd-unittest.ms.com"]
         self.notfoundtest(command)
 
     def test_830_del_address_with_grn(self):
-        self.dsdb_expect_delete(self.net["unknown0"].usable[51])
-        command = ["del", "address", "--ip=%s" % self.net["unknown0"].usable[51]] + self.valid_just_tcm
+        fqdn = "arecord51.aqd-unittest.ms.com"
+        ip = self.net["unknown0"].usable[51]
+        self.dsdb_expect_delete(ip)
+        ib_expect_del_address(fqdn, str(ip))
+        command = ["del", "address", "--ip=%s" % ip] + self.valid_just_tcm
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_840_verify_delete_with_grn(self):
         command = ["show_address", "--fqdn=arecord51.aqd-unittest.ms.com"]
@@ -188,10 +229,14 @@ class TestDelAddress(TestBrokerCommand):
 
     def test_850_del_address_with_digit_prefix(self):
         fqdn = "1record42.aqd-unittest.ms.com"
+        ip = "4.2.1.47"
         dns_env = "external"
+        ib_expect_del_address(fqdn, ip)
         command = ["del", "address", "--fqdn", fqdn,
                    "--dns_environment", dns_env] + self.valid_just_tcm
         self.noouttest(command)
+        self.dsdb_verify(empty=True)
+        self.ib_verify()
 
         command = ["show", "address", "--fqdn", fqdn,
                    "--dns_environment", dns_env]

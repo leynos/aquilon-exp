@@ -30,3 +30,4 @@ else:
     ms.version.addpkg('jsonschema', '3.0.1')
     ms.version.addpkg('attrs', '20.3.0')
     ms.version.addpkg('pyrsistent', '0.15.7-py37')
+    ms.version.addpkg("httplib2", "0.22.0")

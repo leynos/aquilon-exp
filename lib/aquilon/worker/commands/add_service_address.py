@@ -28,7 +28,7 @@ from aquilon.aqdb.model import (
     ServiceAddress,
     SharedServiceName,
 )
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.utils import validate_nlist_key
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
@@ -43,8 +43,8 @@ from aquilon.worker.dbwrappers.interface import (
 from aquilon.worker.dbwrappers.location import get_default_dns_domain
 from aquilon.worker.dbwrappers.resources import get_resource_holder
 from aquilon.worker.dbwrappers.search import search_next
+from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
-
 
 class CommandAddServiceAddress(BrokerCommand):
     requires_plenaries = True
@@ -194,6 +194,8 @@ class CommandAddServiceAddress(BrokerCommand):
                                                 exporter=exporter,
                                                 require_grn=False)
         ip = dbdns_rec.ip
+        ibs_args = {'name': str(dbdns_rec.fqdn)}
+        ibs_rollback_args = {'name': str(dbdns_rec.fqdn), 'ip': ip}
 
         if map_to_primary and map_to_shared_name:
             raise ArgumentError("Cannot use --map_to_primary and "
@@ -202,15 +204,23 @@ class CommandAddServiceAddress(BrokerCommand):
             # if the holder is a resource-group that has a SharedServiceName
             # resource, then set the PTR record as the SharedServiceName's FQDN
             if sibling_ssn:
+                if not newly_created:
+                    ibs_rollback_args['assign_to_ptr'] = None if dbdns_rec.reverse_ptr is None \
+                                                                else str(dbdns_rec.reverse_ptr)
                 dbdns_rec.reverse_ptr = sibling_ssn.fqdn
+                ibs_args['assign_ptr_to_fqdn'] = str(dbdns_rec.reverse_ptr)
             else:
                 raise ArgumentError("--map_to_shared_name specified, but no "
                                     "shared service name in {0:l}".
                                     format(holder))
         elif map_to_primary:
             if isinstance(toplevel_holder, Host):
+                if not newly_created:
+                    ibs_rollback_args['assign_to_ptr'] = None if dbdns_rec.reverse_ptr is None \
+                                                                else str(dbdns_rec.reverse_ptr)
                 dbdns_rec.reverse_ptr = \
                     toplevel_holder.hardware_entity.primary_name.fqdn
+                ibs_args['assign_ptr_to_fqdn'] = str(dbdns_rec.reverse_ptr)
             else:
                 raise ArgumentError("The --map_to_primary option works only "
                                     "for host-based service addresses or "
@@ -235,6 +245,17 @@ class CommandAddServiceAddress(BrokerCommand):
             if dbifaces:
                 dbsrv.interfaces = dbifaces
 
+        ib_services = IBServices(logger)
+        if newly_created:
+            ib_services.group.add_action(
+                lambda: ib_services.add_a_ptr(ip=ip, **ibs_args),
+                lambda: ib_services.delete_a_ptr(**ibs_rollback_args))
+        else:
+            if (len(ibs_args.keys()) > 2):
+                ib_services.group.add_action(
+                    lambda: ib_services.update_a_ptr(ip=ip, **ibs_args),
+                    lambda: ib_services.update_a_ptr(**ibs_rollback_args))
+
         session.flush()
 
         # if we have a sibling SharedServiceName where service-address
@@ -245,7 +266,10 @@ class CommandAddServiceAddress(BrokerCommand):
                               dbtargetfqdn=dbdns_rec.fqdn,
                               ttl=None, grn=None, eon_id=None,
                               comments=None, exporter=exporter,
-                              flush_session=True)
+                              flush_session=True, sync_ib=False)
+            ib_services.group.add_action(
+                lambda: ib_services.add_a_ptr(str(sibling_ssn.fqdn), dbdns_rec.ip),
+                lambda: ib_services.delete_a_ptr(str(sibling_ssn.fqdn)))
 
         plenaries.add(holder.holder_object)
         plenaries.add(dbsrv)
@@ -268,6 +292,12 @@ class CommandAddServiceAddress(BrokerCommand):
 
             dsdb_runner.commit_or_rollback("Could not add host to DSDB")
 
+            if ib_services.feature_enabled("service_address"):
+                try:
+                    ib_services.group.commit_or_rollback()
+                except ProcessException as e:
+                    dsdb_runner.rollback()
+                    raise e
+
         for name, value in audit_results:
             self.audit_result(session, name, value, **kwargs)
-        return
