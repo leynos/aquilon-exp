@@ -594,7 +594,7 @@ class MockHub:
         for i in range(len(hosts)):
             self._engine.successtest(['change_status', '--hostname', list(hosts)[i],
                                       '--buildstatus', 'decommissioned'])
-            ib_expect_del_address(hosts[i], ips[i])
+            ib_expect_del_address(list(hosts)[i], ips[i])
             self._engine.dsdb_expect_delete(ip=ips[i])
             self._engine.successtest(['del_host', '--hostname', list(hosts)[i]])
             self._engine.dsdb_verify()
@@ -845,7 +845,9 @@ class MockHub:
             ib_expect_del_alias(fqdn)
             self.delete_alias(fqdn)
         # Delete Addresses
-        for fqdn, dns_environment in self.addresses.keys():
+        # Cannot change a dict while iterating on it
+        address_copy = self.addresses.copy()
+        for fqdn, dns_environment in address_copy.keys():
             self.delete_address(fqdn, self.addresses[fqdn, dns_environment]['ip'], dns_environment=dns_environment)
         # Delete DNS domains.
         for dns_domain in self.dns_domains[:]:
@@ -1213,10 +1215,7 @@ class MockHub:
         command.extend(extra_arguments or [])
         self._engine.dsdb_expect_add(hostname, ip, 'eth0', mac)
         ib_expect_add_address(hostname, ip)
-        import sys
-        print(f"command: {command}", file=sys.stderr)
         self._engine.successtest(command)
-        print(f"SUCCESS", file=sys.stderr)
         self._engine.dsdb_verify()
         self._engine.ib_verify()
         self.hosts[hostname] = {'machine': machine, 'dns_domain': dns_domain,
