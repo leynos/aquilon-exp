@@ -38,6 +38,9 @@ class IBServicesRequestHandler(SimpleHTTPRequestHandler):
     def do_POST(self):
         self._handle_request()
 
+    def log_request(self, code='-', size='-'):
+        """overewrite to not log any request"""
+
     def _handle_request(self):
         content_length = int(self.headers.get('content-length', 0))
         body = self.rfile.read(content_length)
@@ -62,11 +65,15 @@ class IBServicesRequestHandler(SimpleHTTPRequestHandler):
                     r["method"], r["payload"])
 
             self.send_response(code=test_case["response"]["code"])
+            self.end_headers()
         else:
             http_monitor.invoked_without_expected_test = True
             # When this happens is because the test suite sent a request for
             # which a corresponding ib_expect call has not been made
-            raise AssertionError(f"Mock IB server received unexpected request: {self.command} {self.path} {body}")
+            msg = f"Mock IB server received unexpected request: {self.command} {self.path} {body}"
+            self.send_response(code=400, message=msg)
+            self.end_headers()
+            raise AssertionError(msg)
 
 
 class IBServicesServer(TCPServer):
