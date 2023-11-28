@@ -1,14 +1,16 @@
 import json
 import logging
 
-from SimpleHTTPServer import SimpleHTTPRequestHandler
-from SocketServer import TCPServer
+from http.server import SimpleHTTPRequestHandler
+from socketserver import TCPServer
 
 LOGGER = logging.getLogger('ib-services')
+LOGGER.setLevel(logging.DEBUG)
 PORT = 8900
 
 
-class HTTPMonitor(object):
+class HTTPMonitor:
+
     def __init__(self):
         self.reset()
 
@@ -23,7 +25,7 @@ class HTTPMonitor(object):
 http_monitor = HTTPMonitor()
 
 
-class IBServicesRequestHandler(SimpleHTTPRequestHandler, object):
+class IBServicesRequestHandler(SimpleHTTPRequestHandler):
     def do_DELETE(self):
         self._handle_request()
 
@@ -37,7 +39,7 @@ class IBServicesRequestHandler(SimpleHTTPRequestHandler, object):
         self._handle_request()
 
     def _handle_request(self):
-        content_length = int(self.headers.getheader('content-length', 0))
+        content_length = int(self.headers.get('content-length', 0))
         body = self.rfile.read(content_length)
 
         if http_monitor.expects:
@@ -59,22 +61,21 @@ class IBServicesRequestHandler(SimpleHTTPRequestHandler, object):
                 assert r["payload"] is None, "Expected {} request with no payload, but received:\n '{}'".format(
                     r["method"], r["payload"])
 
-            self.send_response(test_case["response"]["code"])
+            self.send_response(code=test_case["response"]["code"])
         else:
             http_monitor.invoked_without_expected_test = True
-
             # When this happens is because the test suite sent a request for
             # which a corresponding ib_expect call has not been made
-            raise AssertionError("Mock IB server received unexpected request: {} {} {}".format(
-                self.command, self.path, body))
+            raise AssertionError(f"Mock IB server received unexpected request: {self.command} {self.path} {body}")
 
 
 class IBServicesServer(TCPServer):
     allow_reuse_address = True
 
-def run_server(handler = IBServicesRequestHandler):
+
+def run_server(handler=IBServicesRequestHandler):
     httpd = IBServicesServer(("", PORT), handler)
-    LOGGER.info("Starting ib-services HTTP proxy on port: {0}".format(PORT))
+    LOGGER.info(f"Starting ib-services HTTP proxy on port: {PORT}")
     httpd.serve_forever()
 
 
@@ -91,7 +92,9 @@ def ib_test_case(method, path, payload, response_code, response_body):
         }
     }
 
+
 eonid = "1156"
+
 
 def ib_expect_add_address(fqdn, ip, reverse_ptr=None, create_ptr=True, ttl=None, response_code=201, response_body="", fail=False):
     ip = str(ip)
@@ -123,7 +126,7 @@ def ib_expect_update_address(fqdn, original_ip, new_ip=None, reverse_ptr=None,
 
     test_case = ib_test_case(
         "PATCH",
-        "/dns/a_ptr/{}/{}".format(fqdn, original_ip),
+        f"/dns/a_ptr/{fqdn}/{original_ip}",
         payload, response_code, response_body)
     http_monitor.expect(test_case)
 
@@ -134,7 +137,7 @@ def ib_expect_del_address(fqdn, ip, delete_ptr=True, response_code=204, response
         response_code = 400
     test_case = ib_test_case(
         "DELETE",
-        "/dns/a_ptr/{}/{}?delete_ptr={}&eonid={}".format(str(fqdn), ip, str(delete_ptr).lower(), eonid),
+        f"/dns/a_ptr/{str(fqdn)}/{ip}?delete_ptr={str(delete_ptr).lower()}&eonid={eonid}",
         None, response_code, response_body)
     http_monitor.expect(test_case)
 
@@ -162,7 +165,7 @@ def ib_expect_update_alias(fqdn, target=None, ttl=None, response_code=204, respo
         payload["ttl"] = ttl
     test_case = ib_test_case(
         "PATCH",
-        "/dns/aliases/{}".format(fqdn),
+        f"/dns/aliases/{fqdn}",
         payload, response_code, response_body)
     http_monitor.expect(test_case)
 
@@ -172,9 +175,10 @@ def ib_expect_del_alias(fqdn, response_code=204, response_body="", fail=False):
         response_code = 400
     test_case = ib_test_case(
         "DELETE",
-        "/dns/aliases/{}?eonid={}".format(fqdn, eonid),
+        f"/dns/aliases/{fqdn}?eonid={eonid}",
         None, response_code, response_body)
     http_monitor.expect(test_case)
+
 
 def ib_expect_add_range(name, start_address, end_address, response_code=201, response_body="", fail=False):
     if fail:
@@ -183,20 +187,22 @@ def ib_expect_add_range(name, start_address, end_address, response_code=201, res
     test_case = ib_test_case("POST", "/ranges", payload, response_code, response_body)
     http_monitor.expect(test_case)
 
+
 def ib_expect_del_range(start_address, end_address, response_code=204, response_body="", fail=False):
     if fail:
         response_code = 400
     test_case = ib_test_case(
         "DELETE",
-        "/ranges/{}/{}?eonid={}".format(start_address, end_address, eonid),
+        f"/ranges/{start_address}/{end_address}?eonid={eonid}",
         None, response_code, response_body)
     http_monitor.expect(test_case)
+
 
 def ib_expect_show_range(start_address, end_address, response_code=200, response_body="", fail=False):
     if fail:
         response_code = 404
     test_case = ib_test_case(
         "GET",
-        "/ranges/{}/{}".format(start_address, end_address),
+        f"/ranges/{start_address}/{end_address}",
         None, response_code, response_body)
     http_monitor.expect(test_case)
