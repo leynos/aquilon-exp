@@ -1213,7 +1213,10 @@ class MockHub:
         command.extend(extra_arguments or [])
         self._engine.dsdb_expect_add(hostname, ip, 'eth0', mac)
         ib_expect_add_address(hostname, ip)
+        import sys
+        print(f"command: {command}", file=sys.stderr)
         self._engine.successtest(command)
+        print(f"SUCCESS", file=sys.stderr)
         self._engine.dsdb_verify()
         self._engine.ib_verify()
         self.hosts[hostname] = {'machine': machine, 'dns_domain': dns_domain,

@@ -7,10 +7,7 @@ import unittest
 
 from mock_ib_services import run_server, PORT
 
-try:
-    from http_client import HTTPConnection
-except ImportError:
-    from httplib import HTTPConnection
+from http.client import HTTPConnection
 
 try:
     import ms.version

@@ -38,7 +38,7 @@ from requests_kerberos import DISABLED
 from requests_kerberos import HTTPKerberosAuth
 from subprocess import PIPE
 from subprocess import Popen
-from urllib import quote
+from urllib.parse import quote
 
 import logging as log
 import time

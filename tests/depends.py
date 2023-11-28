@@ -31,3 +31,5 @@ else:
     ms.version.addpkg('attrs', '20.3.0')
     ms.version.addpkg('pyrsistent', '0.15.7-py37')
     ms.version.addpkg("httplib2", "0.22.0")
+    ms.version.addpkg('pyspnego', '0.8.0')
+    ms.version.addpkg("cryptography", "39.0.0")
