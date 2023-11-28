@@ -26,11 +26,11 @@ class TestIBServicesStart(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        level = logging.INFO
-        HTTPConnection.debuglevel = 1
-        requests_log = logging.getLogger("requests.packages.urllib3")
+        level = logging.WARNING
+        HTTPConnection.debuglevel = 0
+        requests_log = logging.getLogger("urllib3")
         requests_log.setLevel(level)
-        requests_log.propagate = True
+        requests_log.propagate = False
         coloredlogs.install(
             logger=logging.getLogger(),
             fmt=LOG_FORMAT,

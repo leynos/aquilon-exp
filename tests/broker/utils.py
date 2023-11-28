@@ -807,10 +807,14 @@ class MockHub:
         # Use verify=True to confirm if all objects stored in MockHub have been
         # deleted.
 
-        for sharedservicename in self.shared_service_names.keys():
+        # Cannot change a dict while iterating on it
+        shared_service_names_copy = self.shared_service_names.copy()
+        for sharedservicename in shared_service_names_copy.keys():
             self.delete_shared_service_name(sharedservicename)
 
-        for resource_group in self.resource_groups.keys():
+        # Cannot change a dict while iterating on it
+        resource_groups_copy = self.resource_groups.copy()
+        for resource_group in resource_groups_copy.keys():
             self.delete_resource_group(resource_group)
 
         self.delete_hosts(slow, verify)
