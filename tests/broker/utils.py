@@ -29,6 +29,7 @@ from mock_ib_services import ib_expect_add_alias
 from mock_ib_services import ib_expect_del_address
 from mock_ib_services import ib_expect_del_alias
 from mock_ib_services import ib_expect_update_address
+from mock_ib_services import ib_expect_del_dns_srv_record
 
 
 def import_depends():

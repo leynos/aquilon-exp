@@ -6,7 +6,7 @@ from urllib.parse import urlencode, urlparse, urlunparse, quote
 
 from aquilon.aqdb.model import ARecord, Machine
 from aquilon.config import Config
-from aquilon.exceptions_ import ProcessException
+from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.utils import with_timer
 
 
@@ -293,6 +293,94 @@ class IBServices:
 
         return self._http_request("GET", url)
 
+    @with_timer
+    def add_dns_srv_record(self, service, protocol, dns_domain, target, port, priority, weight, ttl=None):
+        url = "/dns/srv"
+        payload = {
+            "eonid":    self.eonid,
+            "service":  service,
+            "protocol": protocol,
+            "domain":   str(dns_domain),
+            "target":   target,
+            "port":     port,
+            "priority": priority,
+            "weight":   weight,
+        }
+        if target is not None:
+            payload["target"] = str(target)
+        if ttl:
+            payload["ttl"] = ttl
+
+        return self._http_request("POST", url, payload, ignore_statuses=[409])
+
+    @with_timer
+    def del_dns_srv_record(self, service, protocol, dns_domain, target, port, priority, weight):
+        options = {
+            "eonid":    self.eonid,
+            "service":  service,
+            "protocol": protocol,
+            "domain":   str(dns_domain),
+            "target":   target,
+            "port":     port,
+            "priority": priority,
+            "weight":   weight,
+        }
+        if target is not None:
+            options["target"] = str(target)
+        ordered_options = ("domain", "protocol", "target", "service", "eonid", "weight", "priority", "port")
+        params = ("{}={}".format(field, options[field]) for field in ordered_options if options[field] is not None)
+
+        url = "/dns/srv?{}".format("&".join(params))
+
+        return self._http_request("DELETE", url)
+
+    @with_timer
+    def update_dns_srv_record(self, old, new):
+        required_fields = ("service", "protocol", "domain", "port", "target", "priority", "weight")
+        payload = {}
+
+        for field in required_fields:
+            if old[field] is None:
+                raise ArgumentError("Required argument '{}' is missing".format(field))
+            payload[field] = new[field] if field in new else old[field]
+
+        if new.get("ttl", None):
+            payload["ttl"] = new["ttl"]
+        if payload.get("domain", None):
+            payload["domain"] = str(payload["domain"])
+        if payload.get("target", None):
+            payload["target"] = str(payload["target"])
+        payload["eonid"] = self.eonid
+
+        ordered_options = ("domain", "protocol", "target", "service", "weight", "priority", "port")
+        params = ("{}={}".format(field, old[field]) for field in ordered_options if old[field] is not None)
+
+        url = "/dns/srv?{}".format("&".join(params))
+
+        return self._http_request("PATCH", url, payload)
+
+    @with_timer
+    def show_dns_srv_record(self, service, protocol, dns_domain, target, port=None, priority=None, weight=None):
+        params = {
+            "service":  service,
+            "protocol": protocol,
+            "domain":   str(dns_domain),
+            "target":   str(target),
+        }
+
+        optional_params = {
+            "port":     port,
+            "priority": priority,
+            "weight":   weight,
+        }
+        for field in optional_params:
+            if optional_params[field] is not None:
+                params[field] = optional_params[field]
+
+        url = self._generate_url_from_params("/dns/srv", params)
+
+        return self._http_request("GET", url, ignore_statuses=[404])
+
     def add_network(self, network, name, compartment=None, side=None, sysloc=None):
         url = "/networks/{}".format(quote(network, safe=''))
 
@@ -360,11 +448,8 @@ class IBServices:
                     break
 
             if response is not None:
-                response_str = "{} {}".format(response.status_code, response.reason)
-
                 if response.ok or response.status_code in ignore_statuses:
-                    self.log.info("Successful response from Infoblox: got {} for {} {} {})".format(
-                                     response_str, http_cmd, full_url, data))
+                    self._log_ib_result("Successful response from Infoblox: ", http_cmd, full_url, data, response)
                     return response
                 else:
                     error_msg = ""
@@ -374,9 +459,8 @@ class IBServices:
                         # Probably a JSON decode error.  Fall back to showing whole body of response.
                         error_msg = response.text
 
-                    message = "Infoblox error: '{}' ({}) for {} {} {})".format(
-                              error_msg, response_str, http_cmd, full_url, data)
-                    raise ProcessException(message)
+                    msg = self._log_ib_result("Infoblox error: '{}'".format(error_msg), http_cmd, full_url, data, response)
+                    raise ProcessException(msg)
             else:
                 raise ProcessException("Infoblox returned errors or no Infoblox servers could be reached, aborting change")
 
@@ -386,6 +470,16 @@ class IBServices:
             else:
                 self.log.warning("{} (but proceeding with change as non-transactional mode is set).".format(e))
 
+    def _log_ib_result(self, msg, http_cmd, full_url, request_data, response):
+        response_str = "{} {}".format(response.status_code, response.reason)
+        msg += "got {} for {} {}".format(response_str, http_cmd, full_url)
+
+        if request_data:
+            msg += " (request body '{}')".format(request_data)
+        if response.text and response.text != "{}":
+            msg += " (response body '{}')".format(response.text)
+        self.log.info(msg)
+        return msg
 
     def feature_enabled(self, name):
         enabled = False

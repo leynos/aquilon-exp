@@ -29,6 +29,7 @@ from broker.brokertest import TestBrokerCommand
 from broker.utils import MockHub
 
 from ipaddress import IPv4Address
+from itertools import chain
 
 from subprocess import PIPE
 from subprocess import Popen
@@ -36,6 +37,33 @@ from urllib.parse import quote
 
 import logging as log
 import time
+
+
+class IBChecker(object):
+    def __init__(self, broker_test):
+        self.broker_test = broker_test
+
+    def _get_srv_record(self, **kwargs):
+        response = self.broker_test.ib_services.show_dns_srv_record(
+            kwargs["service"],
+            kwargs["protocol"],
+            kwargs["dns_domain"],
+            kwargs["target"],
+            kwargs.get("port", None),
+            kwargs.get("priority", None),
+            kwargs.get("weight", None),
+        )
+        return response
+
+    def srv_record_matches(self, **kwargs):
+        response = self._get_srv_record(**kwargs)
+        self.broker_test.assertIsNotNone(response)
+        self.broker_test.assertTrue(response.ok, "SRV record exists and matches required values")
+
+    def srv_record_does_not_exist(self, **kwargs):
+        response = self._get_srv_record(**kwargs)
+        self.broker_test.assertIsNotNone(response)
+        self.broker_test.assertEqual(response.status_code, 404, "SRV record does not exist")
 
 
 class DnsChecker(object):
@@ -105,7 +133,9 @@ class TestIBEndToEnd(TestBrokerCommand):
     def __init__(self, *args, **kwargs):
         super(TestIBEndToEnd, self).__init__(*args, **kwargs)
         self.ib_services = IBServices(log)
-        if not self.ib_services.show_zone(self.test_domain).ok:
+        zone_response = self.ib_services.show_zone(self.test_domain)
+
+        if zone_response and not zone_response.ok:
             self.fail("Required test zone {} does not exist in IB instance.".format(self.test_domain))
 
     def _clean_ib_services(self):
@@ -332,6 +362,64 @@ class TestIBEndToEnd(TestBrokerCommand):
         if response: # FIXME check for 404?
             self.fail("Expected dynamic range to be not found in infoblox")
 
+        self.noouttest(['del_network', '--ip', self.test_network_obj['ip']])
+        mh.delete()
+
+    def test_300_srv_records(self):
+        mh = MockHub(self)
+        dns_checker = DnsChecker(self)
+        ib_checker = IBChecker(self)
+
+        mh.add_dns_domain(self.test_domain, restricted=False)
+        building = mh.add_building()
+        self.noouttest(['add_network', '--network', 'ib-testing', '--ip', self.test_network_obj['ip'],
+                        '--prefixlen', self.test_network_obj['prefixlen'], '--building', building])
+
+        test_fqdn = "aqd-ib-srv-test01." + self.test_domain
+        test_ip = "2.3.4.1"
+
+        self.ib_services.delete_a_ptr(test_fqdn, test_ip)
+        self.runcommand(['del_address', '--fqdn', test_fqdn, '--ip', test_ip] + self.valid_just_tcm)
+
+        self.dsdb_expect_add(test_fqdn, test_ip)
+        command = ["add_address", "--fqdn", test_fqdn, "--ip", test_ip, '--grn', mh.grn] + self.valid_just_tcm
+        err = self.statustest(command)
+        self.dsdb_verify()
+
+        args = {
+            'service': 'kerberos',
+            'protocol': 'tcp',
+            'dns_domain': self.test_domain,
+            'target': test_fqdn,
+            'priority': 10,
+            'weight': 10,
+            'port': 88,
+        }
+        command = ["add_srv_record"] + list(chain.from_iterable([("--{}".format(key), args[key]) for key in args]))
+        err = self.statustest(command)
+        ib_checker.srv_record_matches(**args)
+
+        update_tests = (
+            { "ttl": 300 },
+            { "priority": 20, "weight": 30 },
+            { "port": 8080 },
+        )
+
+        for test in update_tests:
+            test_args = dict(args)
+            for key in test:
+                test_args[key] = test[key]
+
+            command = ["update_srv_record"] + list(chain.from_iterable([("--{}".format(key), test_args[key]) for key in test_args]))
+            err = self.statustest(command)
+            ib_checker.srv_record_matches(**test_args)
+
+        command = ["del_srv_record", "--service", "kerberos", "--protocol", "tcp", "--dns_domain", self.test_domain, "--target", test_fqdn]
+        self.statustest(command)
+        ib_checker.srv_record_does_not_exist(**test_args)
+
+        self.dsdb_expect_delete(test_ip)
+        self.noouttest(['del_address', '--fqdn', test_fqdn, '--ip', test_ip] + self.valid_just_tcm)
         self.noouttest(['del_network', '--ip', self.test_network_obj['ip']])
         mh.delete()
 
