@@ -29,7 +29,7 @@ class CommandDelChassis(BrokerCommand):
 
     required_parameters = ["chassis"]
 
-    def render(self, session, logger, chassis, clear_slots, exporter, **_):
+    def render(self, session, logger, chassis, clear_slots, exporter, **arguments):
         dbchassis = Chassis.get_unique(session, chassis, compel=True)
 
         check_only_primary_ip(dbchassis)
@@ -56,7 +56,7 @@ class CommandDelChassis(BrokerCommand):
 
         # chassis may not hve a primary interface assigned
         ip = dbchassis.primary_name.ip if type(dbchassis.primary_name) == ARecord else None
-        ib_services = IBServices(logger)
+        ib_services = IBServices(logger, **arguments)
         if ib_services.feature_enabled("chassis") and ip:
             try:
                 ib_services.delete_a_ptr(str(dbchassis.primary_name.fqdn), ip)

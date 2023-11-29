@@ -79,7 +79,7 @@ class CommandUpdateAddressAlias(BrokerCommand):
 
         cm.validate()
 
-        ib_services = IBServices(logger)
+        ib_services = IBServices(logger, **arguments)
         if ib_services.feature_enabled("address_alias") and ttl:
             try:
                 for dns_rec in dbdns_records:

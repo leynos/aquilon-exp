@@ -100,7 +100,7 @@ class CommandAddSrvRecord(BrokerCommand):
             else:
                 exporter.create(dbsrv_rec.fqdn)
 
-        ib_services = IBServices(logger)
+        ib_services = IBServices(logger, **arguments)
         if ib_services.feature_enabled("srv_record"):
             ib_services.add_dns_srv_record(service, protocol, dbdns_domain, target, port, priority, weight, ttl)
 

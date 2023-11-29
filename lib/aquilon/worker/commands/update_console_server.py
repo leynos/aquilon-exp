@@ -67,7 +67,7 @@ class CommandUpdateConsoleServer(BrokerCommand):
         dsdb_runner.update_host(dbcons, oldinfo)
         dsdb_runner.commit_or_rollback("Could not update console server in DSDB")
 
-        ib_services = IBServices(logger)
+        ib_services = IBServices(logger, **arguments)
         if ip and ib_services.feature_enabled("console_server"):
             try:
                 ib_services.update_a_ptr(str(dbcons.primary_name.fqdn), old_ip, ip)

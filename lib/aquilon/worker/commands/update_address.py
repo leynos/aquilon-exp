@@ -87,7 +87,7 @@ class CommandUpdateAddress(BrokerCommand):
 
         session.flush()
 
-        ib_services = IBServices(logger)
+        ib_services = IBServices(logger, **arguments)
         if ip or reverse_ptr or clear_ttl or ttl:
             ib_services.group.add_action(
                 lambda fqdn=fqdn, new_ip=ip, reverse_ptr=reverse_ptr, clear_ttl=clear_ttl, ttl=ttl:

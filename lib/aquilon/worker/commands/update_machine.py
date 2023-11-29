@@ -236,7 +236,7 @@ class CommandUpdateMachine(BrokerCommand):
         oldinfo = DSDBRunner.snapshot_hw(dbmachine)
         old_location = dbmachine.location
 
-        ib_services = IBServices(logger)
+        ib_services = IBServices(logger, **arguments)
 
         # Validate ChangeManagement
         cm = ChangeManagement(session, user, justification, reason, logger, self.command, **arguments)

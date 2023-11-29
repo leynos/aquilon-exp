@@ -120,7 +120,7 @@ class CommandUpdateServiceAddress(BrokerCommand):
                 raise ArgumentError("--map_to_shared_name specified, but no "
                                     "shared service name")
 
-        ib_services = IBServices(logger)
+        ib_services = IBServices(logger, **arguments)
 
         if (len(ibs_args.keys()) > 2):
             ib_services.group.add_action(lambda: ib_services.update_a_ptr(**ibs_args))

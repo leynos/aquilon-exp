@@ -43,6 +43,9 @@ class IBServicesRequestHandler(SimpleHTTPRequestHandler):
         """overewrite to not log any request"""
 
     def _handle_request(self):
+        unique_id = self.headers.get('X-MS-Unique-ID')
+        assert unique_id is not None and len(str(unique_id)) > 0, "Expected X-MS-Unique-ID header"
+
         content_length = int(self.headers.get('content-length', 0))
         body = self.rfile.read(content_length)
 
