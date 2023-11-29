@@ -99,7 +99,7 @@ class DnsChecker(object):
         # Ideally change this to use a python library after the broker is migrated to python 3.
         command = ['/usr/bin/host'] + args + [dns_server]
         time.sleep(0.3)  # Sometimes the dns server takes that bit longer to return the expected answer
-        return self.shellout(command)
+        return self.shellout(command, text=True)
 
     def a_record(self, fqdn, ip):
         expected_stdout = "{} has address {}".format(fqdn, ip)
