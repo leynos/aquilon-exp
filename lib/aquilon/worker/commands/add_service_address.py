@@ -245,7 +245,7 @@ class CommandAddServiceAddress(BrokerCommand):
             if dbifaces:
                 dbsrv.interfaces = dbifaces
 
-        ib_services = IBServices(logger)
+        ib_services = IBServices(logger, **kwargs)
         if newly_created:
             ib_services.group.add_action(
                 lambda: ib_services.add_a_ptr(ip=ip, **ibs_args),
@@ -292,7 +292,7 @@ class CommandAddServiceAddress(BrokerCommand):
 
             dsdb_runner.commit_or_rollback("Could not add host to DSDB")
 
-            if ib_services.feature_enabled("service_address"):
+            if ib_services.feature_enabled("service_address") and dbdns_rec.fqdn.dns_environment.is_default:
                 try:
                     ib_services.group.commit_or_rollback()
                 except ProcessException as e:

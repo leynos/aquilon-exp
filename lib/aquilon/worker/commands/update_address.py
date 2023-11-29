@@ -87,16 +87,7 @@ class CommandUpdateAddress(BrokerCommand):
 
         session.flush()
 
-        dsdb_runner = None
-        if dbdns_env.is_default and (dbdns_rec.ip != old_ip or dbdns_rec.comments != old_comments):
-            dsdb_runner = DSDBRunner(logger=logger)
-            dsdb_runner.update_host_details(dbdns_rec.fqdn, new_ip=dbdns_rec.ip,
-                                            old_ip=old_ip,
-                                            new_comments=dbdns_rec.comments,
-                                            old_comments=old_comments)
-            dsdb_runner.commit_or_rollback()
-
-        ib_services = IBServices(logger)
+        ib_services = IBServices(logger, **arguments)
         if ip or reverse_ptr or clear_ttl or ttl:
             ib_services.group.add_action(
                 lambda fqdn=fqdn, new_ip=ip, reverse_ptr=reverse_ptr, clear_ttl=clear_ttl, ttl=ttl:
@@ -116,10 +107,20 @@ class CommandUpdateAddress(BrokerCommand):
                                 ib_services.update_a_ptr(fqdn, new_ip, old_ip, old_ttl)
                         )
 
-        if ib_services.feature_enabled("address"):
-            try:
-                ib_services.group.commit_or_rollback()
-            except ProcessException as e:
-                if dsdb_runner:
-                    dsdb_runner.rollback()
-                raise e
+
+        dsdb_runner = None
+        if dbdns_env.is_default and (dbdns_rec.ip != old_ip or dbdns_rec.comments != old_comments):
+            dsdb_runner = DSDBRunner(logger=logger)
+            dsdb_runner.update_host_details(dbdns_rec.fqdn, new_ip=dbdns_rec.ip,
+                                            old_ip=old_ip,
+                                            new_comments=dbdns_rec.comments,
+                                            old_comments=old_comments)
+            dsdb_runner.commit_or_rollback()
+
+            if ib_services.feature_enabled("address"):
+                try:
+                    ib_services.group.commit_or_rollback()
+                except ProcessException as e:
+                    if dsdb_runner:
+                        dsdb_runner.rollback()
+                    raise e

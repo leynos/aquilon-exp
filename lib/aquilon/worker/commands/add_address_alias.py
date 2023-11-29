@@ -52,6 +52,6 @@ class CommandAddAddressAlias(BrokerCommand):
                           dbtargetfqdn=dbtarget,
                           ttl=ttl, grn=grn, eon_id=eon_id,
                           comments=comments, exporter=exporter,
-                          flush_session=True)
+                          flush_session=True, **arguments)
 
         return

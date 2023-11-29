@@ -66,7 +66,7 @@ class CommandDelServiceAddress(BrokerCommand):
         plenaries.add(dbsrv)
 
         holder.resources.remove(dbsrv)
-        ib_services = IBServices(logger)
+        ib_services = IBServices(logger, **arguments)
         if not dbdns_rec.service_addresses:
             # if we're in a resource-group and a shared-service-name exists
             # that has sa_aliases set, and there'a an alias pointing at
@@ -110,7 +110,7 @@ class CommandDelServiceAddress(BrokerCommand):
                 ib_services.group.add_action(lambda: ib_services.delete_a_ptr(old_fqdn, old_ip))
             dsdb_runner.commit_or_rollback("Could not delete host from DSDB")
 
-            if ib_services.feature_enabled("service_address"):
+            if ib_services.feature_enabled("service_address") and dbdns_rec.fqdn.dns_environment.is_default:
                 try:
                     ib_services.group.commit_or_rollback()
                 except ProcessException as e:

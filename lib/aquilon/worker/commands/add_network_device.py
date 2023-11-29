@@ -140,7 +140,7 @@ class CommandAddNetworkDevice(BrokerCommand):
             dsdb_runner.update_host(dbnetdev, None)
             dsdb_runner.commit_or_rollback("Could not add network device to DSDB")
 
-            ib_services = IBServices(logger)
+            ib_services = IBServices(logger, **arguments)
             if f_type(dbdns_rec) == ARecord and ib_services.feature_enabled("network_device"):
                 try:
                     ib_services.add_a_ptr(str(dbdns_rec.fqdn), ip)

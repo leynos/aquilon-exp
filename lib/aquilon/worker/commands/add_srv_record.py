@@ -25,6 +25,7 @@ from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import create_target_if_needed
 from aquilon.worker.dbwrappers.grn import lookup_grn
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from aquilon.worker.ib_services import IBServices
 
 
 class CommandAddSrvRecord(BrokerCommand):
@@ -99,6 +100,9 @@ class CommandAddSrvRecord(BrokerCommand):
             else:
                 exporter.create(dbsrv_rec.fqdn)
 
+        ib_services = IBServices(logger, **arguments)
+        if ib_services.feature_enabled("srv_record"):
+            ib_services.add_dns_srv_record(service, protocol, dbdns_domain, target, port, priority, weight, ttl)
 
         session.flush()
 

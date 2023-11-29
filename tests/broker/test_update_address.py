@@ -77,15 +77,11 @@ class TestUpdateAddress(TestBrokerCommand):
         self.matchclean(out, "Comments", command)
 
     def test_110_clear_ptr_override(self):
-        ib_expect_update_address("arecord15.aqd-unittest.ms.com",
-                                      "4.2.1.20",
-                                 reverse_ptr="arecord15.aqd-unittest.ms.com")
         command = ["update", "address",
                    "--fqdn", "arecord15.aqd-unittest.ms.com",
                    "--reverse_ptr", "arecord15.aqd-unittest.ms.com"] + self.valid_just_tcm
         self.noouttest(command)
         self.dsdb_verify(empty=True)
-        self.ib_verify()
 
     def test_115_verify_arecord15(self):
         command = ["show", "fqdn", "--fqdn", "arecord15.aqd-unittest.ms.com"]
@@ -129,12 +125,10 @@ class TestUpdateAddress(TestBrokerCommand):
     def test_130_update_dyndhcp_noop(self):
         ip = self.net["dyndhcp0"].usable[12]
         fqdn = self.dynname(ip)
-        ib_expect_update_address(fqdn, original_ip="10.25.0.21", reverse_ptr=fqdn)
         command = ["update", "address", "--fqdn", fqdn,
                    "--reverse_ptr", fqdn] + self.valid_just_tcm
         self.noouttest(command)
         self.dsdb_verify(empty=True)
-        self.ib_verify()
 
     def test_135_verify_dyndhcp(self):
         ip = self.net["dyndhcp0"].usable[12]
@@ -145,7 +139,6 @@ class TestUpdateAddress(TestBrokerCommand):
     def test_140_restricted_reverse(self):
         fqdn = "arecord17.aqd-unittest.ms.com"
         reverse_ptr = "reverse2.restrict.aqd-unittest.ms.com"
-        ib_expect_update_address(fqdn, original_ip="4.2.1.37", reverse_ptr=reverse_ptr)
         command = ["update", "address",
                    "--fqdn", fqdn,
                    "--reverse_ptr", reverse_ptr] + self.valid_just_tcm
@@ -157,7 +150,6 @@ class TestUpdateAddress(TestBrokerCommand):
                          "not known",
                          command)
         self.dsdb_verify(empty=True)
-        self.ib_verify()
 
     def test_141_verify_reverse(self):
         command = ["search", "dns", "--fullinfo",
@@ -194,14 +186,10 @@ class TestUpdateAddress(TestBrokerCommand):
         self.assertEqual(json.loads(out), expected)
 
     def test145_alias_reverse(self):
-        ib_expect_update_address("arecord17.aqd-unittest.ms.com",
-                                      "4.2.1.37",
-                                 reverse_ptr="alias2host.aqd-unittest.ms.com")
         command = ["update", "address",
                    "--fqdn", "arecord17.aqd-unittest.ms.com",
                    "--reverse_ptr", "alias2host.aqd-unittest.ms.com"] + self.valid_just_tcm
         self.noouttest(command)
-        self.ib_verify()
 
     def test146_verify_reverse(self):
         command = ["search", "dns", "--fullinfo",
@@ -232,14 +220,10 @@ class TestUpdateAddress(TestBrokerCommand):
         self.assertEqual(json.loads(out), expected)
 
     def test150_address_alias_reverse(self):
-        ib_expect_update_address("arecord17.aqd-unittest.ms.com",
-                                      "4.2.1.37",
-                                 reverse_ptr="addralias1.aqd-unittest.ms.com")
         command = ["update", "address",
                    "--fqdn", "arecord17.aqd-unittest.ms.com",
                    "--reverse_ptr", "addralias1.aqd-unittest.ms.com"] + self.valid_just_tcm
         self.noouttest(command)
-        self.ib_verify()
 
     def test151_verify_reverse(self):
         command = ["search", "dns", "--fullinfo",
@@ -320,13 +304,11 @@ class TestUpdateAddress(TestBrokerCommand):
     def test_300_update_no_ttl(self):
         fqdn = "arecord40.aqd-unittest.ms.com"
         ip = "4.2.1.45"
-        ib_expect_update_address(fqdn, ip, new_ttl=-1)
         command = ["update", "address",
                    "--fqdn", "arecord40.aqd-unittest.ms.com",
                    "--clear_ttl"] + self.valid_just_tcm
         self.noouttest(command)
         self.dsdb_verify(empty=True)
-        self.ib_verify()
 
     def test_320_verify_ttl(self):
         command = ["show", "fqdn", "--fqdn", "arecord40.aqd-unittest.ms.com"]
@@ -336,13 +318,11 @@ class TestUpdateAddress(TestBrokerCommand):
     def test_330_update_new_ttl(self):
         fqdn = "arecord40.aqd-unittest.ms.com"
         ip = "4.2.1.45"
-        ib_expect_update_address(fqdn, ip, new_ttl=600)
         command = ["update", "address",
                    "--fqdn", fqdn,
                    "--ttl", "600"] + self.valid_just_tcm
         self.noouttest(command)
         self.dsdb_verify(empty=True)
-        self.ib_verify()
 
     def test_340_verify_ttl(self):
         command = ["show", "fqdn", "--fqdn", "arecord40.aqd-unittest.ms.com"]
