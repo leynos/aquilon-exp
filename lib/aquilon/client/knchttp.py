@@ -1,36 +1,36 @@
-# -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
-# ex: set expandtab softtabstop=4 shiftwidth=4:
-#
-# Copyright (C) 2008,2009,2010,2011,2013,2014,2016,2017  Contributor
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
+# # ex: set expandtab softtabstop=4 shiftwidth=4:
+# #
+# # Copyright (C) 2008,2009,2010,2011,2013,2014,2016,2017  Contributor
+# #
+# # Licensed under the Apache License, Version 2.0 (the "License");
+# # you may not use this file except in compliance with the License.
+# # You may obtain a copy of the License at
+# #
+# #     http://www.apache.org/licenses/LICENSE-2.0
+# #
+# # Unless required by applicable law or agreed to in writing, software
+# # distributed under the License is distributed on an "AS IS" BASIS,
+# # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# # See the License for the specific language governing permissions and
+# # limitations under the License.
 
 import subprocess
 import os
 from threading import Lock
 
-from six.moves.http_client import NotConnected  # pylint: disable=F0401
+from http.client import NotConnected  # pylint: disable=F0401
 
-from aquilon.client.chunked import ChunkedHTTPConnection
+from urllib3.connection import HTTPConnection
 
-# subprocess.Popen() is not thread safe in Python 2, so we need locking. We only
+# subprocess.Popen() is not thread safe in Python, so we need locking. We only
 # care about two connections racing to launch knc, so a local lock here is fine.
 _popen_lock = Lock()
 
 
-class ProcessWrapper(object):
+class ProcessWrapper:
 
-    class _closedsocket(object):
+    class _closedsocket:
         def __getattr__(self, name):
             raise OSError(9, 'Bad file descriptor')
 
@@ -45,7 +45,7 @@ class ProcessWrapper(object):
         self._stdin = self.__class__._closedsocket()
         self._stdout = self.__class__._closedsocket()
 
-    def makefile(self, mode, bufsize=None):
+    def makefile(self, mode, bufsize=0):
         return os.fdopen(os.dup(self._stdout.fileno()), mode, bufsize)
 
     def send(self, stuff, flags=0):
@@ -62,14 +62,17 @@ class ProcessWrapper(object):
 
         return self._stdout.read(len)
 
+    def settimeout(self, timeout):
+        """To fix AttributeError: '_io.FileIO' object has no attribute 'settimeout'"""
+
     def __getattr__(self, attr):
         return getattr(self._stdout, attr)
 
 
-class WrappedHTTPConnection(ChunkedHTTPConnection):
+class WrappedHTTPConnection(HTTPConnection):
 
-    def __init__(self, executable, host, port, service=None, strict=None):
-        ChunkedHTTPConnection.__init__(self, host, port, strict)
+    def __init__(self, executable, host, port, service=None):
+        super().__init__(host, port)
         self.executable = executable
         self.service = service
 
@@ -83,8 +86,9 @@ class WrappedHTTPConnection(ChunkedHTTPConnection):
                                             str(self.port)],
                                            stdin=subprocess.PIPE,
                                            stdout=subprocess.PIPE,
-                                           stderr=subprocess.PIPE)
-        except OSError as e:
+                                           stderr=subprocess.PIPE,
+                                           bufsize=0)
+        except Exception as e:
             raise NotConnected(e)
 
         self.sock = ProcessWrapper(process)
@@ -104,7 +108,7 @@ class KNCHTTPConnection(WrappedHTTPConnection):
 
     def __init__(self, host, port, service, strict=None):
         if os.path.exists(self.__class__.KNC_PATH):
-            os.environ['PATH'] = "%s:%s" % (self.__class__.KNC_PATH,
+            os.environ['PATH'] = "{}:{}".format(self.__class__.KNC_PATH,
                                             os.environ.get('PATH', ''))
-        WrappedHTTPConnection.__init__(self, self.__class__.KNC_BIN,
-                                       host, port, service, strict)
+        super().__init__(self.__class__.KNC_BIN,
+                         host, port, service)

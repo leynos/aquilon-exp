@@ -20,13 +20,14 @@
 To an extent, this has become a dumping ground for any common ip methods.
 
 """
-
+import logging
 from operator import attrgetter
 import re
 import os
 
 from ipaddress import ip_address, IPv4Network
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import aliased, object_session
 from sqlalchemy.sql.expression import desc, type_coerce
 from sqlalchemy.inspection import inspect
@@ -62,7 +63,7 @@ def get_networks_bylocation(session, dblocation_set, network_type):
         if isinstance(dblocation, Bunker) and network_type == 'vip':
             # Special business logic for getting networks of the same Bucket
             bucket = dblocation.name.split('.')[0]
-            location_by_bucket = session.query(Location).filter(Location.name.startswith('{}.'.format(bucket)))
+            location_by_bucket = session.query(Location).filter(Location.name.startswith(f'{bucket}.'))
             loc_ids.extend([loc.id for loc in location_by_bucket])
         else:
             loc_ids.append(dblocation.id)
@@ -91,8 +92,8 @@ def check_ip_restrictions(dbnetwork, ip, relaxed=False):
         return
 
     if ip not in dbnetwork.network:  # pragma: no cover
-        raise InternalError("IP address {0!s} is outside "
-                            "{1:l}.".format(ip, dbnetwork))
+        raise InternalError("IP address {!s} is outside "
+                            "{:l}.".format(ip, dbnetwork))
     if dbnetwork.network.num_addresses >= 4 and not relaxed:
         # Skip these checks for /32 and /31 networks
         if ip == dbnetwork.network_address:
@@ -120,7 +121,7 @@ def get_cluster_pg_allocator(dbcluster):
     if dbcluster.network_device:
         return dbcluster.network_device
 
-    raise ArgumentError("{0} does not have either a virtual switch or a "
+    raise ArgumentError("{} does not have either a virtual switch or a "
                         "network device assigned, automatic IP address "
                         "and port group allocation is not possible."
                         .format(dbcluster))
@@ -131,7 +132,7 @@ def get_host_pg_allocator(dbhost):
         return dbhost.virtual_switch
     if dbhost.cluster:
         return get_cluster_pg_allocator(dbhost.cluster)
-    raise ArgumentError("{0} does not have a virtual switch assigned and "
+    raise ArgumentError("{} does not have a virtual switch assigned and "
                         "is not part of a cluster either, automatic IP "
                         "address and port group allocation is not possible."
                         .format(dbhost))
@@ -174,7 +175,7 @@ def generate_ip(session, logger, dbinterface, net_location_set=None, ip=None, ip
             # Physical host
             dbhw_ent = dbinterface.hardware_entity
             if not dbhw_ent.host:
-                raise ArgumentError("{0} does not have a host, assigning an IP "
+                raise ArgumentError("{} does not have a host, assigning an IP "
                                     "address based on port group membership is "
                                     "not possible.".format(dbhw_ent))
             allocator = get_host_pg_allocator(dbhw_ent.host)
@@ -185,8 +186,8 @@ def generate_ip(session, logger, dbinterface, net_location_set=None, ip=None, ip
                           lambda x: x.network_tag == dbvi.vlan_id)
 
             if not pg:
-                raise ArgumentError("No network found for {0:l} and port "
-                                    "group {1}".format(allocator,
+                raise ArgumentError("No network found for {:l} and port "
+                                    "group {}".format(allocator,
                                                        dbinterface.port_group_name))
             dbnetwork = pg.network
         elif dbinterface.mac:
@@ -198,13 +199,13 @@ def generate_ip(session, logger, dbinterface, net_location_set=None, ip=None, ip
                 raise ArgumentError("No switch found in the discovery table "
                                     "for MAC address %s." % dbinterface.mac)
             if not dbom.network_device.primary_ip:
-                raise ArgumentError("{0} does not have a primary IP address "
+                raise ArgumentError("{} does not have a primary IP address "
                                     "to use for network "
                                     "selection.".format(dbom.network_device))
             dbnetwork = get_net_id_from_ip(session,
                                            dbom.network_device.primary_ip)
         else:
-            raise ArgumentError("{0} has neither a MAC address nor port group "
+            raise ArgumentError("{} has neither a MAC address nor port group "
                                 "information, it is not possible to generate "
                                 "an IP address automatically."
                                 .format(dbinterface))
@@ -230,6 +231,7 @@ def generate_ip(session, logger, dbinterface, net_location_set=None, ip=None, ip
     if not net_list:  # pragma: no cover
         raise ArgumentError("Could not determine network to use.")
 
+    exception = None
     for dbnetwork in net_list:
         # The code below depends on being able to represent the set of all usable IP
         # addresses in memory, which does not work for large IPv6 networks. Also,
@@ -238,27 +240,24 @@ def generate_ip(session, logger, dbinterface, net_location_set=None, ip=None, ip
         if not isinstance(dbnetwork.network, IPv4Network):
             raise UnimplementedError("Automatic IP assignment is not implemented "
                                      "for IPv6 networks.")
-        exception = None
         try:
             ip = next_ip(session, dbnetwork, ipalgorithm)
             break
-        except ValueError as exception:
+        except ValueError as err:
             # Cannot rollback to release network row lock
             # As it would roll back other previous changes together
             # Will be roll released on commit or rollback when command is done
             # session.rollback()
-            continue
+            exception = err
 
     if not ip:
         if len(net_list) == 1:
             raise ArgumentError(str(exception))
-        raise ArgumentError("No available IP addresses found in "
-                            "networks {}".format([str(network.network) for network in net_list]))
+        raise ArgumentError(f"No available IP addresses found in networks {[str(network.network) for network in net_list]}")
 
     if audit_results is not None:
         if dbinterface:
-            logger.info("Selected IP address {0!s} for {1:l}."
-                        .format(ip, dbinterface))
+            logger.info(f"Selected IP address {ip!s} for {dbinterface:l}.")
         else:
             logger.info("Selected IP address %s." % ip)
         audit_results.append(('ip', ip))
@@ -280,12 +279,11 @@ def next_ip(session, dbnetwork, ipalgorithm):
     used_ips = used_ips.filter_by(network=dbnetwork)
     used_ips = used_ips.filter(ARecord.ip >= startip)
     full_set = set(range(int(startip), int(dbnetwork.broadcast_address)))
-    used_set = set(int(item.ip) for item in used_ips)
+    used_set = {int(item.ip) for item in used_ips}
     free_set = full_set - used_set
 
     if not free_set:
-        raise ValueError("No available IP addresses found on "
-                            "network %s." % str(dbnetwork.network))
+        raise ValueError("No available IP addresses found on network %s." % str(dbnetwork.network))
     ip = None
     while free_set:
         # We do not want to return 'pingable' IPs
@@ -313,7 +311,7 @@ def next_ip(session, dbnetwork, ipalgorithm):
         # Test IP address ping - we want ip to be now used - not pingable
         ping_response = test_ping(ip)
         if ping_response == 0:
-            free_set = free_set - set([int(ip)])
+            free_set = free_set - {int(ip)}
         else:
             break
     return ip
@@ -326,7 +324,7 @@ def test_ping(ip):
     :param ip: ip address
     :return:
     """
-    response_code = os.system("ping -c 1 {}".format(ip))
+    response_code = os.system(f"ping -c 1 {ip}")
     return response_code
 
 
@@ -342,8 +340,7 @@ def set_port_group_phys(session, dbinterface, port_group_name):
         pg = first_of(allocator.port_groups,
                       lambda x: x.network_tag == dbvi.vlan_id)
         if not pg:
-            raise ArgumentError("{0} does not have port group {1!s} assigned."
-                                .format(allocator, port_group_name))
+            raise ArgumentError(f"{allocator} does not have port group {port_group_name!s} assigned.")
 
     dbinterface.port_group = None
     dbinterface.port_group_name = dbvi.port_group
@@ -353,15 +350,13 @@ def set_port_group_vm(session, logger, dbinterface, port_group_name):
     dbmachine = dbinterface.hardware_entity
     allocator = get_vm_pg_allocator(dbmachine)
     dbvi = VlanInfo.get_by_pg(session, port_group=port_group_name, compel=None)
-    logger.info("pg name: {0}".format(port_group_name))
+    logger.info(f"pg name: {port_group_name}")
     if dbvi:
         # User requested a specific VLAN, check if it is available
         selected_pg = first_of(allocator.port_groups,
                                lambda x: x.network_tag == dbvi.vlan_id)
         if not selected_pg:
-            raise ArgumentError("Cannot verify port group availability: "
-                                "no record for VLAN {0} on "
-                                "{1:l}.".format(dbvi.vlan_id, allocator))
+            raise ArgumentError(f"Cannot verify port group availability: no record for VLAN {dbvi.vlan_id} on {allocator:l}.")
 
         # The capacity check below would account this interface twice if we'd
         # try to assign the same port group as it already has
@@ -372,8 +367,7 @@ def set_port_group_vm(session, logger, dbinterface, port_group_name):
         selected_pg.network.lock_row()
 
         if selected_pg.network.is_at_guest_capacity:
-            raise ArgumentError("{0} is full for {1:l}.".format(selected_pg,
-                                                                allocator))
+            raise ArgumentError(f"{selected_pg} is full for {allocator:l}.")
     else:
         # If the current port group matches the requirements, then we're done.
         if dbinterface.port_group in allocator.port_groups and \
@@ -386,12 +380,11 @@ def set_port_group_vm(session, logger, dbinterface, port_group_name):
         # Protect agains concurrent invocations
         Network.lock_rows(pg.network for pg in allocator.port_groups)
 
-        used_pgs = set(iface.port_group for iface in dbmachine.interfaces
-                       if iface.port_group)
+        used_pgs = {iface.port_group for iface in dbmachine.interfaces
+                       if iface.port_group}
         usable_pgs = set(allocator.port_groups)
 
-        logger.info("used_pgs:{0}, usable_pgs:{1}".format(used_pgs,
-                                                          usable_pgs))
+        logger.info(f"used_pgs:{used_pgs}, usable_pgs:{usable_pgs}")
         port_group_parsed = PortGroup.parse_name(port_group_name)
 
         # check for autopg
@@ -409,11 +402,9 @@ def set_port_group_vm(session, logger, dbinterface, port_group_name):
                 selected_capacity = free_capacity
 
         if not selected_pg:
-            raise ArgumentError("No available {0!s} port groups on {1:l}."
-                                .format(port_group_name, allocator))
+            raise ArgumentError(f"No available {port_group_name!s} port groups on {allocator:l}.")
 
-        logger.info("Selected {0:l} for {1:l} (based on {2:l})."
-                    .format(selected_pg, dbinterface, allocator))
+        logger.info(f"Selected {selected_pg:l} for {dbinterface:l} (based on {allocator:l}).")
 
     dbinterface.port_group_name = None
     dbinterface.port_group = selected_pg
@@ -436,8 +427,7 @@ def set_port_group(session, logger, dbinterface, port_group_name,
 
     """
     if "port_group_name" not in dbinterface.extra_fields:
-        raise ArgumentError("The port group cannot be set for %s interfaces." %
-                            dbinterface.interface_type)
+        raise ArgumentError(f"The port group cannot be set for {dbinterface.interface_type} interfaces.")
 
     if not port_group_name:
         if dbinterface.port_group:
@@ -459,8 +449,7 @@ def set_port_group(session, logger, dbinterface, port_group_name,
 
 def _type_msg(interface_type, bootable):
     if bootable is not None:
-        return "%s, %s" % ("bootable" if bootable else "non-bootable",
-                           interface_type)
+        return "{}, {}".format("bootable" if bootable else "non-bootable", interface_type)
     else:
         return interface_type
 
@@ -504,8 +493,7 @@ def get_or_create_interface(session, dbhw_ent, name=None, mac=None,
         dbinterface = q.first()
         if dbinterface and (dbinterface.hardware_entity != dbhw_ent or
                             (name and dbinterface.name != name)):
-            raise ArgumentError("MAC address {0!s} is already used by {1:l}."
-                                .format(mac, dbinterface))
+            raise ArgumentError(f"MAC address {mac!s} is already used by {dbinterface:l}.")
 
     if name and not dbinterface:
         for iface in dbhw_ent.interfaces:
@@ -527,9 +515,7 @@ def get_or_create_interface(session, dbhw_ent, name=None, mac=None,
             interfaces.append(iface)
         if len(interfaces) > 1:
             type_msg = _type_msg(interface_type, bootable)
-            raise ArgumentError("{0} has multiple {1} interfaces, please "
-                                "specify which one to "
-                                "use.".format(dbhw_ent, type_msg))
+            raise ArgumentError(f"{dbhw_ent} has multiple {type_msg} interfaces, please specify which one to use.")
         elif interfaces:
             dbinterface = interfaces[0]
         else:
@@ -537,7 +523,7 @@ def get_or_create_interface(session, dbhw_ent, name=None, mac=None,
 
     if dbinterface:
         if preclude:
-            raise ArgumentError("{0} already exists.".format(dbinterface))
+            raise ArgumentError(f"{dbinterface} already exists.")
         return dbinterface
 
     # No suitable interface was found, try to create a new one
@@ -545,8 +531,7 @@ def get_or_create_interface(session, dbhw_ent, name=None, mac=None,
     if not name:
         # Not enough information to create it
         type_msg = _type_msg(interface_type, bootable)
-        raise ArgumentError("{0} has no {1} interfaces.".format(dbhw_ent,
-                                                                type_msg))
+        raise ArgumentError(f"{dbhw_ent} has no {type_msg} interfaces.")
 
     cls = Interface.polymorphic_subclass(interface_type,
                                          "Invalid interface type")
@@ -557,7 +542,12 @@ def get_or_create_interface(session, dbhw_ent, name=None, mac=None,
         default_route = bootable
 
     if not model and not vendor:
-        dbmodel = dbhw_ent.model.nic_model
+        try:
+            dbmodel = dbhw_ent.model.nic_model
+        except IntegrityError as e:
+            args = e.orig.args
+            error_detail = " ".join(e.orig.args)
+            raise ArgumentError("Item already exists: " + error_detail)
     elif not cls.model_allowed:
         raise ArgumentError("Model/vendor can not be set for a %s." %
                             cls._get_class_label(tolower=True))
@@ -615,8 +605,7 @@ def enforce_bucket_alignment(dbrack, dbnetwork, logger):
 
         # The second easiest case - the rack is in a bunker, but the network is
         # not
-        logger.warning("Bunker violation: {0:l} is inside {1:l}, but {2:l} is "
-                       "not bunkerized.".format(dbrack, rack_bunker, dbnetwork))
+        logger.warning(f"Bunker violation: {dbrack:l} is inside {rack_bunker:l}, but {dbnetwork:l} is not bunkerized.")
         return
 
     session = object_session(dbrack)
@@ -640,21 +629,15 @@ def enforce_bucket_alignment(dbrack, dbnetwork, logger):
         q = q.join(Location)
         q = q.filter(Location.id.in_(dbrack.offspring_ids()))
         if q.count() > 1:
-            logger.warning("Bunker violation: {0:l} is inside {1:l}, "
-                           "but {2:l} is not inside a bunker."
-                           .format(dbnetwork, net_bunker, dbrack))
+            logger.warning(f"Bunker violation: {dbnetwork:l} is inside {net_bunker:l}, but {dbrack:l} is not inside a bunker.")
             return
 
-        logger.client_info("Moving {0:l} into {1:l} based on network tagging."
-                           .format(dbrack, expected_bunker))
+        logger.client_info(f"Moving {dbrack:l} into {expected_bunker:l} based on network tagging.")
         dbrack.update_parent(parent=expected_bunker)
         rack_bunker = expected_bunker
 
     if rack_bunker != expected_bunker:
-        logger.warning("Bunker violation: {0:l} is inside {1:l}, but "
-                       "{2:l} is inside {3:l}."
-                       .format(dbrack, rack_bunker, dbnetwork,
-                               expected_bunker))
+        logger.warning(f"Bunker violation: {dbrack:l} is inside {rack_bunker:l}, but {dbnetwork:l} is inside {expected_bunker:l}.")
 
 
 def assign_address(dbinterface, ip, dbnetwork, label=None, shared=False,
@@ -669,20 +652,17 @@ def assign_address(dbinterface, ip, dbnetwork, label=None, shared=False,
     # Do not enforce bucket alignment for OOB management interfaces. We may want
     # to make that configurable in the future.
     if dbrack and not isinstance(dbinterface, ManagementInterface):
-        enforce_bucket_alignment(dbrack, dbnetwork, logger)
+        enforce_bucket_alignment(dbrack, dbnetwork, logger or logging.getLogger(__name__))
 
     dbinterface.validate_network(dbnetwork)
 
     for addr in dbinterface.assignments:
         if not label and not addr.label:
-            raise ArgumentError("{0} already has an IP "
-                                "address.".format(dbinterface))
+            raise ArgumentError(f"{dbinterface} already has an IP address.")
         if label and addr.label == label:
-            raise ArgumentError("{0} already has an alias named "
-                                "{1}.".format(dbinterface, label))
+            raise ArgumentError(f"{dbinterface} already has an alias named {label}.")
         if addr.ip == ip:
-            raise ArgumentError("{0} already has IP address {1} "
-                                "configured.".format(dbinterface, ip))
+            raise ArgumentError(f"{dbinterface} already has IP address {ip} configured.")
 
     if shared:
         dbinterface.assignments.append(SharedAddressAssignment(ip=ip, network=dbnetwork,
@@ -700,7 +680,7 @@ def rename_interface(session, dbinterface, rename_to):
     dbhw_ent = dbinterface.hardware_entity
     for iface in dbhw_ent.interfaces:
         if iface.name == rename_to:
-            raise ArgumentError("{0} already has an interface named {1}."
+            raise ArgumentError("{} already has an interface named {}."
                                 .format(dbhw_ent, rename_to))
 
     fqdn_changes = []
@@ -718,11 +698,11 @@ def rename_interface(session, dbinterface, rename_to):
         # suffix, but who knows...
         for addr in dbinterface.assignments:
             if addr.label:
-                old_name = "%s-%s-%s" % (short, dbinterface.name, addr.label)
-                new_name = "%s-%s-%s" % (short, rename_to, addr.label)
+                old_name = f"{short}-{dbinterface.name}-{addr.label}"
+                new_name = f"{short}-{rename_to}-{addr.label}"
             else:
-                old_name = "%s-%s" % (short, dbinterface.name)
-                new_name = "%s-%s" % (short, rename_to)
+                old_name = f"{short}-{dbinterface.name}"
+                new_name = f"{short}-{rename_to}"
             fqdn_changes.extend((dns_rec.fqdn, new_name) for dns_rec
                                 in addr.dns_records
                                 if (dns_rec.fqdn.name == old_name and
@@ -752,11 +732,9 @@ def update_netdev_iftype(session, dbinterface, new_iftype):
     new_cls = Interface.polymorphic_subclass(new_iftype, "Invalid interface type")
     if not all([cls in dbinterface.hardware_entity.iftype_change_allowed for cls
             in [dbinterface.__class__, new_cls]]):
-        raise ArgumentError("Interface type %s cannot be changed to selected "
-                            "interface type %s for %s." % (dbinterface.interface_type,
-                                                           new_iftype, dbinterface))
+        raise ArgumentError(f"Interface type {dbinterface.interface_type} cannot be changed to selected interface type {new_iftype} for {dbinterface}.")
 
-    kwargs = {key: getattr(dbinterface, key) for key in inspect(dbinterface).mapper.columns.keys()
+    kwargs = {key: getattr(dbinterface, key) for key in list(inspect(dbinterface).mapper.columns.keys())
               if key not in ['id', 'interface_type']}
     try:
         new_cls(**kwargs)  # Check if new class validations would pass
@@ -765,7 +743,7 @@ def update_netdev_iftype(session, dbinterface, new_iftype):
 
     try:
         dbinterface.interface_type = new_iftype
-    except Exception, e:
+    except Exception as e:
         raise ArgumentError(e)
 
     session.flush()
@@ -791,8 +769,7 @@ def get_interfaces(dbhw_ent, interfaces, dbnetwork=None):
         dbinterface = first_of(dbhw_ent.interfaces,
                                lambda x, name=ifname: x.name == name)
         if not dbinterface:
-            raise ArgumentError("{0} does not have an interface named "
-                                "{1}.".format(dbhw_ent, ifname))
+            raise ArgumentError(f"{dbhw_ent} does not have an interface named {ifname}.")
         if dbnetwork:
             dbinterface.validate_network(dbnetwork)
         dbifaces.append(dbinterface)
@@ -819,19 +796,16 @@ def generate_mac(session, config, dbmachine):
 
     """
     if not dbmachine.vm_container:
-        raise ArgumentError("Can only automatically generate MAC "
-                            "addresses for virtual hardware.")
+        raise ArgumentError("Can only automatically generate MAC addresses for virtual hardware.")
 
     try:
         mac_start = MACAddress(config.get("broker", "auto_mac_start"))
     except ValueError:  # pragma: no cover
-        raise AquilonError("The value of auto_mac_start in the [broker] "
-                           "section is not a valid MAC address.")
+        raise AquilonError("The value of auto_mac_start in the [broker] section is not a valid MAC address.")
     try:
         mac_end = MACAddress(config.get("broker", "auto_mac_end"))
     except ValueError:  # pragma: no cover
-        raise AquilonError("The value of auto_mac_end in the [broker] "
-                           "section is not a valid MAC address.")
+        raise AquilonError("The value of auto_mac_end in the [broker] section is not a valid MAC address.")
 
     q = session.query(Interface.mac)
     q = q.filter(Interface.mac.between(mac_start, mac_end))
@@ -864,5 +838,4 @@ def generate_mac(session, config, dbmachine):
     if hole:
         return hole.mac
 
-    raise ArgumentError("All MAC addresses between %s and %s inclusive "
-                        "are currently in use." % (mac_start, mac_end))
+    raise ArgumentError(f"All MAC addresses between {mac_start} and {mac_end} inclusive are currently in use.")

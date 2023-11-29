@@ -16,13 +16,15 @@
 # limitations under the License.
 """Contains the logic for `aq del console server`."""
 
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.aqdb.model import ConsoleServer
 from aquilon.worker.broker import BrokerCommand
+from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.hardware_entity import check_only_primary_ip
+from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
-from aquilon.worker.dbwrappers.change_management import ChangeManagement
+
 
 
 class CommandDelConsoleServer(BrokerCommand):
@@ -62,4 +64,10 @@ class CommandDelConsoleServer(BrokerCommand):
             dsdb_runner.update_host(None, oldinfo)
             dsdb_runner.commit_or_rollback("Could not remove console server from DSDB")
 
-        return
+            ib_services = IBServices(logger, **arguments)
+            if ib_services.feature_enabled("console_server"):
+                try:
+                    ib_services.delete_a_ptr(str(dbcons.primary_name.fqdn), dbcons.primary_name.ip)
+                except ProcessException as e:
+                    dsdb_runner.rollback()
+                    raise e

@@ -38,7 +38,7 @@ def _raise_custom(cls, defcls, msg):
         raise defcls(msg)
 
 
-class Base(object):
+class Base:
     """ The abstract base class for all aqdb objects """
 
     # Populate const tables when created
@@ -47,8 +47,7 @@ class Base(object):
     def __init__(self, **kw):
         for k in kw:
             if not hasattr(type(self), k):  # pragma: no cover
-                msg = "%r is an invalid argument for %s" % (
-                    k, type(self).__name__)
+                msg = f"{k!r} is an invalid argument for {type(self).__name__}"
                 raise TypeError(msg)
             setattr(self, k, kw[k])
 
@@ -84,8 +83,8 @@ class Base(object):
                 field = field[:-3]
             value = getattr(self, field, None)
 
-            attrs.append("%s: %s" % (field, value))
-        return "<%s %s>" % (label, ", ".join(attrs))
+            attrs.append(f"{field}: {value}")
+        return "<{} {}>".format(label, ", ".join(attrs))
 
     def __str__(self):
         """
@@ -112,7 +111,11 @@ class Base(object):
         clsname = self.__class__._get_class_label(tolower=lowercase)
         if class_only:
             return clsname.__format__(passthrough)
-        val = "%s %s" % (clsname, instance)
+        val_int = f"{clsname} {instance}"
+        if not val_int.startswith("Fqdn"):
+            val = val_int.replace("Fqdn ", "")
+        else:
+            val = val_int
         return val.__format__(passthrough)
 
     def __format__(self, format_spec):
@@ -246,7 +249,7 @@ class Base(object):
                                        field == cls._instance_label):  # pylint: disable=E1101
                     desc.insert(0, str(value))
                 elif isinstance(value, Base):
-                    desc.append("{0:l}".format(value))
+                    desc.append(f"{value:l}")
                 else:
                     desc.append(field + " " + str(value))
 
@@ -274,7 +277,7 @@ class Base(object):
             if preclude:
                 # The object may belong to a subclass of what was requested, so
                 # query its class label instead of using the precomputed value
-                msg = "%s %s already exists." % (obj._get_class_label(),
+                msg = "{} {} already exists.".format(obj._get_class_label(),
                                                  ", ".join(desc))
                 _raise_custom(preclude, ArgumentError, msg)
 
@@ -286,10 +289,10 @@ class Base(object):
         except NoResultFound:
             if not compel:
                 return None
-            msg = "%s %s not found." % (clslabel, ", ".join(desc))
+            msg = "{} {} not found.".format(clslabel, ", ".join(desc))
             _raise_custom(compel, NotFoundException, msg)
         except MultipleResultsFound:
-            msg = "%s %s is not unique." % (clslabel, ", ".join(desc))
+            msg = "{} {} is not unique.".format(clslabel, ", ".join(desc))
             raise ArgumentError(msg)
 
     @classmethod
@@ -305,7 +308,7 @@ class Base(object):
         if compel:
             obj = query.first()
             if obj is None:
-                msg = "%s %s not found." % (clslabel, ", ".join(desc))
+                msg = "{} {} not found.".format(clslabel, ", ".join(desc))
                 _raise_custom(compel, NotFoundException, msg)
         return query.subquery()
 
@@ -463,7 +466,7 @@ metadata = MetaData(naming_convention=convention)
 Base = declarative_base(cls=Base, metadata=metadata)
 
 
-class SingleInstanceMixin(object):
+class SingleInstanceMixin:
     @classmethod
     def get_instance(cls, session, value=None):
         '''Return the one and only instance of the given class'''

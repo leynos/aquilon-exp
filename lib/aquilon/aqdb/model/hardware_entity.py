@@ -22,7 +22,7 @@ import re
 
 from sqlalchemy import (Column, Integer, Sequence, ForeignKey, UniqueConstraint,
                         String, DateTime)
-from sqlalchemy.orm import relation, backref, lazyload, validates, deferred
+from sqlalchemy.orm import relation, backref, lazyload, validates, deferred, relationship
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm.attributes import set_committed_value
 
@@ -46,6 +46,8 @@ class HardwareEntity(Base):
 
     hardware_type = Column(AqStr(64), nullable=False)
 
+    location = relationship(Location, innerjoin=True)
+
     location_id = Column(ForeignKey(Location.id), nullable=False, index=True)
 
     model_id = Column(ForeignKey(Model.id), nullable=False, index=True)
@@ -66,7 +68,6 @@ class HardwareEntity(Base):
     # snapshot_hw(), so it is not worth deferring it
     comments = Column(String(255), nullable=True)
 
-    location = relation(Location, innerjoin=True)
     model = relation(Model, innerjoin=True)
     owner_grn = relation(Grn)
 
@@ -79,10 +80,11 @@ class HardwareEntity(Base):
 
     __table_args__ = (UniqueConstraint(primary_name_id,
                                        name='%s_pri_name_uk' % _TN),
+                      UniqueConstraint(label, name='%s_label_uk' % _TN),
                       {'info': {'unique_fields': ['label']}},)
     __mapper_args__ = {'polymorphic_on': hardware_type}
 
-    _label_check = re.compile(_config.get("site", "default_hardware_label_regex"))
+    _label_check = re.compile(fr'{_config.get("site", "default_hardware_label_regex")}')
 
     @classmethod
     def check_label(cls, label):
@@ -107,7 +109,8 @@ class HardwareEntity(Base):
         label = AqStr.normalize(label)
         if not label:
             raise AquilonError("HardwareEntity needs a label.")
-        super(HardwareEntity, self).__init__(label=label, **kwargs)
+        super().__init__(label=label, **kwargs)
+
 
     @property
     def fqdn(self):
@@ -186,17 +189,17 @@ class HardwareEntity(Base):
                 if dns_rec:
                     # We know the primary name, do not load it again
                     set_committed_value(hwe, 'primary_name', dns_rec)
-                raise ArgumentError("{0} exists, but is not a {1}."
+                raise ArgumentError("{} exists, but is not a {}."
                                     .format(hwe, clslabel.lower()))
             except NoResultFound:
                 hwe = None
 
             if compel:
-                raise NotFoundException("%s %s not found." % (clslabel, name))
+                raise NotFoundException("{} {} not found.".format(clslabel, name))
 
         if hwe:
             if preclude:
-                raise ArgumentError('{0} already exists.'.format(hwe))
+                raise ArgumentError(f'{hwe} already exists.')
             if dns_rec:
                 # We know the primary name, do not load it again
                 set_committed_value(hwe, 'primary_name', dns_rec)
@@ -207,11 +210,10 @@ class HardwareEntity(Base):
     def all_addresses(self):
         """ Iterator returning all addresses of the hardware. """
         for iface in self.interfaces:
-            for addr in iface.assignments:
-                yield addr
+            yield from iface.assignments
 
 
-class DeviceLinkMixin(object):
+class DeviceLinkMixin:
     _bus_address_checks = {
         # PCI: <domain>:<bus>:<device>.<function>
         'pci': re.compile(r'^[0-9a-f]{4}:[0-9a-f]{2}:[01][0-9a-f]\.[0-7]$')

@@ -19,23 +19,26 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_add_address
+
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 
 class TestAddAuxiliary(TestBrokerCommand):
 
     def test_100_add_unittest00e1(self):
         ip = self.net["unknown0"].usable[3]
-        self.dsdb_expect_add("unittest00-e1.one-nyp.ms.com", ip, "eth1", ip.mac,
-                             "unittest00.one-nyp.ms.com")
-        self.statustest(["add_interface_address", "--ip", ip,
-                         "--fqdn", "unittest00-e1.one-nyp.ms.com",
+        hostname = "unittest00-e1.one-nyp.ms.com"
+        ib_expect_add_address(hostname, str(ip), reverse_ptr="unittest00.one-nyp.ms.com")
+        self.dsdb_expect_add(hostname, ip, "eth1", ip.mac, "unittest00.one-nyp.ms.com")
+        self.statustest(["add_interface_address", "--ip", ip, "--fqdn", hostname,
                          "--machine", "ut3c1n3", "--interface", "eth1"])
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_105_verify_unittest00e1(self):
         command = ["show_host", "--hostname", "unittest00.one-nyp.ms.com"]

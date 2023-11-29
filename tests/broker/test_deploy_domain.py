@@ -23,10 +23,10 @@ from shutil import rmtree
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 
 class TestDeployDomain(TestBrokerCommand):
@@ -303,7 +303,7 @@ class TestDeployDomain(TestBrokerCommand):
             self.matchoutput(out,
                              "Updating the checked out copy of domain %s..." %
                              domain, command)
-        #self.matchoutput(out, "Warning: this deployment request was "
+        # self.matchoutput(out, "Warning: this deployment request was "
         #                 "not approved", command)
 
 if __name__ == '__main__':

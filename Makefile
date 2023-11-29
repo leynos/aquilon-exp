@@ -2,8 +2,8 @@ SHELL  = /bin/ksh
 COMMON = ../install/common
 QACOMMENT = -comment cmrs=qa
 PYTHON_DEFAULT = /usr/bin/env python
-PYTHON_CLIENT_PROD = /ms/dist/python/PROJ/core/2.7.18-64/bin/python -E
-PYTHON_SERVER_PROD = /ms/dist/python/PROJ/core/2.7.18-64/bin/python -E
+PYTHON_CLIENT_PROD = /ms/dist/python/PROJ/core/3.7.9-1/bin/python -E
+PYTHON_SERVER_PROD = /ms/dist/python/PROJ/core/3.7.9-1/bin/python -E
 
 MPR    := $(shell echo $(PWD) | awk -F/ '{print $$(NF-3), $$(NF-2), $$(NF-1)}')
 META   = $(word 1,$(MPR))
@@ -94,7 +94,7 @@ $(COMMON)/sbin/aqd_consistency_check: sbin/aqd_consistency_check.py
 $(COMMON)/%.pyc: $(COMMON)/%.py
 	@echo "compiling $@"
 	@rm -f $@
-	./tools/compile_for_dist.py $<
+	$(PYTHON_CLIENT_PROD) ./tools/compile_for_dist.py $<
 
 $(COMMON)/lib/%: lib/%
 	@mkdir -p `dirname $@`
@@ -120,10 +120,10 @@ $(COMMON)/etc/rc.d/init.d/aqd: etc/rc.d/init.d/aqd
 .PHONY: install
 install: remove_stale $(INSTALLFILES) install-doc
 	ln -sf aqd "$(COMMON)/sbin/aqd_readonly"
-	$(COMMON)/sbin/aqd --help >/dev/null
-	./tools/gen_completion.py --outputdir="$(COMMON)/etc" --templatedir="./etc/templates" --all
-	./tools/graph_schema.py --outputdir="$(COMMON)/doc"
-	./tools/build_schema_htdocs.py --outputdir="$(COMMON)/doc/schema"
+	$(PYTHON_CLIENT_PROD) $(COMMON)/sbin/aqd --help >/dev/null
+	$(PYTHON_CLIENT_PROD) ./tools/gen_completion.py --outputdir="$(COMMON)/etc" --templatedir="./etc/templates" --all
+	$(PYTHON_CLIENT_PROD) ./tools/graph_schema.py --outputdir="$(COMMON)/doc"
+	$(PYTHON_CLIENT_PROD) ./tools/build_schema_htdocs.py --outputdir="$(COMMON)/doc/schema"
 
 .PHONY: install-doc
 install-doc:
@@ -131,7 +131,7 @@ install-doc:
 
 .PHONY: remove_stale
 remove_stale:
-	./tools/remove_stale.py "$(COMMON)"
+	$(PYTHON_CLIENT_PROD) ./tools/remove_stale.py "$(COMMON)"
 
 .PHONY: default
 default:
@@ -142,8 +142,9 @@ default:
 .PHONY: clean
 clean:
 	$(MAKE) -C doc clean
-	find . -name '*.pyc' -exec rm {} \;
-	find * -type d -empty -exec rmdir {} \;
+	find . -name '*.pyc' -exec rm -rf {} \;
+# This needs to be fixed
+# 	find * -type d -empty -exec rmdir {} \;
 
 .PHONY: prodlink
 prodlink:
@@ -190,3 +191,4 @@ thaw:
 create:
 	vms create release ${META} ${PROJ} ${REL} -- -nobuildvolume
 	vms create install ${META} ${PROJ} ${REL} common
+

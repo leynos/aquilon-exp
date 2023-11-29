@@ -17,11 +17,13 @@
 """Contains the logic for `aq del alias`."""
 
 from aquilon.aqdb.model import DnsEnvironment, Alias
+from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.worker.broker import BrokerCommand
+from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.service_instance import check_no_provided_service
+from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
-from aquilon.worker.dbwrappers.change_management import ChangeManagement
 
 
 class CommandDelAlias(BrokerCommand):
@@ -34,6 +36,11 @@ class CommandDelAlias(BrokerCommand):
                                                          dns_environment)
         dbdns_rec = Alias.get_unique(session, fqdn=fqdn,
                                      dns_environment=dbdns_env, compel=True)
+
+        if dns_environment is not None and dns_environment != 'internal' \
+                and justification is None:
+            raise ArgumentError("Please provide valid justification "
+                                "number")
 
         # Validate ChangeManagement
         cm = ChangeManagement(session, user, justification, reason, logger, self.command, **arguments)
@@ -51,9 +58,18 @@ class CommandDelAlias(BrokerCommand):
 
         session.flush()
 
+        dsdb_runner = None
         if dbdns_env.is_default and domain == "ms.com" and not target_is_restricted:
             dsdb_runner = DSDBRunner(logger=logger)
             dsdb_runner.del_alias(fqdn, old_target_fqdn, old_comments)
             dsdb_runner.commit_or_rollback("Could not delete alias from DSDB")
 
-        return
+        ib_services = IBServices(logger, **arguments)
+        if ib_services.feature_enabled("alias"):
+            try:
+                if ib_services.assert_dns_environment(dbdns_rec.fqdn.dns_environment.name):
+                    ib_services.delete_dns_alias(str(dbdns_rec))
+            except ProcessException as e:
+                if dsdb_runner:
+                    dsdb_runner.rollback()
+                raise e

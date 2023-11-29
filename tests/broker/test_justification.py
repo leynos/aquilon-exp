@@ -19,8 +19,10 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_add_alias, ib_expect_del_alias
+
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
 from broker.brokertest import TestBrokerCommand
@@ -31,9 +33,7 @@ PPROD = "justify-prod"
 QPROD = "justify-qa"
 
 
-
 class TestJustification(PersonalityTestMixin, TestBrokerCommand):
-
     def test_100_setup(self):
 
         command = ["add", "feature", "--feature", "testfeature",
@@ -394,7 +394,7 @@ class TestJustification(PersonalityTestMixin, TestBrokerCommand):
                    "--personality", PPROD,
                    "--path", "access/netgroup",
                    "--value", "test"] + self.emergency_tcm_just_with_reason
-        self.noouttest(command)
+        self.emergencynojustification(command)
 
     def test_630_del_parameter_reason(self):
         command = ["del_parameter",
@@ -422,7 +422,7 @@ class TestJustification(PersonalityTestMixin, TestBrokerCommand):
                    "--personality", PPROD,
                    "--grn", GRN,
                    "--target", "esp"] + self.emergency_tcm_just_with_reason
-        self.noouttest(command)
+        self.emergencynojustification(command)
 
     def test_650_map_grn_reason(self):
         command = ["unmap_grn",
@@ -437,7 +437,7 @@ class TestJustification(PersonalityTestMixin, TestBrokerCommand):
                    "--personality", PPROD,
                    "--grn", GRN,
                    "--target", "esp"] + self.emergency_tcm_just_with_reason
-        self.noouttest(command)
+        self.emergencynojustification(command)
 
     def test_660_add_required_svc_reason(self):
         command = ["add_required_service", "--service=chooser1",
@@ -477,7 +477,7 @@ class TestJustification(PersonalityTestMixin, TestBrokerCommand):
         command = ["del_required_service", "--service=chooser1",
                    "--archetype=aquilon", "--osname", "linux", "--osversion",
                    "6.1-x86_64"] + self.emergency_tcm_just_with_reason
-        self.noouttest(command)
+        self.emergencynojustification(command)
 
     def test_680_add_static_route_reason(self):
         gw = self.net["routing1"].usable[-1]
@@ -636,26 +636,34 @@ class TestJustification(PersonalityTestMixin, TestBrokerCommand):
                          command)
         self.matchoutput(out, 'Build Status: ready',
                          command)
+        ib_expect_add_alias("aliasjustreq.aqd-unittest.ms.com", "aquilon91.aqd-unittest.ms.com")
         command = ["add", "alias",
                    "--fqdn", "aliasjustreq.aqd-unittest.ms.com",
                    "--target", "aquilon91.aqd-unittest.ms.com"]
         self.justificationmissingtest_warn(command)
+        self.ib_verify()
+        ib_expect_add_alias("aliasjustreq2.aqd-unittest.ms.com", "aliasjustreq.aqd-unittest.ms.com")
         command = ["add", "alias",
                    "--fqdn", "aliasjustreq2.aqd-unittest.ms.com",
                    "--target", "aliasjustreq.aqd-unittest.ms.com"]
         self.justificationmissingtest_warn(command)
+        self.ib_verify()
         cmd = "show address --fqdn aquilon91.aqd-unittest.ms.com"
         out = self.commandtest(cmd.split(" "))
         self.matchoutput(out, "Aliases: aliasjustreq.aqd-unittest.ms.com, "
                               "aliasjustreq2.aqd-unittest.ms.com", cmd)
 
     def test_905_justification_required(self):
+        ib_expect_del_alias("aliasjustreq2.aqd-unittest.ms.com")
         command = ["del", "alias",
                    "--fqdn", "aliasjustreq2.aqd-unittest.ms.com"]
         self.justificationmissingtest_warn(command)
+        self.ib_verify()
+        ib_expect_del_alias("aliasjustreq.aqd-unittest.ms.com")
         command = ["del", "alias",
                    "--fqdn", "aliasjustreq.aqd-unittest.ms.com"] + self.valid_just_tcm
         self.successtest(command)
+        self.ib_verify()
         cmd = "show address --fqdn aquilon91.aqd-unittest.ms.com"
         out = self.commandtest(cmd.split(" "))
         self.matchclean(out, "Aliases: aliasjustreq.aqd-unittest.ms.com, "
@@ -667,7 +675,7 @@ class TestJustification(PersonalityTestMixin, TestBrokerCommand):
         command = ["del_domain", "--domain", "deployable"] + self.exception_trigger_just_tcm
         err = self.internalerrortest(command)
         self.matchoutput(err, "Invalid response received for the change "
-                              "management check. No JSON object could be decoded", command)
+                              "management check. Expecting value:", command)
         command = ["update_domain", "--domain", "deployable", "--noarchived"]
         out = self.commandtest(command)
 

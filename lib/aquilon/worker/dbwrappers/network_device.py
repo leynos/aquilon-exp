@@ -272,8 +272,8 @@ def discover_network_device(session, logger, config, dbnetdev, dryrun, exporter=
     # Build a lookup table of discovered IP addresses
     ip_to_iface = {}
     networks = []
-    for ifname, params in data["interfaces"].items():
-        for ipstr, label in params["ip"].items():
+    for ifname, params in list(data["interfaces"].items()):
+        for ipstr, label in list(params["ip"].items()):
             ip = ip_address(text_type(ipstr))
             try:
                 dbnetwork = get_net_id_from_ip(session, ip, dbnet_env)
@@ -378,13 +378,13 @@ def discover_network_device(session, logger, config, dbnetdev, dryrun, exporter=
     # be handled properly, and may need someone to break the cycles manually.
     # However such cases should be rare in real life, so probably it's not worth
     # spending too much effort dealing with them.
-    for new_name, iface in iface_by_name.items():
+    for new_name, iface in list(iface_by_name.items()):
         if iface.name == new_name:
             continue
         do_rename_interface(iface, new_name)
 
     # Add missing interfaces and addresses
-    for ifname, params in data["interfaces"].items():
+    for ifname, params in list(data["interfaces"].items()):
         if ifname in iface_by_name:
             iface = iface_by_name[ifname]
             # TODO: should we update the interface type here? There's no 'aq'
@@ -399,7 +399,7 @@ def discover_network_device(session, logger, config, dbnetdev, dryrun, exporter=
         else:
             relaxed = False
 
-        for ipstr, label in params["ip"].items():
+        for ipstr, label in list(params["ip"].items()):
             ip = ip_address(text_type(ipstr))
 
             if ip not in ip_to_iface:

@@ -20,10 +20,11 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
+from mock_ib_services import ib_expect_del_address
 
 
 class TestDelChassis(TestBrokerCommand):
@@ -37,10 +38,13 @@ class TestDelChassis(TestBrokerCommand):
                          command.split(" "))
 
     def test_101_del_ut3c5(self):
-        self.dsdb_expect_delete(self.net["unknown0"].usable[6])
+        ip = self.net["unknown0"].usable[6]
+        ib_expect_del_address("ut3c5.aqd-unittest.ms.com", str(ip))
+        self.dsdb_expect_delete(ip)
         command = "del chassis --chassis ut3c5.aqd-unittest.ms.com --clear_slots"
         self.noouttest(command.split(" "))
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_105_verify_ut3c5(self):
         command = "show chassis --chassis ut3c5.aqd-unittest.ms.com"
@@ -64,10 +68,14 @@ class TestDelChassis(TestBrokerCommand):
 
     def test_120_del_ut9_chassis(self):
         for i in range(1, 8):
-            self.dsdb_expect_delete(self.net["ut9_chassis"].usable[i])
-            command = "del chassis --chassis ut9c%d.aqd-unittest.ms.com" % i
+            fqdn = "ut9c%d.aqd-unittest.ms.com" % i
+            ip = self.net["ut9_chassis"].usable[i]
+            ib_expect_del_address(fqdn, str(ip))
+            self.dsdb_expect_delete(ip)
+            command = "del chassis --chassis " + fqdn
             self.noouttest(command.split(" "))
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_125_verify_ut9_chassis(self):
         for i in range(1, 6):

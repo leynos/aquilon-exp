@@ -31,7 +31,7 @@ def validate_recipe(config, recipe):
 
     # Type conversions not covered by the schema
     if "interfaces" in recipe:
-        for iface, params in recipe["interfaces"].items():
+        for iface, params in list(recipe["interfaces"].items()):
             if "mac" in params:
                 params["mac"] = force_mac("MAC address of " + iface,
                                           params["mac"])
@@ -124,11 +124,11 @@ def create_machine(config, session, logger, machine, dblocation, dbmodel,
             vmholder.holder_object.validate()
 
     if "disks" in recipe:
-        for disk_name, disk_params in recipe["disks"].items():
+        for disk_name, disk_params in list(recipe["disks"].items()):
             add_disk(dbmachine, disk_name, **disk_params)
 
     if "interfaces" in recipe:
-        for iface_name, iface_params in recipe["interfaces"].items():
+        for iface_name, iface_params in list(recipe["interfaces"].items()):
             # Due to locking order, automac handling must come before autopg
             add_interface(config, session, logger, dbmachine, iface_name,
                           **iface_params)
@@ -143,7 +143,7 @@ def add_disk(dbmachine, disk, controller, share=None, filesystem=None,
              disk_tech=None, diskgroup_key=None, model_key=None,
              usage=None, vsan_policy_key=None, comments=None):
     for dbdisk in dbmachine.disks:
-        if dbdisk.device_name == disk:
+        if dbdisk.device_name == disk.lower():
             raise ArgumentError("{0} already has a disk named {1!s}."
                                 .format(dbmachine, dbdisk.device_name))
         if dbdisk.bootable:
@@ -152,6 +152,9 @@ def add_disk(dbmachine, disk, controller, share=None, filesystem=None,
             elif boot:
                 raise ArgumentError("{0} already has a boot disk."
                                     .format(dbmachine))
+        if address and address.lower() == dbdisk.address:
+            raise ArgumentError("Machine {0} SCSI address {1} is already in use by disk {2!s}."
+                                .format(dbmachine, address, dbdisk.device_name))
 
     if boot is None:
         # Backward compatibility: "sda"/"c0d0" is bootable, except if there

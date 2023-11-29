@@ -51,18 +51,18 @@ def main():
     """ build location links from each location traversing
         thru the parent """
     ldict = get_dict()
-    for curr_id in ldict.keys():
+    for curr_id in list(ldict.keys()):
         child_id = curr_id
         child = ldict[curr_id]
-        print "Processing ", child_id, child
+        print("Processing ", child_id, child)
         parent_id = child['pid']
         dist = 0
         while parent_id is not None:
             dist = dist +1
             parent = ldict[parent_id]
-            print ("Adding child [%s/%s = %d], parent [%s/%s =%d], dist=%d"
+            print(("Adding child [%s/%s = %d], parent [%s/%s =%d], dist=%d"
                   % (child['type'], child['name'], child_id, parent['type'],
-                     parent['name'], parent_id, dist))
+                     parent['name'], parent_id, dist)))
             db.engine.execute(LINK_INS, {'cid' : child_id, 'pid' : parent_id, 'dist' : dist})
             parent_id = parent['pid']
 

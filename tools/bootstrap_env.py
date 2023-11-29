@@ -62,11 +62,11 @@ def bootstrap(dependencies, dir):
         extra += "        subprocess.call([easy_install, '%s'])\n" % package
     extra += "    subprocess.call([easy_install, '.'], cwd='%s')\n" % (
         os.path.join(dir, 'bootstrap_ms'))
-    print virtualenv.create_bootstrap_script(extra)
+    print(virtualenv.create_bootstrap_script(extra))
 
 
 if __name__ == '__main__':
     dir = os.path.dirname(os.path.realpath(__file__))
     libdir = os.path.join(dir, '..', 'lib')
     dependencies = gather_deps(libdir)
-    print bootstrap(dependencies, dir)
+    print(bootstrap(dependencies, dir))

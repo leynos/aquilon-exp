@@ -22,7 +22,7 @@ import json
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
 from broker.brokertest import TestBrokerCommand
@@ -287,16 +287,16 @@ class TestSetupParams(TestBrokerCommand):
         self.noouttest(cmd)
 
     def test_100_add_parameter_definitions(self):
-        for template, paramlist in AQUILON_PARAM_DEFS.items():
+        for template, paramlist in list(AQUILON_PARAM_DEFS.items()):
             for params in paramlist:
                 self.add_param_def("aquilon", template, params)
-        for template, paramlist in ESX_CLUSTER_PARAM_DEFS.items():
+        for template, paramlist in list(ESX_CLUSTER_PARAM_DEFS.items()):
             for params in paramlist:
                 self.add_param_def("esx_cluster", template, params)
-        for template, paramlist in HACLUSTER_PARAM_DEFS.items():
+        for template, paramlist in list(HACLUSTER_PARAM_DEFS.items()):
             for params in paramlist:
                 self.add_param_def("hacluster", template, params)
-        for template, paramlist in VMHOST_PARAM_DEFS.items():
+        for template, paramlist in list(VMHOST_PARAM_DEFS.items()):
             for params in paramlist:
                 self.add_param_def("vmhost", template, params)
 

@@ -20,10 +20,11 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
+from mock_ib_services import ib_expect_update_address
 
 
 class TestVMMigration(TestBrokerCommand):
@@ -172,14 +173,18 @@ class TestVMMigration(TestBrokerCommand):
         self.noouttest(["del_interface", "--machine", "evm41", "--interface", "eth0"])
 
     def test_132_pg_move_autoip(self):
-        self.dsdb_expect_update("evm50.aqd-unittest.ms.com", "eth0",
-                                self.net["autopg1"].usable[0])
+        old_ip = self.net["autopg2"].usable[0]
+        new_ip = self.net["autopg1"].usable[0]
+        fqdn = "evm50.aqd-unittest.ms.com"
+        self.dsdb_expect_update(fqdn, "eth0", new_ip)
+        ib_expect_update_address(fqdn, old_ip, new_ip=new_ip)
         command = ["update_machine", "--machine", "evm50",
                    "--cluster", "utecl13", "--allow_metacluster_change",
                    "--remap_disk", "filesystem/utfs1:share/utmc8as1/test_v2_share",
                    "--autoip"]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_135_show_evm50(self):
         command = ["show_machine", "--machine", "evm50"]
@@ -204,8 +209,11 @@ class TestVMMigration(TestBrokerCommand):
         self.matchclean(out, "evm50", command)
 
     def test_136_move_back(self):
-        ip = self.net["autopg2"].usable[0]
-        self.dsdb_expect_update("evm50.aqd-unittest.ms.com", "eth0", ip)
+        old_ip = self.net["autopg1"].usable[0]
+        new_ip = self.net["autopg2"].usable[0]
+        fqdn = "evm50.aqd-unittest.ms.com"
+        self.dsdb_expect_update(fqdn, "eth0", new_ip)
+        ib_expect_update_address(fqdn, old_ip, new_ip=new_ip)
         command = ["update_machine", "--machine", "evm50",
                    "--vmhost", "evh82.aqd-unittest.ms.com",
                    "--allow_metacluster_change",
@@ -213,6 +221,7 @@ class TestVMMigration(TestBrokerCommand):
                    "--autoip"]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_137_show_evm50(self):
         command = ["show_machine", "--machine", "evm50"]

@@ -19,6 +19,8 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_update_address
+
 if __name__ == "__main__":
     from broker import utils
     utils.import_depends()
@@ -95,12 +97,17 @@ class TestUpdateServiceAddress(TestBrokerCommand):
         new_ip = self.net["zebra_vip"].usable[6]
         self.dsdb_expect_update("zebra3.aqd-unittest.ms.com", ip=new_ip,
                                 comments="New service address comments")
+
+        #  TODO: could this be optimised to send one single request to IB ?
+        ib_expect_update_address("zebra3.aqd-unittest.ms.com", original_ip="4.2.12.146", new_ip=str(new_ip),
+                                 reverse_ptr=None)
         self.noouttest(["update_service_address",
                         "--hostname", "unittest20.aqd-unittest.ms.com",
                         "--name", "zebra3", "--ip", new_ip,
                         "--nomap_to_primary",
                         "--comments", "New service address comments"])
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_111_verify_unittest20(self):
         ip = self.net["zebra_vip"].usable[2]
@@ -133,12 +140,16 @@ class TestUpdateServiceAddress(TestBrokerCommand):
 
     def test_115_reset_zebra3(self):
         new_ip = self.net["zebra_vip"].usable[13]
+        zebra3_ip = self.net["zebra_vip"].usable[6]
         self.dsdb_expect_update("zebra3.aqd-unittest.ms.com", ip=new_ip)
+        ib_expect_update_address("zebra3.aqd-unittest.ms.com", original_ip=str(zebra3_ip), new_ip=str(new_ip),
+                                 reverse_ptr="unittest20.aqd-unittest.ms.com")
         self.noouttest(["update_service_address",
                         "--hostname", "unittest20.aqd-unittest.ms.com",
                         "--name", "zebra3", "--ip", new_ip,
                         "--map_to_primary"])
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_116_verify_zebra3_dns(self):
         command = ["show", "fqdn", "--fqdn", "zebra3.aqd-unittest.ms.com"]
@@ -164,8 +175,9 @@ class TestUpdateServiceAddress(TestBrokerCommand):
 
     def test_300_update_ext_service_address(self):
         # check that updating external service addresses do not invoke DSDB
+        fqdn = "unittest20.aqd-unittest.ms.com"
         command = ["update_service_address", "--ip", "192.168.5.26",
-                   "--hostname", "unittest20.aqd-unittest.ms.com",
+                   "--hostname", fqdn,
                    "--interfaces", "eth2", "--name", "et-unittest20",
                    "--network_environment", "excx"]
         self.noouttest(command)

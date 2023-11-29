@@ -19,12 +19,14 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_add_address
+
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
-from chassistest import VerifyChassisMixin
+from .brokertest import TestBrokerCommand
+from .chassistest import VerifyChassisMixin
 
 
 class TestUpdateChassis(TestBrokerCommand, VerifyChassisMixin):
@@ -33,11 +35,14 @@ class TestUpdateChassis(TestBrokerCommand, VerifyChassisMixin):
         ip = self.net["unknown0"].usable[6]
         self.dsdb_expect_add("ut3c5.aqd-unittest.ms.com", ip, "oa",
                              comments="Some new chassis comments")
+        ib_expect_add_address("ut3c5.aqd-unittest.ms.com", str(ip))
         command = ["update", "chassis", "--chassis", "ut3c5.aqd-unittest.ms.com",
                    "--rack", "ut3", "--serial", "ABC5678",
                    "--model", "c-class", "--ip", ip,
                    "--comments", "Some new chassis comments"]
         self.noouttest(command)
+        self.dsdb_verify()
+        self.ib_verify()
 
     def test_110_verify_ut3c5(self):
         self.verifychassis("ut3c5.aqd-unittest.ms.com", "hp", "c-class",

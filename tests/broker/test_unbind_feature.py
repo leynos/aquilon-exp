@@ -21,10 +21,10 @@ import re
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 
 class TestUnbindFeature(TestBrokerCommand):
@@ -246,6 +246,12 @@ class TestUnbindFeature(TestBrokerCommand):
                          "Interface Feature src_route is not bound to "
                          "personality aquilon/compileserver, interface bond0.",
                          command)
+
+    def test_300_unbind_vulcan(self):
+        for personality in ["vulcan-10g-server-prod", "vulcan-local-disk", "vulcan2-server-dev"]:
+            cmd = ["unbind_feature", "--feature", "vulcan/vulcan31",
+                   "--personality", personality, "--archetype", "vmhost"]
+            self.successtest(cmd)
 
     def test_900_verify_no_bindings(self):
         # Leftover bindings will cause subsequent compiles to fail as we don't

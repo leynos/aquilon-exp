@@ -59,7 +59,7 @@ def populate(sess, *args, **kw):
 
         try:
             sess.commit()
-        except Exception, e:
+        except Exception as e:
             log.error(str(e))
 
         log.debug('created %s countries'%(len(sess.query(Country).all())))

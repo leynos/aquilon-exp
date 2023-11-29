@@ -31,8 +31,6 @@ from tempfile import mkdtemp
 from threading import Thread, Lock
 import types
 
-from six import iteritems
-
 from ipaddress import IPv4Address
 from mako.lookup import TemplateLookup
 from twisted.python import context
@@ -43,12 +41,13 @@ from aquilon.exceptions_ import (ProcessException, AquilonError, ArgumentError,
                                  InternalError)
 from aquilon.config import Config, running_from_source
 from aquilon.aqdb.model import Machine
-from aquilon.utils import remove_dir
+from aquilon.utils import remove_dir, with_timer
 
 LOGGER = logging.getLogger(__name__)
 config = Config()
 
 DSDB_ENABLED = config.getboolean("dsdb", "enable")
+
 if DSDB_ENABLED:
     try:
         import ms.version
@@ -60,20 +59,13 @@ if DSDB_ENABLED:
         # sys.path for python modules when running tests
         # DSDB python client
         import ms.version
-        ms.version.addpkg("requests-kerberos", "0.11.0")
-        ms.version.addpkg("kerberos", "1.3.1-1.16-ms1-py27-64")
-        ms.version.addpkg("cryptography", "2.8-py27-64")
-        ms.version.addpkg("enum34", "1.1.6")
-        ms.version.addpkg("dns", "1.10.0")
-        ms.version.addpkg('urllib3', '1.25.5')
-        ms.version.addpkg('chardet', '3.0.4')
-        ms.version.addpkg('certifi', '2019.6.16')
-        ms.version.addpkg("idna", "2.8")
-        ms.version.addpkg("requests", "2.26.0")
-        ms.version.addpkg('ms.dsdb', '6.0.32')
+        ms.version.addpkg("cryptography", "39.0.0")
+        ms.version.addpkg("enum34", "1.1.10")
+        ms.version.addpkg("dnspython", "2.3.0")
+        ms.version.addpkg('ms.dsdb', '6.0.39')
     import ms.dsdb.client
 
-# subprocess.Popen is not thread-safe in Python 2, so we need locking
+# subprocess.Popen is not thread-safe in Python, so we need locking
 _popen_lock = Lock()
 
 
@@ -103,7 +95,7 @@ class StreamLoggerThread(Thread):
 
                 if self.context:
                     callWithContext(self.context, self.logger.log,
-                                    self.loglevel, data.rstrip())
+                                    self.loglevel, (data.rstrip()).encode())
                 else:
                     self.logger.log(self.loglevel, data.rstrip())
 
@@ -134,7 +126,7 @@ def run_command(args, env=None, path="/", logger=LOGGER, loglevel=logging.INFO,
         shell_env = {}
 
     # Make sure that environment is properly kerberized.
-    for envname, envvalue in os.environ.items():
+    for envname, envvalue in list(os.environ.items()):
         # AQTEST<something> is used by the testsuite
         if envname.startswith("KRB") or envname.startswith("AQTEST"):
             shell_env[envname] = envvalue
@@ -168,7 +160,7 @@ def run_command(args, env=None, path="/", logger=LOGGER, loglevel=logging.INFO,
 
     if input:
         proc_stdin = PIPE
-        logger.info("command `{}` stdin: {}".format(simple_command, input))
+        logger.info(f"command `{simple_command}` stdin: {input}")
     else:
         proc_stdin = None
 
@@ -177,7 +169,7 @@ def run_command(args, env=None, path="/", logger=LOGGER, loglevel=logging.INFO,
 
     with _popen_lock:
         p = Popen(args=command_args, stdin=proc_stdin, stdout=PIPE, stderr=PIPE,
-                  cwd=path, env=shell_env)
+                  cwd=path, env=shell_env, universal_newlines=True)
 
     # If we want to stream the command's output back to the client while the
     # command is still executing, then we have to doit ourselves. Otherwise,
@@ -187,6 +179,8 @@ def run_command(args, env=None, path="/", logger=LOGGER, loglevel=logging.INFO,
         if filterre:
             out = "\n".join(line for line in out.splitlines()
                             if filterre.search(line))
+            # out = "\n".join(line for line in out.decode().splitlines()
+            #                 if filterre.search(line))
     else:
         out_thread = StreamLoggerThread(logger, stream_level, p, p.stdout,
                                         filterre=filterre, context=ctx)
@@ -214,7 +208,7 @@ def run_command(args, env=None, path="/", logger=LOGGER, loglevel=logging.INFO,
         retcode = None
         signal_num = -p.returncode
     if err:
-        logger.log(loglevel, "command `{}` stderr: {}".format(simple_command, err))
+        logger.log(loglevel, f"command `{simple_command}` stderr: {err}")
     if p.returncode == 124:
         raise ProcessException(command=simple_command, out=out, err=err,
                                code=retcode, signalNum=signal_num,
@@ -248,7 +242,6 @@ def run_git(args, env=None, path=".", logger=LOGGER, loglevel=logging.INFO,
             git_args.insert(0, "git")
     else:
         git_args = ["git", args]
-
     return run_command(git_args, env=git_env, path=path, logger=logger,
                        loglevel=loglevel, filterre=filterre,
                        stream_level=stream_level)
@@ -282,7 +275,7 @@ def cache_version(config, logger=LOGGER):
         config.set("broker", "version", "Unknown")
 
 
-class GitRepo(object):
+class GitRepo:
     """
     Git repository wrapper
 
@@ -427,7 +420,7 @@ def dsdb_enabled(view_func):
 
 class DSDBEnabledMeta(type):
     def __new__(mcls, name, bases, body):
-        for name, obj in body.items():
+        for name, obj in list(body.items()):
             if name[:2] == name[-2:] == '__' or name in ['normalize_iface', 'getenv']:
                 # skip special method names like __init__ and helper class methods
                 continue
@@ -435,27 +428,27 @@ class DSDBEnabledMeta(type):
                 # decorate all functions
                 # class variables, classmethods and staticmethods are not decorated
                 body[name] = dsdb_enabled(obj)
-        return super(DSDBEnabledMeta, mcls).__new__(mcls, name, bases, body)
+        return super().__new__(mcls, name, bases, body)
 
     def __call__(cls, *args, **kwargs):
         # create a new instance for this class
         # add in `dsdbclient` attribute
-        instance = super(DSDBEnabledMeta, cls).__call__(*args, **kwargs)
+        instance = super().__call__(*args, **kwargs)
         if DSDB_ENABLED:
             if instance.dsdb_use_testdb:
                 os.environ['DSDB_USE_TESTDB'] = "1"
+                os.environ["DSDB_BROKER_URL"] = "http://dsdb.webfarm-qa.ms.com"
 
             # a timeout of zero in the broker config means "no timeout";  for ms.dsdb,
             # zero means immediate timeout (i.e. non-blocking operation).
             use_timeout = config.lookup_tool_timeout('dsdb') or None
 
-            instance.dsdbclient = ms.dsdb.client.DSDB(plant='prod',
+            instance.dsdbclient = ms.dsdb.client.DSDB(plant="prod",
                                                       timeout=use_timeout)
         return instance
 
 
-class DSDBRunner(object):
-    __metaclass__ = DSDBEnabledMeta
+class DSDBRunner(metaclass=DSDBEnabledMeta):
     snapshot_handlers = {}
 
     def __init__(self, logger=LOGGER):
@@ -463,7 +456,7 @@ class DSDBRunner(object):
         self.dsdb_use_testdb = config.getboolean("dsdb", "dsdb_use_testdb")
         self.actions = []
         self.rollback_list = []
-        self.manager_grn = config.get('dsdb', 'manager_grn')
+        self.manager_grn = config.get('broker', 'manager_grn')
 
     def normalize_iface(self, iface):
         return INVALID_NAME_RE.sub("_", iface)
@@ -485,7 +478,8 @@ class DSDBRunner(object):
                 else:
                     self.invoke_dsdb_module(args, verbose=verbose)
             except ProcessException as err:
-                if error_filter and err.out and error_filter.search(err.out):
+                if error_filter and (err.out or err.err) and \
+                   (error_filter.search(err.out) or error_filter.search(err.err)):
                     self.logger.warning(ignore_msg)
                 else:
                     raise
@@ -494,7 +488,7 @@ class DSDBRunner(object):
                 if error_filter:
                     self.logger.warning(ignore_msg)
                 else:
-                    raise AquilonError("DSDB command failed: {}.".format(', '.join(args.keys())))
+                    raise AquilonError("DSDB command failed: {}.".format(', '.join(list(args.keys()))))
             if rollback:
                 self.rollback_list.append((cmd_line, rollback))
 
@@ -506,7 +500,7 @@ class DSDBRunner(object):
                 if cmd_line:
                     cmd = ["dsdb"]
                     cmd.extend(args)
-                    self.logger.client_info("DSDB: %s" %
+                    self.logger.client_info("Rollback DSDB transaction: %s" %
                                             " ".join(str(a) for a in args))
                     run_command(cmd, env=self.getenv(), logger=self.logger)
                 else:
@@ -524,7 +518,7 @@ class DSDBRunner(object):
             self.logger.client_info("DSDB rollback completed.")
 
     def invoke_dsdb_module(self, args, verbose=False):
-        for method, attributes in args.iteritems():
+        for method, attributes in args.items():
             if verbose:
                 self.logger.client_info("DSDB: command {} "
                                         "called with arguments: {}.".format(method,
@@ -691,7 +685,7 @@ class DSDBRunner(object):
                                                   'comments': dbrack.comments}}
         # Ignoring DSDB failures for updates now, as many racks do not exist in DSDB
         self.add_action(dsdb_client_command_dict, dsdb_client_rollback_dict, cmd_line=False, error_filter=True,
-                        ignore_msg="Delete rack {} in DSDB failed, proceeding in AQDB.".format(dbrack.name))
+                        ignore_msg=f"Delete rack {dbrack.name} in DSDB failed, proceeding in AQDB.")
 
     def add_chassis(self, dbchassis):
         try:
@@ -724,7 +718,7 @@ class DSDBRunner(object):
                                                      'comments': dbchassis.comments}}
         # Ignoring DSDB failures for updates now, as many racks do not exist in DSDB
         self.add_action(dsdb_client_command_dict, dsdb_client_rollback_dict, cmd_line=False, error_filter=True,
-                        ignore_msg="Delete chassis {} in DSDB failed, proceeding in AQDB.".format(dbchassis.label))
+                        ignore_msg=f"Delete chassis {dbchassis.label} in DSDB failed, proceeding in AQDB.")
 
     def add_host_details(self, fqdn, ip, iface=None, mac=None, primary=None,
                          comments=None, **_):
@@ -801,6 +795,9 @@ class DSDBRunner(object):
             rollback.extend(["-ethernet_address", mac])
         if primary and str(primary) != str(fqdn):
             rollback.extend(["-primary_host_name", primary])
+        else:
+            # if primary isn't specified, means we're creating the primary
+            rollback.extend(["-manager_grn", self.manager_grn])
         if comments:
             rollback.extend(["-comments", comments])
 
@@ -959,7 +956,7 @@ class DSDBRunner(object):
 
         # Run through all of the entries in the old snapshot and attempt
         # to match them to their corrisponding new entry.
-        for fqdn, old_ifdata in old_hwdata["by-fqdn"].items():
+        for fqdn, old_ifdata in list(old_hwdata["by-fqdn"].items()):
             # Locate the new information about this address by either
             # its FQDN or IP address.
             if fqdn in new_hwdata["by-fqdn"]:
@@ -986,7 +983,7 @@ class DSDBRunner(object):
             kwargs = {p + k: v
                       for (p, d) in [('old_', old_ifdata),
                                      ('new_', new_ifdata)]
-                      for k, v in iteritems(d)}
+                      for k, v in d.items()}
 
             if (old_ifdata['ip'] != new_ifdata['ip'] or
                         old_ifdata['mac'] != new_ifdata['mac'] or
@@ -1005,7 +1002,7 @@ class DSDBRunner(object):
 
         # For all of the recoreds remaining in new_hwdata (see above)
         # record an addtion opperation.
-        adds = new_hwdata["by-fqdn"].values()
+        adds = list(new_hwdata["by-fqdn"].values())
 
         # Add the primary address first, and delete it last. The primary address
         # is identified by having an empty ['primary'] key (this is true for the
@@ -1064,6 +1061,7 @@ class DSDBRunner(object):
         return fields
 
     def show_chassis(self, chassis):
+        self.logger.info("Invoking show_chassis {}".format(chassis))
         chassis_data = self.dsdbclient.show_chassis(chassis_name=chassis).results()
         fields = {}
         if len(chassis_data) > 1:
@@ -1074,7 +1072,7 @@ class DSDBRunner(object):
                       "comments": chassis_data[0].get("comments", "")}
 
         if not fields:
-            raise ValueError("Chassis {} is not found in DSDB.".format(chassis))
+            raise ValueError(f"Chassis {chassis} is not found in DSDB.")
         return fields
 
     def show_host(self, hostname):

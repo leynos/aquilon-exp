@@ -58,7 +58,7 @@ class BranchChecker(ConsistencyChecker):
             # have any information how to restore the branch in template-king.
 
         # Branches in the template-king and not in the database
-        for branch in git_branches.difference(db_branches.keys()):
+        for branch in git_branches.difference(list(db_branches.keys())):
             if repair:
                 self.logger.info("Deleting branch %s", branch)
 

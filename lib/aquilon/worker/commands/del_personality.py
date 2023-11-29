@@ -41,7 +41,7 @@ class CommandDelPersonality(BrokerCommand):
                 raise ArgumentError("{0} is still in use and cannot be deleted."
                                     .format(dbpersona))
 
-        plenaries.add(dbpersona.stages.values())
+        plenaries.add(list(dbpersona.stages.values()))
 
         q = session.query(Cluster)
         q = q.filter(Cluster.allowed_personalities.contains(dbpersona))

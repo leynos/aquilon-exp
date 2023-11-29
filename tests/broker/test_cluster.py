@@ -19,11 +19,13 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_add_address, ib_expect_del_address
+
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 
 class TestCluster(TestBrokerCommand):
@@ -49,6 +51,16 @@ class TestCluster(TestBrokerCommand):
         for i in range(1, 5):
             self.matchoutput(out, "Member: evh%d.aqd-unittest.ms.com "
                              "[node_index: %d]" % (i, i - 1), command)
+
+    def test_102_utecl1_add_required_feature(self):
+        command = ["add_feature", "--feature", "vulcan/vulcan31", "--type", "host",
+                   "--activation", "rebuild", "--deactivation", "rebuild", "--grn", "grn:/ms/ei/aquilon/aqd"]
+        self.successtest(command)
+
+    def test_102_utecl1_bind_required_feature(self):
+        command = ["bind_feature", "--feature", "vulcan/vulcan31",
+                   "--personality", "vulcan-10g-server-prod", "--archetype", "vmhost"]
+        self.successtest(command)
 
     def test_102_utecl1_manage_setup(self):
         command = ["change_status", "--cluster", "utecl1", "--buildstatus", "ready"]
@@ -133,17 +145,18 @@ class TestCluster(TestBrokerCommand):
                           "--cluster", "utecl1"])
 
     def test_130_switching_archetype(self):
+        fqdn = "aquilon61.aqd-unittest.ms.com"
         command = ["cluster", "--cluster=utecl1",
-                   "--hostname=aquilon61.aqd-unittest.ms.com",
+                   "--hostname={}".format(fqdn),
                    "--personality=vulcan-10g-server-prod"]
         # Currently aquilon61 will be an "aquilon" archetype. Which is
         # incompatible with vulcan-10g-server-prod...
         out = self.notfoundtest(command)
 
         # So, make it a compatible archetype and try again
-        command = ["reconfigure", "--hostname=aquilon61.aqd-unittest.ms.com",
+        command = ["reconfigure", "--hostname={}".format(fqdn),
                    "--personality=esx_server", "--archetype=vmhost",
-                   "--osname", "esxi", "--osversion", "5.0.0",
+                   "--osname", "esxi", "--osversion", "7.0.3",
                    "--buildstatus=build"]
         out = self.badrequesttest(command)
         self.matchoutput(out,
@@ -154,38 +167,42 @@ class TestCluster(TestBrokerCommand):
         # Now we have a problem - vmhosts do not compile without a cluster,
         # which is a bug, but it means we cannot just switch the archetype. We
         # need to delete & re-add the host instead. Sigh...
-        self.dsdb_expect_delete(self.net["hp_eth0"].usable[11])
-        self.statustest(["del_host", "--hostname", "aquilon61.aqd-unittest.ms.com"])
-        self.dsdb_expect_add("aquilon61.aqd-unittest.ms.com",
+        ip = self.net["hp_eth0"].usable[11]
+        ib_expect_del_address(fqdn, ip)
+        self.dsdb_expect_delete(ip)
+        self.statustest(["del_host", "--hostname", fqdn])
+        self.dsdb_expect_add(fqdn,
                              self.net["hp_eth0"].usable[11], "eth0",
                              self.net["hp_eth0"].usable[11].mac)
-        self.noouttest(["add_host", "--hostname", "aquilon61.aqd-unittest.ms.com",
+        ib_expect_add_address(fqdn, ip)
+        self.noouttest(["add_host", "--hostname", fqdn,
                         "--archetype", "vmhost", "--personality", "esx_server",
-                        "--osname", "esxi", "--osversion", "5.0.0",
+                        "--osname", "esxi", "--osversion", "7.0.3",
                         "--machine", "ut9s03p11",
                         "--sandbox", "%s/utsandbox" % self.user,
                         "--ip", self.net["hp_eth0"].usable[11]])
         self.dsdb_verify()
+        self.ib_verify()
 
         command = ["cluster", "--cluster=utecl1",
                    "--personality=vulcan-10g-server-prod",
-                   "--hostname=aquilon61.aqd-unittest.ms.com"]
+                   "--hostname={}".format(fqdn)]
         out = self.badrequesttest(command)
         self.matchoutput(out,
-                         "Host aquilon61.aqd-unittest.ms.com sandbox "
+                         "Host %s sandbox "
                          "%s/utsandbox does not match ESX cluster utecl1 "
-                         "domain unittest" % self.user,
+                         "domain unittest" % (fqdn, self.user),
                          command)
 
         # Ah yes, we need it to be in the same sandbox
         # using --force to bypass normal checks due to git status
         # containing uncommitted files
         command = ["manage", "--domain=unittest",
-                   "--hostname=aquilon61.aqd-unittest.ms.com", "--force"]
+                   "--hostname={}".format(fqdn), "--force"]
         self.successtest(command)
 
         command = ["cluster", "--cluster=utecl1",
-                   "--hostname=aquilon61.aqd-unittest.ms.com",
+                   "--hostname={}".format(fqdn),
                    "--personality=vulcan-10g-server-prod"]
         self.successtest(command)
 
@@ -218,6 +235,7 @@ class TestCluster(TestBrokerCommand):
         command = ["add", "service", "address", "--resourcegroup", "testnextip", "--service_address",
                    service_addr, "--name", "test", "--ipfromtype", "vip"]
         self.dsdb_expect_add(service_addr, ip)
+        ib_expect_add_address(service_addr, str(ip))
         self.successtest(command)
         command = ["show", "service", "address", "--name", "test",
                    "--resourcegroup", "testnextip"]
@@ -228,14 +246,17 @@ class TestCluster(TestBrokerCommand):
         self.matchoutput(out, "Address: {} [{}]".format(service_addr, ip),
                          command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_133_ipfromtype_resourcegroup_restore(self):
         ip1 = self.net["np_bucket2_vip"].usable[0]
         self.dsdb_expect_delete(ip1)
+        ib_expect_del_address("testresgr.ms.com", str(ip1))
         command = ["del", "service", "address", "--name", "test",
                    "--resourcegroup", "testnextip"]
         self.successtest(command)
         self.dsdb_verify()
+        self.ib_verify()
         command = ["del", "resourcegroup", "--resourcegroup", "testnextip", "--cluster", "utecl1"]
         self.successtest(command)
 

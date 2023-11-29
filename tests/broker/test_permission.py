@@ -25,10 +25,10 @@ that the 'permission' and 'show principal' commands work as expected.
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 
 class TestPermission(TestBrokerCommand):
@@ -242,8 +242,8 @@ class TestPermission(TestBrokerCommand):
         err = self.unauthorizedtest(command, auth=True)
         message = self.config.get("broker", "authorization_error")
         self.matchoutput(err,
-                         "Unauthorized access attempt by %s to permission on "
-                         "/principal/%s/role/aqd_admin.  %s" %
+                         "Unauthorized access attempt by b'%s' to permission on "
+                         "b'/principal/%s/role/aqd_admin'.  %s" %
                          (self.principal, self.principal.replace('@', '%40'),
                           message),
                          command)

@@ -104,7 +104,7 @@ class MetaClusterMember(Base):
                                        cascade='all'))
 
     def __init__(self, **kw):
-        if kw.has_key('metacluster'):
+        if 'metacluster' in kw:
             #when we append to the association proxy, there's no metacluster arg
             #which prevents this from being checked.
             mc = kw['metacluster']

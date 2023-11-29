@@ -108,5 +108,5 @@ class LocationFormatter(ObjectFormatter):
             details.append(None)
         yield details
 
-for location_type, mapper in Location.__mapper__.polymorphic_map.items():
+for location_type, mapper in list(Location.__mapper__.polymorphic_map.items()):
     ObjectFormatter.handlers[mapper.class_] = LocationFormatter()

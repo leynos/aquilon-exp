@@ -49,7 +49,7 @@ logger = RequestLogger(module_logger=module_logger)
 config = Config()
 
 def main():
-    print "Using database:", str(db.engine.url)
+    print("Using database:", str(db.engine.url))
 
     archetype='netinfra'
     domain='netinfra'
@@ -91,26 +91,26 @@ def main():
     count_failed = 0
     q = session.query(NetworkDevice)
     for dbnetdev in q.all():
-        print 'Processing', dbnetdev.label, '...',
+        print('Processing', dbnetdev.label, '...', end=' ')
         try:
             dbhost = Host(hardware_entity=dbnetdev, branch=dbbranch,
                           owner_grn=dbgrn, sandbox_author=dbauthor,
                           personality=dbpersonality, status=dbstatus,
                           operating_system=dbos)
             session.add(dbhost)
-            print 'DONE'
+            print('DONE')
             count_success = count_success + 1
-        except Exception, e:
-            print 'FAILED'
-            print e
+        except Exception as e:
+            print('FAILED')
+            print(e)
             count_failed = count_failed + 1
 
     if count_failed == 0:
-        print 'Commiting', count_success, 'entries'
+        print('Commiting', count_success, 'entries')
         session.flush()
         session.commit()
     else:
-        print 'Aborting, there were', count_failed, 'failed entries'
+        print('Aborting, there were', count_failed, 'failed entries')
 
 if __name__ == '__main__':
     main()

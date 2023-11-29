@@ -20,10 +20,12 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
+from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_del_address
 
 
 class TestSearchHost(TestBrokerCommand):
@@ -172,7 +174,7 @@ class TestSearchHost(TestBrokerCommand):
         out = self.badrequesttest(command.split(" "))
         self.matchoutput(out,
                          "Expected an IP address for --ip: "
-                         "u'not-an-ip-address' does not appear to be an IPv4 or IPv6 address.",
+                         "'not-an-ip-address' does not appear to be an IPv4 or IPv6 address.",
                          command)
 
     def testnetworkipavailable(self):
@@ -662,13 +664,13 @@ class TestSearchHost(TestBrokerCommand):
 
     def testdomainmismatch(self):
         ip = self.net["unknown0"].usable[34]
-        self.dsdb_expect_add("mismatch.one-nyp.ms.com", ip,
-                             "eth0_mismatch",
-                             primary="infra1.aqd-unittest.ms.com")
+        fqdn = "mismatch.one-nyp.ms.com"
+        ib_expect_add_address(fqdn, str(ip), reverse_ptr="infra1.aqd-unittest.ms.com")
+        self.dsdb_expect_add(fqdn, ip, "eth0_mismatch", primary="infra1.aqd-unittest.ms.com")
         self.noouttest(["add_interface_address",
                         "--machine", "infra1.aqd-unittest.ms.com",
                         "--interface", "eth0", "--label", "mismatch",
-                        "--fqdn", "mismatch.one-nyp.ms.com", "--ip", ip])
+                        "--fqdn", fqdn, "--ip", ip])
 
         command = ["search_host", "--hostname", "infra1.aqd-unittest.ms.com"]
         out = self.commandtest(command)
@@ -685,11 +687,13 @@ class TestSearchHost(TestBrokerCommand):
             infra1.one-nyp.ms.com
             """, command)
 
+        ib_expect_del_address(fqdn, str(ip))
         self.dsdb_expect_delete(ip)
         self.noouttest(["del_interface_address",
                         "--machine", "infra1.aqd-unittest.ms.com",
                         "--interface", "eth0", "--label", "mismatch"])
         self.dsdb_verify()
+        self.ib_verify()
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestSearchHost)

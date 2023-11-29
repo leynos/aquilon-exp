@@ -19,11 +19,13 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_add_address
+
 if __name__ == '__main__':
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 DOMAIN = 'aqd-unittest.ms.com'
 NAME = 'dnstest1.%s' % DOMAIN
@@ -40,17 +42,20 @@ class TestAddNSRecord(TestBrokerCommand):
         self.IP = str(self.net["ut9_chassis"].usable[0])
 
     def test_100_add_a_record(self):
-        self.dsdb_expect_add(NAME, self.IP)
         cmd = ['add', 'address', '--fqdn', NAME, '--ip', self.IP] + self.valid_just_tcm
         out = self.badrequesttest(cmd)
         self.matchoutput(out, "Please provide a GRN/EON_ID!", cmd)
+        self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
     def test_101_add_a_record_grn(self):
         self.dsdb_expect_add(NAME, self.IP)
+        ib_expect_add_address(NAME, self.IP)
         cmd = ['add', 'address', '--fqdn', NAME, '--ip', self.IP,
                '--grn', GRN] + self.valid_just_tcm
         self.noouttest(cmd)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_200_verify_a_record(self):
         cmd = "show address --fqdn %s" % NAME

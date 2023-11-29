@@ -79,7 +79,7 @@ class KNCHTTPChannel(http.HTTPChannel):
                 self.__need_knc_data = 0
 
                 # Fix the log prefix to include the real remote IP
-                logstr = "%s,%s,%s" % (self.__class__.__name__,
+                logstr = "{},{},{}".format(self.__class__.__name__,
                                        self.transport.sessionno,
                                        self.kncinfo[b"REMOTE_IP"])
                 ctx = context.get(ILogContext)
@@ -96,7 +96,7 @@ class KNCHTTPChannel(http.HTTPChannel):
                     raise KNCProtocolException('KNC Metadata value missing')
                 if key in self.__KNC_fields:
                     try:
-                        value = value.decode("ascii")
+                        value = value.decode()
                     except UnicodeDecodeError:
                         raise KNCProtocolException('Non-ASCII value in KNC metadata')
                     try:

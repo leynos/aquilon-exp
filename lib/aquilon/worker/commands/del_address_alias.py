@@ -16,12 +16,12 @@
 # limitations under the License.
 """Contains the logic for `aq del address alias`."""
 
-from aquilon.exceptions_ import NotFoundException
+from aquilon.exceptions_ import NotFoundException, ProcessException
 from aquilon.aqdb.model import Fqdn, AddressAlias
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
-
+from aquilon.worker.ib_services import IBServices
 
 class CommandDelAddressAlias(BrokerCommand):
 
@@ -68,6 +68,17 @@ class CommandDelAddressAlias(BrokerCommand):
             cm.consider(dns_rec.target)
 
         cm.validate()
+
+        ib_services = IBServices(logger, **arguments)
+        if ib_services.feature_enabled("address_alias"):
+            try:
+                for dns_rec in rrs:
+                    if ib_services.assert_dns_environment(dns_rec.fqdn.dns_environment.name) and \
+                            ib_services.assert_dns_environment(dns_rec.target.dns_environment.name):
+                        ib_services.delete_a_ptr(str(dns_rec), dns_rec.target_ip, delete_ptr=False)
+            except ProcessException as e:
+                raise e
+
         session.flush()
 
         return

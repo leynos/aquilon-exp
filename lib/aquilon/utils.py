@@ -18,7 +18,7 @@
     Useful subroutines that don't fit in any place to particularly for aquilon.
 """
 
-from __future__ import print_function
+
 
 import errno
 import gzip
@@ -33,6 +33,7 @@ from tempfile import mkstemp
 from uuid import UUID
 
 from ipaddress import IPv6Address, ip_address
+from functools import wraps
 import jsonschema
 
 from six.moves import cStringIO as StringIO  # pylint: disable=F0401
@@ -67,7 +68,7 @@ def kill_from_pid_file(pid_file):  # pragma: no cover
         try:
             os.kill(pid, signal.SIGQUIT)
         except OSError as err:
-            print('Failed to kill %s: %s' % (pid, err.strerror))
+            print(f'Failed to kill {pid}: {err.strerror}')
 
 
 def monkeypatch(cls):
@@ -93,9 +94,9 @@ def force_ip(label, value):
     if value is None:
         return None
     try:
-        ip = ip_address(text_type(value))
+        ip = ip_address(str(value))
     except ValueError as e:
-        raise ArgumentError("Expected an IP address for %s: %s." % (label, e))
+        raise ArgumentError(f"Expected an IP address for {label}: {e}.")
 
     # We could auto-convert mapped addresses to real IPv4 here, but that would
     # make e.g. audit log lookups more difficult
@@ -145,7 +146,7 @@ def force_mac(label, value):
     try:
         return MACAddress(value)
     except ValueError as err:
-        raise ArgumentError("Expected a MAC address for %s: %s" % (label, err))
+        raise ArgumentError(f"Expected a MAC address for {label}: {err}")
 
 
 def force_wwn(label, value):
@@ -156,8 +157,8 @@ def force_wwn(label, value):
         return None
 
     # Strip separators if present
-    value = str(value).strip().lower().translate(None, ':-')
-
+    transtable = str.maketrans('', '', ':-')
+    value = str(value).strip().lower().translate(transtable)
     if not _hex_re.match(value):
         raise ArgumentError("The value of %s may contain hexadecimal "
                             "characters only." % label)
@@ -192,11 +193,11 @@ def force_list(label, value):
     seen = set()
     items = []              # preserve the order
     for x in lines:
-        if not x or x.startswith("#"):
-            pass
+        # bytes?
+        if not x or x.startswith(b"#"):
+            continue
         elif x in seen:
-            raise ArgumentError("Provided list contains duplicate "
-                                "entry: {0:s}".format(x))
+            raise ArgumentError(f"Provided list contains duplicate entry: {x.decode() if isinstance(x, bytes) else x}")
         else:
             seen.add(x)
             items.append(x)
@@ -354,7 +355,7 @@ def remove_file(filename, cleanup_directory=False, logger=LOGGER):
             return False
 
 
-class ProgressReport(object):
+class ProgressReport:
     def __init__(self, logger, total, item_name, interval=10.0):
         self.logger = logger
         self.total = total
@@ -384,10 +385,29 @@ def validate_json(config, data, schema_name, msg):
             schema = json.load(fp)
         jsonschema.Draft4Validator.check_schema(schema)
     except Exception as err:
-        raise AquilonError("Failed to load %s: %s" % (schema_file, err))
+        raise AquilonError(f"Failed to load {schema_file}: {err}")
 
     try:
         jsonschema.validate(data, schema, resolver=resolver,
                             format_checker=format_checker)
     except jsonschema.ValidationError as err:
-        raise ArgumentError("Failed to validate %s: %s" % (msg, err))
+        raise ArgumentError(f"Failed to validate {msg}: {err}")
+
+
+def with_timer(f):
+    """
+    Decorator to measure the time taken in seconds by a decorated function.
+    """
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        try:
+            result = f(*args, **kwargs)
+        except Exception as e:
+            LOGGER.warning(str(e))
+            raise e
+        finally:
+            end = time.time()
+            LOGGER.info("%r took %2.4f sec" %(f.__name__, end-start))
+        return result
+    return wrapper

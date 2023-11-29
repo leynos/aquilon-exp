@@ -26,9 +26,10 @@ from aquilon.worker.dbwrappers.hardware_entity import get_hardware
 from aquilon.worker.dbwrappers.interface import (generate_ip,
                                                  assign_address)
 from aquilon.aqdb.model.network import get_net_id_from_ip
-from aquilon.worker.processes import DSDBRunner
 from aquilon.worker.dbwrappers.location import get_default_dns_domain
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from aquilon.worker.ib_services import IBServices
+from aquilon.worker.processes import DSDBRunner
 
 
 class CommandAddInterfaceAddress(BrokerCommand):
@@ -196,6 +197,16 @@ class CommandAddInterfaceAddress(BrokerCommand):
                     dsdb_runner.delete_host_details(dbdns_rec.fqdn, ip)
                 dsdb_runner.update_host(dbhw_ent, oldinfo)
                 dsdb_runner.commit_or_rollback("Could not add host to DSDB")
+
+            ib_services = IBServices(logger, **kwargs)
+            if newly_created and ib_services.feature_enabled("interface_address"):
+                try:
+                    ib_services.add_a_ptr(
+                        fqdn, ip,
+                        assign_ptr_to_fqdn=None if dbdns_rec.reverse_ptr is None else str(dbdns_rec.reverse_ptr))
+                except ProcessException as e:
+                    dsdb_runner.rollback()
+                    raise e
 
         for name, value in audit_results:
             self.audit_result(session, name, value, **kwargs)

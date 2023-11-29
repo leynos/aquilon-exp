@@ -228,7 +228,7 @@ class TestAddPersonality(VerifyGrnsMixin, PersonalityTestMixin,
             'clustered': {'cluster_required': True, 'staged': False},
             'utpers-prod': {'environment': 'prod', 'staged': False},
         }
-        for personality, kwargs in personalities.items():
+        for personality, kwargs in list(personalities.items()):
             self.create_personality("aquilon", personality, **kwargs)
 
     def test_200_invalid_personality_name(self):

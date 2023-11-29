@@ -73,7 +73,7 @@ def sqlite_show_plan(conn, cursor, statement, parameters, context, executemany):
 def stmt_2_sqlid(stmt):
     # Generate Oracle SQL_ID for an SQL statement.
     # Based on http://www.slaviks-blog.com/2010/03/30/oracle-sql_id-and-hash-value/
-    hash = hashlib.md5(stmt + '\x00').digest()
+    hash = hashlib.md5(stmt.encode() + b'\x00').digest()
     _, _, msb, lsb = struct.unpack('IIII', hash)
     sqln = (msb << 32) + lsb
     alphabet = '0123456789abcdfghjkmnpqrstuvwxyz'
@@ -436,7 +436,7 @@ def db_prompt(session):
     elif engine.dialect.name == 'postgresql':  # pragma: no cover
         stmt = "SELECT current_user"
         user = session.execute(stmt).scalar()
-        host = engine.url.host or ""
+        host = str(engine.url).split("=")[1] or ""
         stmt = "SELECT current_database()"
         dbname = session.execute(stmt).scalar()
         prompt = '%s@%s/%s' % (user, host, dbname)

@@ -22,10 +22,10 @@ from datetime import datetime, timedelta
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 EXPIRY = datetime.utcnow().replace(microsecond=0) + timedelta(days=1)
 EXPIRY = EXPIRY.isoformat().replace("T", " ")

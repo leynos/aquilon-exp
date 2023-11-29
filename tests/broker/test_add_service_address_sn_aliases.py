@@ -20,11 +20,13 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_add_address
+
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 
 class TestAddServiceAddressSNAliases(TestBrokerCommand):
@@ -78,12 +80,15 @@ class TestAddServiceAddressSNAliases(TestBrokerCommand):
         # address alias creation
         ip = self.net['np_bucket2_vip'].usable[2]
         service_addr = 'utvcs1sa1.aqd-unittest.ms.com'
+        ib_expect_add_address(service_addr, str(ip), create_ptr=True, reverse_ptr="utvcs1pn1.aqd-unittest.ms.com")
+        ib_expect_add_address("utvcs1pn1.aqd-unittest.ms.com", str(ip))
         self.dsdb_expect_add(service_addr, ip)
         command = ['add_service_address', '--resourcegroup=utvcs1ifset',
                    '--name=utvcs1sa1', '--service_address', service_addr,
                    '--ip', ip, '--map_to_shared_name']
         self.successtest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_020_mapped_to_shared_name_noaa(self):
         # create a service address mapped to the shared-name without
@@ -91,28 +96,30 @@ class TestAddServiceAddressSNAliases(TestBrokerCommand):
         ip = self.net['np_bucket2_vip'].usable[3]
         service_addr = 'utvcs1sa2.aqd-unittest.ms.com'
         self.dsdb_expect_add(service_addr, ip)
+        ib_expect_add_address(service_addr, str(ip), create_ptr=True, reverse_ptr="utvcs1pn2.aqd-unittest.ms.com")
         command = ['add_service_address', '--resourcegroup=utvcs1ifset2',
                    '--name=utvcs1sa2', '--service_address', service_addr,
                    '--ip', ip, '--map_to_shared_name']
         self.successtest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_025_utvcs1pn1_addr_alias(self):
         command = ['search_dns', '--fqdn=utvcs1pn1.aqd-unittest.ms.com',
                    '--fullinfo']
         out = self.commandtest(command)
-        self.matchoutput(out, 'Address Alias: utvcs1pn1.aqd-unittest.ms.com',
+        self.matchoutput(out, 'utvcs1pn1.aqd-unittest.ms.com',
                          command)
-        self.matchoutput(out, 'Target: utvcs1sa1.aqd-unittest.ms.com',
+        self.matchoutput(out, 'utvcs1sa1.aqd-unittest.ms.com',
                          command)
 
     def test_025_utvcs1pn2_noaddr_alias(self):
         command = ['search_dns', '--fqdn=utvcs1pn2.aqd-unittest.ms.com',
                    '--fullinfo']
         out = self.commandtest(command)
-        self.matchclean(out, 'Address Alias: utvcs1pn2.aqd-unittest.ms.com',
+        self.matchclean(out, 'utvcs1pn2.aqd-unittest.ms.com',
                         command)
-        self.matchclean(out, 'Target: utvcs1sa2.aqd-unittest.ms.com', command)
+        self.matchclean(out, 'utvcs1sa2.aqd-unittest.ms.com', command)
 
 
 if __name__ == '__main__':

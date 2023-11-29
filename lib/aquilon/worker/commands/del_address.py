@@ -23,10 +23,11 @@ from aquilon.worker.broker import BrokerCommand
 from aquilon.aqdb.model import ARecord, DynamicStub
 from aquilon.aqdb.model.dns_domain import parse_fqdn
 from aquilon.aqdb.model.network_environment import get_net_dns_env
-from aquilon.exceptions_ import ArgumentError, NotFoundException
-from aquilon.worker.processes import DSDBRunner
+from aquilon.exceptions_ import ArgumentError, NotFoundException, ProcessException
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from aquilon.worker.ib_services import IBServices
+from aquilon.worker.processes import DSDBRunner
 
 
 class CommandDelAddress(BrokerCommand):
@@ -95,10 +96,18 @@ class CommandDelAddress(BrokerCommand):
                           exporter=exporter)
         session.flush()
 
+        dsdb_runner = None
         if dbdns_env.is_default:
             dsdb_runner = DSDBRunner(logger=logger)
             dsdb_runner.delete_host_details(old_fqdn, ip,
                                             comments=old_comments)
             dsdb_runner.commit_or_rollback()
 
-        return
+            ib_services = IBServices(logger, **arguments)
+            if ib_services.feature_enabled("address"):
+                try:
+                    ib_services.delete_a_ptr(old_fqdn, ip)
+                except ProcessException as e:
+                    if dsdb_runner:
+                        dsdb_runner.rollback()
+                    raise e

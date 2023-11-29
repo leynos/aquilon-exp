@@ -17,7 +17,7 @@
 # limitations under the License.
 """ The way to populate an aqdb instance """
 
-from __future__ import print_function
+
 
 import argparse
 import importlib
@@ -29,8 +29,8 @@ import sys
 logging.basicConfig(level=logging.ERROR)
 log = logging.getLogger('aqdb.populate')
 
-import utils
-utils.load_classpath()
+from utils import load_classpath
+load_classpath()
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import configure_mappers
@@ -141,7 +141,7 @@ def main(*args, **kw):
                               '--role', 'aqd_admin'],
                              env=env, stdout=1, stderr=2)
         if rc != 0:
-            log.warn("Failed to add current user as administrator.")
+            log.warning("Failed to add current user as administrator.")
 
     # CONSTRAINTS
     if db.engine.dialect.name == 'oracle':

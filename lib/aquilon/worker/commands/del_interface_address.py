@@ -16,16 +16,22 @@
 # limitations under the License.
 """Contains the logic for `aq del interface address`."""
 
+import logging
+
 from aquilon.worker.broker import BrokerCommand
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.aqdb.model import (Interface, AddressAssignment, DnsDomain, Fqdn,
                                 ARecord, NetworkEnvironment)
+from aquilon.utils import first_of
+from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.hardware_entity import get_hardware
 from aquilon.worker.dbwrappers.service_instance import check_no_provided_service
+from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
-from aquilon.utils import first_of
-from aquilon.worker.dbwrappers.change_management import ChangeManagement
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 class CommandDelInterfaceAddress(BrokerCommand):
@@ -123,6 +129,13 @@ class CommandDelInterfaceAddress(BrokerCommand):
         if addr.is_shared and not other_uses:
             dsdb_runner.delete_host_details(fqdn, ip)
 
+        ib_services = IBServices(logger, **kwargs)
+        for dns_rec in addr.dns_records:
+            ib_services.group.add_action(
+                lambda fqdn=dns_rec, ip=ip: ib_services.delete_a_ptr(fqdn, ip),
+                lambda fqdn=dns_rec, ip=ip: ib_services.add_a_ptr(fqdn, ip)
+            )
+
         with plenaries.transaction():
             if dbhw_ent.host and dbhw_ent.host.archetype.name == 'aurora':
                 logger.client_info("WARNING: removing IP %s from AQDB and "
@@ -130,5 +143,12 @@ class CommandDelInterfaceAddress(BrokerCommand):
             else:
                 dsdb_runner.update_host(dbhw_ent, oldinfo)
                 dsdb_runner.commit_or_rollback("Could not add host to DSDB")
+
+            if ib_services.feature_enabled("interface_address"):
+                try:
+                    ib_services.group.commit_or_rollback()
+                except ProcessException as e:
+                    dsdb_runner.rollback()
+                    raise e
 
         return

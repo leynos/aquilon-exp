@@ -193,7 +193,7 @@ def validate_personality_config(dbstage):
     error = []
 
     # Validate archetype-wide parameters
-    for param_def_holder in dbarchetype.param_def_holders.values():
+    for param_def_holder in list(dbarchetype.param_def_holders.values()):
         parameter = dbstage.parameters.get(param_def_holder, None)
         error += validate_required_parameter(param_def_holder, parameter)
 

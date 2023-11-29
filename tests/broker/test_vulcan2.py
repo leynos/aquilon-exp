@@ -20,11 +20,11 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
-from notificationtest import VerifyNotificationsMixin
+from .brokertest import TestBrokerCommand
+from .notificationtest import VerifyNotificationsMixin
 
 
 class TestVulcan20(VerifyNotificationsMixin, TestBrokerCommand):
@@ -109,6 +109,11 @@ class TestVulcan20(VerifyNotificationsMixin, TestBrokerCommand):
 
         self.noouttest(["unbind_client", "--metacluster", "utmc8",
                         "--service", "vcenter"])
+
+    def test_435_bind_required_feature(self):
+        command = ["bind_feature", "--feature", "vulcan/vulcan31",
+                   "--personality", "vulcan2-server-dev", "--archetype", "vmhost"]
+        self.successtest(command)
 
     def test_440_unmapvcenterservices(self):
         command = ["unmap", "service", "--service", "vcenter",

@@ -142,7 +142,7 @@ def ref_constraint_name(local_table, remote_table=None, column=None, suffix=None
 
 def multi_col_constraint_name(table_name, columns, suffix):
     col_names = []
-    for name, col in columns.items():
+    for name, col in list(columns.items()):
         # If the column looks like a reference to a remote table, then use the
         # name of the remote object. It's not really a table name in all cases,
         # but that's not a problem.
@@ -157,7 +157,7 @@ def multi_col_constraint_name(table_name, columns, suffix):
 
     # Try to abbreviate column names
     col_names = []
-    for name, col in columns.items():
+    for name, col in list(columns.items()):
         # If the column looks like a reference to another table, then try to
         # abbreviate the remote table name.
         if name.endswith('_id') and col.foreign_keys:

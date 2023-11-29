@@ -859,29 +859,6 @@
         </format>
     </command>
 
-    <command name="refresh_network">
-        Refresh aqdb network information from dsdb.
-        <p/>
-        Generally this command is called with the --all option but can be
-        restricted to a single building for speed.  A dryrun option is
-        provided to see what would change.
-        <p/>
-        Using the incremental option will cause every change to be committed
-        to the database individually.  This is recommended for automated
-        usage but is off by default for interactive use as it is slower.
-        <optgroup mandatory="True" fields="one">
-            <option name="building" type="string">Building name</option>
-            <option name="all" type="flag">All locations</option>
-        </optgroup>
-        <optgroup>
-            <option name="dryrun" type="boolean" conflicts="incremental">Report what will change</option>
-            <option name="incremental" type="boolean" conflicts="dryrun">Commit every change as it is decided</option>
-            <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
-            <option name="reason" type="string">Human readable description of why the operation was performed</option>
-        </optgroup>
-        <transport method="post" path="command/refresh_network"/>
-    </command>
-
     <command name="add_cpu">
         Add a new CPU type to the database.
         <optgroup mandatory="True" fields="all">
@@ -1943,10 +1920,8 @@
             <optgroup fields="one">
                 <option name="hostname" type="string">Hostname</option>
                 <option name="machine" type="string">Machine name</option>
-                <option name="chassis" type="string">Chassis name</option>
                 <option name="network_device" type="string">Network device name</option>
                 <option name="switch" type="string">[Deprecated] Switch name</option>
-                <option name="console_server" type="string">Console server name</option>
             </optgroup>
             <option name="interface" type="string">Name of the interface.</option>
         </optgroup>
@@ -1982,10 +1957,8 @@
             <optgroup mandatory="True" fields="one">
                 <option name="hostname" type="string">Hostname</option>
                 <option name="machine" type="string">Machine name</option>
-                <option name="chassis" type="string">Chassis name</option>
                 <option name="network_device" type="string">Network device name</option>
                 <option name="switch" type="string">[Deprecated] Switch name</option>
-                <option name="console_server" type="string">Console server name</option>
             </optgroup>
             <option name="interface" type="string">Name of the interface</option>
             <optgroup>
@@ -2213,9 +2186,10 @@
             <option name="service" type="string">Service name</option>
             <option name="instance" type="string">Instance name</option>
             <optgroup>
-                <option name="hostname" type="string" conflicts="cluster">Server name</option>
-                <option name="cluster" type="string" conflicts="hostname ip">Cluster name</option>
+                <option name="hostname" type="string" conflicts="cluster fqdn">Server name</option>
+                <option name="cluster" type="string" conflicts="hostname ip fqdn">Cluster name</option>
                 <option name="alias" type="string">Use this alias instead of the real server name when configuring clients</option>
+                <option name="fqdn" type="string" conflicts="cluster hostname ip alias">FQDN</option>
             </optgroup>
         </optgroup>
         <optgroup>
@@ -2239,10 +2213,11 @@
                 <option name="all" type="flag">Remove server from all instances of this service</option>
             </optgroup>
             <optgroup>
-                <option name="position" type="int" conflicts="hostname cluster alias">Server definition at the given position</option>
-                <option name="hostname" type="string" conflicts="cluster position">Server name</option>
-                <option name="cluster" type="string" conflicts="hostname ip position">Cluster name</option>
-                <option name="alias" type="string" conflicts="position">Alias name</option>
+                <option name="position" type="int" conflicts="hostname cluster alias fqdn">Server definition at the given position</option>
+                <option name="hostname" type="string" conflicts="cluster fqdn position">Server name</option>
+                <option name="cluster" type="string" conflicts="hostname ip fqdn position">Cluster name</option>
+                <option name="alias" type="string" conflicts="position fqdn">Alias name</option>
+                <option name="fqdn" type="string" conflicts="cluster position hostname ip alias">FQDN</option>
             </optgroup>
         </optgroup>
         <optgroup>
@@ -5247,6 +5222,25 @@
         <transport trigger="fillnetwork" method="post" path="dynamic_range/fill/%(fillnetwork)s"/>
     </command>
 
+    <command name="update_dynamic_range">
+        Update an existing range of dynamic hosts, that is, hosts whose IP address
+        is assigned dynamically via DHCP, with a generated hostname.  The first or
+        last IP in the range, or any IP in-between can be specified to identify it.
+        <p/>
+        The only field that can be updated is the range_class.  Changes to or
+        from a class of "infoblox_managed" will result in Infoblox updates.
+        <optgroup mandatory = "True" fields="all">
+            <option name="ip" type="ip">Any IP address within the dynamic range to change</option>
+            <option name="range_class" type="string">Class of the dynamic range:  "vm" or "infoblox_managed"</option>
+        </optgroup>
+        <optgroup>
+            <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
+            <option name="reason" type="string">Human readable description of why the operation was performed</option>
+            <option name="cm_check" type="flag">Do a dry-run, and report the objects in-scope for change-management.</option>
+        </optgroup>
+        <transport method="post" path="dynamic_range/%(ip)s"/>
+    </command>
+
     <command name="del_dynamic_range">
         Delete the allocated range of dynamic hosts.  The start and end
         IP addresses are inclusive.  The IPs must be on the same network.
@@ -5460,6 +5454,7 @@
         <optgroup mandatory="True" fields="all">
             <option name="fqdn" type="string">A fully qualified domain name</option>
             <option name="target" type="string">The target of the A-Record</option>
+            <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
         </optgroup>
         <optgroup>
             <option name="ttl" type="int">TTL</option>
@@ -5470,7 +5465,6 @@
               <option name="grn" type="string">GRN as string</option>
               <option name="eon_id" type="int">Numeric EON ID</option>
             </optgroup>
-            <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
             <option name="reason" type="string">Human readable description of why the operation was performed</option>
             <option name="cm_check" type="flag">Do a dry-run, and report the objects in-scope for change-management.</option>
         </optgroup>
@@ -5481,12 +5475,12 @@
         Delete DNS address aliases.
         <optgroup mandatory="True" fields="all">
             <option name="fqdn" type="string">The fully qualified domain name</option>
+            <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
         </optgroup>
         <optgroup>
             <option name="target" type="string">The target of the A-Record</option>
             <option name="dns_environment" type="string">The name of the environment the address is in (defaults to 'internal')</option>
             <option name="target_environment" type="string">The name of the environment the target is in (defaults to be the same as the alias environment)</option>
-            <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
             <option name="reason" type="string">Human readable description of why the operation was performed</option>
             <option name="cm_check" type="flag">Do a dry-run, and report the objects in-scope for change-management.</option>
         </optgroup>
@@ -5497,6 +5491,7 @@
         Update DNS address aliases.
         <optgroup mandatory="True" fields="all">
             <option name="fqdn" type="string">The fully qualified domain name</option>
+            <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
         </optgroup>
         <optgroup>
             <option name="target" type="string">The target of the A-Record</option>
@@ -5510,7 +5505,6 @@
               <option name="eon_id" type="int" conflicts="target">Numeric EON ID</option>
               <option name="clear_grn" type="flag" conflicts="grn eon_id target">Clear GRN value</option>
             </optgroup>
-            <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
             <option name="reason" type="string">Human readable description of why the operation was performed</option>
             <option name="cm_check" type="flag">Do a dry-run, and report the objects in-scope for change-management.</option>
         </optgroup>

@@ -20,11 +20,12 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
-from machinetest import MachineTestMixin
+from .brokertest import TestBrokerCommand
+from .machinetest import MachineTestMixin
+from mock_ib_services import ib_expect_del_address
 
 
 class TestDelStaticRoute(MachineTestMixin, TestBrokerCommand):
@@ -108,6 +109,7 @@ class TestDelStaticRoute(MachineTestMixin, TestBrokerCommand):
     def testdelunittest27(self):
         eth0_ip = self.net["unknown0"].usable[37]
         eth1_ip = self.net["routing1"].usable[1]
+
         self.delete_host("unittest27.aqd-unittest.ms.com", eth0_ip, "ut3c5n9",
                          eth1_ip=eth1_ip)
 

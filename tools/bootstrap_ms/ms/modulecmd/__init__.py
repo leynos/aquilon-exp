@@ -21,5 +21,5 @@ class Modulecmd(object):
         pass
 
 
-class ModulecmdExecError(StandardError):
+class ModulecmdExecError(Exception):
     pass

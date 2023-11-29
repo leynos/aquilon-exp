@@ -21,6 +21,7 @@ from aquilon.aqdb.model import SrvRecord, Fqdn
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from aquilon.worker.ib_services import IBServices
 
 
 class CommandDelSrvRecord(BrokerCommand):
@@ -64,12 +65,24 @@ class CommandDelSrvRecord(BrokerCommand):
                                     (SrvRecord._get_class_label(), service,
                                      protocol, dns_domain, msg))
 
-        # Validate ChangeManagement
+        ib_services = IBServices(logger, **arguments)
         cm = ChangeManagement(session, user, justification, reason, logger, self.command, **arguments)
+
         for dns_rec in rrs:
             delete_dns_record(dns_rec, exporter=exporter)
+
+            ib_args = (service, protocol, dns_domain, dns_rec.target, dns_rec.port, dns_rec.priority, dns_rec.weight)
+
+            ib_services.group.add_action(
+                lambda ib_args=ib_args: ib_services.del_dns_srv_record(*ib_args),
+                lambda ib_args=ib_args: ib_services.add_dns_srv_record(*ib_args)
+            )
+
             cm.consider(dns_rec.fqdn)
         cm.validate()
+
+        if ib_services.feature_enabled("srv_record"):
+            ib_services.group.commit_or_rollback()
 
         session.flush()
 

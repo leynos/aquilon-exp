@@ -19,11 +19,13 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_add_address, ib_expect_del_address
+
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 
 class TestDeprecatedSwitch(TestBrokerCommand):
@@ -33,10 +35,11 @@ class TestDeprecatedSwitch(TestBrokerCommand):
         self.fqdn_pri = 'ut3gd1r03.aqd-unittest.ms.com'
         self.ip_pri = self.net["tor_net_12"].usable[3]
         self.fqdn_vlan = 'ut3gd1r03-vlan980.aqd-unittest.ms.com'
-        self.ip_vlan = self.net["tor_net_12"].usable[4]
+        self.ip_vlan = str(self.net["tor_net_12"].usable[4])
 
     def test_100_add_switch(self):
         self.dsdb_expect_add(self.fqdn_pri, self.ip_pri, "xge48")
+        ib_expect_add_address(self.fqdn_pri, str(self.ip_pri))
         command = ["add", "switch",
                    "--type", "tor",
                    "--switch", self.fqdn_pri,
@@ -47,6 +50,7 @@ class TestDeprecatedSwitch(TestBrokerCommand):
         err = self.statustest(command)
         self.matchoutput(err, "Command add_switch is deprecated.", command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_110_add_interface(self):
         command = ["add", "interface", "--interface", "vlan980",
@@ -57,12 +61,14 @@ class TestDeprecatedSwitch(TestBrokerCommand):
     def test_120_add_interface_address(self):
         self.dsdb_expect_add(self.fqdn_vlan, self.ip_vlan,
                              "vlan980", primary=self.fqdn_pri)
+        ib_expect_add_address(self.fqdn_vlan, str(self.ip_vlan))
         command = ["add", "interface", "address",
                    "--switch", self.fqdn_pri,
                    "--interface", "vlan980", "--ip", self.ip_vlan]
         err = self.statustest(command)
         self.matchoutput(err, "The --switch option is deprecated.", command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_210_update_interface(self):
         self.dsdb_expect_update(self.fqdn_pri, "xge48", mac=self.ip_pri.mac)
@@ -97,12 +103,14 @@ class TestDeprecatedSwitch(TestBrokerCommand):
 
     def test_600_del_interface_address(self):
         self.dsdb_expect_delete(self.ip_vlan)
+        ib_expect_del_address(self.fqdn_vlan, str(self.ip_vlan))
         command = ["del", "interface", "address",
                    "--switch", self.fqdn_pri,
                    "--interface", "vlan980", "--ip", self.ip_vlan]
         err = self.statustest(command)
         self.matchoutput(err, "The --switch option is deprecated.", command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_610_del_interface(self):
         command = ["del", "interface", "--interface", "vlan980",
@@ -112,11 +120,13 @@ class TestDeprecatedSwitch(TestBrokerCommand):
 
     def test_620_del_switch(self):
         self.dsdb_expect_delete(self.ip_pri)
+        ib_expect_del_address(self.fqdn_pri, str(self.ip_pri))
         command = ["del", "switch",
                    "--switch", self.fqdn_pri]
         err = self.statustest(command)
         self.matchoutput(err, "Command del_switch is deprecated.", command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_630_poll_switch_vlan_rack(self):
         command = ["poll_switch", "--rack", "ut3", "--vlan"]
@@ -126,6 +136,7 @@ class TestDeprecatedSwitch(TestBrokerCommand):
         command = ["poll_switch", "--switch",
                    "ut01ga2s02.aqd-unittest.ms.com", "--vlan"]
         err = self.deprecatednotimplementederrortest(command)
+
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestDeprecatedSwitch)

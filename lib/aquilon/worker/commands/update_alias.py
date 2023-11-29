@@ -16,14 +16,15 @@
 # limitations under the License.
 """Contains the logic for `aq update alias`."""
 
-from aquilon.exceptions_ import ArgumentError, NotFoundException
+from aquilon.exceptions_ import ArgumentError, NotFoundException, ProcessException
 from aquilon.aqdb.model import Alias, DnsEnvironment
 from aquilon.worker.broker import BrokerCommand
+from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.dbwrappers.dns import (create_target_if_needed,
                                            delete_target_if_needed)
 from aquilon.worker.dbwrappers.grn import lookup_grn
+from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
-from aquilon.worker.dbwrappers.change_management import ChangeManagement
 
 
 class CommandUpdateAlias(BrokerCommand):
@@ -45,6 +46,11 @@ class CommandUpdateAlias(BrokerCommand):
         dbalias = Alias.get_unique(session, fqdn=fqdn,
                                    dns_environment=dbdns_env, compel=True)
 
+        if dns_environment is not None and dns_environment != 'internal' \
+                and justification is None:
+            raise ArgumentError("Please provide valid justification "
+                                "number")
+
         # Validate ChangeManagement
         cm = ChangeManagement(session, user, justification, reason, logger, self.command, **arguments)
         cm.consider(dbalias.target)
@@ -60,6 +66,7 @@ class CommandUpdateAlias(BrokerCommand):
         elif clear_grn:
             dbalias.owner_grn = None
 
+        old_target = None
         if target or target_environment:
             if target == fqdn:
                 raise ArgumentError("Cannot alias {0} to itself"
@@ -126,6 +133,7 @@ class CommandUpdateAlias(BrokerCommand):
 
         session.flush()
 
+        dsdb_runner = None
         if dbdns_env.is_default and dbalias.fqdn.dns_domain.name == "ms.com"\
                 and not dbalias.target.dns_domain.restricted:
             dsdb_runner = DSDBRunner(logger=logger)
@@ -134,4 +142,20 @@ class CommandUpdateAlias(BrokerCommand):
                                      old_comments)
             dsdb_runner.commit_or_rollback("Could not update alias in DSDB")
 
-        return
+        ib_services = IBServices(logger, **arguments)
+        if ib_services.feature_enabled("alias"):
+            try:
+                if ib_services.assert_dns_environment(dbalias.fqdn.dns_environment.name) and \
+                        (not old_target or ib_services.assert_dns_environment(old_target.dns_environment.name)) and \
+                        ib_services.assert_dns_environment(dbalias.target.dns_environment.name):
+
+                    #  Not all update commands require an update in IB, ie, changing the grn doesn't
+                    if (clear_ttl or ttl or old_target is not None):
+                        ib_services.update_dns_alias(
+                            str(dbalias.fqdn),
+                            new_target=str(dbalias.target),
+                            ttl=-1 if clear_ttl else ttl)
+            except ProcessException as e:
+                if dsdb_runner:
+                    dsdb_runner.rollback()
+                raise e

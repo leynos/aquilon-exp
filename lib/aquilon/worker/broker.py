@@ -41,6 +41,7 @@ from aquilon.worker.templates.base import Plenary, PlenaryCollection
 from aquilon.worker.templates.domain import TemplateDomain
 from aquilon.worker.services import Chooser
 from aquilon.worker.dbwrappers.branch import sync_domain
+import logging
 
 # Things we don't need cluttering up the transaction details table
 _IGNORED_AUDIT_ARGS = ('requestid', 'bundle', 'debug', 'session', 'dbuser')
@@ -60,7 +61,7 @@ def get_code_for_error_class(e):
     return ERROR_TO_CODE.get(e, http.INTERNAL_SERVER_ERROR)
 
 
-class BrokerCommand(object):
+class BrokerCommand:
     """ The basis for each command module under commands.
 
     Several class-level lists and flags are defined here that can be
@@ -68,7 +69,7 @@ class BrokerCommand(object):
     in __init__, though, so check the docstrings.
 
     """
-
+    module_logger = logging.getLogger(__name__)
     required_parameters = []
     """ This will generally be overridden in the command class.
 
@@ -169,9 +170,7 @@ class BrokerCommand(object):
         self.command = self.action
 
         # Simplify the initialization of common command categories
-        if self.action.startswith("show") or \
-           self.action.startswith("search") or \
-           self.action.startswith("cat"):
+        if self.action.startswith(("show", "search", "cat")):
             self.requires_readonly = True
 
         if not self.defer_to_thread:
@@ -342,9 +341,21 @@ class BrokerCommand(object):
     # Prepare the execution of the command.  It returns the arguments that will
     # be passed to invoke_render()
     def pre_render(self, request, requestid, **command_kwargs):
+        com_kwargs = {}
+        for k, v in command_kwargs.items():
+            try:
+                if isinstance(v, bytes):
+                    com_kwargs[str(k)] = v.decode()
+                elif isinstance(v, list) and not isinstance(v, bytes):
+                    com_kwargs[str(k)] = [i.decode() for i in v]
+                else:
+                    com_kwargs[str(k)] = v
+            except Exception:
+                com_kwargs[k] = v
+
         user = request.getPrincipal()
         request.status.create_description(user=user, command=self.command,
-                                          kwargs=command_kwargs,
+                                          kwargs=com_kwargs,
                                           ignored=_IGNORED_AUDIT_ARGS)
         logger = request.logger
         kwargs_str = str(request.status.args)
@@ -352,13 +363,13 @@ class BrokerCommand(object):
             kwargs_str = kwargs_str[0:1020] + '...'
         logger.info("Incoming command #%s from user=%s aq %s "
                     "with arguments %s",
-                    request.status.auditid, request.status.user,
+                    request.status.auditid, (request.status.user),
                     request.status.command, kwargs_str)
-        command_kwargs["logger"] = logger
-        command_kwargs["user"] = user
-        command_kwargs["request"] = request
-        command_kwargs["requestid"] = requestid
-        return command_kwargs
+        com_kwargs["logger"] = logger
+        com_kwargs["user"] = user
+        com_kwargs["request"] = request
+        com_kwargs["requestid"] = requestid
+        return com_kwargs
 
     @property
     def is_lock_free(self):
@@ -383,7 +394,7 @@ class BrokerCommand(object):
         if cls.requires_plenaries:
             return False
 
-        for item in sys.modules[cls.__module__].__dict__.values():
+        for item in list(sys.modules[cls.__module__].__dict__.values()):
             # log.msg("  Checking %s" % item)
             if item in [sync_domain, TemplateDomain]:
                 return False
@@ -422,7 +433,7 @@ class BrokerCommand(object):
         if not user:
             user = "anonymous"
 
-        logger.info("User %s invoked deprecated command %s" % (user,
+        logger.info("User {} invoked deprecated command {}".format(user,
                                                                cls.__name__))
         logger.client_info(msg)
 
@@ -438,7 +449,7 @@ class BrokerCommand(object):
         # are still in use.
         logger.info("User %s used deprecated option %s of command %s" %
                     (user, option, cls.__name__))
-        logger.client_info("The --%s option is deprecated.  %s" % (option, msg))
+        logger.client_info("The --{} option is deprecated.  {}".format(option, msg))
 
     @classmethod
     def require_one_of(cls, *args, **kwargs):
@@ -448,7 +459,7 @@ class BrokerCommand(object):
             count = sum(1 if kwargs.get(arg, None) else 0 for arg in args)
         else:
             # Make sure only one of the supplied arguments is set
-            count = sum(1 if x else 0 for x in kwargs.values())
+            count = sum(1 if x else 0 for x in list(kwargs.values()))
         if count != 1:
             if args:
                 names = ["--%s" % arg for arg in args]

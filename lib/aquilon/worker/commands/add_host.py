@@ -26,6 +26,7 @@ from aquilon.worker.dbwrappers.dns import grab_address
 from aquilon.worker.dbwrappers.interface import (generate_ip, assign_address,
                                                  get_interfaces)
 from aquilon.worker.dbwrappers.host import create_host
+from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
 
@@ -112,6 +113,8 @@ class CommandAddHost(BrokerCommand):
             self._validate_dns_domain(hostname, dbmachine, session)
 
         dsdb_runner = DSDBRunner(logger=logger)
+        ib_services = IBServices(logger, **arguments)
+        ib_old_snapshot = None
         if dbarchetype.name == 'aurora':
             # For aurora, check that DSDB has a record of the host.
             if not skip_dsdb_check:
@@ -126,6 +129,7 @@ class CommandAddHost(BrokerCommand):
             # Create a snapshop of the machine before we create the host; but
             # not for aurora nodes as we dont update DSDB
             oldinfo = DSDBRunner.snapshot_hw(dbmachine)
+            ib_old_snapshot = ib_services.snapshot_hw_a_records(dbmachine)
 
         create_host(session, logger, self.config, dbmachine, dbarchetype,
                     **arguments)
@@ -210,6 +214,15 @@ class CommandAddHost(BrokerCommand):
             if oldinfo:
                 dsdb_runner.update_host(dbmachine, oldinfo)
                 dsdb_runner.commit_or_rollback("Could not add host to DSDB")
+            if ib_old_snapshot is not None and ib_services.feature_enabled("host"):
+                    ib_services.bulk_change_a_ptr(ib_old_snapshot, ib_services.snapshot_hw_a_records(dbmachine))
+
+                    try:
+                        ib_services.group.commit_or_rollback()
+                    except ProcessException as e:
+                        if dsdb_runner:
+                            dsdb_runner.rollback()
+                        raise e
 
         for name, value in audit_results:
             self.audit_result(session, name, value, **arguments)

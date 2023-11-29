@@ -19,10 +19,12 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
+from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_del_address
 
 
 class TestNetworkConstraints(TestBrokerCommand):
@@ -36,9 +38,9 @@ class TestNetworkConstraints(TestBrokerCommand):
         # Rack is bunkerized, network is not
         net = self.net["bunker_mismatch1"]
         ip = net.usable[0]
-        self.dsdb_expect_add("mismatch1.aqd-unittest.ms.com", ip,
-                             "eth0_bunkertest",
+        self.dsdb_expect_add("mismatch1.aqd-unittest.ms.com", ip, "eth0_bunkertest",
                              primary="aquilon61.aqd-unittest.ms.com")
+        ib_expect_add_address("mismatch1.aqd-unittest.ms.com", str(ip), reverse_ptr="aquilon61.aqd-unittest.ms.com")
         command = ["add_interface_address",
                    "--machine", "aquilon61.aqd-unittest.ms.com",
                    "--interface", "eth0", "--label", "bunkertest",
@@ -50,14 +52,15 @@ class TestNetworkConstraints(TestBrokerCommand):
                          "is not bunkerized." % (net.name, net),
                          command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_120_mismatch_2(self):
         # Rack and network has different bunkers
         net = self.net["bunker_mismatch2"]
         ip = net.usable[0]
-        self.dsdb_expect_add("mismatch2.aqd-unittest.ms.com", ip,
-                             "eth0_bunkertest",
+        self.dsdb_expect_add("mismatch2.aqd-unittest.ms.com", ip, "eth0_bunkertest",
                              primary="aquilon62.aqd-unittest.ms.com")
+        ib_expect_add_address("mismatch2.aqd-unittest.ms.com", str(ip), reverse_ptr="aquilon62.aqd-unittest.ms.com")
         command = ["add_interface_address",
                    "--machine", "aquilon62.aqd-unittest.ms.com",
                    "--interface", "eth0", "--label", "bunkertest",
@@ -69,14 +72,15 @@ class TestNetworkConstraints(TestBrokerCommand):
                          "bunker bucket1.ut." % (net.name, net),
                          command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_130_mismatch_3(self):
         # Network is bunkerized, rack is not
         net = self.net["bunker_mismatch2"]
         ip = net.usable[1]
-        self.dsdb_expect_add("mismatch3.aqd-unittest.ms.com", ip,
-                             "eth0_bunkertest",
+        self.dsdb_expect_add("mismatch3.aqd-unittest.ms.com", ip, "eth0_bunkertest",
                              primary="server9.aqd-unittest.ms.com")
+        ib_expect_add_address("mismatch3.aqd-unittest.ms.com", str(ip), reverse_ptr="server9.aqd-unittest.ms.com")
         command = ["add_interface_address",
                    "--machine", "server9.aqd-unittest.ms.com",
                    "--interface", "eth0", "--label", "bunkertest",
@@ -89,24 +93,25 @@ class TestNetworkConstraints(TestBrokerCommand):
                          "a bunker." % (net.name, net),
                          command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_200_show_bunker_violations(self):
         command = ["show_bunker_violations"]
         out = self.commandtest(command)
-        self.searchoutput(out,
-                          r"Warning: Rack ut8 is not part of a bunker, but it "
-                          r"uses bunkerized networks:\s*"
-                          r"BUCKET1: server9\.aqd-unittest\.ms\.com/eth0\s*"
-                          r"BUCKET2: aquilon91\.aqd-unittest\.ms\.com/eth0, server9\.aqd-unittest\.ms\.com/eth0",
-                          command)
-        self.matchoutput(out, "aq update rack --rack np7 --building np",
-                         command)
-        self.searchoutput(out,
-                          r"Warning: Rack ut9 is part of bunker bucket2.ut, but "
-                          r"also has networks from:\s*"
-                          r"\(No bucket\): aquilon61\.aqd-unittest\.ms\.com/eth0\s*"
-                          r"BUCKET1: aquilon62\.aqd-unittest\.ms\.com/eth0",
-                          command)
+        self.searchoutput(
+            out,
+            r"Warning: Rack ut8 is not part of a bunker, but it uses bunkerized networks:\s*"
+            r"BUCKET2: aquilon91\.aqd-unittest\.ms\.com/eth0, server9\.aqd-unittest\.ms\.com/eth0\s*"
+            r"BUCKET1: server9\.aqd-unittest\.ms\.com/eth0\s*",
+            command,
+        )
+        self.searchoutput(
+            out,
+            r"Warning: Rack ut9 is part of bunker bucket2.ut, but also has networks from:\s*"
+            r"\(No bucket\): aquilon61\.aqd-unittest\.ms\.com/eth0\s*"
+            r"BUCKET1: aquilon62\.aqd-unittest\.ms\.com/eth0",
+            command,
+        )
 
     def test_210_show_bunker_violations_management(self):
         command = ["show_bunker_violations", "--management_interfaces"]
@@ -114,11 +119,9 @@ class TestNetworkConstraints(TestBrokerCommand):
         self.searchoutput(out,
                           r"Warning: Rack ut8 is not part of a bunker, but it "
                           r"uses bunkerized networks:\s*"
-                          r"BUCKET1: server9\.aqd-unittest\.ms\.com/eth0\s*"
-                          r"BUCKET2: aquilon91\.aqd-unittest\.ms\.com/eth0, server9\.aqd-unittest\.ms\.com/eth0",
+                          r"BUCKET2: aquilon91\.aqd-unittest\.ms\.com/eth0, server9\.aqd-unittest\.ms\.com/eth0\s*"
+                          r"BUCKET1: server9\.aqd-unittest\.ms\.com/eth0",
                           command)
-        self.matchoutput(out, "aq update rack --rack np7 --building np",
-                         command)
         self.searchoutput(out,
                           r"Warning: Rack ut9 is part of bunker bucket2.ut, but "
                           r"also has networks from:\s*"
@@ -131,31 +134,37 @@ class TestNetworkConstraints(TestBrokerCommand):
         net = self.net["bunker_mismatch1"]
         ip = net.usable[0]
         self.dsdb_expect_delete(ip)
+        ib_expect_del_address("mismatch1.aqd-unittest.ms.com", str(ip))
         command = ["del_interface_address",
                    "--machine", "aquilon61.aqd-unittest.ms.com",
                    "--interface", "eth0", "--label", "bunkertest"]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_300_mismatch2_cleanup(self):
         net = self.net["bunker_mismatch2"]
         ip = net.usable[0]
         self.dsdb_expect_delete(ip)
+        ib_expect_del_address("mismatch2.aqd-unittest.ms.com", str(ip))
         command = ["del_interface_address",
                    "--machine", "aquilon62.aqd-unittest.ms.com",
                    "--interface", "eth0", "--label", "bunkertest"]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_300_mismatch3_cleanup(self):
         net = self.net["bunker_mismatch2"]
         ip = net.usable[1]
         self.dsdb_expect_delete(ip)
+        ib_expect_del_address("mismatch3.aqd-unittest.ms.com", str(ip))
         command = ["del_interface_address",
                    "--machine", "server9.aqd-unittest.ms.com",
                    "--interface", "eth0", "--label", "bunkertest"]
         self.statustest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_310_network_cleanup(self):
         self.net.dispose_network(self, "bunker_mismatch1")

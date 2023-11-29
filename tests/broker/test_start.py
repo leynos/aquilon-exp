@@ -24,7 +24,7 @@ from shutil import rmtree
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
 from .test_restart import TestBrokerReStart

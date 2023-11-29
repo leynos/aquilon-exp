@@ -20,10 +20,10 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 
 class TestSearchDns(TestBrokerCommand):
@@ -266,11 +266,11 @@ class TestSearchDns(TestBrokerCommand):
             command + ['--format', 'proto'], expect=2)
         flatten_dns_records = self.flatten_proto_dns_records(dns_records)
         expected_dns_records = (
-            (u'7.1.2.4.in-addr.arpa', u'internal', (
-                ('PTR', u'unittest00.one-nyp.ms.com', u'internal'),
+            ('7.1.2.4.in-addr.arpa', 'internal', (
+                ('PTR', 'unittest00.one-nyp.ms.com', 'internal'),
              )),
-            (u'unittest00.one-nyp.ms.com', u'internal', (
-                ('A', u'4.2.1.7', u'internal'),
+            ('unittest00.one-nyp.ms.com', 'internal', (
+                ('A', '4.2.1.7', 'internal'),
              )),
         )
         self.assertTupleEqual(

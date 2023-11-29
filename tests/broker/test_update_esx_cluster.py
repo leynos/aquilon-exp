@@ -20,10 +20,10 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 
 # TODO: Merge this into test_update_cluster.py
@@ -123,11 +123,11 @@ class TestUpdateESXCluster(TestBrokerCommand):
         # FIXME: This is a no-op for now, due to using the prod templates
         command = ["reconfigure", "--membersof=utecl1",
                    "--archetype=vmhost",
-                   "--osname=esxi", "--osver=5.0.0"]
+                   "--osname=esxi", "--osver=7.0.3"]
         out = self.successtest(command)
 
         command = ["search_host", "--cluster=utecl1",
-                   "--osversion=5.0.0"]
+                   "--osversion=7.0.3"]
         updated_hosts = sorted(self.commandtest(command).splitlines())
         self.assertTrue(updated_hosts, "No hosts found using %s" % command)
 
@@ -139,12 +139,12 @@ class TestUpdateESXCluster(TestBrokerCommand):
         command = ["cat", "--hostname", updated_hosts[0]]
         out = self.commandtest(command)
         self.matchoutput(out,
-                         """include "os/esxi/5.0.0/config";""",
+                         """include "os/esxi/7.0.3/config";""",
                          command)
 
         command = ["reconfigure", "--membersof=utecl1",
                    "--archetype=vmhost", "--osname=esxi",
-                   "--osversion=5.0.0"]
+                   "--osversion=7.0.3"]
         out = self.successtest(command)
 
     def test_380_failupdatearchetype(self):

@@ -15,17 +15,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.aqdb.model import ARecord
 from aquilon.aqdb.model.network import get_net_id_from_ip
 from aquilon.aqdb.model.network_environment import get_net_dns_env
 from aquilon.worker.broker import BrokerCommand
+from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.dbwrappers.dns import (set_reverse_ptr,
                                            delete_target_if_needed,
                                            update_address)
 from aquilon.worker.dbwrappers.grn import lookup_grn
+from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
-from aquilon.worker.dbwrappers.change_management import ChangeManagement
 
 
 class CommandUpdateAddress(BrokerCommand):
@@ -49,18 +50,21 @@ class CommandUpdateAddress(BrokerCommand):
         cm.consider(dbdns_rec.fqdn)
         cm.validate()
 
+        # Save state before making change, mostly for possible rollbacks
         old_ip = dbdns_rec.ip
         old_comments = dbdns_rec.comments
+        old_reverse_ptr = dbdns_rec.reverse_ptr
+        old_ttl = dbdns_rec.ttl
+        fqdn = str(dbdns_rec.fqdn)
 
         if ip:
             dbnetwork = get_net_id_from_ip(session, ip, dbnet_env)
             update_address(session, dbdns_rec, ip, dbnetwork)
 
         if reverse_ptr:
-            old_reverse = dbdns_rec.reverse_ptr
             set_reverse_ptr(session, logger, dbdns_rec, reverse_ptr)
-            if old_reverse and old_reverse != dbdns_rec.reverse_ptr:
-                delete_target_if_needed(session, old_reverse)
+            if old_reverse_ptr and old_reverse_ptr != dbdns_rec.reverse_ptr:
+                delete_target_if_needed(session, old_reverse_ptr)
 
         if ttl is not None:
             dbdns_rec.ttl = ttl
@@ -83,8 +87,29 @@ class CommandUpdateAddress(BrokerCommand):
 
         session.flush()
 
-        if dbdns_env.is_default and (dbdns_rec.ip != old_ip or
-                                     dbdns_rec.comments != old_comments):
+        ib_services = IBServices(logger, **arguments)
+        if ip or reverse_ptr or clear_ttl or ttl:
+            ib_services.group.add_action(
+                lambda fqdn=fqdn, new_ip=ip, reverse_ptr=reverse_ptr, clear_ttl=clear_ttl, ttl=ttl:
+                    ib_services.update_a_ptr(fqdn, old_ip, new_ip, reverse_ptr, -1 if clear_ttl else ttl),
+                lambda fqdn=fqdn, new_ip=ip, old_ip=old_ip, old_reverse_ptr=old_reverse_ptr, old_ttl=old_ttl:
+                    ib_services.update_a_ptr(fqdn, new_ip if new_ip else old_ip, old_ip if new_ip else None, old_reverse_ptr, old_ttl)
+            )
+            if ip:
+                for address_alias in dbdns_rec.address_aliases:
+                    alias_fqdn = str(address_alias.fqdn)
+                    alias_target = str(address_alias.target)
+                    if alias_target == fqdn:
+                        ib_services.group.add_action(
+                            lambda fqdn=alias_fqdn, new_ip=ip, old_ip=old_ip, ttl=ttl, clear_ttl=clear_ttl:
+                                ib_services.update_a_ptr(fqdn, old_ip, new_ip, ttl=-1 if clear_ttl else ttl),
+                            lambda fqdn=alias_fqdn, new_ip=ip, old_ip=old_ip, ttl=ttl, clear_ttl=clear_ttl:
+                                ib_services.update_a_ptr(fqdn, new_ip, old_ip, old_ttl)
+                        )
+
+
+        dsdb_runner = None
+        if dbdns_env.is_default and (dbdns_rec.ip != old_ip or dbdns_rec.comments != old_comments):
             dsdb_runner = DSDBRunner(logger=logger)
             dsdb_runner.update_host_details(dbdns_rec.fqdn, new_ip=dbdns_rec.ip,
                                             old_ip=old_ip,
@@ -92,4 +117,10 @@ class CommandUpdateAddress(BrokerCommand):
                                             old_comments=old_comments)
             dsdb_runner.commit_or_rollback()
 
-        return
+            if ib_services.feature_enabled("address"):
+                try:
+                    ib_services.group.commit_or_rollback()
+                except ProcessException as e:
+                    if dsdb_runner:
+                        dsdb_runner.rollback()
+                    raise e

@@ -31,7 +31,7 @@ catalog = StatusCatalog()
 
 class StatusWriter(StatusSubscriber):
     def __init__(self, deferred, request, loglevel):
-        StatusSubscriber.__init__(self)
+        super().__init__()
         self.deferred = deferred
         self.request = request
         self.loglevel = loglevel
@@ -47,7 +47,7 @@ class StatusWriter(StatusSubscriber):
             if msg:
                 msg = msg + "\n"
             # The formatter is not used, we're talking raw HTTP here
-            self.request.write(msg.encode("utf-8"))
+            self.request.write(msg.encode())
 
     def finish(self):
         if not self.deferred.called:

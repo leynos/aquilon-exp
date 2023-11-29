@@ -26,7 +26,7 @@ if __name__ == "__main__":
     import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 
 class TestClientFailure(TestBrokerCommand):
@@ -34,7 +34,7 @@ class TestClientFailure(TestBrokerCommand):
     def testinvalidaqhost(self):
         command = "status --aqhost=invalidhost"
         (p, out, err) = self.runcommand(command.split(" "))
-        self.assertIn("badstatusline", err.lower())
+        self.assertIn("remotedisconnected", err.lower())
         self.assertEqual(out, "",
                          "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n"
                          % (command, out))

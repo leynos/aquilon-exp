@@ -41,42 +41,46 @@ try:
 except ImportError:
     pass
 else:
-    ms.version.addpkg('setuptools', '36.7.0')
+    ms.version.addpkg('setuptools', '46.1.3')
 
     # For GitPython
-    ms.version.addpkg('GitPython', '2.1.5')
-    ms.version.addpkg('gitdb', '0.6.4')
-    ms.version.addpkg('smmap', '0.8.3')
+    ms.version.addpkg('GitPython', '3.1.31')
+    ms.version.addpkg('gitdb', '4.0.5')
+    ms.version.addpkg('smmap', '5.0.0')
 
     try:
-        ms.version.addpkg('ms.modulecmd', '1.0.6')
+        ms.version.addpkg('ms.modulecmd', '1.1.1')
         import ms.modulecmd
         # To load git, as it's required by GitPython
-        ms.modulecmd.load('msde/git/2.9.5')
+        ms.modulecmd.load('msde/git/2.35.3')
     except Exception:
         pass
 
     # For PEP8
-    ms.version.addpkg('pycodestyle', '2.4.0')
+    ms.version.addpkg('pycodestyle', '2.6.0')
 
     # For flake8
-    ms.version.addpkg('flake8', '3.6.0')
-    ms.version.addpkg('enum34', '1.1.6')
-    ms.version.addpkg('configparser', '3.5.0b2')
-    ms.version.addpkg('pyflakes', '1.5.0')
-    ms.version.addpkg('mccabe', '0.6.1')
+    ms.version.addpkg('flake8', '3.7.8')
+    ms.version.addpkg('enum34', '1.1.10')
+    ms.version.addpkg('configparser', '5.3.0')
+    ms.version.addpkg('pyflakes', '2.3.1')
+    ms.version.addpkg('mccabe', '0.7.0')
+    ms.version.addpkg('zipp', '3.15.0')
+    ms.version.addpkg('importlib-metadata', '6.6.0')
+    ms.version.addpkg('entrypoints', '0.4')
 
     ms.version.addpkg('hacking', '1.1.0')
-    ms.version.addpkg('pbr', '3.1.1')
-    ms.version.addpkg('six', '1.11.0-ms1')
+    ms.version.addpkg('pbr', '5.4.4')
+    ms.version.addpkg('six', '1.16.0')
 
     ms.version.addpkg('flake8_per_file_ignores', '0.6')
     ms.version.addpkg('pathmatch', '0.2.1')
-    ms.version.addpkg('typing', '3.6.2')
+    ms.version.addpkg('typing', '3.7.4.1')
+    ms.version.addpkg('typing-extensions', '4.6.1')
 
     # To pretty print with colors
-    ms.version.addpkg('termcolor', '1.1.0')
-    ms.version.addpkg('colorama', '0.3.7')
+    ms.version.addpkg('termcolor', '2.3.0')
+    ms.version.addpkg('colorama', '0.4.6')
 
 import colorama
 from flake8.api import legacy as flake8
@@ -477,7 +481,7 @@ def run():
             if args.stats:
                 stats[error['code']] += 1
 
-            print(
+            print((
                 (
                     '{path}'
                     '{colon}'
@@ -514,18 +518,18 @@ def run():
                     ),
                     text=error['text'],
                 )
-            )
+            ))
 
-        print('{}{}{} in the affected files'.format(
+        print(('{}{}{} in the affected files'.format(
             '{}: '.format(prefix) if prefix else '',
             '' if args.all else 'Introduced ',
             ', '.join('{}/{} {}(s)'.format(errors[k], tot_errors[k], n)
-                      for k, n in error_types)))
+                      for k, n in error_types))))
 
         if args.stats:
             print('Stats:')
             for k, v in sorted(stats.items()):
-                print('  - {}: {}'.format(k, v))
+                print(('  - {}: {}'.format(k, v)))
 
         return sum(errors.values())
 

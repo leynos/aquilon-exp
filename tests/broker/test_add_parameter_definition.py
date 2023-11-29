@@ -23,7 +23,7 @@ import re
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
 from broker.brokertest import TestBrokerCommand
@@ -113,7 +113,7 @@ class TestAddParameterDefinition(TestBrokerCommand):
         cls.activation_type = desc.fields_by_name["activation"].enum_type
 
     def test_100_add_all(self):
-        for path, params in default_param_defs.items():
+        for path, params in list(default_param_defs.items()):
             cmd = ["add_parameter_definition", "--archetype", "aquilon",
                    "--path", "foo/" + path, "--template", "foo"]
             if "type" in params:
@@ -158,7 +158,7 @@ class TestAddParameterDefinition(TestBrokerCommand):
             self.noouttest(cmd)
 
     def load_feature_paramdefs(self, feature, feature_type):
-        for path, params in default_param_defs.items():
+        for path, params in list(default_param_defs.items()):
             # Activation cannot be set for feature parameters
             if "activation" in params:
                 continue
@@ -177,7 +177,7 @@ class TestAddParameterDefinition(TestBrokerCommand):
             self.noouttest(cmd)
 
     def test_200_add_feature_all(self):
-        for feature_type, features in param_features.items():
+        for feature_type, features in list(param_features.items()):
             for feature in features:
                 self.load_feature_paramdefs(feature, feature_type)
 
@@ -271,7 +271,7 @@ class TestAddParameterDefinition(TestBrokerCommand):
                          cmd)
 
     def test_300_invalid_feature_defaults(self):
-        for path, params in default_param_defs.items():
+        for path, params in list(default_param_defs.items()):
             if "invalid_default" not in params:
                 continue
 
@@ -388,7 +388,7 @@ class TestAddParameterDefinition(TestBrokerCommand):
         cmd = ["search_parameter_definition", "--archetype", "aquilon"]
 
         out = self.commandtest(cmd)
-        for path, params in default_param_defs.items():
+        for path, params in list(default_param_defs.items()):
             pattern = "Parameter Definition: " + path
             if params.get("required", False):
                 pattern += r' \[required\]'
@@ -421,7 +421,7 @@ class TestAddParameterDefinition(TestBrokerCommand):
         self.assertIn('foo/startslash', param_defs)
         self.assertEqual(param_defs['foo/startslash'].value_type, 'string')
 
-        for path, params in default_param_defs.items():
+        for path, params in list(default_param_defs.items()):
             self.assertIn("foo/" + path, param_defs)
             paramdef = param_defs["foo/" + path]
 
@@ -444,7 +444,7 @@ class TestAddParameterDefinition(TestBrokerCommand):
         cmd = ["search_parameter_definition", "--feature", "pre_host", "--type=host"]
         out = self.commandtest(cmd)
 
-        for path, params in default_param_defs.items():
+        for path, params in list(default_param_defs.items()):
             if "activation" in params:
                 continue
 
@@ -471,7 +471,7 @@ class TestAddParameterDefinition(TestBrokerCommand):
         result = self.protobuftest(cmd, expect=11)[:]
         param_defs = {param_def.path: param_def for param_def in result}
 
-        for path, params in default_param_defs.items():
+        for path, params in list(default_param_defs.items()):
             if "activation" in params:
                 continue
 

@@ -19,26 +19,34 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_update_address
+
 if __name__ == "__main__":
     import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
-from netdevtest import VerifyNetworkDeviceMixin
+from .brokertest import TestBrokerCommand
+from .netdevtest import VerifyNetworkDeviceMixin
+from broker.utils import MockHub
 
 
 class TestAddNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
     def test_100_add_ut3gd1r01(self):
         ip = self.net["tor_net_12"].usable[0]
-        self.dsdb_expect_add("ut3gd1r01.aqd-unittest.ms.com", ip, "xge49")
+        hostname = "ut3gd1r01.aqd-unittest.ms.com"
+        ib_expect_add_address(hostname, str(ip))
+        self.dsdb_expect_add(hostname, ip, "xge49")
         self.successtest(["add", "network_device", "--type", "bor",
-                          "--network_device", "ut3gd1r01.aqd-unittest.ms.com",
+                          "--network_device", hostname,
                           "--ip", ip, "--interface", "xge49",
                           "--iftype", "physical", "--rack", "ut3",
                           "--model", "uttorswitch", "--serial", "SNgd1r01"])
         self.dsdb_verify()
+        self.ib_verify()
         self.check_plenary_exists('network_device', 'americas', 'ut', 'ut3gd1r01')
-        self.check_plenary_exists('hostdata', 'ut3gd1r01.aqd-unittest.ms.com')
+        self.check_plenary_exists('hostdata', hostname)
 
         self.verifynetdev("ut3gd1r01.aqd-unittest.ms.com", "hp", "uttorswitch",
                           "ut3", "a", "3", "SNgd1r01", switch_type='bor', ip=ip,
@@ -62,17 +70,20 @@ class TestAddNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
 
     def test_105_add_ut3gd1r04(self):
         ip = self.net["ut10_eth1"].usable[0]
-        self.dsdb_expect_add("ut3gd1r04.aqd-unittest.ms.com", ip, "xge49",
+        hostname = "ut3gd1r04.aqd-unittest.ms.com"
+        ib_expect_add_address(hostname, str(ip))
+        self.dsdb_expect_add(hostname, ip, "xge49",
                              ip.mac, comments="Some switch comments")
         self.successtest(["add", "network_device", "--type", "tor",
-                          "--network_device", "ut3gd1r04.aqd-unittest.ms.com",
+                          "--network_device", hostname,
                           "--ip", ip, "--mac", ip.mac, "--interface", "xge49",
                           "--iftype", "physical",
                           "--rack", "ut3", "--model", "temp_switch",
                           "--comments", "Some switch comments"])
         self.dsdb_verify()
+        self.ib_verify()
         self.check_plenary_exists('network_device', 'americas', 'ut', 'ut3gd1r04')
-        self.check_plenary_exists('hostdata', 'ut3gd1r04.aqd-unittest.ms.com')
+        self.check_plenary_exists('hostdata', hostname)
 
         self.verifynetdev("ut3gd1r04.aqd-unittest.ms.com", "generic",
                           "temp_switch", "ut3", "a", "3", switch_type='tor',
@@ -81,16 +92,19 @@ class TestAddNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
 
     def test_110_add_ut3gd1r05(self):
         ip = self.net["ut_net_mgmt"].usable[0]
-        self.dsdb_expect_add("ut3gd1r05.aqd-unittest.ms.com", ip, "xge49")
+        hostname = "ut3gd1r05.aqd-unittest.ms.com"
+        ib_expect_add_address(hostname, str(ip))
+        self.dsdb_expect_add(hostname, ip, "xge49")
         self.successtest(["add", "network_device", "--type", "tor",
-                          "--network_device", "ut3gd1r05.aqd-unittest.ms.com",
+                          "--network_device", hostname,
                           "--ip", ip, "--interface", "xge49",
                           "--iftype", "physical",
                           "--rack", "ut3", "--model", "temp_switch",
                           "--vendor", "generic"])
         self.dsdb_verify()
+        self.ib_verify()
         self.check_plenary_exists('network_device', 'americas', 'ut', 'ut3gd1r05')
-        self.check_plenary_exists('hostdata', 'ut3gd1r05.aqd-unittest.ms.com')
+        self.check_plenary_exists('hostdata', hostname)
 
         self.verifynetdev("ut3gd1r05.aqd-unittest.ms.com", "generic",
                           "temp_switch", "ut3", "a", "3", switch_type='tor',
@@ -98,31 +112,37 @@ class TestAddNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
 
     def test_115_add_ut3gd1r06(self):
         ip = self.net["ut_net_mgmt"].usable[1]
-        self.dsdb_expect_add("ut3gd1r06.aqd-unittest.ms.com", ip, "xge49")
+        hostname = "ut3gd1r06.aqd-unittest.ms.com"
+        ib_expect_add_address(hostname, str(ip))
+        self.dsdb_expect_add(hostname, ip, "xge49")
         self.successtest(["add", "network_device", "--type", "tor",
-                          "--network_device", "ut3gd1r06.aqd-unittest.ms.com",
+                          "--network_device", hostname,
                           "--ip", ip, "--rack", "ut3", "--model", "temp_switch",
                           "--vendor", "generic", "--interface", "xge49",
                           "--iftype", "physical"])
         self.dsdb_verify()
+        self.ib_verify()
         self.check_plenary_exists('network_device', 'americas', 'ut', 'ut3gd1r06')
-        self.check_plenary_exists('hostdata', 'ut3gd1r06.aqd-unittest.ms.com')
+        self.check_plenary_exists('hostdata', hostname)
 
-        self.verifynetdev("ut3gd1r06.aqd-unittest.ms.com", "generic",
+        self.verifynetdev(hostname, "generic",
                           "temp_switch", "ut3", "a", "3", switch_type='tor',
                           ip=ip, interface="xge49")
 
     def test_120_add_ut3gd1r07(self):
         ip = self.net["ut_net_mgmt"].usable[2]
-        self.dsdb_expect_add("ut3gd1r07.aqd-unittest.ms.com", ip, "xge49")
+        hostname = "ut3gd1r07.aqd-unittest.ms.com"
+        ib_expect_add_address(hostname, str(ip))
+        self.dsdb_expect_add(hostname, ip, "xge49")
         self.successtest(["add", "network_device", "--type", "bor",
-                          "--network_device", "ut3gd1r07.aqd-unittest.ms.com",
+                          "--network_device", hostname,
                           "--ip", ip, "--interface", "xge49",
                           "--iftype", "physical", "--rack", "ut3",
                           "--model", "temp_switch"])
         self.dsdb_verify()
+        self.ib_verify()
         self.check_plenary_exists('network_device', 'americas', 'ut', 'ut3gd1r07')
-        self.check_plenary_exists('hostdata', 'ut3gd1r07.aqd-unittest.ms.com')
+        self.check_plenary_exists('hostdata', hostname)
 
         self.verifynetdev("ut3gd1r07.aqd-unittest.ms.com", "generic",
                           "temp_switch", "ut3", "a", "3", switch_type='bor',
@@ -159,37 +179,43 @@ class TestAddNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
     def test_127_add_switch_in_building(self):
         # Located in a building, not in a rack
         ip = self.net["ut_net_mgmt"].usable[3]
-        self.dsdb_expect_add("switchinbuilding.aqd-unittest.ms.com", ip, "xge49")
+        hostname = "switchinbuilding.aqd-unittest.ms.com"
+        ib_expect_add_address(hostname, str(ip))
+        self.dsdb_expect_add(hostname, ip, "xge49")
         self.successtest(["add", "network_device", "--type", "bor",
-                          "--network_device", "switchinbuilding.aqd-unittest.ms.com",
+                          "--network_device", hostname,
                           "--ip", ip, "--interface", "xge49",
                           "--iftype", "physical",
                           "--building", "ut", "--model", "temp_switch"])
         self.dsdb_verify()
+        self.ib_verify()
         self.check_plenary_exists('network_device', 'americas', 'ut',
                                   'switchinbuilding')
-        self.check_plenary_exists('hostdata', 'switchinbuilding.aqd-unittest.ms.com')
+        self.check_plenary_exists('hostdata', hostname)
 
     def test_130_add_np06bals03(self):
         ip = self.net["np06bals03_v103"][5]
-        self.dsdb_expect_add("np06bals03.ms.com", ip,
+        hostname = "np06bals03.ms.com"
+        ib_expect_add_address(hostname, str(ip))
+        self.dsdb_expect_add(hostname, ip,
                              "gigabitethernet0_1", "00:18:b1:89:86:00")
         command = ["add", "network_device", "--type", "tor",
-                   "--network_device", "np06bals03.ms.com",
+                   "--network_device", hostname,
                    "--rack", "np7", "--model", "rs g8000",
                    "--interface", "gigabitethernet0/1",
                    "--iftype", "physical",
                    "--mac", "0018b1898600", "--ip", ip]
         err = self.statustest(command)
         self.dsdb_verify()
+        self.ib_verify()
         self.matchoutput(err,
                          "Moving rack np7 into bunker nyb10.np based on "
                          "network tagging.",
                          command)
         self.check_plenary_exists('network_device', 'americas', 'np', 'np06bals03')
-        self.check_plenary_exists('hostdata', 'np06bals03.ms.com')
+        self.check_plenary_exists('hostdata', hostname)
 
-        self.verifynetdev("np06bals03.ms.com",
+        self.verifynetdev(hostname,
                           "bnt", "rs g8000", "np7", "g", "1",
                           ip=ip, mac="00:18:b1:89:86:00",
                           interface="gigabitethernet0/1")
@@ -197,7 +223,9 @@ class TestAddNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
     def test_135_add_np06fals01(self):
         net = self.net["notbunkerized"]
         ip = net[5]
-        self.dsdb_expect_add("np06fals01.ms.com", ip, "xge49",
+        hostname = "np06fals01.ms.com"
+        ib_expect_add_address(hostname, str(ip))
+        self.dsdb_expect_add(hostname, ip, "xge49",
                              "00:1c:f6:99:e5:c1")
         command = ["add", "network_device", "--type", "tor",
                    "--network_device", "np06fals01.ms.com",
@@ -206,86 +234,94 @@ class TestAddNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
                    "--mac", "001cf699e5c1", "--ip", ip]
         err = self.statustest(command)
         self.dsdb_verify()
+        self.ib_verify()
         self.matchoutput(err,
                          "Bunker violation: rack np7 is inside bunker "
                          "nyb10.np, but network notbunkerized [%s] is "
                          "not bunkerized." % net,
                          command)
         self.check_plenary_exists('network_device', 'americas', 'np', 'np06fals01')
-        self.check_plenary_exists('hostdata', 'np06fals01.ms.com')
+        self.check_plenary_exists('hostdata', hostname)
 
-        self.verifynetdev("np06fals01.ms.com",
+        self.verifynetdev(hostname,
                           "cisco", "ws-c2960-48tt-l", "np7", "g", "1",
                           ip=ip, mac="00:1c:f6:99:e5:c1",
                           interface="xge49")
 
     def test_140_add_ut01ga1s02(self):
         ip = self.net["tor_net_0"].usable[0]
-        self.dsdb_expect_add("ut01ga1s02.aqd-unittest.ms.com", ip, "xge49",
-                             ip.mac)
+        hostname = "ut01ga1s02.aqd-unittest.ms.com"
+        ib_expect_add_address(hostname, str(ip))
+        self.dsdb_expect_add(hostname, ip, "xge49", ip.mac)
         command = ["add", "network_device", "--type", "tor",
-                   "--network_device", "ut01ga1s02.aqd-unittest.ms.com",
+                   "--network_device", hostname,
                    "--rack", "ut8", "--model", "rs g8000",
                    "--interface", "xge49", "--iftype", "physical",
                    "--mac", ip.mac, "--ip", ip]
         self.successtest(command)
         self.dsdb_verify()
+        self.ib_verify()
         self.check_plenary_exists('network_device', 'americas', 'ut', 'ut01ga1s02')
-        self.check_plenary_exists('hostdata', 'ut01ga1s02.aqd-unittest.ms.com')
+        self.check_plenary_exists('hostdata', hostname)
 
-        self.verifynetdev("ut01ga1s02.aqd-unittest.ms.com",
+        self.verifynetdev(hostname,
                           "bnt", "rs g8000", "ut8", "g", "2",
                           ip=ip, mac=ip.mac, interface="xge49")
 
     def test_145_add_ut01ga1s03(self):
         ip = self.net["hp_eth0"].usable[0]
-        self.dsdb_expect_add("ut01ga1s03.aqd-unittest.ms.com", ip, "xge49",
-                             ip.mac)
+        hostname = "ut01ga1s03.aqd-unittest.ms.com"
+        ib_expect_add_address(hostname, str(ip))
+        self.dsdb_expect_add(hostname, ip, "xge49", ip.mac)
         command = ["add", "network_device", "--type", "tor",
-                   "--network_device", "ut01ga1s03.aqd-unittest.ms.com",
+                   "--network_device", hostname,
                    "--rack", "ut9", "--model", "rs g8000",
                    "--interface", "xge49", "--iftype", "physical",
                    "--mac", ip.mac, "--ip", ip]
         self.successtest(command)
         self.dsdb_verify()
+        self.ib_verify()
         self.check_plenary_exists('network_device', 'americas', 'ut', 'ut01ga1s03')
-        self.check_plenary_exists('hostdata', 'ut01ga1s03.aqd-unittest.ms.com')
+        self.check_plenary_exists('hostdata', hostname)
 
-        self.verifynetdev("ut01ga1s03.aqd-unittest.ms.com",
+        self.verifynetdev(hostname,
                           "bnt", "rs g8000", "ut9", "g", "3",
                           ip=ip, mac=ip.mac, interface="xge49")
 
     def test_150_add_ut01ga1s04(self):
         ip = self.net["ut10_eth0"].usable[0]
-        self.dsdb_expect_add("ut01ga1s04.aqd-unittest.ms.com", ip, "xge49",
-                             ip.mac)
+        hostname = "ut01ga1s04.aqd-unittest.ms.com"
+        ib_expect_add_address(hostname, str(ip))
+        self.dsdb_expect_add(hostname, ip, "xge49", ip.mac)
         command = ["add", "network_device", "--type", "tor",
-                   "--network_device", "ut01ga1s04.aqd-unittest.ms.com",
+                   "--network_device", hostname,
                    "--rack", "ut10", "--model", "rs g8000",
                    "--interface", "xge49", "--iftype", "physical",
                    "--mac", ip.mac, "--ip", ip]
         self.successtest(command)
         self.dsdb_verify()
+        self.ib_verify()
         self.check_plenary_exists('network_device', 'americas', 'ut', 'ut01ga1s04')
-        self.check_plenary_exists('hostdata', 'ut01ga1s04.aqd-unittest.ms.com')
+        self.check_plenary_exists('hostdata', hostname)
 
-        self.verifynetdev("ut01ga1s04.aqd-unittest.ms.com",
-                          "bnt", "rs g8000", "ut10", "g", "4",
+        self.verifynetdev(hostname, "bnt", "rs g8000", "ut10", "g", "4",
                           ip=ip, mac=ip.mac, interface="xge49")
 
     def test_160_add_ut01ga2s01(self):
         ip = self.net["vmotion_net"].usable[0]
-        self.dsdb_expect_add("ut01ga2s01.aqd-unittest.ms.com", ip, "xge49",
-                             ip.mac)
+        hostname = "ut01ga2s01.aqd-unittest.ms.com"
+        ib_expect_add_address(hostname, str(ip))
+        self.dsdb_expect_add(hostname, ip, "xge49", ip.mac)
         command = ["add", "network_device", "--type", "tor",
-                   "--network_device", "ut01ga2s01.aqd-unittest.ms.com",
+                   "--network_device", hostname,
                    "--rack", "ut11", "--model", "rs g8000",
                    "--interface", "xge49", "--iftype", "physical",
                    "--mac", ip.mac, "--ip", ip]
         self.successtest(command)
         self.dsdb_verify()
+        self.ib_verify()
         self.check_plenary_exists('network_device', 'americas', 'ut', 'ut01ga2s01')
-        self.check_plenary_exists('hostdata', 'ut01ga2s01.aqd-unittest.ms.com')
+        self.check_plenary_exists('hostdata', hostname)
 
     def test_162_bind_port_group_ut01ga2s01(self):
         net = self.net["ut01ga2s01_v713"]
@@ -330,22 +366,25 @@ class TestAddNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
 
     def test_170_add_ut01ga2s02(self):
         ip = self.net["vmotion_net"].usable[1]
-        self.dsdb_expect_add("ut01ga2s02.aqd-unittest.ms.com", ip, "xge49",
-                             ip.mac)
+        hostname = "ut01ga2s02.aqd-unittest.ms.com"
+        ib_expect_add_address(hostname, str(ip))
+        self.dsdb_expect_add(hostname, ip, "xge49", ip.mac)
         command = ["add", "network_device", "--type", "tor",
-                   "--network_device", "ut01ga2s02.aqd-unittest.ms.com",
+                   "--network_device", hostname,
                    "--rack", "ut12", "--model", "rs g8000",
                    "--interface", "xge49", "--iftype", "physical",
                    "--mac", ip.mac, "--ip", ip]
         self.successtest(command)
         self.dsdb_verify()
+        self.ib_verify()
         self.check_plenary_exists('network_device', 'americas', 'ut', 'ut01ga2s02')
-        self.check_plenary_exists('hostdata', 'ut01ga2s02.aqd-unittest.ms.com')
+        self.check_plenary_exists('hostdata', hostname)
 
     def test_180_add_ut01ga2s03(self):
         ip = self.net["ut_net_mgmt"].usable[5]
-        self.dsdb_expect_add("ut01ga2s03.aqd-unittest.ms.com", ip, "xge49",
-                             ip.mac)
+        hostname = "ut01ga2s03.aqd-unittest.ms.com"
+        ib_expect_add_address(hostname, str(ip))
+        self.dsdb_expect_add(hostname, ip, "xge49", ip.mac)
         command = ["add", "network_device", "--type", "tor",
                    "--network_device", "ut01ga2s03.aqd-unittest.ms.com",
                    "--rack", "ut12", "--model", "rs g8000",
@@ -353,18 +392,21 @@ class TestAddNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
                    "--mac", ip.mac, "--ip", ip]
         self.successtest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_180_add_ut01ga2s04(self):
         ip = self.net["ut_net_mgmt"].usable[6]
-        self.dsdb_expect_add("ut01ga2s04.aqd-unittest.ms.com", ip, "xge49",
-                             ip.mac)
+        hostname = "ut01ga2s04.aqd-unittest.ms.com"
+        ib_expect_add_address(hostname, str(ip))
+        self.dsdb_expect_add(hostname, ip, "xge49", ip.mac)
         command = ["add", "network_device", "--type", "tor",
-                   "--network_device", "ut01ga2s04.aqd-unittest.ms.com",
+                   "--network_device", hostname,
                    "--rack", "ut12", "--model", "rs g8000",
                    "--interface", "xge49", "--iftype", "physical",
                    "--mac", ip.mac, "--ip", ip]
         self.successtest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_200_reject_ip_in_use(self):
         ip = self.net["ut_net_mgmt"].usable[0]
@@ -422,14 +464,16 @@ class TestAddNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
 
     def test_210_add_netdev_to_chassis(self):
         ip = self.net["ut_net_mgmt"].usable[7]
-        self.dsdb_expect_add("ut3c5netdev1.aqd-unittest.ms.com", ip, "xge49",
-                             ip.mac)
-        command = ["add", "network_device", "--network_device", "ut3c5netdev1.aqd-unittest.ms.com",
+        hostname = "ut3c5netdev1.aqd-unittest.ms.com"
+        ib_expect_add_address(hostname, str(ip))
+        self.dsdb_expect_add(hostname, ip, "xge49", ip.mac)
+        command = ["add", "network_device", "--network_device", hostname,
                    "--type", "tor", "--ip", ip, "--mac", ip.mac,
                    "--interface", "xge49", "--iftype", "physical",
                    "--chassis", "ut3c5", "--slot", "1", "--model", "temp_switch"]
         self.successtest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_215_add_netdev_to_chassis_fail(self):
         ip = self.net["ut_net_mgmt"].usable[8]
@@ -443,15 +487,90 @@ class TestAddNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
 
     def test_220_add_netdev_to_chassis_2(self):
         ip = self.net["ut_net_mgmt"].usable[8]
-        self.dsdb_expect_add("ut3c5netdev2.aqd-unittest.ms.com", ip, "xge49",
-                             ip.mac)
-        command = ["add", "network_device", "--network_device", "ut3c5netdev2.aqd-unittest.ms.com",
+        hostname = "ut3c5netdev2.aqd-unittest.ms.com"
+        ib_expect_add_address(hostname, str(ip))
+        self.dsdb_expect_add(hostname, ip, "xge49", ip.mac)
+        command = ["add", "network_device", "--network_device", hostname,
                    "--type", "tor", "--ip", ip, "--mac", ip.mac,
                    "--interface", "xge49", "--iftype", "physical",
                    "--chassis", "ut3c5", "--slot", "5", "--model", "temp_switch"]
         self.successtest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
+    def test_900_ib_netdev(self):
+        mh = MockHub(self)
+
+        mh.add_dns_domain('test-infoblox.cc', restricted=False)
+        mh.add_network()
+        rack_name = mh.add_rack()
+
+        command = ["add_network_device", "--network_device", "network-device.test-infoblox.cc",
+                   "--model", "temp_switch", "--type", "agg", "--interface", "gi0", "--iftype", "physical",
+                   "--domain", mh.default_domain, "--personality", mh.default_personality,
+                   "--osname", mh.default_os, "--osversion", mh.default_os_version, "--rack", rack_name,
+                   "--archetype", mh.default_archetype, "--label", "networkdevicelabel", "--ip", "10.25.0.1"]
+
+        self.dsdb_expect_add("network-device.test-infoblox.cc", "10.25.0.1", interface="gi0", fail=True)
+        self.dsdberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_add("network-device.test-infoblox.cc", "10.25.0.1", interface="gi0")
+        ib_expect_add_address("network-device.test-infoblox.cc", "10.25.0.1", fail=True)
+        self.dsdb_expect_delete("10.25.0.1")
+        self.iberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_add("network-device.test-infoblox.cc", "10.25.0.1", interface="gi0")
+        ib_expect_add_address("network-device.test-infoblox.cc", "10.25.0.1")
+        self.noouttest(command)
+        self.dsdb_verify()
+
+
+
+        command = ["update_network_device", "--network_device", "network-device.test-infoblox.cc", "--ip", "10.25.0.2"]
+
+        self.dsdb_expect_update("network-device.test-infoblox.cc", ip="10.25.0.2", iface="gi0", fail=True)
+        self.dsdberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_update("network-device.test-infoblox.cc", ip="10.25.0.2", iface="gi0")
+        ib_expect_update_address("network-device.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2", fail=True)
+        self.dsdb_expect_update("network-device.test-infoblox.cc", ip="10.25.0.1", iface="gi0")
+        self.iberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_update("network-device.test-infoblox.cc", ip="10.25.0.2", iface="gi0")
+        ib_expect_update_address("network-device.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2")
+        self.noouttest(command)
+        self.dsdb_verify()
+
+        command = ["update_network_device", "--network_device", "network-device.test-infoblox.cc",
+                   "--comments", "Test no request to IB"]
+        self.dsdb_expect_update("network-device.test-infoblox.cc", iface="gi0", comments="Test no request to IB")
+        self.noouttest(command)
+        self.dsdb_verify()
+
+        command = ['del_network_device', '--network_device', 'network-device.test-infoblox.cc']
+
+        self.dsdb_expect_delete("10.25.0.2", fail=True)
+        self.dsdberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_delete("10.25.0.2")
+        ib_expect_del_address("network-device.test-infoblox.cc", "10.25.0.2", fail=True)
+        self.dsdb_expect_add("network-device.test-infoblox.cc", "10.25.0.2", interface="gi0",
+                             comments="Test no request to IB")
+        self.iberrortest(command)
+        self.dsdb_verify()
+
+        self.dsdb_expect_delete("10.25.0.2")
+        ib_expect_del_address("network-device.test-infoblox.cc", "10.25.0.2")
+        self.noouttest(command)
+        self.dsdb_verify()
+
+        self.ib_verify()
+        mh.delete()
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestAddNetworkDevice)

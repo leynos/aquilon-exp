@@ -19,22 +19,29 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_del_address
+
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
+from broker.utils import MockHub
 
 
 class TestAddRouterAddress(TestBrokerCommand):
 
     def test_100_add_router(self):
         net = self.net["ut10_eth1"]
+        hostname = "ut3gd1r04-v109-hsrp.aqd-unittest.ms.com"
+        ib_expect_add_address(hostname, str(net.gateway))
         command = ["add", "router", "address", "--ip", net.gateway,
-                   "--fqdn", "ut3gd1r04-v109-hsrp.aqd-unittest.ms.com",
+                   "--fqdn", hostname,
                    "--building", "ut",
                    "--comments", "Some router address comments"]
         self.noouttest(command)
+        self.ib_verify()
 
     def test_101_add_router_primary_address(self):
         primary_name = "ut3gd1r04.aqd-unittest.ms.com"
@@ -72,13 +79,16 @@ class TestAddRouterAddress(TestBrokerCommand):
         self.assertEqual(netmsg.routers[0], str(net.gateway))
 
     def test_110_add_default_router(self):
+        hostname = "ut3gd1r01-v111-hsrp.aqd-unittest.ms.com"
         net = self.net["routing3"]
         ip = net[3]
+        ib_expect_add_address(hostname, str(ip))
         command = ["add", "router", "address", "--ip", ip,
-                   "--fqdn", "ut3gd1r01-v111-hsrp.aqd-unittest.ms.com",
+                   "--fqdn", hostname,
                    "--building", "ut",
                    "--comments", "Some other router address comments"]
         self.noouttest(command)
+        self.ib_verify()
 
     def test_120_add_zebra_routers(self):
         for net_idx, net in enumerate((self.net["zebra_eth0"],
@@ -86,8 +96,9 @@ class TestAddRouterAddress(TestBrokerCommand):
             for rtr_idx in range(0, 2):
                 rtr = "ut3gd1r0%d-v%d-hsrp.aqd-unittest.ms.com" % (net_idx + 1,
                                                                    rtr_idx + 109)
-                command = ["add", "router", "address", "--ip", net[rtr_idx + 1],
-                           "--fqdn", rtr]
+                ip = str(net[rtr_idx + 1])
+                ib_expect_add_address(rtr, str(ip))
+                command = ["add", "router", "address", "--ip", ip, "--fqdn", rtr]
                 self.noouttest(command)
 
     def test_125_show_zebra0_proto(self):
@@ -99,19 +110,28 @@ class TestAddRouterAddress(TestBrokerCommand):
 
     def test_130_add_vpls_routers(self):
         net = self.net["vpls"]
+        hostname = "utvplsgw.aqd-unittest.ms.com"
+        ib_expect_add_address(hostname, str(net[1]))
         self.noouttest(["add", "router", "address", "--ip", net[1], "--building", "ut",
-                        "--fqdn", "utvplsgw.aqd-unittest.ms.com"])
+                        "--fqdn", hostname])
+        self.ib_verify()
+        hostname = "npvplsgw.aqd-unittest.ms.com"
+        ib_expect_add_address(hostname, str(net[2]))
         self.noouttest(["add", "router", "address", "--ip", net[2], "--building", "np",
                         "--fqdn", "npvplsgw.aqd-unittest.ms.com"])
+        self.ib_verify()
 
     def test_140_add_excx(self):
         net = list(self.net["unknown0"].subnets())[0]
         # Test a different address assignment convention: router addresses are
         # at the end, not at the beginning
+        hostname = "gw1.excx.aqd-unittest.ms.com"
+        ib_expect_add_address(hostname, str(net[-2]))
         command = ["add", "router", "address", "--ip", net[-2],
-                   "--fqdn", "gw1.excx.aqd-unittest.ms.com",
+                   "--fqdn", hostname,
                    "--network_environment", "excx"]
         self.noouttest(command)
+        self.ib_verify()
 
     def test_145_show_excx(self):
         command = ["show", "router", "address", "--network_environment", "excx", "--all"]
@@ -123,10 +143,13 @@ class TestAddRouterAddress(TestBrokerCommand):
 
     def test_150_add_utcolo(self):
         net = self.net["unknown1"]
+        hostname = "gw1.utcolo.aqd-unittest.ms.com"
+        ib_expect_add_address(hostname, str(net[2]))
         command = ["add", "router", "address", "--ip", net[2],
                    "--fqdn", "gw1.utcolo.aqd-unittest.ms.com",
                    "--network_environment", "utcolo"]
         self.noouttest(command)
+        self.ib_verify()
 
     def test_200_add_router_again(self):
         net = self.net["ut10_eth1"]
@@ -154,13 +177,16 @@ class TestAddRouterAddress(TestBrokerCommand):
         #     170.74.170.62
         net = self.net["ut01ga2s01_v710"]
         ip = net.usable[0]
-        command = ['add_router_address', '--ip', ip,
-                   '--fqdn', 'first-usable-host-ip.aqd-unittest.ms.com',
-                   '--building', 'ut']
+        hostname = "first-usable-host-ip.aqd-unittest.ms.com"
+        ib_expect_add_address(hostname, str(ip))
+        command = ['add_router_address', '--ip', ip, '--fqdn', hostname, '--building', 'ut']
         # Test if it can be added without raising an exception.
         self.noouttest(command)
+        self.ib_verify()
         # Test if it is there, and clean up.
+        ib_expect_del_address(hostname, str(ip))
         self.noouttest(['del_router_address', '--ip', ip])
+        self.ib_verify()
 
     def test_200_add_reserved(self):
         net = self.net["tor_net_0"]
@@ -199,6 +225,35 @@ class TestAddRouterAddress(TestBrokerCommand):
         self.matchoutput(out, "Router: ut3gd1r01-v111-hsrp.aqd-unittest.ms.com", command)
         self.matchclean(out, "excx", command)
 
+    def test_900_ib_routeraddress(self):
+        mh = MockHub(self)
+
+        mh.add_dns_domain('test-infoblox.cc', restricted=False)
+        mh.add_network()
+
+        command = ["add_router_address", "--fqdn", "router-address.test-infoblox.cc", "--ip", "10.25.0.1"]
+
+        ib_expect_add_address("router-address.test-infoblox.cc", "10.25.0.1", fail=True)
+        self.iberrortest(command)
+
+        ib_expect_add_address("router-address.test-infoblox.cc", "10.25.0.1")
+        self.noouttest(command)
+
+        command = ["update_router_address", "--fqdn", "router-address.test-infoblox.cc",
+                   "--comments", "Test no request to IB"]
+        self.noouttest(command)
+
+        command = ['del_router_address', '--fqdn', 'router-address.test-infoblox.cc']
+
+        ib_expect_del_address("router-address.test-infoblox.cc", "10.25.0.1", fail=True)
+        self.iberrortest(command)
+
+        ib_expect_del_address("router-address.test-infoblox.cc", "10.25.0.1")
+        self.noouttest(command)
+        self.dsdb_verify(empty=True)
+
+        self.ib_verify()
+        mh.delete()
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestAddRouterAddress)

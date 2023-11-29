@@ -19,11 +19,14 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_del_address
+
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 
 class TestAddSharedServiceName(TestBrokerCommand):
@@ -125,26 +128,33 @@ class TestAddSharedServiceName(TestBrokerCommand):
         # as a shared-service-name with no-SA-aliases set
         command = ['add_address_alias',
                    '--fqdn=utvcs1pn2.aqd-unittest.ms.com',
-                   '--target=arecord13.aqd-unittest.ms.com']
+                   '--target=arecord13.aqd-unittest.ms.com'] \
+                  + self.valid_just_sn
         err = self.badrequesttest(command)
         self.matchoutput(err, 'SharedServiceName utvcs1pn2 already exists '
                               'with the same FQDN', command)
 
     def test_030_pn_dns_sa(self):
+        ib_expect_add_address("utvcs1pn1.aqd-unittest.ms.com", "4.2.1.18", create_ptr=False)
         # ensure that we can add an address-alias record that uses
         # the same FQDN as a shared-service-name with SA-aliases set
         command = ['add_address_alias',
                    '--fqdn=utvcs1pn1.aqd-unittest.ms.com',
-                   '--target=arecord13.aqd-unittest.ms.com']
+                   '--target=arecord13.aqd-unittest.ms.com'] \
+                  + self.valid_just_sn
         self.successtest(command)
+        self.ib_verify()
 
     def test_035_pn_dns_sa_remove(self):
+        ib_expect_del_address("utvcs1pn1.aqd-unittest.ms.com", "4.2.1.18", delete_ptr=False)
         # remove the address-alias created again the FQDN of a
         # shared-service-name resource above
         command = ['del_address_alias',
                    '--fqdn=utvcs1pn1.aqd-unittest.ms.com',
-                   '--target=arecord13.aqd-unittest.ms.com']
+                   '--target=arecord13.aqd-unittest.ms.com'] \
+                  + self.valid_just_sn
         self.successtest(command)
+        self.ib_verify()
 
     def test_040_pn_nodns_arec(self):
         # ensure we cannot add a DNS A record that uses the same FQDN

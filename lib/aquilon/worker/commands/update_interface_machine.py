@@ -17,12 +17,13 @@
 """Contains the logic for `aq update interface --machine`."""
 
 from aquilon.aqdb.types import NicType
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.aqdb.model import Machine, Interface, Model
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.interface import (set_port_group,
                                                  assign_address,
                                                  rename_interface)
+from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
 from aquilon.utils import first_of
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
@@ -79,6 +80,8 @@ class CommandUpdateInterfaceMachine(BrokerCommand):
         dbinterface.lock_row()
 
         oldinfo = DSDBRunner.snapshot_hw(dbhw_ent)
+        ib_services = IBServices(logger, **arguments)
+        ib_old_snapshot = ib_services.snapshot_hw_a_records(dbhw_ent)
 
         if arguments.get('hostname', None):
             # Hack to set an intial interface for an aurora host...
@@ -207,6 +210,16 @@ class CommandUpdateInterfaceMachine(BrokerCommand):
                 dsdb_runner = DSDBRunner(logger=logger)
                 dsdb_runner.update_host(dbhw_ent, oldinfo)
                 dsdb_runner.commit_or_rollback()
+
+                if ib_old_snapshot is not None and ib_services.feature_enabled("interface"):
+                        ib_services.bulk_change_a_ptr(ib_old_snapshot, ib_services.snapshot_hw_a_records(dbhw_ent))
+
+                        try:
+                            ib_services.group.commit_or_rollback()
+                        except ProcessException as e:
+                            if dsdb_runner:
+                                dsdb_runner.rollback()
+                            raise e
 
         for name, value in audit_results:
             self.audit_result(session, name, value, **arguments)

@@ -22,6 +22,7 @@ from aquilon.worker.broker import BrokerCommand
 from aquilon.aqdb.model import (RouterAddress, Building)
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.dbwrappers.dns import grab_address
+from aquilon.worker.ib_services import IBServices
 
 
 class CommandAddRouterAddress(BrokerCommand):
@@ -74,6 +75,8 @@ class CommandAddRouterAddress(BrokerCommand):
 
         # TODO: update the templates of Zebra hosts on the network
         plenaries.add(dbnetwork)
-        plenaries.write()
 
-        return
+        with plenaries.transaction():
+            ib_services = IBServices(logger, **arguments)
+            if newly_created and ib_services.feature_enabled("router_address"):
+                ib_services.add_a_ptr(str(dbdns_rec.fqdn), ip)

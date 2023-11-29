@@ -20,19 +20,30 @@
 import unittest
 
 if __name__ == '__main__':
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
+from mock_ib_services import ib_expect_del_address
 
 
 class TestDelAddressAlias(TestBrokerCommand):
 
-    def test_100_del_addralias_with_target(self):
+    def test_100_del_addralias_with_target_fail(self):
         command = ["del", "address", "alias",
                    "--fqdn", "addralias1.aqd-unittest.ms.com",
                    "--target", "arecord13.aqd-unittest.ms.com"]
+        out = self.badoptiontest(command)
+        self.matchoutput(out, "Not all mandatory options specified!", command)
+
+    def test_101_del_addralias_with_target(self):
+        ib_expect_del_address("addralias1.aqd-unittest.ms.com", "4.2.1.18", delete_ptr=False)
+        command = ["del", "address", "alias",
+                   "--fqdn", "addralias1.aqd-unittest.ms.com",
+                   "--target", "arecord13.aqd-unittest.ms.com"] \
+                  + self.valid_just_sn
         self.noouttest(command)
+        self.ib_verify()
 
     def test_150_verify_del_addralias_with_target(self):
         command = ["search_dns",
@@ -50,7 +61,8 @@ class TestDelAddressAlias(TestBrokerCommand):
     def test_200_del_addralias_with_nonexistent_target(self):
         command = ["del", "address", "alias",
                    "--fqdn", "addralias1.aqd-unittest.ms.com",
-                   "--target", "arecord13.aqd-unittest.ms.com"]
+                   "--target", "arecord13.aqd-unittest.ms.com"] \
+                  + self.valid_just_sn
         out = self.notfoundtest(command)
         self.matchoutput(out,
                          "Address Alias addralias1.aqd-unittest.ms.com, "
@@ -59,16 +71,21 @@ class TestDelAddressAlias(TestBrokerCommand):
 
     def test_250_del_addralias_of_other_type(self):
         command = ["del", "address", "alias",
-                   "--fqdn", "arecord13.aqd-unittest.ms.com"]
+                   "--fqdn", "arecord13.aqd-unittest.ms.com"] \
+                  + self.valid_just_sn
         out = self.notfoundtest(command)
         self.matchoutput(out,
                          "Address Alias arecord13.aqd-unittest.ms.com "
                          "not found.", command)
 
     def test_400_del_addralias(self):
+        ib_expect_del_address("addralias1.aqd-unittest.ms.com", "4.2.1.20", delete_ptr=False)
+        ib_expect_del_address("addralias1.aqd-unittest.ms.com", "4.2.1.19", delete_ptr=False)
         command = ["del", "address", "alias",
-                   "--fqdn", "addralias1.aqd-unittest.ms.com"]
+                   "--fqdn", "addralias1.aqd-unittest.ms.com"] \
+                  + self.valid_just_sn
         self.noouttest(command)
+        self.ib_verify()
 
     def test_450_verify_del_addralias(self):
         command = ["search_dns",
@@ -80,7 +97,8 @@ class TestDelAddressAlias(TestBrokerCommand):
                    "--fqdn", "addralias1.aqd-unittest-ut-env.ms.com",
                    "--dns_environment", "ut-env",
                    "--target", "arecord13.aqd-unittest.ms.com",
-                   "--target_environment", "internal"]
+                   "--target_environment", "internal"] \
+                  + self.valid_just_sn
         self.noouttest(command)
 
     def test_550_verify_del_cross_environment(self):
@@ -90,9 +108,13 @@ class TestDelAddressAlias(TestBrokerCommand):
         self.noouttest(command)
 
     def test_600_del_addralias_with_grn(self):
+        ib_expect_del_address("addralias3.aqd-unittest.ms.com", "4.2.1.18", delete_ptr=False)
+        ib_expect_del_address("addralias3.aqd-unittest.ms.com", "4.2.1.19", delete_ptr=False)
         command = ["del", "address", "alias",
-                   "--fqdn", "addralias3.aqd-unittest.ms.com"]
+                   "--fqdn", "addralias3.aqd-unittest.ms.com"] \
+                  + self.valid_just_sn
         self.noouttest(command)
+        self.ib_verify()
 
     def test_605_verify_del_addralias_with_grn(self):
         command = ["search_dns",
@@ -100,9 +122,12 @@ class TestDelAddressAlias(TestBrokerCommand):
         self.notfoundtest(command)
 
     def test_610_del_addralias_with_grn(self):
+        ib_expect_del_address("addralias4.aqd-unittest.ms.com", "4.2.1.18", delete_ptr=False)
         command = ["del", "address", "alias",
-                   "--fqdn", "addralias4.aqd-unittest.ms.com"]
+                   "--fqdn", "addralias4.aqd-unittest.ms.com"] \
+                  + self.valid_just_sn
         self.noouttest(command)
+        self.ib_verify()
 
     def test_615_verify_del_addralias_with_grn(self):
         command = ["search_dns",

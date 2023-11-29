@@ -25,8 +25,8 @@ addLevelName(CLIENT_INFO, 'CLIENT_INFO')
 
 
 class CommandHandler(Handler):
-    def __init__(self, module_logger):
-        Handler.__init__(self, level=NOTSET)
+    def __init__(self, module_logger, level=NOTSET):
+        super().__init__(level)
         self.logger = module_logger
 
     def emit(self, record):
@@ -34,8 +34,8 @@ class CommandHandler(Handler):
 
 
 class StatusHandler(Handler):
-    def __init__(self, status):
-        Handler.__init__(self, level=NOTSET)
+    def __init__(self, status, level=NOTSET):
+        super().__init__(level)
         self.status = status
 
     def emit(self, record):
@@ -48,8 +48,8 @@ class StatusHandler(Handler):
 
 
 class RequestLogger(Logger):
-    def __init__(self, status):
-        Logger.__init__(self, "logger")
+    def __init__(self, status, name="logger", level=NOTSET):
+        super().__init__(name, level)
         self.addHandler(StatusHandler(status))
 
     def add_command_handler(self, module_logger):

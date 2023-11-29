@@ -23,12 +23,13 @@ from aquilon.aqdb.model import (
     ServiceAddress,
     SharedServiceName,
 )
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.resources import get_resource_holder
 from aquilon.worker.dbwrappers.service_instance import check_no_provided_service
+from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
 
 
@@ -65,6 +66,7 @@ class CommandDelServiceAddress(BrokerCommand):
         plenaries.add(dbsrv)
 
         holder.resources.remove(dbsrv)
+        ib_services = IBServices(logger, **arguments)
         if not dbdns_rec.service_addresses:
             # if we're in a resource-group and a shared-service-name exists
             # that has sa_aliases set, and there'a an alias pointing at
@@ -88,8 +90,15 @@ class CommandDelServiceAddress(BrokerCommand):
                         continue
 
                     delete_dns_record(rr, exporter=exporter)
+                    ib_services.group.add_action(
+                        lambda: ib_services.delete_a_ptr(str(rr.fqdn), rr.target_ip),
+                        lambda: ib_services.add_a_ptr(str(rr.fqdn), rr.target_ip, ttl=rr.ttl)
+                    )
                     break
 
+            # TODO:
+            # When the domain is restricted, delete_dns_records deletes not only dbdns_rec.fqdn
+            # but also dbdns_rec.target and dbdns_rec.reverse_ptr so do i need to do that in ib too ?
             delete_dns_record(dbdns_rec, exporter=exporter)
 
         session.flush()
@@ -98,6 +107,12 @@ class CommandDelServiceAddress(BrokerCommand):
             if (not dbdns_rec.service_addresses and
                     dbdns_rec.network.is_internal):
                 dsdb_runner.delete_host_details(old_fqdn, old_ip)
+                ib_services.group.add_action(lambda: ib_services.delete_a_ptr(old_fqdn, old_ip))
             dsdb_runner.commit_or_rollback("Could not delete host from DSDB")
 
-        return
+            if ib_services.feature_enabled("service_address") and dbdns_rec.fqdn.dns_environment.is_default:
+                try:
+                    ib_services.group.commit_or_rollback()
+                except ProcessException as e:
+                    dsdb_runner.rollback()
+                    raise e

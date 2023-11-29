@@ -24,8 +24,9 @@ if __name__ == "__main__":
     utils.import_depends()
 
 from broker.brokertest import TestBrokerCommand
-from networktest import DummyIP
-from machinetest import MachineTestMixin
+from .networktest import DummyIP
+from .machinetest import MachineTestMixin
+from mock_ib_services import ib_expect_add_address, ib_expect_del_address
 
 
 class TestAddHost(MachineTestMixin, TestBrokerCommand):
@@ -44,8 +45,10 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
 
     def test_101_add_unittest02(self):
         ip = self.net["unknown0"].usable[0]
+        fqdn = "unittest02.one-nyp.ms.com"
+        ib_expect_add_address(fqdn, ip)
         # DSDB sync uses the machine comments, not the host comments
-        self.dsdb_expect_add("unittest02.one-nyp.ms.com", ip, "eth0", ip.mac,
+        self.dsdb_expect_add(fqdn, ip, "eth0", ip.mac,
                              comments="Some machine comments")
         osver = self.config.get("unittest", "linux_version_prev")
         self.noouttest(["add", "host",
@@ -56,6 +59,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                         "--personality", "compileserver",
                         "--comments", "Some host comments"])
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_105_verify_unittest02(self):
         osver = self.config.get("unittest", "linux_version_prev")
@@ -164,8 +168,9 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
 
     def test_110_add_unittest15(self):
         ip = self.net["tor_net_0"].usable[1]
-        self.dsdb_expect_add("unittest15.aqd-unittest.ms.com", ip, "eth0",
-                             ip.mac)
+        fqdn = "unittest15.aqd-unittest.ms.com"
+        ib_expect_add_address(fqdn, ip)
+        self.dsdb_expect_add(fqdn, ip, "eth0", ip.mac)
         self.noouttest(["add", "host",
                         "--hostname", "unittest15.aqd-unittest.ms.com",
                         "--ipfromsystem", "ut01ga1s02.aqd-unittest.ms.com",
@@ -173,6 +178,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                         "--machine", "ut8s02p1", "--domain", "unittest",
                         "--archetype", "aquilon"])
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_115_verify_unittest15(self):
         command = "show host --hostname unittest15.aqd-unittest.ms.com"
@@ -205,7 +211,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         out = self.badrequesttest(command)
         self.matchoutput(out,
                          "Expected an IP address for --ip: "
-                         "u'not-an-ip-address' does not appear to be an IPv4 or IPv6 address.",
+                         "'not-an-ip-address' does not appear to be an IPv4 or IPv6 address.",
                          command)
 
     def test_122_add_unittest16_bad_domain(self):
@@ -230,8 +236,10 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
 
     def test_124_add_unittest16_good(self):
         net = self.net["tor_net_0"]
-        self.dsdb_expect_add("unittest16.aqd-unittest.ms.com", net.usable[2],
-                             "eth0", net.usable[2].mac)
+        ip = net.usable[2]
+        fqdn = "unittest16.aqd-unittest.ms.com"
+        ib_expect_add_address(fqdn, ip)
+        self.dsdb_expect_add(fqdn, ip, "eth0", net.usable[2].mac)
         self.noouttest(["add", "host",
                         "--hostname", "unittest16.aqd-unittest.ms.com",
                         "--ipfromip", net.usable[0], "--ipalgorithm", "lowest",
@@ -239,6 +247,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                         "--archetype", "aquilon",
                         "--personality", "compileserver"])
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_125_verify_unittest16(self):
         command = "show host --hostname unittest16.aqd-unittest.ms.com"
@@ -251,14 +260,16 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
 
     def test_130_add_unittest17(self):
         ip = self.net["tor_net_0"].usable[3]
-        self.dsdb_expect_add("unittest17.aqd-unittest.ms.com", ip, "eth0",
-                             ip.mac)
+        fqdn = "unittest17.aqd-unittest.ms.com"
+        ib_expect_add_address(fqdn, ip)
+        self.dsdb_expect_add(fqdn, ip, "eth0", ip.mac)
         self.noouttest(["add", "host",
                         "--hostname", "unittest17.aqd-unittest.ms.com",
                         "--ipfromsystem", "ut01ga1s02.aqd-unittest.ms.com",
                         "--machine", "ut8s02p3", "--domain", "unittest",
                         "--archetype", "aquilon"])
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_135_verify_unittest17(self):
         # Verifies default os and personality for aquilon
@@ -297,13 +308,16 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
 
     def test_145_add_windows_default_os(self):
         ip = self.net["tor_net_0"].usable[5]
-        self.dsdb_expect_add("test-windows-default-os.msad.ms.com", ip,
+        fqdn = "test-windows-default-os.msad.ms.com"
+        ib_expect_add_address(fqdn, ip)
+        self.dsdb_expect_add(fqdn, ip,
                              "eth0", self.net["tor_net_0"].usable[5].mac)
         self.noouttest(["add", "host", "--archetype", "windows",
                         "--hostname", "test-windows-default-os.msad.ms.com",
                         "--ip", ip, "--domain", "ut-prod",
                         "--machine", "ut8s02p5"])
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_146_verify_windows_default_os(self):
         command = "show host --hostname test-windows-default-os.msad.ms.com"
@@ -319,17 +333,21 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
 
     def test_150_add_cciss_host(self):
         ip = self.net["unknown0"].usable[18]
-        self.dsdb_expect_add("unittest18.aqd-unittest.ms.com", ip, "eth0",
-                             ip.mac)
+        fqdn = "unittest18.aqd-unittest.ms.com"
+        ib_expect_add_address(fqdn, ip)
+        self.dsdb_expect_add(fqdn, ip, "eth0", ip.mac)
         command = ["add", "host", "--archetype", "aquilon",
                    "--hostname", "unittest18.aqd-unittest.ms.com", "--ip", ip,
                    "--domain", "unittest", "--machine", "ut3c1n8"]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_155_add_f5(self):
         # The IP address is also a /32 network
         ip = self.net["f5test"].ip
+        fqdn = "f5test.aqd-unittest.ms.com"
+        ib_expect_add_address(fqdn, ip)
         self.dsdb_expect_add("f5test.aqd-unittest.ms.com", ip, "eth0",
                              DummyIP(ip).mac)
         command = ["add", "host", "--hostname", "f5test.aqd-unittest.ms.com",
@@ -338,6 +356,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                    "--osname", "f5", "--osversion", "generic"]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_160_no_default_os(self):
         ip = self.net["vm_storage_net"].usable[25]
@@ -349,6 +368,8 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
 
     def test_165_add_filer(self):
         ip = self.net["vm_storage_net"].usable[25]
+        fqdn = "filer1.ms.com"
+        ib_expect_add_address(fqdn, ip)
         self.dsdb_expect_add("filer1.ms.com", ip, "v0")
         command = ["add", "host", "--archetype", "filer",
                    "--hostname", "filer1.ms.com", "--ip", ip,
@@ -356,6 +377,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                    "--osname=ontap", "--osversion=7.3.3p1"]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_170_add_cardsmachine(self):
         net = self.net.allocate_network(self, "cards_net", 28, "unknown",
@@ -401,7 +423,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                              eth0_mac=eth0_mac,
                              eth1_mac=eth1_mac, eth1_ip=eth1_ip,
                              manager_iface="mgmt0", manager_ip=mgmt_ip,
-                             osname="esxi", osversion="5.0.0",
+                             osname="esxi", osversion="7.0.3",
                              archetype="vmhost", personality="vulcan2-server-dev")
 
     def test_185_add_utmc9_vmhosts(self):
@@ -412,7 +434,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                          manager_iface="mgmt0",
                          manager_ip=self.net["ut14_oob"].usable[2],
                          archetype="vmhost", personality="vulcan-local-disk",
-                         osname="esxi", osversion="5.0.0",
+                         osname="esxi", osversion="7.0.3",
                          domain="alt-unittest")
         self.create_host("evh83.aqd-unittest.ms.com",
                          self.net["ut14_net"].usable[3],
@@ -420,7 +442,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                          manager_iface="mgmt0",
                          manager_ip=self.net["ut14_oob"].usable[3],
                          archetype="vmhost", personality="vulcan-local-disk",
-                         osname="esxi", osversion="5.0.0",
+                         osname="esxi", osversion="7.0.3",
                          domain="alt-unittest")
 
     def test_200_machine_reuse(self):
@@ -528,7 +550,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                              manager_iface="mgmt0", manager_ip=mgmt_ip,
                              archetype="vmhost",
                              personality="vulcan-10g-server-prod",
-                             osname="esxi", osversion="5.0.0")
+                             osname="esxi", osversion="7.0.3")
 
     def test_320_add_10gig_racks(self):
         for port in range(1, 13):
@@ -572,20 +594,23 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                 port = i - 12
                 machine = "ut12s02p%d" % port
                 mgmt_net = self.net["ut12_oob"]
-            self.dsdb_expect_add(hostname, net.usable[i + 1], "eth0",
-                                 net.usable[i + 1].mac)
+            ip = net.usable[i + 1]
+            ib_expect_add_address(hostname, ip)
+            ib_expect_add_address(manager, mgmt_net[port])
+            self.dsdb_expect_add(hostname, ip, "eth0", ip.mac)
             self.dsdb_expect_add(manager, mgmt_net[port], "mgmt0",
                                  mgmt_net[port].mac)
             command = ["add", "host", "--hostname", hostname, "--autoip",
                        "--machine", machine,
                        "--domain", "unittest",
-                       "--osname", "esxi", "--osversion", "5.0.0",
+                       "--osname", "esxi", "--osversion", "7.0.3",
                        "--archetype", "vmhost", "--personality", "vulcan-10g-server-prod"]
             self.noouttest(command)
             command = ["add_manager", "--hostname", hostname, "--interface", "mgmt0",
                        "--ip", mgmt_net[port], "--mac", mgmt_net[port].mac]
             self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_323_verify_show_ut11s01p1(self):
         command = "show machine --machine ut11s01p1"
@@ -634,7 +659,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         self.assertEqual(host.personality.archetype.name, "vmhost")
         self.assertEqual(host.operating_system.archetype.name, "vmhost")
         self.assertEqual(host.operating_system.name, "esxi")
-        self.assertEqual(host.operating_system.version, "5.0.0")
+        self.assertEqual(host.operating_system.version, "7.0.3")
         self.assertEqual(host.ip, str(self.net["ut10_eth0"].usable[1]))
         self.assertEqual(host.machine.name, "ut10s04p1")
         self.assertEqual(len(host.machine.interfaces), 3)
@@ -664,6 +689,8 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
     def test_400_add_utnotify(self):
         hostname = self.config.get("unittest", "hostname")
         # We _could_ also look up the real address of the host...
+        ip = "127.0.0.1"
+        ib_expect_add_address(hostname, ip)
         self.dsdb_expect_add(hostname, "127.0.0.1", "eth0",
                              self.net["tor_net_0"].usable[8].mac)
         self.noouttest(["add", "host",
@@ -678,6 +705,8 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         out = self.statustest(command)
         self.matchoutput(out, "Warning: Host %s is missing the following "
                          "required services" % hostname, command)
+        self.dsdb_verify()
+        self.ib_verify()
 
     def test_410_add_afsbynet(self):
         ip = self.net["netsvcmap"].usable[0]
@@ -808,9 +837,13 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
     def _clean_up_after_500(self, cases):
         # Clean up.
         for case in cases:
-            command = ['del_host', '--hostname={}'.format(cases[case]['fqhn'])]
-            self.dsdb_expect_delete(cases[case]['ip'])
+            fqdn = cases[case]["fqhn"]
+            ip = cases[case]["ip"]
+            command = ['del_host', '--hostname={}'.format(fqdn)]
+            self.dsdb_expect_delete(ip)
+            ib_expect_del_address(fqdn, ip)
             self.successtest(command)
+            self.ib_verify()
             self.noouttest(['del_machine',
                             '--machine', cases[case]['machine']])
             self.net.dispose_network(self, cases[case]['net'])
@@ -836,6 +869,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
             command.extend(['--ip', cases[case]['ip'],
                             '--machine', cases[case]['machine']])
             extend_command(command, cases[case])
+            ib_expect_add_address(cases[case]['fqhn'], cases[case]['ip'])
             self.dsdb_expect_add(cases[case]['fqhn'], cases[case]['ip'],
                                  'eth0', cases[case]['mac'])
             if case == 'right':
@@ -882,6 +916,8 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
             self.assertEqual(host.fqdn, cases[case]['fqhn'])
         # Clean up.
         self._clean_up_after_500(cases)
+        self.dsdb_verify()
+        self.ib_verify()
 
     def test_500_verify_hostname_for_building(self):
         def extend_command(command, case_data):
@@ -1001,33 +1037,39 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
 
     def test_805_ipfromtype_host_setup(self):
         # Reuse host in bunker bucket2.ut
-        command = ["show", "host", "--hostname", "aquilon67.aqd-unittest.ms.com"]
+        fqdn = "aquilon67.aqd-unittest.ms.com"
+        ip = self.net["hp_eth0"].usable[17]
+        command = ["show", "host", "--hostname", fqdn]
         out = self.commandtest(command)
         self.matchoutput(out, "Bunker: bucket2.ut", command)
-        self.dsdb_expect_delete(self.net["hp_eth0"].usable[17])
+        self.dsdb_expect_delete(ip)
+        ib_expect_del_address(fqdn, ip)
         self.statustest(["del_host", "--hostname", "aquilon67.aqd-unittest.ms.com"])
         command = ["search", "network", "--type", "localvip", "--exact_location", "--bunker", "bucket2.ut", "--fullinfo"]
         out = self.commandtest(command)
         self.matchoutput(out, "Bunker: bucket2.ut", command)
         self.matchoutput(out, "Network: ut_bucket2_localvip", command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_810_ipfromtype_host(self):
         # Reuse host in bunker bucket2.ut
         ip = self.net["ut_bucket2_localvip"].usable[0]
         mac = self.net["hp_eth0"].usable[17].mac
-        self.dsdb_expect_add("aquilon67.aqd-unittest.ms.com",
+        fqdn = "aquilon67.aqd-unittest.ms.com"
+        self.dsdb_expect_add(fqdn,
                              ip, "eth0",
                              mac)
-        self.noouttest(["add_host", "--hostname", "aquilon67.aqd-unittest.ms.com",
+        ib_expect_add_address(fqdn, ip)
+        self.noouttest(["add_host", "--hostname", fqdn,
                         "--archetype", "aquilon",
                         "--machine", "ut9s03p17",
                         "--ipfromtype", "localvip", "--sandbox", "%s/utsandbox" % self.user])
         self.dsdb_verify()
-        command = ["show", "host", "--hostname", "aquilon67.aqd-unittest.ms.com"]
+        self.ib_verify()
+        command = ["show", "host", "--hostname", fqdn]
         out = self.commandtest(command)
-        self.matchoutput(out, "Provides: aquilon67.aqd-unittest.ms.com [{}]".format(ip), command)
-
+        self.matchoutput(out, "Provides: {} [{}]".format(fqdn, ip), command)
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestAddHost)

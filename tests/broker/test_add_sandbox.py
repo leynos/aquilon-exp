@@ -23,10 +23,10 @@ import subprocess
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 
 class TestAddSandbox(TestBrokerCommand):
@@ -150,7 +150,7 @@ class TestAddSandbox(TestBrokerCommand):
         for s in ('user', 'group', 'other'):
             # Let us ignore effective: as there should be no ACL_MASK at this
             # point.
-            split = re.split(r'{}::(\S{{3}})'.format(s), out)
+            split = re.split(r'{}::(\S{{3}})'.format(s), out.decode())
             if len(split) != 3:
                 raise RuntimeError(
                     'Permissions for {} not found in:\n {}\n'.format(s, out))

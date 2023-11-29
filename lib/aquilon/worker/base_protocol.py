@@ -16,7 +16,6 @@
 # limitations under the License.
 """Provide an anonymous access channel to the Site."""
 
-from six import text_type
 from twisted.web import server
 
 from aquilon.worker.logger import RequestLogger
@@ -41,12 +40,10 @@ def alt_repr(s):
     # Small helper borrowed from twisted: a version of repr() which always uses
     # double quotes
     r = repr(s)
-    if not isinstance(r, text_type):
-        r = r.decode("ascii")
-    if r.startswith(u"b"):
+    if r.startswith("b"):
         r = r[1:]
-    if r.startswith(u"'"):
-        return r[1:-1].replace(u'"', u'\\"').replace(u"\\'", u"'")
+    if r.startswith("'"):
+        return r[1:-1].replace('"', '\\"').replace("\\'", "'")
     return r[1:-1]
 
 
@@ -56,7 +53,7 @@ class AQDRequest(server.Request):
     """
 
     def __init__(self, *args, **kwargs):
-        server.Request.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.__sequence_no = _get_next_sequence_no()
         self.status = catalog.create_request_status(auditid=self.__sequence_no)
         self.logger = RequestLogger(self.status)
@@ -100,7 +97,7 @@ class AQDSite(server.Site):
                 request.getClientIP(),
                 request.getPrincipal() or "-",
                 self._logDateTime,
-                '%s %s %s' % (alt_repr(request.method),
+                '{} {} {}'.format(alt_repr(request.method),
                               alt_repr(request.uri),
                               alt_repr(request.clientproto)),
                 request.code,

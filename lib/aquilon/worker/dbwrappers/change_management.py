@@ -22,6 +22,7 @@ from datetime import datetime
 import json
 import logging
 import shlex
+from functools import total_ordering
 
 from aquilon.aqdb.model import (
     AddressAlias,
@@ -99,7 +100,7 @@ from sqlalchemy.orm.query import Query
 
 cm_logger = logging.getLogger('change_management')
 
-
+@total_ordering
 class ChangeManagement(object):
     """
     Class calculate impacted environments with number objects in them
@@ -137,12 +138,26 @@ class ChangeManagement(object):
         if self.config.has_option("change_management", "extra_options"):
             self.extra_options = self.config.get("change_management", "extra_options")
 
+        if self.config.has_option("change_management", "allow_emergency_user_roles"):
+            self.allow_emergency_user_roles = (self.config.get(
+                "change_management", "allow_emergency_user_roles")).split()
+
         dbuser = get_or_create_user_principal(session, user, commitoncreate=True)
         self.username = dbuser.name
         self.role_name = dbuser.role.name
         # check if user is part of group for which change management can be skipped
-        self.is_user_exempt = self.username in self.config.get("database", 
+        self.is_user_exempt = self.username in self.config.get("database",
                                                                "skip_members")
+
+
+    def __eq__(self, other):
+        return self.impacted_objects == other.impacted_objects
+
+    def __ne__(self, other):
+        return self.impacted_objects != other.impacted_objects
+
+    def __lt__(self, other):
+        return self.impacted_objects < other.impacted_objects
 
     def consider(self, target_obj, enforce_validation=False):
         """
@@ -183,8 +198,8 @@ class ChangeManagement(object):
             return '\n\t - no affected objects in-scope for change ' \
                    'management found -'
         in_scope_list = '\n'.join('\t{}'.format(o)
-                                  for k in sorted(self.impacted_objects)
-                                  for o in sorted(self.impacted_objects[k]))
+                                  for k in (self.impacted_objects)
+                                  for o in (self.impacted_objects[k]))
         return in_scope_list
 
     def _call_handler_method(self, obj, queryset=None):
@@ -224,9 +239,19 @@ class ChangeManagement(object):
                               '"Reason": Proid is exempted from change management controls.')
             return
 
+        if self.justification and 'emergency' in self.justification \
+                and self.reason:
+            if self.role_name in self.allow_emergency_user_roles:
+                self.logger.client_info('Approval Warning: Executing an emergency change '
+                                  'without a justification, EDM has not be called.')
+                return
+            else:
+                raise AuthorizationException('User role is not allowed to execute Emergency '
+                                    'changes.')
+
         # Clean final impacted env list
         self.logger.debug('Prepare impacted envs to call EDM')
-        for env, build_status_list in self.dict_of_impacted_envs.items():
+        for env, build_status_list in list(self.dict_of_impacted_envs.items()):
             self.dict_of_impacted_envs[env] = list(set(build_status_list))
         # Prepare aqd_checkedm input dict
         cm_extra_options = shlex.split(self.extra_options)

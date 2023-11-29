@@ -16,13 +16,14 @@
 # limitations under the License.
 """Contains the logic for `aq add manager`."""
 
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.host import hostname_to_host
 from aquilon.worker.dbwrappers.dns import grab_address
 from aquilon.worker.dbwrappers.interface import (generate_ip,
                                                  get_or_create_interface,
                                                  assign_address)
+from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
 
@@ -78,6 +79,14 @@ class CommandAddManager(BrokerCommand):
             dsdb_runner = DSDBRunner(logger=logger)
             dsdb_runner.update_host(dbmachine, oldinfo)
             dsdb_runner.commit_or_rollback("Could not add host to DSDB")
+
+            ib_services = IBServices(logger, **arguments)
+            if ib_services.feature_enabled("manager"):
+                try:
+                    ib_services.add_a_ptr(manager, ip)
+                except ProcessException as e:
+                    dsdb_runner.rollback()
+                    raise e
 
         if dbmachine.host:
             # XXX: Host needs to be reconfigured.

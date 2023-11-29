@@ -19,12 +19,14 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_del_address
+
 if __name__ == '__main__':
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
-from test_add_ns_record import NAME, DOMAIN
+from .brokertest import TestBrokerCommand
+from .test_add_ns_record import NAME, DOMAIN
 
 
 class TestDelNSRecord(TestBrokerCommand):
@@ -45,9 +47,11 @@ class TestDelNSRecord(TestBrokerCommand):
     # although this is already tested elsewhere, just for tidyness
     def test_200_delete_a_record(self):
         self.dsdb_expect_delete(self.IP)
+        ib_expect_del_address(NAME, self.IP)
         cmd = ["del_address", "--fqdn", NAME, "--ip", self.IP] + self.valid_just_tcm
         self.noouttest(cmd)
         self.dsdb_verify()
+        self.ib_verify()
 
 
 if __name__ == '__main__':

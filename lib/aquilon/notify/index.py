@@ -169,7 +169,7 @@ def build_index(config, session, logger=LOGGER):
     content = []
     content.append("<?xml version='1.0' encoding='utf-8'?>")
     content.append("<profiles>")
-    for obj, (mtime, advertise_suffix) in objects.items():
+    for obj, (mtime, advertise_suffix) in list(objects.items()):
         content.append("<profile mtime='%d'>%s%s</profile>" %
                        (mtime, obj, advertise_suffix))
     content.append("</profiles>")
@@ -222,7 +222,7 @@ def build_index(config, session, logger=LOGGER):
         logger.info("sent %d server notifications", count)
 
     if config.getboolean("broker", "client_notifications"):  # pragma: no cover
-        count = send_notification(CCM_NOTIF, modified_index.keys(), sock=sock,
+        count = send_notification(CCM_NOTIF, list(modified_index.keys()), sock=sock,
                                   logger=logger)
         logger.info("sent %d client notifications", count)
 

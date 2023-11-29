@@ -20,11 +20,12 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
-from consoleservertest import VerifyConsoleServerMixin
+from .brokertest import TestBrokerCommand
+from .consoleservertest import VerifyConsoleServerMixin
+from mock_ib_services import ib_expect_update_address
 
 
 class TestUpdateConsoleServer(TestBrokerCommand, VerifyConsoleServerMixin):
@@ -33,6 +34,7 @@ class TestUpdateConsoleServer(TestBrokerCommand, VerifyConsoleServerMixin):
         ip = self.net["unknown2"].usable[1]
         self.dsdb_expect_update("utcs01.aqd-unittest.ms.com", "mgmt", ip,
                              comments="Some new console server comments")
+        ib_expect_update_address("utcs01.aqd-unittest.ms.com", "4.2.11.6", new_ip=str(ip))
         command = ["update", "console_server", "--console_server", "utcs01.aqd-unittest.ms.com",
                    "--rack", "ut3", "--serial", "ABC5678",
                    "--model", "utconserver", "--ip", ip,

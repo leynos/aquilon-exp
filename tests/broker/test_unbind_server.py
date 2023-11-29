@@ -20,10 +20,10 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 instance_servers = {
     "aqd": {
@@ -202,8 +202,8 @@ class TestUnbindServer(TestBrokerCommand):
         self.matchclean(out, "nyaqd1.ms.com", command)
 
     def test_150_unbind_all(self):
-        for service, instances in instance_servers.items():
-            for instance, servers in instances.items():
+        for service, instances in list(instance_servers.items()):
+            for instance, servers in list(instances.items()):
                 for server in servers:
                     command = ["unbind_server", "--hostname", server,
                                "--service", service, "--instance", instance] + self.valid_just_tcm
@@ -211,7 +211,7 @@ class TestUnbindServer(TestBrokerCommand):
 
             command = ["show_service", "--service", service]
             out = self.commandtest(command)
-            for instance, servers in instances.items():
+            for instance, servers in list(instances.items()):
                 for server in servers:
                     self.matchclean(out, server, command)
 

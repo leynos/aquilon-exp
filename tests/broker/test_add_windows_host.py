@@ -20,10 +20,11 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
+from mock_ib_services import ib_expect_add_address
 
 
 class TestAddWindowsHost(TestBrokerCommand):
@@ -31,11 +32,13 @@ class TestAddWindowsHost(TestBrokerCommand):
     def testaddunittest01(self):
         ip = self.net["unknown0"].usable[10]
         mac = self.net["unknown0"].usable[5].mac
+        ib_expect_add_address("unittest01.one-nyp.ms.com", ip)
         self.dsdb_expect_add("unittest01.one-nyp.ms.com", ip, "eth0", mac)
         self.noouttest(["add", "windows", "host",
                         "--hostname", "unittest01.one-nyp.ms.com",
                         "--ip", ip, "--machine", "ut3c1n4"])
         self.dsdb_verify()
+        self.ib_verify()
 
     def testverifyaddunittest01(self):
         command = "show host --hostname unittest01.one-nyp.ms.com"

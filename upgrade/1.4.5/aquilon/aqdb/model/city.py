@@ -52,7 +52,7 @@ def populate(sess, *args, **kw):
         for row in dsdb.dump('city'):
             try:
                 p = cntry[str(row[2])]
-            except KeyError, e:
+            except KeyError as e:
                 log.error('couldnt find country %s'%(str(row[2])))
                 continue
 

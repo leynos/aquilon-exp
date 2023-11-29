@@ -21,10 +21,10 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 os_defaults = {
     'aquilon': {
@@ -69,8 +69,8 @@ os_defaults = {
     },
     'vmhost': {
         'esxi': {
-            '5.0.0': {},
-            '5.0.2': {},
+            '7.0.2': {},
+            '7.0.3': {},
         },
     },
     'windows': {
@@ -110,9 +110,9 @@ class TestAddOS(TestBrokerCommand):
                         "--osversion", self.linux_version_prev])
 
     def test_120_add_default_oses(self):
-        for arch, osdefs in os_defaults.items():
-            for osname, versions in osdefs.items():
-                for osver, params in versions.items():
+        for arch, osdefs in list(os_defaults.items()):
+            for osname, versions in list(osdefs.items()):
+                for osver, params in list(versions.items()):
                     command = ["add_os", "--archetype", arch,
                                "--osname", osname, "--osversion", osver]
                     self.noouttest(command)

@@ -18,9 +18,9 @@
 
 from datetime import datetime
 
-from aquilon.exceptions_ import ArgumentError
+from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.aqdb.types import MACAddress
-from aquilon.aqdb.model import Model, NetworkDevice, ObservedMac, Chassis, NetworkDeviceChassisSlot
+from aquilon.aqdb.model import Model, NetworkDevice, ObservedMac, Chassis, NetworkDeviceChassisSlot, ARecord
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.location import get_location
 from aquilon.worker.dbwrappers.hardware_entity import (update_primary_ip,
@@ -28,6 +28,7 @@ from aquilon.worker.dbwrappers.hardware_entity import (update_primary_ip,
 from aquilon.worker.dbwrappers.observed_mac import (
     update_or_create_observed_mac)
 from aquilon.worker.dbwrappers.network_device import discover_network_device
+from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
 from aquilon.worker.templates import PlenarySwitchData
 from aquilon.utils import validate_json
@@ -115,6 +116,7 @@ class CommandUpdateNetworkDevice(BrokerCommand):
             NetworkDevice.check_type(type)
             dbnetdev.switch_type = type
 
+        old_ip = dbnetdev.primary_name.ip
         if ip:
             update_primary_ip(session, logger, dbnetdev, ip)
 
@@ -150,7 +152,13 @@ class CommandUpdateNetworkDevice(BrokerCommand):
             dsdb_runner.update_host(dbnetdev, oldinfo)
             dsdb_runner.commit_or_rollback("Could not update network device in DSDB")
 
-        return
+            ib_services = IBServices(logger, **arguments)
+            if ip and ib_services.feature_enabled("network_device"):
+                try:
+                    ib_services.update_a_ptr(str(dbnetdev.primary_name.fqdn), old_ip, ip)
+                except ProcessException as e:
+                    dsdb_runner.rollback()
+                    raise e
 
     def adjust_slot(self, session, logger,
                     dbnetdev, dbchassis, slot, multislot):
@@ -182,4 +190,3 @@ class CommandUpdateNetworkDevice(BrokerCommand):
         else:
             dbslot = NetworkDeviceChassisSlot(chassis=dbchassis, slot_number=slot)
         dbnetdev.chassis_slot.append(dbslot)
-        return

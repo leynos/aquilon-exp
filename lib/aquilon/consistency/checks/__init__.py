@@ -37,7 +37,7 @@ for f in os.listdir(_thisdir):
 
         ConsistencyChecker = newmodule.ConsistencyChecker
 
-        for cls in newmodule.__dict__.values():
+        for cls in list(newmodule.__dict__.values()):
             if not isclass(cls):
                 continue
             if cls.__module__ != newmodule.__name__:

@@ -20,13 +20,14 @@ from broker.utils import MockHub
 import unittest
 
 if __name__ == '__main__':
-    import utils
+    from . import utils
     utils.import_depends()
 
 from ipaddress import IPv4Address, IPv6Address
 
-from brokertest import TestBrokerCommand
-from dnstest import inaddr_ptr, in6addr_ptr, ip6
+from .brokertest import TestBrokerCommand
+from .dnstest import inaddr_ptr, in6addr_ptr, ip6
+from mock_ib_services import ib_expect_add_dns_srv_record, ib_expect_del_dns_srv_record
 
 
 class TestDumpDns(TestBrokerCommand):
@@ -34,14 +35,14 @@ class TestDumpDns(TestBrokerCommand):
     def test_ipv6_helper(self):
         # Since the helpers used here are the same as the code used in the
         # broker, they should be tested alone
-        ip = IPv6Address(u"2001:db8::1")
+        ip = IPv6Address("2001:db8::1")
         self.assertEqual(ip6(ip),
                          "\\040\\001\\015\\270\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\000\\001")
         self.assertEqual(in6addr_ptr(ip),
                          "1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa")
 
     def test_ipv4_helper(self):
-        ip = IPv4Address(u"192.168.0.1")
+        ip = IPv4Address("192.168.0.1")
         self.assertEqual(inaddr_ptr(ip), "1.0.168.192.in-addr.arpa")
 
     def test_djb(self):
@@ -283,10 +284,15 @@ class TestDumpDns(TestBrokerCommand):
         mh.add_alias('cname-ttl-yes.test-dns.cc', 'a-ttl-yes.test-dns.cc',
                      ttl=100)
 
+        ib_expect_add_dns_srv_record("service-ttl-no", "tcp", "test-dns.cc", "a-ttl-no.test-dns.cc", 246, 10, 10)
         mh.add_srvrecord('service-ttl-no', 'test-dns.cc', 10, 10,
                          'a-ttl-no.test-dns.cc', 246)
+        self.ib_verify()
+
+        ib_expect_add_dns_srv_record("service-ttl-yes", "tcp", "test-dns.cc", "a-ttl-yes.test-dns.cc", 246, 10, 10, ttl=100)
         mh.add_srvrecord('service-ttl-yes', 'test-dns.cc', 10, 10,
                          'a-ttl-yes.test-dns.cc', 246, ttl=100)
+        self.ib_verify()
 
         command = ['dump_dns',
                    '--format', 'proto',
@@ -345,6 +351,9 @@ class TestDumpDns(TestBrokerCommand):
         self.assertEqual(dns[7].rdata[0].rrtype, 3)
         self.assertEqual(dns[7].rdata[0].target, 'a-ttl-yes.test-dns.cc')
         self.assertEqual(dns[7].rdata[0].ttl, 100)
+
+        ib_expect_del_dns_srv_record("service-ttl-no", "tcp", "test-dns.cc", "a-ttl-no.test-dns.cc", 246, 10, 10)
+        ib_expect_del_dns_srv_record("service-ttl-yes", "tcp", "test-dns.cc", "a-ttl-yes.test-dns.cc", 246, 10, 10)
 
         mh.delete()
 

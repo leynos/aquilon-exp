@@ -20,10 +20,10 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 archetype_required = {
     'aquilon': ["aqd", "bootserver", "dns", "lemon", "ntp", "support-group",
@@ -68,7 +68,7 @@ class TestDelRequiredService(TestBrokerCommand):
                         "--personality", "utpers-dev"])
 
     def test_130_del_required_all(self):
-        for archetype, services in archetype_required.items():
+        for archetype, services in list(archetype_required.items()):
             for service in services:
                 self.noouttest(["del_required_service", "--service", service,
                                 "--archetype", archetype] + self.valid_just_tcm)

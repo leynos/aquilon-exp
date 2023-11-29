@@ -16,13 +16,15 @@
 # limitations under the License.
 """Contains the logic for `aq update console server`."""
 
+from aquilon.exceptions_ import ProcessException
 from aquilon.aqdb.types import ConsoleServerType
 from aquilon.aqdb.model import ConsoleServer, Model
 from aquilon.worker.broker import BrokerCommand
+from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.dbwrappers.hardware_entity import update_primary_ip
 from aquilon.worker.dbwrappers.location import get_location
+from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
-from aquilon.worker.dbwrappers.change_management import ChangeManagement
 
 
 class CommandUpdateConsoleServer(BrokerCommand):
@@ -48,6 +50,7 @@ class CommandUpdateConsoleServer(BrokerCommand):
         if serial is not None:
             dbcons.serial_no = serial
 
+        old_ip = dbcons.primary_name.ip
         if ip:
             update_primary_ip(session, logger, dbcons, ip)
 
@@ -64,4 +67,10 @@ class CommandUpdateConsoleServer(BrokerCommand):
         dsdb_runner.update_host(dbcons, oldinfo)
         dsdb_runner.commit_or_rollback("Could not update console server in DSDB")
 
-        return
+        ib_services = IBServices(logger, **arguments)
+        if ip and ib_services.feature_enabled("console_server"):
+            try:
+                ib_services.update_a_ptr(str(dbcons.primary_name.fqdn), old_ip, ip)
+            except ProcessException as e:
+                dsdb_runner.rollback()
+                raise e

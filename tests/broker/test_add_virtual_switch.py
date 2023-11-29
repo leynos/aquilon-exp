@@ -20,10 +20,10 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 
 class TestAddVirtualSwitch(TestBrokerCommand):
@@ -111,7 +111,7 @@ class TestAddVirtualSwitch(TestBrokerCommand):
         self.assertEqual(vswitch.name, "utvswitch")
         self.assertEqual(len(vswitch.portgroups), 3)
         pgs = {pg.ip: pg for pg in vswitch.portgroups}
-        for net, (usage, network_tag) in nets.items():
+        for net, (usage, network_tag) in list(nets.items()):
             self.assertIn(str(net.ip), pgs)
             self.assertEqual(pgs[str(net.ip)].cidr, net.prefixlen)
             self.assertEqual(pgs[str(net.ip)].usage, usage)

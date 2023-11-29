@@ -18,16 +18,14 @@
 """Module for testing the add os command."""
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
 
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 
 class TestUpdateOS(TestBrokerCommand):
-
-
     def test_100_check_host_for_cm(self):
 
         command = "search host --host_environment prod --buildstatus ready" \
@@ -44,7 +42,7 @@ class TestUpdateOS(TestBrokerCommand):
     def test_110_not_require_just(self):
         self.noouttest(["update_os", "--archetype", "aquilon", "--osname", "linux",
                         "--osversion", self.osversion, "--comments", "'Comments are not "
-                                                                   "harmful to change'"])
+                                                                     "harmful to change'"])
 
     def test_120_require_just_success(self):
         self.noouttest(["update_os", "--archetype", "aquilon", "--osname", "linux",

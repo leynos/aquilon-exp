@@ -48,7 +48,7 @@ class SQLiteBLOBLiteral(BINARY):
 
     def literal_processor(self, dialect):
         def process(value):
-            return "X'" + hexlify(value) + "'"
+            return "X'" + hexlify(value).hex() + "'"
         return process
 
 
@@ -71,7 +71,10 @@ class IP(TypeDecorator):
             return None
         if isinstance(value, (IPv4Address, IPv6Address)):
             if dialect.name == 'postgresql':
-                return text_type(value)  # pragma: no cover
+                if value == IPv4Address(0) or value == IPv4Address(0xffffffff):
+                    return "'{}'".format(text_type(value))
+                else:
+                    return text_type(value)  # pragma: no cover
             else:
                 if isinstance(value, IPv6Address):
                     return value.packed
