@@ -64,4 +64,6 @@ else:
     ms.version.addpkg("requests", "2.31.0")
     ms.version.addpkg("requests-kerberos", "0.14.0")
     ms.version.addpkg("kerberos", "1.3.1-1.16-ms2")
+    ms.version.addpkg("krb5", "0.4.0")
+    ms.version.addpkg("cffi", "1.15.1")
 
