@@ -31,7 +31,7 @@ LOGGER = logging.getLogger(__name__)
 
 class KNCRequest(AQDRequest):
     def getPrincipal(self):
-        return self.channel.kncinfo.get(b"CREDS")
+        return self.channel.kncinfo[b"CREDS"].decode() if self.channel.kncinfo.get(b"CREDS") else None
 
     def getClientIP(self):
         """The Request object would normally supply this method.
