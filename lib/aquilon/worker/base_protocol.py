@@ -21,7 +21,6 @@ from twisted.web import server
 from aquilon.worker.logger import RequestLogger
 from aquilon.worker.messages import StatusCatalog
 
-
 _next_sequence_no = 0
 """Next request sequence number, see _get_next_sequence_no()"""
 
@@ -63,7 +62,7 @@ class AQDRequest(server.Request):
 
     def getPrincipal(self):
         """By default we return None."""
-        return None
+        return
 
     @property
     def sequence_no(self):
@@ -82,10 +81,12 @@ class AQDRequest(server.Request):
         # Pass through
         return result
 
+
 class AQDSite(server.Site):
     """
     Override server.Site to provide a better implemtation of log.
     """
+
     requestFactory = AQDRequest
 
     # Overriding http.HTTPFactory's log() to log the username instead
@@ -95,7 +96,7 @@ class AQDSite(server.Site):
         if hasattr(self, "logFile"):
             line = '%s - %s %s "%s" %d %s "%s" "%s"\n' % (
                 request.getClientIP(),
-                request.getPrincipal() or "-",
+                alt_repr(request.getPrincipal()) if request.getPrincipal() else "-",
                 self._logDateTime,
                 '{} {} {}'.format(alt_repr(request.method),
                               alt_repr(request.uri),
@@ -103,5 +104,6 @@ class AQDSite(server.Site):
                 request.code,
                 request.sentLength or "-",
                 alt_repr(request.getHeader("referer") or "-"),
-                alt_repr(request.getHeader("user-agent") or "-"))
+                alt_repr(request.getHeader("user-agent") or "-"),
+            )
             self.logFile.write(line)

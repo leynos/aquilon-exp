@@ -81,7 +81,8 @@ class Xtn(Base):
                    str(self.username), str(return_code), 'aq', str(self.command)]
         else:
             msg = [self.start_time.strftime('%Y-%m-%d %H:%M:%S%z'),
-                   (self.username).decode(), str(return_code), 'aq', str(self.command)]
+                   self.username.decode() if isinstance(self.username, bytes) else self.username,
+                   str(return_code), 'aq', str(self.command)]
         results = []
         for arg in self.args:
             if arg.name == "__RESULT__":  # pragma: no cover

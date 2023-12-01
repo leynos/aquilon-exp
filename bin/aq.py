@@ -31,6 +31,7 @@ import subprocess
 import socket
 import csv
 from threading import Thread
+from pathlib import Path
 
 # -- begin path_setup --
 BINDIR = os.path.dirname(os.path.realpath(sys.argv[0]))
@@ -81,7 +82,7 @@ class RESTResource:
         return self._sendRequest('DELETE')
 
     def _sendRequest(self, method, data=None, mimeType=None):
-        headers = {}
+        headers = {"User-Agent": f"aq client {Path(__file__).parent.parent.resolve()}"}
         if mimeType:
             headers['Content-Type'] = mimeType
         self.httpconnection.request(method, self.uri, data, headers, preload_content=False)

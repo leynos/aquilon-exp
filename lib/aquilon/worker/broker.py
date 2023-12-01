@@ -16,35 +16,39 @@
 # limitations under the License.
 """ Module containing the base class BrokerCommand """
 
+import logging  # noqa: I001
 import sys
 from inspect import isclass
 
-from sqlalchemy import event
-from sqlalchemy.sql import text
 from sqlalchemy.exc import DatabaseError
-from twisted.web import http
+from sqlalchemy.sql import text
 from twisted.python import log
+from twisted.web import http
 
-from aquilon.config import Config
-from aquilon.exceptions_ import (ArgumentError, AuthorizationException,
-                                 NotFoundException, UnimplementedError,
-                                 PartialError, AquilonError, TransientError)
-from aquilon.worker.exporter import Exporter
-from aquilon.worker.authorization import AuthorizationBroker
 from aquilon.aqdb.db_factory import DbFactory
-from aquilon.aqdb.model.xtn import start_xtn, end_xtn
-from aquilon.worker.formats.formatters import ResponseFormatter
-from aquilon.worker.dbwrappers.user_principal import (
-    get_or_create_user_principal)
+from aquilon.aqdb.model.xtn import end_xtn, start_xtn
+from aquilon.config import Config
+from aquilon.exceptions_ import (
+    AquilonError,
+    ArgumentError,
+    AuthorizationException,
+    NotFoundException,
+    PartialError,
+    TransientError,
+    UnimplementedError,
+)
 from aquilon.locks import LockKey
+from aquilon.worker.authorization import AuthorizationBroker
+from aquilon.worker.dbwrappers.user_principal import get_or_create_user_principal
+from aquilon.worker.exporter import Exporter
+from aquilon.worker.formats.formatters import ResponseFormatter
+from aquilon.worker.services import Chooser
 from aquilon.worker.templates.base import Plenary, PlenaryCollection
 from aquilon.worker.templates.domain import TemplateDomain
-from aquilon.worker.services import Chooser
 from aquilon.worker.dbwrappers.branch import sync_domain
-import logging
 
 # Things we don't need cluttering up the transaction details table
-_IGNORED_AUDIT_ARGS = ('requestid', 'bundle', 'debug', 'session', 'dbuser')
+_IGNORED_AUDIT_ARGS = ("requestid", "bundle", "debug", "session", "dbuser")
 
 # Mapping of command exceptions to client return code.
 ERROR_TO_CODE = {NotFoundException: http.NOT_FOUND,
@@ -122,10 +126,9 @@ class BrokerCommand:
     It is automatically set to True for all search and show commands,
     but could be reversed back to False by overriding __init__ for the
     command.
-    
+
     """
     requires_audit = False
-
 
     # Override to indicate whether the command will generally take a
     # lock during execution.
@@ -160,7 +163,7 @@ class BrokerCommand:
         # parameters).
         self.required_parameters = self.required_parameters[:]
         self.optional_parameters = self.optional_parameters[:]
-        self.non_db_change_commands = ('compile', 'pxeswitch')
+        self.non_db_change_commands = ("compile", "pxeswitch")
 
         self.action = self.__module__
         package_prefix = "aquilon.worker.commands."
@@ -198,7 +201,7 @@ class BrokerCommand:
         invoke_render() to enforce the class requires_* flags.
 
         """
-        if self.__class__.__module__ == 'aquilon.worker.broker':
+        if self.__class__.__module__ == "aquilon.worker.broker":
             # Default class... no useful command info to repeat back...
             raise UnimplementedError("Command has not been implemented.")
         raise UnimplementedError("%s has not been implemented" %
@@ -213,13 +216,13 @@ class BrokerCommand:
         exporter = None
 
         if not self.requires_readonly \
-           and self.config.get('broker', 'mode') != 'readwrite':
+            and self.config.get("broker", "mode") != "readwrite":
             # pragma: no cover
             raise UnimplementedError("Command %s not available on a "
                                      "read-only broker." % self.command)
 
         if not self.requires_readonly or \
-                    self.command in self.non_db_change_commands:
+            self.command in self.non_db_change_commands:
             self.requires_audit = True
 
         try:
@@ -236,14 +239,14 @@ class BrokerCommand:
                 # We can then add calls to the exporter when changing various
                 # objects to perform the wanted actions for those objects
                 exporter = Exporter(logger=logger, requestid=requestid, user=user)
-                session.info['exporter'] = exporter
+                session.info["exporter"] = exporter
 
                 # Force connecting to the DB
                 try:
                     conn = session.connection()
                 except DatabaseError as err:  # pragma: no cover
                     raise TransientError("Failed to connect to the "
-                                         "database: %s" % err)
+                                         "database: %s" % err) from err
 
                 if session.bind.dialect.name == "oracle":
                     # Make the name of the command and the request ID
@@ -263,8 +266,8 @@ class BrokerCommand:
 
                 if self.requires_audit:
                     start_xtn(session, status.requestid, status.user,
-                          status.command, self.requires_readonly,
-                          kwargs, _IGNORED_AUDIT_ARGS)
+                              status.command, self.requires_readonly,
+                              kwargs, _IGNORED_AUDIT_ARGS)
 
                 dbuser = get_or_create_user_principal(session, user,
                                                       commitoncreate=True,
@@ -324,7 +327,7 @@ class BrokerCommand:
                             end_xtn(session, requestid,
                                     get_code_for_error_class(
                                         raising_exception.__class__),
-                                    getattr(request, '_audit_result',
+                                    getattr(request, "_audit_result",
                                             None))
                 finally:
                     if self.is_lock_free:
@@ -333,8 +336,7 @@ class BrokerCommand:
                         self.dbf.Session.remove()
 
     def _set_readonly(self, session):
-        if session.bind.dialect.name == "oracle" or \
-           session.bind.dialect.name == "postgresql":
+        if session.bind.dialect.name == "oracle" or session.bind.dialect.name == "postgresql":
             session.commit()
             session.execute(text("set transaction read only"))
 
@@ -360,11 +362,11 @@ class BrokerCommand:
         logger = request.logger
         kwargs_str = str(request.status.args)
         if len(kwargs_str) > 1024:
-            kwargs_str = kwargs_str[0:1020] + '...'
-        logger.info("Incoming command #%s from user=%s aq %s "
-                    "with arguments %s",
-                    request.status.auditid, (request.status.user),
-                    request.status.command, kwargs_str)
+            kwargs_str = kwargs_str[0:1020] + "..."
+        logger.info(
+            f"Incoming command #{request.status.auditid} from user="
+            f"{request.status.user.decode() if isinstance(request.status.user, bytes) else request.status.user} "
+            f"aq {request.status.command} with arguments {kwargs_str}")
         com_kwargs["logger"] = logger
         com_kwargs["user"] = user
         com_kwargs["request"] = request
@@ -401,11 +403,11 @@ class BrokerCommand:
             if not isclass(item):
                 continue
             if issubclass(item, Plenary) or issubclass(item, Chooser) or \
-               issubclass(item, LockKey) or \
-               issubclass(item, PlenaryCollection):
+                issubclass(item, LockKey) or \
+                issubclass(item, PlenaryCollection):
                 return False
             if item != cls and item != BrokerCommand and \
-               issubclass(item, BrokerCommand):
+                issubclass(item, BrokerCommand):
                 if item.__module__ not in sys.modules:  # pragma: no cover
                     log.msg("Cannot evaluate %s, too early." % cls)
                     return False
@@ -433,8 +435,7 @@ class BrokerCommand:
         if not user:
             user = "anonymous"
 
-        logger.info("User {} invoked deprecated command {}".format(user,
-                                                               cls.__name__))
+        logger.info(f"User {user} invoked deprecated command {cls.__name__}")
         logger.client_info(msg)
 
     @classmethod
@@ -447,9 +448,8 @@ class BrokerCommand:
 
         # cls.__name__ is good enough to mine the logs which deprecated options
         # are still in use.
-        logger.info("User %s used deprecated option %s of command %s" %
-                    (user, option, cls.__name__))
-        logger.client_info("The --{} option is deprecated.  {}".format(option, msg))
+        logger.info(f"User {user} used deprecated option {option} of command {cls.__name__}")
+        logger.client_info(f"The --{option} option is deprecated.  {msg}")
 
     @classmethod
     def require_one_of(cls, *args, **kwargs):
@@ -466,4 +466,4 @@ class BrokerCommand:
             else:
                 names = ["--%s" % arg for arg in kwargs]
             raise ArgumentError("Exactly one of %s should be sepcified." %
-                                (', '.join(names[:-1]) + ' and ' + names[-1]))
+                                (", ".join(names[:-1]) + " and " + names[-1]))
