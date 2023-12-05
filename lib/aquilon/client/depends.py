@@ -17,29 +17,24 @@
 """ Suggested versions of external libraries, and the defaults for the
     binaries shipped.
 """
+import sys
+import ms.version
 
-try:
-    import ms.version
-except ImportError:
-    pass
-else:
-    import sys
-
-    ms.version.addpkg('lxml', '4.5.1-2.9.3')
-    ms.version.addpkg('six', '1.16.0')
-    ms.version.addpkg("requests-kerberos", "0.12.0")
-    ms.version.addpkg("ms.directory", "4.0.0")
-    ms.version.addpkg("pykerberos", "1.2.1-1.16")
-    ms.version.addpkg("urllib3", "2.0.2")
-    ms.version.addpkg("chardet", "3.0.4")
-    ms.version.addpkg("certifi", "2020.6.20")
-    ms.version.addpkg("cffi", "1.13.2-py37")
-    ms.version.addpkg("idna", "2.10")
-    ms.version.addpkg("cryptography", "39.0.0")
-    ms.version.addpkg("requests", "2.31.0")
-    ms.version.addpkg("ms.netkrb", "2.1a")
-    ms.version.addpkg("kerberos", "1.3.1-1.16")
-    ms.version.addpkg("setuptools", "45.0.0")
+ms.version.addpkg('lxml', '4.5.1-2.9.3')
+ms.version.addpkg('six', '1.16.0')
+ms.version.addpkg("requests-kerberos", "0.12.0")
+ms.version.addpkg("ms.directory", "4.0.0")
+ms.version.addpkg("pykerberos", "1.2.1-1.16")
+ms.version.addpkg("urllib3", "2.0.2")
+ms.version.addpkg("chardet", "3.0.4")
+ms.version.addpkg("certifi", "2020.6.20")
+ms.version.addpkg("cffi", "1.13.2-py37")
+ms.version.addpkg("idna", "2.10")
+ms.version.addpkg("cryptography", "39.0.0")
+ms.version.addpkg("requests", "2.31.0")
+ms.version.addpkg("ms.netkrb", "2.1a")
+ms.version.addpkg("kerberos", "1.3.1-1.16")
+ms.version.addpkg("setuptools", "45.0.0")
 
 
 if sys.platform == "sunos5":
