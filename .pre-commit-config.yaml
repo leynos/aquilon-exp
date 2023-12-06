@@ -1,0 +1,17 @@
+default_language_version:
+    python: python3.7
+repos:
+-   repo: local
+    # Local to not query github to get modules and use local settings instead of pre-commit one.
+    hooks:
+    - id: darker
+      name: darker
+      entry: tools/darker  # Locally updated to work with Python 3.7
+      language: system
+      types: [ python ]
+    - id: ruff
+      name: ruff
+      entry: /ms/dist/python/PROJ/ruff/0.0.289-py37/bin/ruff
+      args: ['--fix', '--exit-non-zero-on-fix']
+      language: system
+      types: [python]
