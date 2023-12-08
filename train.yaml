@@ -3,11 +3,13 @@ language: python
 train_version: 1.0
 
 tools:
-   - msde/git/2.9.5
+   - msde/git/2.35.3
    - python/core/3.7.9
    - msde/msdlbuild/prod
    - perl5/core/5.26.1
 
+test_setup: &test_setup
+  - mkdir -p ../install/common/test-results/UNIT/xml/ ../install/common/test-results/INTEGRATION/coveragepy/xml/
 
 build_types:
    - build_type:
@@ -36,17 +38,25 @@ test_types:
        name: infoblox-end-to-end
        test: set -o pipefail; AQDCONF=tests/ib-end-to-end.conf ./tests/runtests.py --infoblox-integration --no-interactive --config=tests/ib-end-to-end.conf --failfast | tee ./tests/aqdtests.log
   - test_type:
+      name: lint
+      test:
+        - script:
+            command:  # Do not fail build on error, for now.
+              - *test_setup
+              - echo -e "\n-- ruff linter check --"
+              - /ms/dist/python/PROJ/ruff/0.0.289-py37/bin/ruff check --config pyproject.toml . && /ms/dist/python/PROJ/ruff/0.0.289-py37/bin/ruff check --config pyproject.toml --format junit -o ../install/common/test-results/ruff.xml .
+              - echo -e "\n** ruff is currently informative only, but try to fix issues when possible. Try 'ruff --check --fix' on your file for quick wins.**".
+              - echo -e "\n-- black (darker) code reformatter on commit check --"
+              - tools/darker --diff --check --revision $(git rev-parse --abbrev-ref --symbolic-full-name @{u}) || echo -e "\nFAILED - !!! darker found formating issue. Please run **black** or *tools/darker** on new code to fix and resubmit code. !!!\n"
+  - test_type:
       name: jenkins
       test:
-      - script: |
-            mkdir -p ../install/common/test-results/UNIT/xml/
-            AQDCONF=tests/unittest.conf python test/test_xmlrunner.py
-            ./tests/jenkinstest.sh
-            cp tests/aqdtests.log ../install/common/test-results/aqdtests.log
-            cp -R /var/tmp/$USER/run/quattor/logs/ ../install/common/test-results/quattor-logs
-            mkdir -p ../install/common/test-results/INTEGRATION/coveragepy/xml/
-            cp ../install/common/test-results/quattor-logs/coverage/aqd.xml ../install/common/test-results/INTEGRATION/coveragepy/xml/coverage-test.xml
-            cp ../install/common/test-results/UNIT/xml/test.xml ../install/common/test-results/INTEGRATION/coveragepy/xml/
-            PYLINTHOME=../run/.pylint.d tests/pylint --msg-template='{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}' lib/aquilon/ bin/*.py sbin/*.py > ../install/common/test-results/pylint.out || /bin/true
-            # In the past, commits did not have the codestyle.py file available; let's use the flake8 checker directly
-            ./tests/codestyle.py --all > ../install/common/test-results/flake8.out || /bin/true
+      - script:
+          command:
+            - *test_setup
+            - AQDCONF=tests/unittest.conf python test/test_xmlrunner.py
+            - ./tests/jenkinstest.sh
+            - cp tests/aqdtests.log ../install/common/test-results/aqdtests.log
+            - cp -R /var/tmp/$USER/run/quattor/logs/ ../install/common/test-results/quattor-logs
+            - cp ../install/common/test-results/quattor-logs/coverage/aqd.xml ../install/common/test-results/INTEGRATION/coveragepy/xml/coverage-test.xml
+            - cp ../install/common/test-results/UNIT/xml/test.xml ../install/common/test-results/INTEGRATION/coveragepy/xml/

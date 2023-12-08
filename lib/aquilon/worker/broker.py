@@ -46,7 +46,6 @@ from aquilon.worker.services import Chooser
 from aquilon.worker.templates.base import Plenary, PlenaryCollection
 from aquilon.worker.templates.domain import TemplateDomain
 from aquilon.worker.dbwrappers.branch import sync_domain
-
 # Things we don't need cluttering up the transaction details table
 _IGNORED_AUDIT_ARGS = ("requestid", "bundle", "debug", "session", "dbuser")
 
