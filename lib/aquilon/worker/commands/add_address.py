@@ -70,7 +70,7 @@ class CommandAddAddress(BrokerCommand):
             dsdb_runner.add_host_details(dbdns_rec.fqdn, ip, comments=comments)
             dsdb_runner.commit_or_rollback("Could not add address to DSDB")
 
-            ib_services = IBServices(logger, **arguments)
+            ib_services = IBServices(logger, justification=justification, **arguments)
             if ib_services.feature_enabled("address"):
                 try:
                     ib_services.add_a_ptr(str(dbdns_rec.fqdn), ip, reverse_ptr, ttl)

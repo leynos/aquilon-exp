@@ -519,9 +519,11 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
                        '--dns_environment', dns_environment] + self.valid_just_tcm
 
             if dns_environment == 'internal':
-                ib_expect_add_alias("alias-fqdn.test-infoblox.cc", "alias-target-1.test-infoblox.cc", fail=True)
+                ib_expect_add_alias("alias-fqdn.test-infoblox.cc", "alias-target-1.test-infoblox.cc",
+                                    justification=self.valid_justification, fail=True)
                 self.iberrortest(command)
-                ib_expect_add_alias("alias-fqdn.test-infoblox.cc", "alias-target-1.test-infoblox.cc")
+                ib_expect_add_alias("alias-fqdn.test-infoblox.cc", "alias-target-1.test-infoblox.cc",
+                                    justification=self.valid_justification)
             self.noouttest(command)
 
             command = ['update_alias',
@@ -530,9 +532,10 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
                        '--dns_environment', dns_environment] + self.valid_just_tcm
             if dns_environment == 'internal':
                 ib_expect_update_alias("alias-fqdn.test-infoblox.cc", target="alias-target-1.test-infoblox.cc", ttl=100,
-                                       fail=True)
+                                       justification=self.valid_justification, fail=True)
                 self.iberrortest(command)
-                ib_expect_update_alias("alias-fqdn.test-infoblox.cc", target="alias-target-1.test-infoblox.cc", ttl=100)
+                ib_expect_update_alias("alias-fqdn.test-infoblox.cc", target="alias-target-1.test-infoblox.cc", ttl=100,
+                                       justification=self.valid_justification)
             self.noouttest(command)
 
             command = ['update_alias',
@@ -545,9 +548,9 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
                        '--fqdn', 'alias-fqdn.test-infoblox.cc',
                        '--dns_environment', dns_environment] + self.valid_just_tcm
             if dns_environment == 'internal':
-                ib_expect_del_alias("alias-fqdn.test-infoblox.cc", fail=True)
+                ib_expect_del_alias("alias-fqdn.test-infoblox.cc", justification=self.valid_justification, fail=True)
                 self.iberrortest(command)
-                ib_expect_del_alias("alias-fqdn.test-infoblox.cc")
+                ib_expect_del_alias("alias-fqdn.test-infoblox.cc", justification=self.valid_justification)
             self.noouttest(command)
 
             self.dsdb_verify(empty=True)

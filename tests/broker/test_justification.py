@@ -661,7 +661,7 @@ class TestJustification(PersonalityTestMixin, TestBrokerCommand):
                    "--fqdn", "aliasjustreq2.aqd-unittest.ms.com"]
         self.justificationmissingtest_warn(command)
         self.ib_verify()
-        ib_expect_del_alias("aliasjustreq.aqd-unittest.ms.com")
+        ib_expect_del_alias("aliasjustreq.aqd-unittest.ms.com", justification=self.valid_justification)
         command = ["del", "alias",
                    "--fqdn", "aliasjustreq.aqd-unittest.ms.com"] + self.valid_just_tcm
         self.successtest(command)

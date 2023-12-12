@@ -667,7 +667,7 @@ class TestUpdateMachine(EventsTestMixin, TestBrokerCommand):
         old_ip = self.net["tor_net_0"].usable[4]
         new_ip = self.net["tor_net_0"].usable[7]
         fqdn = "test-aurora-default-os.ms.com"
-        ib_expect_update_address(fqdn, old_ip, new_ip=new_ip)
+        ib_expect_update_address(fqdn, old_ip, new_ip=new_ip, justification=self.just_sn)
         command = ["update", "machine", "--hostname", fqdn, "--ip", new_ip] + self.valid_just_sn
         self.noouttest(command)
         self.ib_verify()
@@ -682,7 +682,7 @@ class TestUpdateMachine(EventsTestMixin, TestBrokerCommand):
         old_ip = self.net["tor_net_0"].usable[7]
         new_ip = self.net["tor_net_0"].usable[4]
         fqdn = "test-aurora-default-os.ms.com"
-        ib_expect_update_address(fqdn, old_ip, new_ip=new_ip)
+        ib_expect_update_address(fqdn, old_ip, new_ip=new_ip, justification=self.just_sn)
         command = ["update", "machine", "--hostname", fqdn, "--ip", new_ip] + self.valid_just_sn
         self.noouttest(command)
         self.ib_verify()

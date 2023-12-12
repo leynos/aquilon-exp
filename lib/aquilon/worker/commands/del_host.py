@@ -127,7 +127,7 @@ class CommandDelHost(BrokerCommand):
         # Any service bindings that we need to clean up afterwards
 
         oldinfo = None
-        ib_services = IBServices(logger, **arguments)
+        ib_services = IBServices(logger, justification=justification, **arguments)
         ib_old_snapshot = None
         if dbhost.archetype.name != 'aurora':
             oldinfo = DSDBRunner.snapshot_hw(dbmachine)

@@ -49,4 +49,4 @@ class CommandDelDynamicRangeClearnetwork(CommandDelDynamicRange):
         existing = q.all()
         if not existing:
             raise ArgumentError("No dynamic stubs found on network.")
-        self.del_dynamic_stubs(session, logger, existing, exporter, **arguments)
+        self.del_dynamic_stubs(session, logger, existing, exporter, justification, **arguments)

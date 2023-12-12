@@ -47,7 +47,7 @@ class TestDelNSRecord(TestBrokerCommand):
     # although this is already tested elsewhere, just for tidyness
     def test_200_delete_a_record(self):
         self.dsdb_expect_delete(self.IP)
-        ib_expect_del_address(NAME, self.IP)
+        ib_expect_del_address(NAME, self.IP, justification=self.valid_justification)
         cmd = ["del_address", "--fqdn", NAME, "--ip", self.IP] + self.valid_just_tcm
         self.noouttest(cmd)
         self.dsdb_verify()

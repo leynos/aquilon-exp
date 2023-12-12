@@ -530,7 +530,7 @@ def set_reverse_ptr(session, logger, dbdns_rec, reverse_ptr):
 
 def add_address_alias(session, logger, config, dbsrcfqdn, dbtargetfqdn,
                       ttl, grn, eon_id, comments, exporter=None,
-                      flush_session=False, sync_ib=True, **arguments):
+                      flush_session=False, sync_ib=True, justification=None, **arguments):
     """Add an address-alias record (from source and target FQDN DB objects).
 
     Does not allow the addition of an address-alias into 'ms.com' in the
@@ -579,7 +579,7 @@ def add_address_alias(session, logger, config, dbsrcfqdn, dbtargetfqdn,
     # create only an A-record in Infoblox.
     # PTR record is not required as it has already been created when the target (which is in fact another A-record)
     # was created.
-    ib_services = IBServices(logger, **arguments)
+    ib_services = IBServices(logger, justification=justification, **arguments)
     if ib_services.feature_enabled("address_alias") and sync_ib:
         if ib_services.assert_dns_environment(dbsrcfqdn.dns_environment.name) and \
                 ib_services.assert_dns_environment(dbtargetfqdn.dns_environment.name):

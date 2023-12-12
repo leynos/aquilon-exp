@@ -50,7 +50,7 @@ class TestAddNSRecord(TestBrokerCommand):
 
     def test_101_add_a_record_grn(self):
         self.dsdb_expect_add(NAME, self.IP)
-        ib_expect_add_address(NAME, self.IP)
+        ib_expect_add_address(NAME, self.IP, justification=self.valid_justification)
         cmd = ['add', 'address', '--fqdn', NAME, '--ip', self.IP,
                '--grn', GRN] + self.valid_just_tcm
         self.noouttest(cmd)
