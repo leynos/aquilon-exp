@@ -243,7 +243,7 @@ class TestPermission(TestBrokerCommand):
         message = self.config.get("broker", "authorization_error")
         self.matchoutput(err,
                          "Unauthorized access attempt by %s to permission on "
-                         "b'/principal/%s/role/aqd_admin'.  %s" %
+                         "/principal/%s/role/aqd_admin.  %s" %
                          (self.principal, self.principal.replace('@', '%40'),
                           message),
                          command)
