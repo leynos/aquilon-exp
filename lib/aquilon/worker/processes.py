@@ -95,7 +95,7 @@ class StreamLoggerThread(Thread):
 
                 if self.context:
                     callWithContext(self.context, self.logger.log,
-                                    self.loglevel, (data.rstrip()).encode())
+                                    self.loglevel, data.rstrip())
                 else:
                     self.logger.log(self.loglevel, data.rstrip())
 

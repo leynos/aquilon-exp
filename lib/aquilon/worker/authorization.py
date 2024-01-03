@@ -74,7 +74,9 @@ class AuthorizationBroker(object):
         auth_msg = self.config.get("broker", "authorization_error")
         raise AuthorizationException("Unauthorized access attempt by %s to %s on %s.  %s" %
                                      (principal.decode() if isinstance(principal, bytes) else principal,
-                                      action, resource, auth_msg))
+                                      action,
+                                      resource.decode() if isinstance(resource, bytes) else resource,
+                                      auth_msg))
 
     # FIXME: Hard coded check for now.
     def check(self, principal, dbuser, action, resource):
