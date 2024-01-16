@@ -530,7 +530,7 @@ class TestAddServiceAddress(TestBrokerCommand):
         command = ['update_address_alias',
                    '--fqdn', 'resource-group-shared-name.test-infoblox.cc', '--ttl', 100] + self.valid_just_tcm
         ib_expect_update_address('resource-group-shared-name.test-infoblox.cc',
-                                 '10.25.0.2', new_ttl=100, update_ptr=False)
+                                 '10.25.0.2', new_ttl=100, update_ptr=False, justification=self.valid_justification)
         self.noouttest(command)
 
         self.dsdb_expect_delete("10.25.0.2")

@@ -78,7 +78,7 @@ class CommandUpdateSrvRecord(BrokerCommand):
         elif clear_grn:
             update_grn = True
 
-        ib_services = IBServices(logger, **arguments)
+        ib_services = IBServices(logger, justification=justification, **arguments)
         cm = ChangeManagement(session, user, justification, reason, logger, self.command, **arguments)
         i = 0
         for dbsrv_rec in dbdns_records:

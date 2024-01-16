@@ -61,11 +61,13 @@ class TestBrokerCommand(unittest.TestCase):
     aurora_without_node = "pissp1"
     aurora_without_rack = "oy605c2n6"
 
-    valid_just_tcm = ["--justification", "tcm=123456789"]
+    valid_justification = "tcm=123456789"
+    valid_just_tcm = ["--justification", valid_justification]
     exception_trigger_just_tcm = ["--justification", "tcm=666666666"]
     timeout_trigger_just_tcm = ["--justification", "tcm=111111111"]
     timeout_default_trigger_just_tcm = ["--justification", "tcm=222222222"]
-    valid_just_sn = ["--justification", "sn=CHNG123456"]
+    just_sn = "sn=CHNG123456"
+    valid_just_sn = ["--justification", just_sn]
     invalid_justification = ["--justification", "foo"]
     emergency_just_with_reason = ["--justification", "emergency", "--reason", "Valid reason"]
     emergency_tcm_just_with_reason = ["--justification", "emergency,tcm=123456789", "--reason", "Valid reason"]

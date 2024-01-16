@@ -30,7 +30,8 @@ from mock_ib_services import ib_expect_add_dns_srv_record
 class TestAddSrvRecord(TestBrokerCommand):
 
     def test_100_add_kerberos1(self):
-        ib_expect_add_dns_srv_record("kerberos", "tcp", "aqd-unittest.ms.com", "arecord14.aqd-unittest.ms.com", 88, 10, 20)
+        ib_expect_add_dns_srv_record("kerberos", "tcp", "aqd-unittest.ms.com", "arecord14.aqd-unittest.ms.com", 88, 10,
+                                     20, justification=self.valid_justification)
         command = ["add", "srv", "record", "--service", "kerberos",
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com",
                    "--target", "arecord14.aqd-unittest.ms.com",
@@ -39,7 +40,8 @@ class TestAddSrvRecord(TestBrokerCommand):
         self.ib_verify()
 
     def test_110_add_kerberos2(self):
-        ib_expect_add_dns_srv_record("kerberos", "tcp", "aqd-unittest.ms.com", "arecord15.aqd-unittest.ms.com", 88, 10, 20, 3600)
+        ib_expect_add_dns_srv_record("kerberos", "tcp", "aqd-unittest.ms.com", "arecord15.aqd-unittest.ms.com", 88, 10,
+                                     20, 3600, justification=self.valid_justification)
         command = ["add", "srv", "record", "--service", "kerberos",
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com",
                    "--target", "arecord15.aqd-unittest.ms.com",
@@ -49,7 +51,8 @@ class TestAddSrvRecord(TestBrokerCommand):
         self.ib_verify()
 
     def test_120_add_kerberos2_dup(self):
-        ib_expect_add_dns_srv_record("kerberos", "tcp", "aqd-unittest.ms.com", "arecord15.aqd-unittest.ms.com", 88, 10, 20)
+        ib_expect_add_dns_srv_record("kerberos", "tcp", "aqd-unittest.ms.com", "arecord15.aqd-unittest.ms.com", 88, 10,
+                                     20, justification=self.valid_justification)
         command = ["add", "srv", "record", "--service", "kerberos",
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com",
                    "--target", "arecord15.aqd-unittest.ms.com",
@@ -59,7 +62,8 @@ class TestAddSrvRecord(TestBrokerCommand):
                          "already exists.", command)
 
     def test_130_add_ldap(self):
-        ib_expect_add_dns_srv_record("ldap", "tcp", "aqd-unittest.ms.com", "arecord15.aqd-unittest.ms.com", 389, 10, 20)
+        ib_expect_add_dns_srv_record("ldap", "tcp", "aqd-unittest.ms.com", "arecord15.aqd-unittest.ms.com", 389, 10, 20,
+                                     justification=self.valid_justification)
         command = ["add", "srv", "record", "--service", "ldap",
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com",
                    "--target", "arecord15.aqd-unittest.ms.com",
@@ -132,7 +136,8 @@ class TestAddSrvRecord(TestBrokerCommand):
         self.matchoutput(out, "Unknown protocol badproto.", command)
 
     def test_330_alias(self):
-        ib_expect_add_dns_srv_record("ldap-alias", "tcp", "aqd-unittest.ms.com", "alias2host.aqd-unittest.ms.com", 389, 10, 20)
+        ib_expect_add_dns_srv_record("ldap-alias", "tcp", "aqd-unittest.ms.com", "alias2host.aqd-unittest.ms.com", 389,
+                                     10, 20, justification=self.valid_justification)
         command = ["add", "srv", "record", "--service", "ldap-alias",
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com",
                    "--target", "alias2host.aqd-unittest.ms.com",
@@ -146,7 +151,8 @@ class TestAddSrvRecord(TestBrokerCommand):
         self.matchoutput(out, "_ldap-alias._tcp.aqd-unittest.ms.com", command)
 
     def test_340_reservedname(self):
-        ib_expect_add_dns_srv_record("ldap-reserved", "udp", "aqd-unittest.ms.com", "nyaqd1.ms.com", 389, 10, 20)
+        ib_expect_add_dns_srv_record("ldap-reserved", "udp", "aqd-unittest.ms.com", "nyaqd1.ms.com", 389, 10, 20,
+                                     justification=self.valid_justification)
         command = ["add", "srv", "record", "--service", "ldap-reserved",
                    "--protocol", "udp", "--dns_domain", "aqd-unittest.ms.com",
                    "--target", "nyaqd1.ms.com",
@@ -176,7 +182,8 @@ class TestAddSrvRecord(TestBrokerCommand):
                          command)
 
     def test_370_restricted_target(self):
-        ib_expect_add_dns_srv_record("ldap-restrict", "tcp", "aqd-unittest.ms.com", "ldap.restrict.aqd-unittest.ms.com", 389, 10, 20)
+        ib_expect_add_dns_srv_record("ldap-restrict", "tcp", "aqd-unittest.ms.com", "ldap.restrict.aqd-unittest.ms.com",
+                                     389, 10, 20, justification=self.valid_justification)
         command = ["add", "srv", "record", "--service", "ldap-restrict",
                    "--protocol", "tcp",
                    "--dns_domain", "aqd-unittest.ms.com",
@@ -190,7 +197,8 @@ class TestAddSrvRecord(TestBrokerCommand):
         self.ib_verify()
 
     def test_400_addr_alias_target(self):
-        ib_expect_add_dns_srv_record("http", "tcp", "aqd-unittest.ms.com", "addralias1.aqd-unittest.ms.com", 8080, 50, 10)
+        ib_expect_add_dns_srv_record("http", "tcp", "aqd-unittest.ms.com", "addralias1.aqd-unittest.ms.com", 8080, 50,
+                                     10, justification=self.valid_justification)
         command = ["add", "srv", "record", "--service", "http",
                    "--protocol", "tcp",
                    "--dns_domain", "aqd-unittest.ms.com",
@@ -216,7 +224,8 @@ class TestAddSrvRecord(TestBrokerCommand):
         self.matchoutput(out, "Port: 8080", command)
 
     def test_500_grn(self):
-        ib_expect_add_dns_srv_record("sip", "tcp", "aqd-unittest.ms.com", "arecord13.aqd-unittest.ms.com", 5060, 10, 10)
+        ib_expect_add_dns_srv_record("sip", "tcp", "aqd-unittest.ms.com", "arecord13.aqd-unittest.ms.com", 5060, 10, 10,
+                                     justification=self.valid_justification)
         command = ["add", "srv", "record",
                    "--service", "sip", "--protocol", "tcp",
                    "--dns_domain", "aqd-unittest.ms.com",
@@ -234,7 +243,8 @@ class TestAddSrvRecord(TestBrokerCommand):
         self.matchoutput(out, "Owned by GRN: grn:/ms/ei/aquilon/aqd", command)
 
     def test_510_implicit_grn(self):
-        ib_expect_add_dns_srv_record("sip", "tcp", "aqd-unittest.ms.com", "arecord14.aqd-unittest.ms.com", 5060, 10, 10)
+        ib_expect_add_dns_srv_record("sip", "tcp", "aqd-unittest.ms.com", "arecord14.aqd-unittest.ms.com", 5060, 10, 10,
+                                     justification=self.valid_justification)
         command = ["add", "srv", "record",
                    "--service", "sip", "--protocol", "tcp",
                    "--dns_domain", "aqd-unittest.ms.com",
@@ -252,7 +262,8 @@ class TestAddSrvRecord(TestBrokerCommand):
         self.matchoutput(out, "Owned by GRN: grn:/ms/ei/aquilon/aqd", command)
 
     def test_520_eonid(self):
-        ib_expect_add_dns_srv_record("sip", "tcp", "aqd-unittest.ms.com", "arecord50.aqd-unittest.ms.com", 5060, 10, 10)
+        ib_expect_add_dns_srv_record("sip", "tcp", "aqd-unittest.ms.com", "arecord50.aqd-unittest.ms.com", 5060, 10, 10,
+                                     justification=self.valid_justification)
         command = ["add", "srv", "record",
                    "--service", "sip", "--protocol", "tcp",
                    "--dns_domain", "aqd-unittest.ms.com",
@@ -337,7 +348,8 @@ class TestAddSrvRecord(TestBrokerCommand):
                          command)
 
     def test_600_add_tls_srvrec(self):
-        ib_expect_add_dns_srv_record("collab", "tls", "aqd-unittest.ms.com", "arecord14.aqd-unittest.ms.com", 8080, 0, 0)
+        ib_expect_add_dns_srv_record("collab", "tls", "aqd-unittest.ms.com", "arecord14.aqd-unittest.ms.com", 8080, 0,
+                                     0, justification=self.valid_justification)
         command = ["add", "srv", "record", "--service", "collab",
                    "--protocol", "tls", "--dns_domain", "aqd-unittest.ms.com",
                    "--target", "arecord14.aqd-unittest.ms.com",
@@ -359,7 +371,8 @@ class TestAddSrvRecord(TestBrokerCommand):
         self.matchoutput(out, "Port: 8080", command)
 
     def test_700_add_with_dns_env(self):
-        ib_expect_add_dns_srv_record("collab", "tls", "aqd-unittest.ms.com", "addralias1.aqd-unittest-ut-env.ms.com", 8080, 0, 0)
+        ib_expect_add_dns_srv_record("collab", "tls", "aqd-unittest.ms.com", "addralias1.aqd-unittest-ut-env.ms.com",
+                                     8080, 0, 0, justification=self.valid_justification)
         command = ["add", "srv", "record", "--service", "collab",
                    "--protocol", "tls", "--dns_domain", "aqd-unittest.ms.com",
                    "--target", "addralias1.aqd-unittest-ut-env.ms.com",
@@ -384,7 +397,8 @@ class TestAddSrvRecord(TestBrokerCommand):
         self.matchoutput(out, "DNS Environment: ut-env", command)
 
     def test_800_add_with_diff_target_dns_env(self):
-        ib_expect_add_dns_srv_record("collab2", "tls", "aqd-unittest.ms.com", "addralias1.aqd-unittest-ut-env.ms.com", 2364, 20, 30)
+        ib_expect_add_dns_srv_record("collab2", "tls", "aqd-unittest.ms.com", "addralias1.aqd-unittest-ut-env.ms.com",
+                                     2364, 20, 30, justification=self.valid_justification)
         command = ["add", "srv", "record", "--service", "collab2",
                    "--protocol", "tls", "--dns_domain", "aqd-unittest.ms.com",
                    "--target", "addralias1.aqd-unittest-ut-env.ms.com",

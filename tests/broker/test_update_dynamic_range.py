@@ -52,7 +52,7 @@ class TestUpdateDynamicRange(TestBrokerCommand):
             self.dsdb_expect_add(hostname, address)
             messages.append("DSDB: add_host -host_name %s -ip_address %s "
                             "-status aq" % (hostname, address))
-            ib_expect_add_address(hostname, str(address))
+            ib_expect_add_address(hostname, str(address), justification=self.valid_justification)
 
         command = ["add_dynamic_range",
                    "--startip=%s" % startip,
@@ -74,7 +74,8 @@ class TestUpdateDynamicRange(TestBrokerCommand):
         range_class = "infoblox_managed"
 
         # We add the range to Infoblox whenever the range class is changed to infoblox_managed.
-        ib_expect_add_range("dynamic-{}-{}".format(startip, endip), startip, endip)
+        ib_expect_add_range("dynamic-{}-{}".format(startip, endip), startip, endip,
+                            justification=self.valid_justification)
 
         command = ["update_dynamic_range",
             "--ip={}".format(startip),
@@ -95,7 +96,7 @@ class TestUpdateDynamicRange(TestBrokerCommand):
 
         # We delete the range in Infoblox whenever the range class is changed from
         # infoblox_managed to something else--"vm", here:
-        ib_expect_del_range(startip, endip)
+        ib_expect_del_range(startip, endip, justification=self.valid_justification)
 
         # We're specifying endip as the ip value here arbitrarily, as any IP in the range will do.
         # We used startip in the previous test, so let's mix it up.
@@ -139,7 +140,8 @@ class TestUpdateDynamicRange(TestBrokerCommand):
         endip = str(self.net["dyndhcp9"].usable[-3])
         range_class = "infoblox_managed"
 
-        ib_expect_add_range("dynamic-{}-{}".format(startip, endip), startip, endip)
+        ib_expect_add_range("dynamic-{}-{}".format(startip, endip), startip, endip,
+                            justification=self.valid_justification)
 
         # Pick an IP in the middle of the range to test against this time
         ip = str(ip_address(int(self.net["dyndhcp9"].usable[2]) + 42))

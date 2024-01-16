@@ -441,22 +441,24 @@ class MachineTestMixin(EventsTestMixin):
                                      "--interface", nic_name, "--ip", nic_ip])
                 self.dsdb_verify()
 
-        ib_expect_del_address(hostname, str(ip))
         self.dsdb_expect_delete(ip)
         if justification:
+            ib_expect_del_address(hostname, str(ip), justification=self.valid_justification)
             command = ["del_host", "--hostname", hostname] + self.valid_just_tcm
             self.statustest(command)
         else:
+            ib_expect_del_address(hostname, str(ip))
             self.statustest(["del_host", "--hostname", hostname])
         if manager_ip:
             self.dsdb_expect_delete(manager_ip)
             short, domain = hostname.split(".", 1)
             manager_hostname = "{}r.{}".format(short, domain)
-            ib_expect_del_address(manager_hostname, manager_ip)
             if justification:
+                ib_expect_del_address(manager_hostname, manager_ip, justification=self.valid_justification)
                 command = ["del_manager", "--manager", "%s" % (manager_hostname)] + self.valid_just_tcm
                 self.noouttest(command)
             else:
+                ib_expect_del_address(manager_hostname, manager_ip)
                 self.noouttest(["del_manager", "--manager", "%s" % (manager_hostname)])
         self.noouttest(["del_machine", "--machine", machine])
         self.dsdb_verify()

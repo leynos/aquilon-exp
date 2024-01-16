@@ -44,7 +44,7 @@ class TestUpdateSrvRecord(TestBrokerCommand):
             "priority": 25,
             "port": 8888,
         }
-        ib_expect_update_dns_srv_record(old, new)
+        ib_expect_update_dns_srv_record(old, new, justification=self.valid_justification)
         command = ["update", "srv", "record", "--service", "kerberos",
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com",
                    "--target", "arecord14.aqd-unittest.ms.com",
@@ -84,11 +84,12 @@ class TestUpdateSrvRecord(TestBrokerCommand):
             "weight": 20,
             "priority": 10,
             "port": 88,
+            "ttl": 3600,
         }
         new = {
             "ttl": 1800,
         }
-        ib_expect_update_dns_srv_record(old, new)
+        ib_expect_update_dns_srv_record(old, new, justification=self.valid_justification)
         command = ["update", "srv", "record", "--service", "kerberos",
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com",
                    "--target", "arecord15.aqd-unittest.ms.com",
@@ -116,7 +117,7 @@ class TestUpdateSrvRecord(TestBrokerCommand):
         new = {
             "ttl": None,
         }
-        ib_expect_update_dns_srv_record(old, new)
+        ib_expect_update_dns_srv_record(old, new, justification=self.valid_justification)
         command = ["update", "srv", "record", "--service", "kerberos",
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com",
                    "--target", "arecord15.aqd-unittest.ms.com",
@@ -175,7 +176,7 @@ class TestUpdateSrvRecord(TestBrokerCommand):
         for n in ("13", "14", "50"):
             old["target"] = "arecord{}.aqd-unittest.ms.com".format(n)
 
-            ib_expect_update_dns_srv_record(old, {})
+            ib_expect_update_dns_srv_record(old, {}, justification=self.valid_justification)
 
         command = ["update", "srv", "record", "--service", "sip",
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com",

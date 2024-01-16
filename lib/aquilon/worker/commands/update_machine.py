@@ -236,7 +236,7 @@ class CommandUpdateMachine(BrokerCommand):
         oldinfo = DSDBRunner.snapshot_hw(dbmachine)
         old_location = dbmachine.location
 
-        ib_services = IBServices(logger, **arguments)
+        ib_services = IBServices(logger, justification=justification, **arguments)
 
         # Validate ChangeManagement
         cm = ChangeManagement(session, user, justification, reason, logger, self.command, **arguments)
@@ -446,6 +446,7 @@ class CommandUpdateMachine(BrokerCommand):
                                                     default_route=recipe.get("default_route", None),
                                                     rename_to=recipe.get("rename_to", None),
                                                     bus_address=recipe.get("bus_address", None),
+                                                    justification=justification,
                                                     **arguments)
             else:
                 logger.warning("Warning:Please run update_interface to change "

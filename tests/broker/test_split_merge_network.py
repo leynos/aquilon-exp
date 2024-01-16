@@ -53,13 +53,13 @@ class TestSplitMergeNetwork(TestBrokerCommand):
 
     def test_110_add_dns_records(self):
         self.dsdb_expect_add("merge1.aqd-unittest.ms.com", "0.2.2.200")
-        ib_expect_add_address("merge1.aqd-unittest.ms.com", "0.2.2.200")
+        ib_expect_add_address("merge1.aqd-unittest.ms.com", "0.2.2.200", justification=self.valid_justification)
         self.noouttest(["add", "address", "--ip", "0.2.2.200",
                         "--fqdn", "merge1.aqd-unittest.ms.com",
                         "--grn=grn:/ms/ei/aquilon/unittest"] + self.valid_just_tcm)
         self.ib_verify()
         self.dsdb_expect_add("merge2.aqd-unittest.ms.com", "0.2.3.192")
-        ib_expect_add_address("merge2.aqd-unittest.ms.com", "0.2.3.192")
+        ib_expect_add_address("merge2.aqd-unittest.ms.com", "0.2.3.192", justification=self.valid_justification)
         self.noouttest(["add", "address", "--ip", "0.2.3.192",
                         "--fqdn", "merge2.aqd-unittest.ms.com",
                         "--grn=grn:/ms/ei/aquilon/unittest"] + self.valid_just_tcm)
@@ -192,14 +192,14 @@ class TestSplitMergeNetwork(TestBrokerCommand):
     def test_900_clean_dns(self):
         fqdn = "merge1.aqd-unittest.ms.com"
         self.dsdb_expect_delete("0.2.2.200")
-        ib_expect_del_address(fqdn, "0.2.2.200")
+        ib_expect_del_address(fqdn, "0.2.2.200", justification=self.valid_justification)
         self.noouttest(["del", "address", "--ip", "0.2.2.200",
                         "--fqdn", fqdn] + self.valid_just_tcm)
         self.ib_verify()
 
         fqdn = "merge2.aqd-unittest.ms.com"
         self.dsdb_expect_delete("0.2.3.192")
-        ib_expect_del_address(fqdn, "0.2.3.192")
+        ib_expect_del_address(fqdn, "0.2.3.192", justification=self.valid_justification)
         self.noouttest(["del", "address", "--ip", "0.2.3.192",
                         "--fqdn", fqdn] + self.valid_just_tcm)
         self.dsdb_verify()
