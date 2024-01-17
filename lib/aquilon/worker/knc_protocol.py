@@ -53,11 +53,11 @@ class KNCHTTPChannel(http.HTTPChannel):
 
     __KNC_fields = {b"CREDS": force_ascii, b"REMOTE_IP": force_ip}
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self):
+        super().__init__()
         self.__need_knc_data = 1
         self.logger = LOGGER
         self.kncinfo = {}
-        http.HTTPChannel.__init__(self, *args, **kwargs)
 
     def kncLineReceived(self, data):
         # KNC uses '\n' to delimit lines, while HTTP uses '\n\r', therefore
@@ -73,7 +73,7 @@ class KNCHTTPChannel(http.HTTPChannel):
                 # that we are expecting...
                 for field in self.__KNC_fields:
                     if field not in self.kncinfo:
-                        raise KNCProtocolException("Missing %s" % field)
+                        raise KNCProtocolException(f"Missing {field}")
                 self.__need_knc_data = 0
 
                 # Fix the log prefix to include the real remote IP
@@ -110,7 +110,7 @@ class KNCHTTPChannel(http.HTTPChannel):
                 self.transport.write(b"HTTP/1.1 400 Bad KNC Request\r\n\r\n")
                 self.transport.loseConnection()
         else:
-            http.HTTPChannel.lineReceived(self, line)
+            super().lineReceived(line)
 
 
 class KNCSite(AQDSite):

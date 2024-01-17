@@ -21,8 +21,9 @@ try:
     from unittest import mock
 except ImportError:
     # noinspection PyUnresolvedReferences
-    import mock
+    from unittest import mock
 
+from aquilon.config import Config
 from aquilon.exceptions_ import ArgumentError
 from aquilon.worker.dbwrappers import change_management
 
@@ -31,46 +32,46 @@ class TestCommandUnderChangeManagement(unittest.TestCase):
     @staticmethod
     def get_mock_host(eon_id=1):
         host = mock.Mock()
-        host.__format__ = lambda self, format_spec: 'some formatted host info'
-        host.status.name = 'mock_host_status'
-        host.personality_stage.personality.host_environment.name = 'host_env'
+        host.__format__ = lambda self, format_spec: "some formatted host info"
+        host.status.name = "mock_host_status"
+        host.personality_stage.personality.host_environment.name = "host_env"
         host.effective_owner_grn.eon_id = eon_id
         return host
 
-    @mock.patch.object(change_management.ChangeManagement, '__init__')
+    @mock.patch.object(change_management.ChangeManagement, "__init__")
     def test_validate_does_not_output_in_scope_objects_if_not_cm_check(
             self, a_mock):
         a_mock.return_value = None
         expected_objects = [object() for _ in range(3)]
         # noinspection PyArgumentList
         cm_instance = change_management.ChangeManagement()
-        cm_instance.impacted_objects = {'ESX Cluster': expected_objects[:]}
+        cm_instance.impacted_objects = {"ESX Cluster": expected_objects[:]}
         cm_instance.cm_check = False
         try:
             cm_instance.validate()
         except Exception as e:
             result = str(e)
-            self.assertNotIn('in-scope', result)
+            self.assertNotIn("in-scope", result)
             for o in expected_objects:
                 self.assertNotIn(str(o), result)
 
-    @mock.patch.object(change_management.ChangeManagement, '__init__')
+    @mock.patch.object(change_management.ChangeManagement, "__init__")
     def test_validate_outputs_in_scope_objects_if_cm_check(
             self, a_mock):
         a_mock.return_value = None
         expected_objects = [object() for _ in range(3)]
         # noinspection PyArgumentList
         cm_instance = change_management.ChangeManagement()
-        cm_instance.impacted_objects = {'ESX Cluster': expected_objects[:]}
+        cm_instance.impacted_objects = {"ESX Cluster": expected_objects[:]}
         cm_instance.cm_check = True
         with self.assertRaises(ArgumentError) as cm:
             cm_instance.validate()
         result = str(cm.exception)
-        self.assertIn('list of in-scope objects', result)
+        self.assertIn("list of in-scope objects", result)
         for o in expected_objects:
             self.assertIn(str(o), result)
 
-    @mock.patch.object(change_management.ChangeManagement, '__init__')
+    @mock.patch.object(change_management.ChangeManagement, "__init__")
     def test_validate_correctly_notifies_about_no_in_scope_objects(
             self, a_mock):
         a_mock.return_value = None
@@ -81,7 +82,7 @@ class TestCommandUnderChangeManagement(unittest.TestCase):
         with self.assertRaises(ArgumentError) as cm:
             cm_instance.validate()
         result = str(cm.exception)
-        self.assertIn('no affected objects in-scope for change man', result)
+        self.assertIn("no affected objects in-scope for change man", result)
 
     def test_validate_host_calls_store_impacted_object_information(
             self):
@@ -151,12 +152,12 @@ class TestCommandUnderChangeManagement(unittest.TestCase):
 
         mock_cm.impacted_envs = {}
         mock_cm.impacted_eonids = expected_eonids.copy()
-        metadata = {'impacted_envs': mock_cm.impacted_envs}
+        metadata = {"impacted_envs": mock_cm.impacted_envs}
         # Execute.
-        with mock.patch.object(change_management, 'cm_logger') as mock_logger:
+        with mock.patch.object(change_management, "cm_logger") as mock_logger:
             mock_cm.log_change_management_validation(metadata, [], {})
         # Test.
         mock_logger.info.assert_called_once()
         logged = mock_logger.info.call_args[0][0]
         result = json.loads(logged)
-        self.assertEqual(set(result['impacted_eonids']), expected_eonids)
+        self.assertEqual(set(result["impacted_eonids"]), expected_eonids)
