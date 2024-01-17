@@ -19,7 +19,9 @@
 
 import unittest
 
-from mock_ib_services import ib_expect_add_address, ib_expect_add_range, ib_expect_del_range, ib_expect_del_address
+from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_add_range
+from mock_ib_services import ib_expect_del_address
 
 if __name__ == "__main__":
     from . import utils
@@ -47,7 +49,8 @@ class TestAddDynamicRange(TestBrokerCommand):
     def test_100_add_range(self):
         startip = str(self.net["dyndhcp0"].usable[2])
         endip = str(self.net["dyndhcp0"].usable[-3])
-        ib_expect_add_range("dynamic-{}-{}".format(startip, endip), startip, endip)
+        ib_expect_add_range("dynamic-{}-{}".format(startip, endip), startip, endip,
+                            justification=self.valid_justification)
 
         messages = []
         for ip in range(int(self.net["dyndhcp0"].usable[2]),
@@ -57,7 +60,7 @@ class TestAddDynamicRange(TestBrokerCommand):
             self.dsdb_expect_add(hostname, address)
             messages.append("DSDB: add_host -host_name %s -ip_address %s "
                             "-status aq" % (hostname, address))
-            ib_expect_add_address(hostname, str(address))
+            ib_expect_add_address(hostname, str(address), justification=self.valid_justification)
 
         command = ["add_dynamic_range",
                    "--startip=%s" % startip,
@@ -79,7 +82,7 @@ class TestAddDynamicRange(TestBrokerCommand):
             self.dsdb_expect_add(hostname, address)
             messages.append("DSDB: add_host -host_name %s -ip_address %s "
                             "-status aq" % (hostname, address))
-            ib_expect_add_address(hostname, str(address))
+            ib_expect_add_address(hostname, str(address), justification=self.valid_justification)
 
         range_class = "vm"
 
@@ -218,10 +221,10 @@ class TestAddDynamicRange(TestBrokerCommand):
         # Set up a network that has its final IP address taken.
         ip = self.net["dyndhcp1"].usable[-1]
         ip_s = str(ip)
-        ib_expect_add_range("dynamic-{}-{}".format(ip_s, ip_s), ip_s, ip_s)
+        ib_expect_add_range("dynamic-{}-{}".format(ip_s, ip_s), ip_s, ip_s, justification=self.valid_justification)
         hostname = self.dynname(ip)
         self.dsdb_expect_add(hostname, ip)
-        ib_expect_add_address(hostname, ip_s)
+        ib_expect_add_address(hostname, ip_s, justification=self.valid_justification)
         command = ["add_dynamic_range", "--startip", ip, "--endip", ip,
                    "--range_class", "infoblox_managed",
                    "--dns_domain=aqd-unittest.ms.com"] + self.valid_just_tcm
@@ -245,7 +248,7 @@ class TestAddDynamicRange(TestBrokerCommand):
             self.dsdb_expect_add(hostname, address)
             messages.append("DSDB: add_host -host_name %s -ip_address %s "
                             "-status aq" % (hostname, address))
-            ib_expect_add_address(hostname, str(address))
+            ib_expect_add_address(hostname, str(address), justification=self.valid_justification)
 
         command = ["add_dynamic_range",
                    "--fillnetwork", self.net["dyndhcp3"].ip] + self.valid_just_tcm
@@ -293,7 +296,7 @@ class TestAddDynamicRange(TestBrokerCommand):
         ip = str(net.usable[5])
         hostname = self.dynname(ip, domain="one-nyp.ms.com")
 
-        ib_expect_del_address(hostname, ip)
+        ib_expect_del_address(hostname, ip, justification=self.valid_justification)
         self.dsdb_expect_delete(ip)
         command = ["del_dynamic_range", "--start", ip, "--end", ip] + self.valid_just_tcm
         self.statustest(command)

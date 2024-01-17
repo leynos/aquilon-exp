@@ -245,7 +245,7 @@ class CommandAddServiceAddress(BrokerCommand):
             if dbifaces:
                 dbsrv.interfaces = dbifaces
 
-        ib_services = IBServices(logger, **kwargs)
+        ib_services = IBServices(logger, justification=justification, **kwargs)
         if newly_created:
             ib_services.group.add_action(
                 lambda: ib_services.add_a_ptr(ip=ip, **ibs_args),

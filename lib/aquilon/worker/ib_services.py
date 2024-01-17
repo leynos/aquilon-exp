@@ -51,10 +51,15 @@ class IBServices:
 
     transaction_id_header = "X-MS-Unique-ID"
 
-    def __init__(self, logger, **kwargs):
+    def __init__(self, logger, justification=None, **kwargs):
         self.log = logger
         self.requestid = kwargs.get("requestid")
         self.group = IBServiceGroup()
+
+        if justification is None or justification.lower() == "emergency":
+            self.justification = None
+        else:
+            self.justification = justification
 
         self.session = Session()
         if self.ca_chain:
@@ -76,6 +81,8 @@ class IBServices:
 
     def _build_a_ptr_payload(self, name, ip, assign_ptr_to_fqdn, ttl):
         payload = { "eonid": self.eonid }
+        if (self.justification is not None):
+            payload["cm_token"] = self.justification
         if name:
             payload["name"] = str(name)
         if ip:
@@ -117,6 +124,8 @@ class IBServices:
             "delete_ptr": str(delete_ptr).lower(),
             "eonid":      self.eonid,
         }
+        if self.justification is not None:
+            params["cm_token"] = self.justification
         url = f"/dns/a_ptr/{str(name)}/{str(ip)}"
         url = self._generate_url_from_params(url, params)
 
@@ -254,6 +263,8 @@ class IBServices:
     @with_timer
     def delete_dns_alias(self, name):
         params = { "eonid": self.eonid }
+        if self.justification is not None:
+            params["cm_token"] = self.justification
         url = f"/dns/aliases/{str(name)}"
         url = self._generate_url_from_params(url, params)
 
@@ -266,6 +277,8 @@ class IBServices:
             payload["target"] = new_target
         if ttl is not None:
             payload["ttl"] = ttl
+        if self.justification is not None:
+            payload["cm_token"] = self.justification
         url = f"/dns/aliases/{name}"
 
         return self._http_request("PATCH", url, payload)
@@ -278,6 +291,8 @@ class IBServices:
             "start_address": str(start_address),
             "end_address":   str(end_address),
         }
+        if self.justification is not None:
+            payload["cm_token"] = self.justification
         url = "/ranges"
 
         self._http_request("POST", url, payload, ignore_statuses=[409])
@@ -285,6 +300,8 @@ class IBServices:
     @with_timer
     def delete_dynamic_range(self, start_address, end_address):
         params = { "eonid": self.eonid }
+        if self.justification is not None:
+            params["cm_token"] = self.justification
         url = f"/ranges/{start_address}/{end_address}"
         url = self._generate_url_from_params(url, params)
 
@@ -313,6 +330,8 @@ class IBServices:
             payload["target"] = str(target)
         if ttl:
             payload["ttl"] = ttl
+        if self.justification is not None:
+            payload["cm_token"] = self.justification
 
         return self._http_request("POST", url, payload, ignore_statuses=[409])
 
@@ -327,13 +346,12 @@ class IBServices:
             "port":     port,
             "priority": priority,
             "weight":   weight,
+            "cm_token": self.justification,
         }
         if target is not None:
             options["target"] = str(target)
-        ordered_options = ("domain", "protocol", "target", "service", "eonid", "weight", "priority", "port")
-        params = ("{}={}".format(field, options[field]) for field in ordered_options if options[field] is not None)
-
-        url = "/dns/srv?{}".format("&".join(params))
+        params = dict(filter(lambda item: item[1] is not None, options.items()))
+        url = self._generate_url_from_params("/dns/srv", params)
 
         return self._http_request("DELETE", url)
 
@@ -354,11 +372,10 @@ class IBServices:
         if payload.get("target", None):
             payload["target"] = str(payload["target"])
         payload["eonid"] = self.eonid
+        payload["cm_token"] = self.justification
 
-        ordered_options = ("domain", "protocol", "target", "service", "weight", "priority", "port")
-        params = ("{}={}".format(field, old[field]) for field in ordered_options if old[field] is not None)
-
-        url = "/dns/srv?{}".format("&".join(params))
+        params = dict(filter(lambda item: item[1] is not None, old.items()))
+        url = self._generate_url_from_params("/dns/srv", params)
 
         return self._http_request("PATCH", url, payload)
 
@@ -409,6 +426,8 @@ class IBServices:
     def add_zone(self, fqdn, city=None):
         url = "/dns/zones/"
         payload = {"fqdn": fqdn, "city": city, "eonid": self.eonid}
+        if self.justification is not None:
+            payload["cm_token"] = self.justification
         self._http_request("POST", url, payload)
 
     def show_zone(self, fqdn):

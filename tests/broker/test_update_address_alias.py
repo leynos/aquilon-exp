@@ -41,7 +41,7 @@ class TestUpdateAddressAlias(TestBrokerCommand):
 
     def test_101_update_to_add_comment(self):
         ib_expect_update_address("addralias1.aqd-unittest.ms.com", original_ip="4.2.1.18",
-                                 new_ttl=900, update_ptr=False)
+                                 new_ttl=900, justification=self.just_sn, update_ptr=False)
         command = ["update", "address", "alias",
                    "--fqdn", "addralias1.aqd-unittest.ms.com",
                    "--target", "arecord13.aqd-unittest.ms.com",

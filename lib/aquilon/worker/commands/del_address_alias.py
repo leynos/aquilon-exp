@@ -69,7 +69,7 @@ class CommandDelAddressAlias(BrokerCommand):
 
         cm.validate()
 
-        ib_services = IBServices(logger, **arguments)
+        ib_services = IBServices(logger, justification=justification, **arguments)
         if ib_services.feature_enabled("address_alias"):
             try:
                 for dns_rec in rrs:

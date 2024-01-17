@@ -60,14 +60,14 @@ class CommandUpdateInterfaceMachine(BrokerCommand):
         self.\
         update_interface_machine(session, logger, plenaries, interface, machine, mac,
                                  model, vendor, boot, pg, autopg, comments, master,
-                                 clear_master, default_route, rename_to, bus_address,
+                                 clear_master, default_route, rename_to, bus_address, justification,
                                  **arguments)
 
     def update_interface_machine(self, session, logger, plenaries, interface, machine, mac=None,
                                  model=None, vendor=None, boot=None, pg=None,
                                  autopg=None, comments=None, master=None,
                                  clear_master=None, default_route=None, rename_to=None,
-                                 bus_address=None, **arguments):
+                                 bus_address=None, justification=None, **arguments):
         audit_results = []
 
         dbhw_ent = Machine.get_unique(session, machine, compel=True)
@@ -80,7 +80,7 @@ class CommandUpdateInterfaceMachine(BrokerCommand):
         dbinterface.lock_row()
 
         oldinfo = DSDBRunner.snapshot_hw(dbhw_ent)
-        ib_services = IBServices(logger, **arguments)
+        ib_services = IBServices(logger, justification=justification, **arguments)
         ib_old_snapshot = ib_services.snapshot_hw_a_records(dbhw_ent)
 
         if arguments.get('hostname', None):

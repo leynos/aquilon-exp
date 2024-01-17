@@ -30,7 +30,8 @@ from mock_ib_services import ib_expect_del_dns_srv_record
 class TestDelSrvRecord(TestBrokerCommand):
 
     def test_100_del_target(self):
-        ib_expect_del_dns_srv_record("kerberos", "tcp", "aqd-unittest.ms.com", "arecord14.aqd-unittest.ms.com", 8888, 25, 15)
+        ib_expect_del_dns_srv_record("kerberos", "tcp", "aqd-unittest.ms.com", "arecord14.aqd-unittest.ms.com", 8888,
+                                     25, 15, justification=self.valid_justification)
         command = ["del", "srv", "record", "--service", "kerberos",
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com",
                    "--target", "arecord14.aqd-unittest.ms.com"] + self.valid_just_tcm
@@ -55,21 +56,24 @@ class TestDelSrvRecord(TestBrokerCommand):
                          command)
 
     def test_130_del_notarget(self):
-        ib_expect_del_dns_srv_record("kerberos", "tcp", "aqd-unittest.ms.com", "arecord15.aqd-unittest.ms.com", 88, 10, 20)
+        ib_expect_del_dns_srv_record("kerberos", "tcp", "aqd-unittest.ms.com", "arecord15.aqd-unittest.ms.com", 88, 10,
+                                     20, justification=self.valid_justification)
         command = ["del", "srv", "record", "--service", "kerberos",
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com"] + self.valid_just_tcm
         self.noouttest(command)
         self.ib_verify()
 
     def test_140_del_ldap(self):
-        ib_expect_del_dns_srv_record("ldap", "tcp", "aqd-unittest.ms.com", "arecord15.aqd-unittest.ms.com", 389, 10, 20)
+        ib_expect_del_dns_srv_record("ldap", "tcp", "aqd-unittest.ms.com", "arecord15.aqd-unittest.ms.com", 389, 10, 20,
+                                     justification=self.valid_justification)
         command = ["del", "srv", "record", "--service", "ldap",
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com"] + self.valid_just_tcm
         self.noouttest(command)
         self.ib_verify()
 
     def test_145_del_restricted_target(self):
-        ib_expect_del_dns_srv_record("ldap-restrict", "tcp", "aqd-unittest.ms.com", "ldap.restrict.aqd-unittest.ms.com", 389, 10, 20)
+        ib_expect_del_dns_srv_record("ldap-restrict", "tcp", "aqd-unittest.ms.com", "ldap.restrict.aqd-unittest.ms.com",
+                                     389, 10, 20, justification=self.valid_justification)
         command = ["del", "srv", "record", "--service", "ldap-restrict",
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com"] + self.valid_just_tcm
         self.noouttest(command)
@@ -81,21 +85,24 @@ class TestDelSrvRecord(TestBrokerCommand):
         self.notfoundtest(command)
 
     def test_147_del_reserved_target(self):
-        ib_expect_del_dns_srv_record("ldap-reserved", "udp", "aqd-unittest.ms.com", "nyaqd1.ms.com", 389, 10, 20)
+        ib_expect_del_dns_srv_record("ldap-reserved", "udp", "aqd-unittest.ms.com", "nyaqd1.ms.com", 389, 10, 20,
+                                     justification=self.valid_justification)
         command = ["del", "srv", "record", "--service", "ldap-reserved",
                    "--protocol", "udp", "--dns_domain", "aqd-unittest.ms.com"] + self.valid_just_tcm
         self.noouttest(command)
         self.ib_verify()
 
     def test_148_del_alias_target(self):
-        ib_expect_del_dns_srv_record("ldap-alias", "tcp", "aqd-unittest.ms.com", "alias2host.aqd-unittest.ms.com", 389, 10, 20)
+        ib_expect_del_dns_srv_record("ldap-alias", "tcp", "aqd-unittest.ms.com", "alias2host.aqd-unittest.ms.com", 389,
+                                     10, 20, justification=self.valid_justification)
         command = ["del", "srv", "record", "--service", "ldap-alias",
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com"] + self.valid_just_tcm
         self.noouttest(command)
         self.ib_verify()
 
     def test_149_del_addr_alias_target(self):
-        ib_expect_del_dns_srv_record("http", "tcp", "aqd-unittest.ms.com", "addralias1.aqd-unittest.ms.com", 8080, 50, 10)
+        ib_expect_del_dns_srv_record("http", "tcp", "aqd-unittest.ms.com", "addralias1.aqd-unittest.ms.com", 8080, 50,
+                                     10, justification=self.valid_justification)
         command = ["del", "srv", "record", "--service", "http",
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com"] + self.valid_just_tcm
         self.noouttest(command)
@@ -103,8 +110,8 @@ class TestDelSrvRecord(TestBrokerCommand):
 
     def test_300_del_record_with_grn(self):
         for n in ("13", "14", "50"):
-            ib_expect_del_dns_srv_record("sip", "tcp", "aqd-unittest.ms.com",
-                                         "arecord{}.aqd-unittest.ms.com".format(n), 5060, 10, 10)
+            ib_expect_del_dns_srv_record("sip", "tcp", "aqd-unittest.ms.com", "arecord{}.aqd-unittest.ms.com".format(n),
+                                         5060, 10, 10, justification=self.valid_justification)
 
         command = ["del", "srv", "record", "--service", "sip",
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com"] + self.valid_just_tcm
@@ -117,7 +124,8 @@ class TestDelSrvRecord(TestBrokerCommand):
         self.notfoundtest(command)
 
     def test_310_del_tls_srvrec(self):
-        ib_expect_del_dns_srv_record("collab", "tls", "aqd-unittest.ms.com", "arecord14.aqd-unittest.ms.com", 8080, 0, 0)
+        ib_expect_del_dns_srv_record("collab", "tls", "aqd-unittest.ms.com", "arecord14.aqd-unittest.ms.com", 8080, 0,
+                                     0, justification=self.valid_justification)
         command = ["del", "srv", "record", "--service", "collab",
                    "--protocol", "tls", "--dns_domain", "aqd-unittest.ms.com"] + self.valid_just_tcm
         self.noouttest(command)
@@ -129,7 +137,8 @@ class TestDelSrvRecord(TestBrokerCommand):
         self.notfoundtest(command)
 
     def test_320_del_with_dns_env(self):
-        ib_expect_del_dns_srv_record("collab", "tls", "aqd-unittest.ms.com", "addralias1.aqd-unittest-ut-env.ms.com", 8080, 0, 0)
+        ib_expect_del_dns_srv_record("collab", "tls", "aqd-unittest.ms.com", "addralias1.aqd-unittest-ut-env.ms.com",
+                                     8080, 0, 0, justification=self.valid_justification)
         command = ["del", "srv", "record", "--service", "collab",
                    "--protocol", "tls", "--dns_domain", "aqd-unittest.ms.com",
                    "--dns_environment", "ut-env"] + self.valid_just_tcm
@@ -143,7 +152,8 @@ class TestDelSrvRecord(TestBrokerCommand):
         self.notfoundtest(command)
 
     def test_330_del_with_diff_target_env(self):
-        ib_expect_del_dns_srv_record("collab2", "tls", "aqd-unittest.ms.com", "addralias1.aqd-unittest-ut-env.ms.com", 2364, 20, 30)
+        ib_expect_del_dns_srv_record("collab2", "tls", "aqd-unittest.ms.com", "addralias1.aqd-unittest-ut-env.ms.com",
+                                     2364, 20, 30, justification=self.valid_justification)
         command = ["del", "srv", "record", "--service", "collab2",
                    "--protocol", "tls", "--dns_domain", "aqd-unittest.ms.com",
                    "--dns_environment", "internal",
