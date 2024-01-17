@@ -133,7 +133,7 @@ class PlenaryMetaClusterObject(ObjectPlenary):
                                      {"metadata": PanValue("/metadata")}))
         pan_include(lines, "archetype/base")
 
-        for servinst in sorted(self.dbobj.services_used):
+        for servinst in list(self.dbobj.services_used):
             path = PlenaryServiceInstanceClientDefault.template_name(servinst)
             pan_include(lines, path)
 
