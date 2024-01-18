@@ -130,7 +130,7 @@ class IBServices(object):
         url = "/dns/a_ptr/{}/{}".format(str(name), str(ip))
         url = self._generate_url_from_params(url, params)
 
-        return self._http_request("DELETE", url)
+        return self._http_request("DELETE", url, ignore_statuses=[404])
 
     @with_timer
     def show_a_ptr(self, name, ip):
@@ -269,7 +269,7 @@ class IBServices(object):
         url = "/dns/aliases/{}".format(str(name))
         url = self._generate_url_from_params(url, params)
 
-        return self._http_request("DELETE", url)
+        return self._http_request("DELETE", url, ignore_statuses=[404])
 
     @with_timer
     def update_dns_alias(self, name, new_target=None, ttl=None):
@@ -306,7 +306,7 @@ class IBServices(object):
         url = "/ranges/{}/{}".format(start_address, end_address)
         url = self._generate_url_from_params(url, params)
 
-        self._http_request("DELETE", url)
+        self._http_request("DELETE", url, ignore_statuses=[404])
 
     @with_timer
     def show_dynamic_range(self, start_address, end_address):
@@ -354,7 +354,7 @@ class IBServices(object):
         params = dict(filter(lambda item: item[1] is not None, options.items()))
         url = self._generate_url_from_params("/dns/srv", params)
 
-        return self._http_request("DELETE", url)
+        return self._http_request("DELETE", url, ignore_statuses=[404])
 
     @with_timer
     def update_dns_srv_record(self, old, new):
@@ -422,7 +422,7 @@ class IBServices(object):
     def delete_network(self, network):
         url = "/networks/{}".format(quote(network, safe=''))
 
-        self._http_request("DELETE", url)
+        self._http_request("DELETE", url, ignore_statuses=[404])
 
     def add_zone(self, fqdn, city=None):
         url = "/dns/zones/"
@@ -438,7 +438,7 @@ class IBServices(object):
 
     def delete_zone(self, fqdn):
         url = "/dns/zones/{}".format(fqdn)
-        self._http_request("DELETE", url)
+        self._http_request("DELETE", url, ignore_statuses=[404])
 
     def _http_request(self, http_cmd, url, data=None, ignore_statuses=[]):
         if not self.enabled:
