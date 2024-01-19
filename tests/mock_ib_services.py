@@ -1,12 +1,12 @@
 import json
 import logging
-
 from http.server import SimpleHTTPRequestHandler
 from socketserver import TCPServer
-from aquilon.exceptions_ import ArgumentError
-from urllib.parse import urlencode, urlparse, urlunparse, quote_plus
+from urllib.parse import quote_plus, urlencode, urlparse, urlunparse
 
-LOGGER = logging.getLogger('ib-services')
+from aquilon.exceptions_ import ArgumentError
+
+LOGGER = logging.getLogger("ib-services")
 LOGGER.setLevel(logging.DEBUG)
 PORT = 8900
 
@@ -40,14 +40,14 @@ class IBServicesRequestHandler(SimpleHTTPRequestHandler):
     def do_POST(self):
         self._handle_request()
 
-    def log_request(self, code='-', size='-'):
+    def log_request(self, code="-", size="-"):
         """overewrite to not log any request"""
 
     def _handle_request(self):
-        unique_id = self.headers.get('X-MS-Unique-ID')
+        unique_id = self.headers.get("X-MS-Unique-ID")
         assert unique_id is not None and len(str(unique_id)) > 0, "Expected X-MS-Unique-ID header"
 
-        content_length = int(self.headers.get('content-length', 0))
+        content_length = int(self.headers.get("content-length", 0))
         body = self.rfile.read(content_length)
 
         if http_monitor.expects:
@@ -116,7 +116,7 @@ def ib_expect_add_address(fqdn, ip, reverse_ptr=None, create_ptr=True, ttl=None,
     payload = {
         "create_ptr": create_ptr,
         "address": ip,
-        "eonid": eonid, 
+        "eonid": eonid,
         "create_if_doesnt_exist": True,
         "update_ptr": False,
     }
@@ -127,7 +127,7 @@ def ib_expect_add_address(fqdn, ip, reverse_ptr=None, create_ptr=True, ttl=None,
     if justification is not None:
         payload["cm_token"] = justification
 
-    test_case = ib_test_case("PATCH", "/dns/a_ptr/{}/{}".format(fqdn, ip), payload, response_code, response_body)
+    test_case = ib_test_case("PATCH", f"/dns/a_ptr/{fqdn}/{ip}", payload, response_code, response_body)
     http_monitor.expect(test_case)
 
 
@@ -161,9 +161,9 @@ def ib_expect_del_address(fqdn, ip, delete_ptr=True, response_code=204, response
     ip = str(ip)
     if fail:
         response_code = 400
-    path = "/dns/a_ptr/{}/{}?delete_ptr={}&eonid={}".format(str(fqdn), ip, str(delete_ptr).lower(), eonid)
+    path = f"/dns/a_ptr/{str(fqdn)}/{ip}?delete_ptr={str(delete_ptr).lower()}&eonid={eonid}"
     if justification is not None:
-        path = path + "&cm_token={}".format(quote_plus(justification))
+        path = path + f"&cm_token={quote_plus(justification)}"
     test_case = ib_test_case(
         "DELETE",
         path,
@@ -197,9 +197,9 @@ def ib_expect_update_alias(fqdn, target=None, ttl=None, response_code=204, respo
 def ib_expect_del_alias(fqdn, response_code=204, response_body="", justification=None, fail=False):
     if fail:
         response_code = 400
-    path = "/dns/aliases/{}?eonid={}".format(fqdn, eonid)
+    path = f"/dns/aliases/{fqdn}?eonid={eonid}"
     if justification is not None:
-        path = path + "&cm_token={}".format(quote_plus(justification))
+        path = path + f"&cm_token={quote_plus(justification)}"
     test_case = ib_test_case(
         "DELETE",
         path,
@@ -222,9 +222,9 @@ def ib_expect_del_range(start_address, end_address, response_code=204, response_
                         fail=False):
     if fail:
         response_code = 400
-    path = "/ranges/{}/{}?eonid={}".format(start_address, end_address, eonid)
+    path = f"/ranges/{start_address}/{end_address}?eonid={eonid}"
     if justification is not None:
-        path = path + "&cm_token={}".format(quote_plus(justification))
+        path = path + f"&cm_token={quote_plus(justification)}"
     test_case = ib_test_case(
         "DELETE",
         path,
@@ -273,12 +273,12 @@ def ib_expect_update_dns_srv_record(old, new, response_code=204, response_body="
     if fail:
         response_code = 400
 
-    required_fields = ("service", "protocol", "domain", "port", "target", "priority", "weight")
+    required_fields = ("service", "protocol", "domain", "port", "target", "weight", "priority",)
     payload = {}
 
     for field in required_fields:
         if old.get(field, None) is None:
-            raise ArgumentError("Required argument '{}' is missing".format(field))
+            raise ArgumentError(f"Required argument '{field}' is missing")
         payload[field] = new[field] if new.get(field, None) else old[field]
 
     if new.get("ttl", None):
@@ -299,7 +299,7 @@ def ib_expect_update_dns_srv_record(old, new, response_code=204, response_body="
     http_monitor.expect(test_case)
 
 
-def ib_expect_del_dns_srv_record(service, protocol, dns_domain, target, port=None, priority=None, weight=None, 
+def ib_expect_del_dns_srv_record(service, protocol, dns_domain, target, port=None, priority=None, weight=None,
                                  response_code=204, response_body="", justification=None, fail=False):
     if fail:
         response_code = 400

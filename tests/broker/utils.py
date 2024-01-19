@@ -22,15 +22,17 @@ import random
 import re
 import string
 
+from mock_ib_services import (
+    ib_expect_add_address,
+    ib_expect_add_alias,
+    ib_expect_add_dns_srv_record,
+    ib_expect_del_address,
+    ib_expect_del_alias,
+    ib_expect_update_address,
+)
+
 from broker.brokertest import TestBrokerCommand
 from broker.machinetest import MachineTestMixin
-from mock_ib_services import ib_expect_add_address
-from mock_ib_services import ib_expect_add_alias
-from mock_ib_services import ib_expect_add_dns_srv_record
-from mock_ib_services import ib_expect_del_address
-from mock_ib_services import ib_expect_del_alias
-from mock_ib_services import ib_expect_del_dns_srv_record
-from mock_ib_services import ib_expect_update_address
 
 
 def import_depends():
@@ -49,7 +51,6 @@ def import_depends():
         sys.path.insert(1, _TESTDIR)
 
     # noinspection PyUnresolvedReferences
-    import depends
 
 
 class MockHubEngine(TestBrokerCommand, MachineTestMixin):
@@ -99,8 +100,8 @@ class MockHub:
                  default_cluster_archetype=None,
                  default_cluster_build_status=None,
                  default_cluster_personality=None,
-                 default_cluster_type='storage',
-                 grn='grn:/ms/ei/aquilon/aqd'):
+                 default_cluster_type="storage",
+                 grn="grn:/ms/ei/aquilon/aqd"):
         # The engine object should be an instance of TestBrokerCommand (or its
         # subclass), and, if one wants to create machines or hosts,
         # it should include a working method create_machine_dl360g9 (as
@@ -113,7 +114,7 @@ class MockHub:
             # noinspection PyTypeChecker
             self._engine = copy.copy(engine)  # type: MockHubEngine
             self._engine.__class__ = type(
-                f'{engine.__class__.__name__}ModifiedByMockHub',
+                f"{engine.__class__.__name__}ModifiedByMockHub",
                 (engine.__class__, MachineTestMixin), {})
         else:
             # noinspection PyTypeChecker
@@ -123,11 +124,11 @@ class MockHub:
         self.default_domain = domain or self.random_name()
         self.default_archetype = default_archetype or self.random_name()
         self.default_cluster = default_cluster or self.random_name()
-        self.default_cluster_archetype = default_cluster_archetype or self.random_name() + '_cluster'  # noqa: E501
+        self.default_cluster_archetype = default_cluster_archetype or self.random_name() + "_cluster"  # noqa: E501
         self.default_cluster_build_status = default_cluster_build_status
-        self.default_grn_change_unrestricted_archetype = 'can_change_grn'
+        self.default_grn_change_unrestricted_archetype = "can_change_grn"
         self.default_personality = default_personality or self.random_name()
-        self.default_cluster_personality = default_cluster_personality or self.random_name() + '_cluster'  # noqa: E501
+        self.default_cluster_personality = default_cluster_personality or self.random_name() + "_cluster"  # noqa: E501
         self.default_cluster_type = default_cluster_type
         self.default_os = default_os or self.random_name()
         self.default_os_version = default_os_version or self.random_name()
@@ -156,17 +157,16 @@ class MockHub:
         self.srvrecords = {}
         self.create(name)
         self._initialise_dependencies()
-        self.default_dns_domain = self.add_dns_domain('{}.cc'.format(
-            self._name))
+        self.default_dns_domain = self.add_dns_domain(f"{self._name}.cc")
 
     def get_grns(self):
         grns = []
         eon_ids = []
         disabled = []
-        grn_pattern = r'GRN:[\s]*(grn:[^\s]+)'
-        eon_id_pattern = r'EON ID:[\s]*([\d]+)'
-        disabled_pattern = r'Disabled:[\s]*([^\s]+)'
-        out = self._engine.commandtest(['show_grn', '--all'])
+        grn_pattern = r"GRN:[\s]*(grn:[^\s]+)"
+        eon_id_pattern = r"EON ID:[\s]*([\d]+)"
+        disabled_pattern = r"Disabled:[\s]*([^\s]+)"
+        out = self._engine.commandtest(["show_grn", "--all"])
         for line in out.splitlines():
             found = re.findall(grn_pattern, line)
             if found:
@@ -178,39 +178,39 @@ class MockHub:
                 continue
             found = re.findall(disabled_pattern, line)
             if found:
-                assert found[0] == 'True' or found[0] == 'False'
-                status = True if found[0] == 'True' else False
+                assert found[0] == "True" or found[0] == "False"
+                status = True if found[0] == "True" else False
                 disabled.append(status)
                 continue
         assert len(eon_ids) == len(grns) == len(disabled)
         return {
             grns[i]: {
-                'eon_id': eon_ids[i],
-                'disabled': disabled[i]
+                "eon_id": eon_ids[i],
+                "disabled": disabled[i]
             } for i in range(len(grns))}
 
     def get_building(self, machine=None, desk=None):
         building = None
         if machine in self.machines:
-            out, _ = self._engine.successtest(['show_machine',
-                                               '--machine', machine,
-                                               '--format', 'csv'])
-            building = out.split(',')[2]
+            out, _ = self._engine.successtest(["show_machine",
+                                               "--machine", machine,
+                                               "--format", "csv"])
+            building = out.split(",")[2]
         elif desk in self.desks:
-            out, _ = self._engine.successtest(['show_desk',
-                                               '--desk', desk,
-                                               '--format', 'csv'])
-            building = out.split(',')[3]
+            out, _ = self._engine.successtest(["show_desk",
+                                               "--desk", desk,
+                                               "--format", "csv"])
+            building = out.split(",")[3]
         return building or None
 
     def get_default_dns_domain(self, building):
         # Return a default DNS domain for a building.
         result = None
         if building not in self.buildings:
-            raise ValueError(f'Building {building} not found.')
-        out, _ = self._engine.successtest(['show_building',
-                                           '--building', building])
-        found = re.search(r'Default DNS Domain: (\S+)\s+', out)
+            raise ValueError(f"Building {building} not found.")
+        out, _ = self._engine.successtest(["show_building",
+                                           "--building", building])
+        found = re.search(r"Default DNS Domain: (\S+)\s+", out)
         if found:
             result = found.group(1)
         return result
@@ -219,25 +219,25 @@ class MockHub:
         prefix_length = len(prefix)
         suffix_length = len(dns_domain) + 1
         index_range = slice(prefix_length, -suffix_length)
-        out, _ = self._engine.successtest(['search_host',
-                                           '--dns_domain', dns_domain])
+        out, _ = self._engine.successtest(["search_host",
+                                           "--dns_domain", dns_domain])
         assigned_numbers = [int(l[index_range])
                             for l in out.split() if l.startswith(prefix)]
         next_available = 1
         while next_available in assigned_numbers:
             next_available += 1
-        return f'{prefix}{next_available}.{dns_domain}'
+        return f"{prefix}{next_available}.{dns_domain}"
 
     def add_dns_domain(self, fqdn, restricted=True):
         if fqdn in self.dns_domains:
-            raise ValueError(f'DNS domain {fqdn} already exists.')
-        command = ['add_dns_domain', '--dns_domain', fqdn,
-                   '--justification', 'tcm=123456789']
+            raise ValueError(f"DNS domain {fqdn} already exists.")
+        command = ["add_dns_domain", "--dns_domain", fqdn,
+                   "--justification", "tcm=123456789"]
         if restricted:
-            command.append('--restricted')
+            command.append("--restricted")
         else:
-            self._engine.dsdb_expect('add_dns_domain -domain_name {} '
-                                     '-comments '.format(fqdn))
+            self._engine.dsdb_expect(f"add_dns_domain -domain_name {fqdn} "
+                                     "-comments ")
 
         self._engine.noouttest(command)
         if restricted:
@@ -248,9 +248,8 @@ class MockHub:
         return fqdn
 
     def delete_dns_domain(self, fqdn):
-        self._engine.dsdb_expect('delete_dns_domain -domain_name {}'.format(
-            fqdn))
-        self._engine.noouttest(['del_dns_domain', '--dns_domain', fqdn])
+        self._engine.dsdb_expect(f"delete_dns_domain -domain_name {fqdn}")
+        self._engine.noouttest(["del_dns_domain", "--dns_domain", fqdn])
         self._engine.dsdb_verify()
         self.dns_domains.remove(fqdn)
         if fqdn == self.default_dns_domain:
@@ -268,13 +267,13 @@ class MockHub:
                 ib_expect_add_address(fqdn, ip, reverse_ptr=reverse_ptr, ttl=ttl, create_ptr=create_ptr, fail=fail_ib,
                                       justification=self._engine.valid_justification)
 
-        command = ['add_address', '--fqdn', fqdn,
-                   '--ip', ip,
-                   '--grn', self.grn]
+        command = ["add_address", "--fqdn", fqdn,
+                   "--ip", ip,
+                   "--grn", self.grn]
         if ttl is not None:
-            command.extend(['--ttl', ttl])
+            command.extend(["--ttl", ttl])
         if dns_environment is not None:
-            command.extend(['--dns_environment', dns_environment])
+            command.extend(["--dns_environment", dns_environment])
 
         command += self._engine.valid_just_tcm
         if fail_dsdb:
@@ -283,7 +282,7 @@ class MockHub:
             self._engine.iberrortest(command)
         else:
             self._engine.noouttest(command)
-            self.addresses[fqdn, dns_environment] = {'ip': ip}
+            self.addresses[fqdn, dns_environment] = {"ip": ip}
 
         self._engine.dsdb_verify(True if fail_ib or dns_environment != "internal" else False)
         self._engine.ib_verify(True if fail_dsdb else False)
@@ -298,19 +297,19 @@ class MockHub:
         if not fail_dsdb:
             ib_expect_update_address(fqdn, original_ip, new_ip=new_ip, reverse_ptr=reverse_ptr,
                                      new_ttl=new_ttl, fail=fail_ib, justification=self._engine.valid_justification)
-        command = ['update_address', '--fqdn', fqdn]
+        command = ["update_address", "--fqdn", fqdn]
         if dns_environment is not None:
-            command.extend(['--dns_environment', dns_environment])
+            command.extend(["--dns_environment", dns_environment])
         if new_ip is not None:
-            command.extend(['--ip', new_ip])
+            command.extend(["--ip", new_ip])
         if new_ttl is not None:
-            command.extend(['--ttl', new_ttl])
+            command.extend(["--ttl", new_ttl])
         if reverse_ptr is not None:
-            command.extend(['--reverse_ptr', reverse_ptr])
+            command.extend(["--reverse_ptr", reverse_ptr])
         if comments is not None:
-            command.extend(['--comments', comments])
+            command.extend(["--comments", comments])
         if grn is not None:
-            command.extend(['--grn', grn])
+            command.extend(["--grn", grn])
         command += self._engine.valid_just_tcm
 
         if fail_ib:
@@ -328,7 +327,7 @@ class MockHub:
         else:
             self._engine.noouttest(command)
             if new_ip is not None:
-                self.addresses[fqdn, dns_environment] = {'ip': new_ip}
+                self.addresses[fqdn, dns_environment] = {"ip": new_ip}
 
         self._engine.dsdb_verify(True if fail_ib else False)
         self._engine.ib_verify(True if fail_dsdb else False)
@@ -341,9 +340,9 @@ class MockHub:
             if not fail_dsdb:
                 ib_expect_del_address(fqdn, ip, fail=fail_ib, justification=self._engine.valid_justification)
 
-        command = ['del_address', '--fqdn', fqdn, '--ip', ip]
+        command = ["del_address", "--fqdn", fqdn, "--ip", ip]
         if dns_environment is not None:
-            command.extend(['--dns_environment', dns_environment])
+            command.extend(["--dns_environment", dns_environment])
         command += self._engine.valid_just_tcm
 
         if fail_dsdb:
@@ -359,119 +358,119 @@ class MockHub:
 
     def add_resource_group(self, resourcegroup, hostname):
         if resourcegroup in self.resource_groups:
-            raise ValueError('Resource Group {} already exists.'.format(resourcegroup))
+            raise ValueError(f"Resource Group {resourcegroup} already exists.")
 
-        command = ['add_resourcegroup', '--resourcegroup', resourcegroup, '--hostname', hostname]
+        command = ["add_resourcegroup", "--resourcegroup", resourcegroup, "--hostname", hostname]
 
         self._engine.noouttest(command)
 
-        self.resource_groups[resourcegroup] = {'hostname': hostname}
+        self.resource_groups[resourcegroup] = {"hostname": hostname}
 
     def delete_resource_group(self, resourcegroup):
         if resourcegroup not in self.resource_groups:
-            raise ValueError('Resource Group {} does not exist.'.format(resourcegroup))
+            raise ValueError(f"Resource Group {resourcegroup} does not exist.")
 
-        hostname = self.resource_groups[resourcegroup]['hostname']
+        hostname = self.resource_groups[resourcegroup]["hostname"]
 
-        command = ['del_resourcegroup', '--resourcegroup', resourcegroup, '--hostname', hostname]
+        command = ["del_resourcegroup", "--resourcegroup", resourcegroup, "--hostname", hostname]
         self._engine.noouttest(command)
 
         del self.resource_groups[resourcegroup]
 
     def add_shared_service_name(self, sharedservicename, resourcegroup, fqdn, sa_aliases):
         if resourcegroup not in self.resource_groups:
-            raise ValueError('Resource Group {} does not exist.'.format(resourcegroup))
+            raise ValueError(f"Resource Group {resourcegroup} does not exist.")
         if sharedservicename in self.shared_service_names:
-            raise ValueError('Shared Service Name {} already exists.'.format(sharedservicename))
+            raise ValueError(f"Shared Service Name {sharedservicename} already exists.")
 
-        command = ['add_shared_service_name', '--name', sharedservicename, '--resourcegroup', resourcegroup,
-                   '--fqdn', fqdn, '--sa_aliases' if sa_aliases else '--nosa_aliases']
+        command = ["add_shared_service_name", "--name", sharedservicename, "--resourcegroup", resourcegroup,
+                   "--fqdn", fqdn, "--sa_aliases" if sa_aliases else "--nosa_aliases"]
 
         self._engine.noouttest(command)
 
-        self.shared_service_names[sharedservicename] = {'resourcegroup': resourcegroup, 'fqdn': fqdn,
-                                                        'sa_aliases': sa_aliases}
+        self.shared_service_names[sharedservicename] = {"resourcegroup": resourcegroup, "fqdn": fqdn,
+                                                        "sa_aliases": sa_aliases}
 
     def delete_shared_service_name(self, sharedservicename):
         if sharedservicename not in self.shared_service_names:
-            raise ValueError('Shared Service Name {} does not exist.'.format(sharedservicename))
+            raise ValueError(f"Shared Service Name {sharedservicename} does not exist.")
 
-        resourcegroup = self.shared_service_names[sharedservicename]['resourcegroup']
+        resourcegroup = self.shared_service_names[sharedservicename]["resourcegroup"]
 
-        command = ['del_shared_service_name', '--name', sharedservicename, '--resourcegroup', resourcegroup]
+        command = ["del_shared_service_name", "--name", sharedservicename, "--resourcegroup", resourcegroup]
         self._engine.noouttest(command)
 
         del self.shared_service_names[sharedservicename]
 
     def add_alias(self, fqdn, target, ttl=None):
         ib_expect_add_alias(fqdn, target, ttl=ttl)
-        command = ['add_alias', '--fqdn', fqdn,
-                   '--target', target,
-                   '--grn', self.grn]
+        command = ["add_alias", "--fqdn", fqdn,
+                   "--target", target,
+                   "--grn", self.grn]
         if ttl is not None:
-            command.append('--ttl')
+            command.append("--ttl")
             command.append(ttl)
         self._engine.noouttest(command)
-        self.aliases[fqdn] = {'target': target}
+        self.aliases[fqdn] = {"target": target}
         self._engine.ib_verify()
 
     def delete_alias(self, fqdn):
-        command = ['del_alias', '--fqdn', fqdn]
+        command = ["del_alias", "--fqdn", fqdn]
         self._engine.noouttest(command)
         del self.aliases[fqdn]
 
     def add_srvrecord(self, service, dns_domain, priority, weight, target,
                       port, ttl=None):
-        command = ['add_srv_record', '--service', service,
-                   '--protocol', 'tcp',
-                   '--dns_domain', dns_domain,
-                   '--priority', priority,
-                   '--weight', weight,
-                   '--target', target,
-                   '--port', port,
-                   '--grn', self.grn]
+        command = ["add_srv_record", "--service", service,
+                   "--protocol", "tcp",
+                   "--dns_domain", dns_domain,
+                   "--priority", priority,
+                   "--weight", weight,
+                   "--target", target,
+                   "--port", port,
+                   "--grn", self.grn]
         if ttl is not None:
-            command.append('--ttl')
+            command.append("--ttl")
             command.append(ttl)
         ib_expect_add_dns_srv_record(service=service, protocol="tcp", dns_domain=dns_domain, target=target, port=port,
                                      priority=priority, weight=weight, ttl=ttl,
                                      justification=self._engine.valid_justification)
         self._engine.noouttest(command + self._engine.valid_just_tcm)
         self._engine.ib_verify()
-        self.srvrecords[service+dns_domain] = {'service': service,
-                                               'dns_domain': dns_domain}
+        self.srvrecords[service+dns_domain] = {"service": service,
+                                               "dns_domain": dns_domain}
 
     def delete_srvrecord(self, service, dns_domain):
-        command = ['del_srv_record',
-                   '--service', service,
-                   '--protocol', 'tcp',
-                   '--dns_domain', dns_domain]
+        command = ["del_srv_record",
+                   "--service", service,
+                   "--protocol", "tcp",
+                   "--dns_domain", dns_domain]
         self._engine.noouttest(command + self._engine.valid_just_tcm)
         del self.srvrecords[service+dns_domain]
 
-    def add_network(self, name=None, location_type='hub', location=None):
+    def add_network(self, name=None, location_type="hub", location=None):
         name = self.get_or_create_name(name)
         if name in self.networks:
-            raise ValueError(f'Network {name} already exists.')
-        if location_type == 'hub':
+            raise ValueError(f"Network {name} already exists.")
+        if location_type == "hub":
             location = self._name
-        elif location_type == 'continent':
+        elif location_type == "continent":
             location = self.get_or_create_continent(location)
-        elif location_type == 'country':
+        elif location_type == "country":
             location = self.get_or_create_country(location)
-        elif location_type == 'city':
+        elif location_type == "city":
             location = self.get_or_create_city(location)
-        elif location_type == 'building':
+        elif location_type == "building":
             location = self.get_or_create_building(location)
-        elif location_type == 'desk':
+        elif location_type == "desk":
             location = self.get_or_create_desk(location)
         # If location and type not listed above, we will still try to use them.
         self.networks[name] = {
-            'net': self._engine.net.allocate_network(
+            "net": self._engine.net.allocate_network(
                 testsuite=self._engine, name=name,
-                prefixlength=25, network_type='unknown',
+                prefixlength=25, network_type="unknown",
                 loc_type=location_type, loc_name=location),
-            'allocated': set()
+            "allocated": set()
         }
         return name
 
@@ -482,10 +481,10 @@ class MockHub:
     def add_archetype(self, name=None, cluster_type=None):
         name = self.get_or_create_name(name)
         if name in self.archetypes:
-            raise ValueError(f'Archetype {name} already exists.')
-        command = ['add_archetype', '--archetype', name]
+            raise ValueError(f"Archetype {name} already exists.")
+        command = ["add_archetype", "--archetype", name]
         if cluster_type:
-            command += ['--cluster_type', cluster_type]
+            command += ["--cluster_type", cluster_type]
         self._engine.noouttest(command)
         self.archetypes.append(name)
         return name
@@ -493,11 +492,11 @@ class MockHub:
     def add_os(self, name, version, archetype):
         os = (name, version, archetype)
         if os in self.operating_systems:
-            raise ValueError('OS {} (version {}) for archetype {} already '
-                             'exists.'.format(name, version, archetype))
-        self._engine.noouttest(['add_os',
-                                '--osname', name, '--osversion', version,
-                                '--archetype', archetype])
+            raise ValueError(f"OS {name} (version {version}) for archetype {archetype} already "
+                             "exists.")
+        self._engine.noouttest(["add_os",
+                                "--osname", name, "--osversion", version,
+                                "--archetype", archetype])
         self.operating_systems.append(os)
         return os
 
@@ -505,26 +504,26 @@ class MockHub:
                         promote=True, grn=None):
         personality = (name, archetype)
         if personality in self.personalities:
-            raise ValueError('Personality {} (archetype: {}) already '
-                             'exists.'.format(name, archetype))
+            raise ValueError(f"Personality {name} (archetype: {archetype}) already "
+                             "exists.")
 
         if grn is None:
             grn = self.grn
 
-        command = ['add_personality',
-                   '--personality', name, '--archetype', archetype,
-                   '--grn', grn, '--config_override',
-                   '--host_environment', 'dev']
+        command = ["add_personality",
+                   "--personality", name, "--archetype", archetype,
+                   "--grn", grn, "--config_override",
+                   "--host_environment", "dev"]
         if cluster_required:
-            command.append('--cluster_required')
+            command.append("--cluster_required")
         self._engine.successtest(command)
         self._engine.check_plenary_exists(
             archetype,
-            'personality', f'{name}+next',
-            'config')
+            "personality", f"{name}+next",
+            "config")
         if promote:
-            self._engine.successtest(['promote', '--personality', name,
-                                      '--archetype', archetype])
+            self._engine.successtest(["promote", "--personality", name,
+                                      "--archetype", archetype])
         self.personalities.append(personality)
         return personality
 
@@ -533,16 +532,16 @@ class MockHub:
 
         cluster_names = map(lambda v: v[0], self.clusters)
         if name in cluster_names:
-            raise ValueError('Cluster {} (archetype: {}) already '
-                             'exists.'.format(name, archetype))
-        command = ['add_cluster', '--cluster', name,
-                   '--archetype', archetype,
-                   '--personality', personality,
-                   '--down_hosts_threshold', down_hosts_threshold,
-                   '--city', self.get_or_create_city(city),
-                   '--domain', self.default_domain]
+            raise ValueError(f"Cluster {name} (archetype: {archetype}) already "
+                             "exists.")
+        command = ["add_cluster", "--cluster", name,
+                   "--archetype", archetype,
+                   "--personality", personality,
+                   "--down_hosts_threshold", down_hosts_threshold,
+                   "--city", self.get_or_create_city(city),
+                   "--domain", self.default_domain]
         if build_status:
-            command.extend(['--buildstatus', build_status])
+            command.extend(["--buildstatus", build_status])
         self._engine.successtest(command)
         self.clusters.append([name, build_status])
         return name
@@ -550,107 +549,107 @@ class MockHub:
     def add_organisation(self, name=None):
         name = self.get_or_create_name(name)
         if name in self.organisations:
-            raise ValueError(f'Organisation {name} already exists.')
-        self._engine.noouttest(['add_organization', '--organization', name])
+            raise ValueError(f"Organisation {name} already exists.")
+        self._engine.noouttest(["add_organization", "--organization", name])
         self.organisations.append(name)
         return name
 
     def add_domain(self, name=None):
         name = self.get_or_create_name(name)
         if name in self.domains:
-            raise ValueError(f'Domain {name} already exists.')
-        self._engine.noouttest(['add_domain', '--domain', name]
+            raise ValueError(f"Domain {name} already exists.")
+        self._engine.noouttest(["add_domain", "--domain", name]
                                + self._engine.valid_just_tcm)
         self.domains.append(name)
         return name
 
     @staticmethod
     def random_name(length=8):
-        return ''.join(random.choice(string.ascii_lowercase) for _ in range(length))
+        return "".join(random.choice(string.ascii_lowercase) for _ in range(length))
 
     def _verify_deletion_with_search_hub(self, singular, container):
-        search_command = [f'search_{singular}', '--hub', self._name]
+        search_command = [f"search_{singular}", "--hub", self._name]
         out, _ = self._engine.successtest(search_command)
         found = set(out.split())
         for item in container:
             if item in found:
                 raise RuntimeError(
-                    'At least one {singular} has not been deleted ('
-                    '{singular}: {item})'.format(singular=singular, item=item))
+                    f"At least one {singular} has not been deleted ("
+                    f"{singular}: {item})")
 
     def delete_hosts(self, slow=False, verify=False):
         # Use slow=True to find hosts for deletion using 'aq search host
         # --hub ...' instead of deleting only hosts defined in self.hosts (i.e.
         # just those created using methods provided by this class).
-        search_command = ['search_host', '--hub', self._name]
+        search_command = ["search_host", "--hub", self._name]
         if slow:
             out, _ = self._engine.successtest(search_command)
             hosts = out.split()
             ips = []
             for host in hosts:
-                out, _ = self._engine.successtest(['show_fqdn', '--fqdn', host,
-                                                   '--format', 'csv'])
-                ips.append(out.split(',')[3])
+                out, _ = self._engine.successtest(["show_fqdn", "--fqdn", host,
+                                                   "--format", "csv"])
+                ips.append(out.split(",")[3])
         else:
             hosts = self.hosts.keys()
             ips = []
             for host in self.hosts:
-                machine = self.hosts[host]['machine']
-                net = self.networks[self.machines[machine]['network']]['net']
-                ips.append(net.usable[self.machines[machine]['net_index']])
+                machine = self.hosts[host]["machine"]
+                net = self.networks[self.machines[machine]["network"]]["net"]
+                ips.append(net.usable[self.machines[machine]["net_index"]])
         for i in range(len(hosts)):
-            self._engine.successtest(['change_status', '--hostname', list(hosts)[i],
-                                      '--buildstatus', 'decommissioned'])
+            self._engine.successtest(["change_status", "--hostname", list(hosts)[i],
+                                      "--buildstatus", "decommissioned"])
             ib_expect_del_address(list(hosts)[i], ips[i])
             self._engine.dsdb_expect_delete(ip=ips[i])
-            self._engine.successtest(['del_host', '--hostname', list(hosts)[i]])
+            self._engine.successtest(["del_host", "--hostname", list(hosts)[i]])
             self._engine.dsdb_verify()
             self._engine.ib_verify()
         # Verify if all the hosts in self.hosts have been deleted.
         if verify:
-            self._verify_deletion_with_search_hub('host', self.hosts)
+            self._verify_deletion_with_search_hub("host", self.hosts)
         self.hosts = {}
 
     def delete_machines(self, slow=False, verify=False):
         # Use slow=True to find machines for deletion using 'aq search machine
         # --hub ...' instead of deleting only machines defined in self.machines
         # (i.e. just those created using methods provided by this class).
-        search_command = ['search_machine', '--hub', self._name]
+        search_command = ["search_machine", "--hub", self._name]
         if slow:
             out, _ = self._engine.successtest(search_command)
             machines = out.split()
         else:
             machines = self.machines.keys()
         for machine in machines:
-            self._engine.successtest(['del_machine', '--machine', machine])
+            self._engine.successtest(["del_machine", "--machine", machine])
         # Verify if all the machines in self.machines have been deleted.
         if verify:
             if verify:
-                self._verify_deletion_with_search_hub('machine', self.machines)
+                self._verify_deletion_with_search_hub("machine", self.machines)
         self.machines = {}
 
     def _verify_deletion_with_show_all(self, singular, container, csv_index=1):
-        out, _ = self._engine.successtest([f'show_{singular}', '--all',
-                                           '--format', 'csv'])
-        found = {line.split(',')[csv_index]
-                 for line in out.split() if line.count(',') >= csv_index}
+        out, _ = self._engine.successtest([f"show_{singular}", "--all",
+                                           "--format", "csv"])
+        found = {line.split(",")[csv_index]
+                 for line in out.split() if line.count(",") >= csv_index}
         for item in container:
             if item in found:
                 raise RuntimeError(
-                    'At least one {singular} has not been deleted ({singular}:'
-                    ' {item})'.format(singular=singular, item=item))
+                    f"At least one {singular} has not been deleted ({singular}:"
+                    f" {item})")
 
     def _exists_according_to_show_all(self, singular, name, csv_index=1):
-        out, _ = self._engine.successtest([f'show_{singular}', '--all',
-                                           '--format', 'csv'])
-        found = {line.split(',')[csv_index]
-                 for line in out.split() if line.count(',') >= csv_index}
+        out, _ = self._engine.successtest([f"show_{singular}", "--all",
+                                           "--format", "csv"])
+        found = {line.split(",")[csv_index]
+                 for line in out.split() if line.count(",") >= csv_index}
         return name in found
 
     def _exists_according_to_show(self, singular, name=None, *args):
-        command = [f'show_{singular}']
+        command = [f"show_{singular}"]
         if name:
-            command.extend([f'--{singular}', name])
+            command.extend([f"--{singular}", name])
         if args:
             command.extend(list(args))
         try:
@@ -662,114 +661,113 @@ class MockHub:
 
     def delete_desks(self, verify=False):
         for desk in self.desks:
-            self._engine.successtest(['del_desk', '--desk', desk])
+            self._engine.successtest(["del_desk", "--desk", desk])
         if verify:
-            self._verify_deletion_with_show_all('desk', self.desks)
+            self._verify_deletion_with_show_all("desk", self.desks)
         self.desks = []
 
     def delete_buildings(self, verify=False):
         for building in self.buildings:
-            self._engine.dsdb_expect('delete_building_aq -building {}'.format(
-                building))
-            self._engine.successtest(['del_building', '--building', building])
+            self._engine.dsdb_expect(f"delete_building_aq -building {building}")
+            self._engine.successtest(["del_building", "--building", building])
             self._engine.dsdb_verify()
         if verify:
-            self._verify_deletion_with_show_all('building', self.buildings)
+            self._verify_deletion_with_show_all("building", self.buildings)
         self.buildings = []
 
     def delete_cities(self, verify=False):
         for city in self.cities:
-            self._engine.dsdb_expect(f'delete_city_aq -city {city}')
-            self._engine.successtest(['del_city', '--city', city,
-                                     '--force_if_orphaned'])
+            self._engine.dsdb_expect(f"delete_city_aq -city {city}")
+            self._engine.successtest(["del_city", "--city", city,
+                                     "--force_if_orphaned"])
             self._engine.dsdb_verify()
         if verify:
-            self._verify_deletion_with_show_all('city', self.cities)
+            self._verify_deletion_with_show_all("city", self.cities)
         self.cities = []
 
     def decomm_clusters(self):
         for cluster_name, cluster_status in self.clusters:
             if cluster_status != "decommissioned":
-                self._engine.successtest(['change_status',
-                                          '--cluster', cluster_name,
-                                          '--buildstatus', 'decommissioned'])
+                self._engine.successtest(["change_status",
+                                          "--cluster", cluster_name,
+                                          "--buildstatus", "decommissioned"])
 
     def delete_clusters(self, verify=False):
         cluster_names = map(lambda v: v[0], self.clusters)
         for cluster_name in cluster_names:
-            self._engine.successtest(['del_cluster',
-                                      '--cluster', cluster_name])
+            self._engine.successtest(["del_cluster",
+                                      "--cluster", cluster_name])
         if verify:
-            self._verify_deletion_with_show_all('cluster', cluster_names)
+            self._verify_deletion_with_show_all("cluster", cluster_names)
         self.clusters = []
 
     def delete_countries(self, verify=False):
         for country in self.countries:
-            self._engine.successtest(['del_country', '--country', country,
-                                      '--force_non_empty'])
+            self._engine.successtest(["del_country", "--country", country,
+                                      "--force_non_empty"])
         if verify:
-            self._verify_deletion_with_show_all('country', self.countries)
+            self._verify_deletion_with_show_all("country", self.countries)
         self.countries = []
 
     def delete_continents(self, verify=False):
         for continent in self.continents:
-            self._engine.successtest(['del_continent',
-                                      '--continent', continent])
+            self._engine.successtest(["del_continent",
+                                      "--continent", continent])
         if verify:
-            self._verify_deletion_with_show_all('continent', self.continents)
+            self._verify_deletion_with_show_all("continent", self.continents)
         self.continents = []
 
     def delete_archetypes(self, verify=False):
         for archetype in self.archetypes:
-            self._engine.successtest(['del_archetype',
-                                      '--archetype', archetype])
-            if verify and self._exists_according_to_show('archetype',
+            self._engine.successtest(["del_archetype",
+                                      "--archetype", archetype])
+            if verify and self._exists_according_to_show("archetype",
                                                          archetype):
-                raise RuntimeError('At least one archetype has not been '
-                                   'deleted ({}).'.format(archetype))
+                raise RuntimeError("At least one archetype has not been "
+                                   f"deleted ({archetype}).")
         self.archetypes = []
 
     def delete_operating_systems(self, verify=False):
         for os in self.operating_systems:
             osname, osversion, archetype = os
-            arguments = ['--osname', osname, '--osversion', osversion,
-                         '--archetype', archetype]
-            self._engine.successtest(['del_os'] + arguments)
+            arguments = ["--osname", osname, "--osversion", osversion,
+                         "--archetype", archetype]
+            self._engine.successtest(["del_os"] + arguments)
             if verify:
-                self._exists_according_to_show('os', None, arguments)
+                self._exists_according_to_show("os", None, arguments)
                 raise RuntimeError(
-                    f'At least one OS has not been deleted ({os}).')
+                    f"At least one OS has not been deleted ({os}).")
         self.operating_systems = []
 
     def delete_personalities(self, verify=False):
         for personality in self.personalities:
             name, archetype = personality
-            arguments = ['--personality', name,
-                         '--archetype', archetype]
-            self._engine.successtest(['del_personality'] + arguments)
+            arguments = ["--personality", name,
+                         "--archetype", archetype]
+            self._engine.successtest(["del_personality"] + arguments)
             if verify:
-                self._exists_according_to_show('personality', None, arguments)
-                raise RuntimeError('At least one personality has not been '
-                                   'deleted ({}).'.format(personality))
+                self._exists_according_to_show("personality", None, arguments)
+                raise RuntimeError("At least one personality has not been "
+                                   f"deleted ({personality}).")
         self.personalities = []
 
     def delete_domains(self, verify=False):
         for domain in self.domains:
-            self._engine.successtest(['update_domain', '--domain', domain,
-                                      '--archived']
+            self._engine.successtest(["update_domain", "--domain", domain,
+                                      "--archived"]
                                      + self._engine.valid_just_tcm)
-            self._engine.successtest(['del_domain', '--domain', domain]
+            self._engine.successtest(["del_domain", "--domain", domain]
                                      + self._engine.valid_just_tcm)
         if verify:
-            self._verify_deletion_with_show_all('domain', self.domains)
+            self._verify_deletion_with_show_all("domain", self.domains)
         self.domains = []
 
     def delete_organisations(self, verify=False):
         for organisation in self.organisations:
-            self._engine.successtest(['del_organization',
-                                      '--organization', organisation])
+            self._engine.successtest(["del_organization",
+                                      "--organization", organisation])
         if verify:
-            self._verify_deletion_with_show_all('organization',
+            self._verify_deletion_with_show_all("organization",
                                                 self.organisations)
         self.organisations = []
 
@@ -778,31 +776,31 @@ class MockHub:
         current = self.get_grns()
         to_delete = set(current) - set(self.preexisting_grns)
         for grn in to_delete:
-            self._engine.successtest(['del_grn', '--grn', grn])
+            self._engine.successtest(["del_grn", "--grn", grn])
         # Restore preexisting if necessary.
         current = self.get_grns()
-        current_by_eid = {current[grn]['eon_id']: grn for grn in current}
+        current_by_eid = {current[grn]["eon_id"]: grn for grn in current}
         for grn in self.preexisting_grns:
-            eon_id = self.preexisting_grns[grn]['eon_id']
-            disabled = self.preexisting_grns[grn]['disabled']
+            eon_id = self.preexisting_grns[grn]["eon_id"]
+            disabled = self.preexisting_grns[grn]["disabled"]
             if grn not in current:
-                command = ['add_grn', '--grn', grn, '--eon_id', eon_id]
+                command = ["add_grn", "--grn", grn, "--eon_id", eon_id]
                 if disabled:
-                    command.append('--disabled')
+                    command.append("--disabled")
             else:
-                command = ['update_grn', '--grn', grn]
-                if eon_id != current[grn]['eon_id']:
-                    command.extend(['--eon_id', eon_id])
-                if disabled is not current[grn]['disabled']:
-                    command.append('--disabled' if disabled
-                                   else '--nodisabled')
+                command = ["update_grn", "--grn", grn]
+                if eon_id != current[grn]["eon_id"]:
+                    command.extend(["--eon_id", eon_id])
+                if disabled is not current[grn]["disabled"]:
+                    command.append("--disabled" if disabled
+                                   else "--nodisabled")
             if len(command) > 3:
                 # Resolve EON ID conflicts.
                 if eon_id in current_by_eid and grn != current_by_eid[eon_id]:
                     temp_eid = str(max(map(int, current_by_eid)) + 1)
                     self._engine.successtest(
-                        ['update_grn', '--grn', current_by_eid[eon_id],
-                         '--eon_id', temp_eid])
+                        ["update_grn", "--grn", current_by_eid[eon_id],
+                         "--eon_id", temp_eid])
                 # Finally, restore the GRN state.
                 self._engine.successtest(command)
         self.preexisting_grns = {}
@@ -849,8 +847,8 @@ class MockHub:
         self.delete_domains(verify)
         # Delete SRV Records
         for k in list(self.srvrecords):
-            self.delete_srvrecord(self.srvrecords[k]['service'],
-                                  self.srvrecords[k]['dns_domain'])
+            self.delete_srvrecord(self.srvrecords[k]["service"],
+                                  self.srvrecords[k]["dns_domain"])
         # Delete Aliases
         for fqdn in list(self.aliases):
             ib_expect_del_alias(fqdn)
@@ -859,53 +857,53 @@ class MockHub:
         # Cannot change a dict while iterating on it
         address_copy = self.addresses.copy()
         for fqdn, dns_environment in address_copy.keys():
-            self.delete_address(fqdn, self.addresses[fqdn, dns_environment]['ip'], dns_environment=dns_environment)
+            self.delete_address(fqdn, self.addresses[fqdn, dns_environment]["ip"], dns_environment=dns_environment)
         # Delete DNS domains.
         for dns_domain in self.dns_domains[:]:
             self.delete_dns_domain(dns_domain)
         if verify:
             self._verify_deletion_with_show_all(
-                'dns_domain', self.dns_domains, 0)
+                "dns_domain", self.dns_domains, 0)
         # Delete networks.
         for net in list(self.networks):
             self.delete_network(net)
         if verify:
             self._verify_deletion_with_show_all(
-                'network', self.networks, 0)
+                "network", self.networks, 0)
         # Delete new GRNs, restore preexisting GRNs / EON IDs where necessary.
         self.restore_original_grn_set()
         # Last but not least, delete the hub itself, then all the organisations
         # created by the hub, including the organisation to which the hub
         # belongs if the organisation has been created by MockHub.
         if self._name is not None:
-            self._engine.noouttest(['del_hub', '--hub', self._name])
+            self._engine.noouttest(["del_hub", "--hub", self._name])
             if verify:
                 self._verify_deletion_with_show_all(
-                    'hub', [self._name], 1)
+                    "hub", [self._name], 1)
             self._name = None
         self.delete_organisations(verify)
         self._engine.ib_verify()
 
     def create(self, name=None):
         if self._name is not None:
-            raise ValueError(f'Hub {self._name} already exists.')
+            raise ValueError(f"Hub {self._name} already exists.")
         if name is None:
             name = self.random_name()
         # Add the default organisation if it does not exist.
-        if not self._exists_according_to_show('organization',
+        if not self._exists_according_to_show("organization",
                                               self.default_organisation):
             self.add_organisation(self.default_organisation)
-        command = ['add_hub', '--hub', name,
-                   '--organization', self.default_organisation]
+        command = ["add_hub", "--hub", name,
+                   "--organization", self.default_organisation]
         self._engine.noouttest(command)
         self._name = name
 
     def add_continent(self, name=None):
         name = self.get_or_create_name(name)
         if name in self.continents:
-            raise ValueError(f'Continent {name} already exists.')
-        self._engine.noouttest(['add_continent', '--continent', name,
-                               '--hub', self._name])
+            raise ValueError(f"Continent {name} already exists.")
+        self._engine.noouttest(["add_continent", "--continent", name,
+                               "--hub", self._name])
         self.continents.append(name)
         return name
 
@@ -968,10 +966,10 @@ class MockHub:
     def add_country(self, name=None, continent=None):
         name = self.get_or_create_name(name)
         if name in self.countries:
-            raise ValueError(f'Country {name} already exists.')
+            raise ValueError(f"Country {name} already exists.")
         continent = self.get_or_create_continent(continent)
-        self._engine.noouttest(['add_country', '--country', name,
-                               '--continent', continent])
+        self._engine.noouttest(["add_country", "--country", name,
+                               "--continent", continent])
         self.countries.append(name)
         return name
 
@@ -985,15 +983,14 @@ class MockHub:
     def add_city(self, name=None, country=None):
         name = self.get_or_create_name(name)
         if name in self.cities:
-            raise ValueError(f'City {name} already exists.')
+            raise ValueError(f"City {name} already exists.")
         country = self.get_or_create_country(country)
-        self._engine.dsdb_expect('add_city_aq -city_symbol {name} '
-                                 '-country_symbol {country} '
-                                 '-city_name {name}'.format(name=name,
-                                                            country=country))
-        self._engine.noouttest(['add_city', '--city', name, '--fullname', name,
-                                '--timezone', 'Europe/Warsaw',
-                                '--country', country])
+        self._engine.dsdb_expect(f"add_city_aq -city_symbol {name} "
+                                 f"-country_symbol {country} "
+                                 f"-city_name {name}")
+        self._engine.noouttest(["add_city", "--city", name, "--fullname", name,
+                                "--timezone", "Europe/Warsaw",
+                                "--country", country])
         self._engine.dsdb_verify()
         self.cities.append(name)
         return name
@@ -1008,15 +1005,15 @@ class MockHub:
     def add_building(self, name=None, city=None):
         name = self.get_or_create_name(name)
         if name in self.buildings:
-            raise ValueError(f'Building {name} already exists.')
-        address = f'{name}address'
+            raise ValueError(f"Building {name} already exists.")
+        address = f"{name}address"
         city = self.get_or_create_city(city)
         self._engine.dsdb_expect(
-            'add_building_aq -building_name {name} -city {city} -building_addr'
-            ' {address}'.format(name=name, city=city, address=address))
-        self._engine.noouttest(['add_building', '--building', name,
-                                '--address', f'{address}',
-                                '--city', city])
+            f"add_building_aq -building_name {name} -city {city} -building_addr"
+            f" {address}")
+        self._engine.noouttest(["add_building", "--building", name,
+                                "--address", f"{address}",
+                                "--city", city])
         self._engine.dsdb_verify()
         self.buildings.append(name)
         return name
@@ -1025,19 +1022,19 @@ class MockHub:
         row = self.get_or_create_name(row, length=4)
         column = self.get_or_create_name(column, length=4)
         building = self.get_or_create_building(building)
-        rack = self._engine.commandtest(['add_rack', '--building', building,
-                                         '--row', row,
-                                         '--column', column]).rstrip()
-        self.racks[rack] = {'row': row, 'column': column, 'building': building}
+        rack = self._engine.commandtest(["add_rack", "--building", building,
+                                         "--row", row,
+                                         "--column", column]).rstrip()
+        self.racks[rack] = {"row": row, "column": column, "building": building}
         return rack
 
     def delete_rack(self, rack):
-        self._engine.noouttest(['del_rack', '--rack', rack])
+        self._engine.noouttest(["del_rack", "--rack", rack])
         del self.racks[rack]
 
     def delete_racks(self):
         for rack in self.racks:
-            self._engine.noouttest(['del_rack', '--rack', rack])
+            self._engine.noouttest(["del_rack", "--rack", rack])
         self.racks = {}
 
     def add_buildings(self, count=1, city=None):
@@ -1051,28 +1048,28 @@ class MockHub:
         row = self.get_or_create_name(row, length=4)
         column = self.get_or_create_name(column, length=4)
         building = self.get_or_create_building(building)
-        rack = self._engine.commandtest(['add_rack', '--building', building,
-                                         '--row', row,
-                                         '--column', column]).rstrip()
-        self.racks[rack] = {'row': row, 'column': column, 'building': building}
+        rack = self._engine.commandtest(["add_rack", "--building", building,
+                                         "--row", row,
+                                         "--column", column]).rstrip()
+        self.racks[rack] = {"row": row, "column": column, "building": building}
         return rack
 
     def delete_rack(self, rack):
-        self._engine.noouttest(['del_rack', '--rack', rack])
+        self._engine.noouttest(["del_rack", "--rack", rack])
         del self.racks[rack]
 
     def delete_racks(self):
         for rack in self.racks:
-            self._engine.noouttest(['del_rack', '--rack', rack])
+            self._engine.noouttest(["del_rack", "--rack", rack])
         self.racks = {}
 
     def add_desk(self, name=None, building=None):
         name = self.get_or_create_name(name)
         if name in self.desks:
-            raise ValueError(f'Desk {name} already exists.')
+            raise ValueError(f"Desk {name} already exists.")
         building = self.get_or_create_building(building)
-        self._engine.noouttest(['add_desk', '--desk', name,
-                               '--building', building])
+        self._engine.noouttest(["add_desk", "--desk", name,
+                               "--building", building])
         self.desks.append(name)
         return name
 
@@ -1083,44 +1080,43 @@ class MockHub:
             desks.append(self.add_desk(building=building))
         return desks
 
-    def add_machine(self, name=None, desk=None, building=None, model='dl360g9',
+    def add_machine(self, name=None, desk=None, building=None, model="dl360g9",
                     network=None, net_index=None, net_index_limit=10**5):
         name = self.get_or_create_name(name)
         if name in self.machines:
-            raise ValueError(f'Machine {name} already exists.')
+            raise ValueError(f"Machine {name} already exists.")
         # The following does create a new desk in the given building but does
         # not ensure that a pre-existing desk is contained in the given
         # building.
         desk = self.get_or_create_desk(desk, building=building)
         network_kwargs = {}
         if building:
-            network_kwargs = {'location_type': 'building',
-                              'location': building}
+            network_kwargs = {"location_type": "building",
+                              "location": building}
         network = self.get_or_create_network(network, **network_kwargs)
         net = self.networks[network]
         if net_index is None:
             # Find next available network index.
             for i in range(net_index_limit):
-                if i not in net['allocated']:
+                if i not in net["allocated"]:
                     net_index = i
                     # Mark index as allocated and exit.
-                    net['allocated'].add(net_index)
+                    net["allocated"].add(net_index)
                     break
             else:
                 raise ValueError(
-                    'Network index limit of {limit} reached.  Could not find '
-                    'unallocated network index on network {network}.'.format(
-                        limit=net_index_limit, network=network))
+                    f"Network index limit of {net_index_limit} reached.  Could not find "
+                    f"unallocated network index on network {network}.")
         # Get MAC or raise an error if found net index out of range.
-        eth0_mac = net['net'].usable[net_index].mac
+        eth0_mac = net["net"].usable[net_index].mac
         if model == "dl360g9":
             self._engine.create_machine_dl360g9(name, desk=desk,
                                                 eth0_mac=eth0_mac)
         elif model == "hs21":
             self._engine.create_machine_hs21(name, desk=desk,
                                              eth0_mac=eth0_mac)
-        self.machines[name] = {'network': network, 'net_index': net_index,
-                               'desk': desk, 'building': building}
+        self.machines[name] = {"network": network, "net_index": net_index,
+                               "desk": desk, "building": building}
         return name
 
     def add_machines(self, count=1, desk=None, building=None, network=None):
@@ -1133,15 +1129,15 @@ class MockHub:
         desk = self.get_or_create_desk(desk, building=building)
         network_kwargs = {}
         if building:
-            network_kwargs = {'location_type': 'building',
-                              'location': building}
+            network_kwargs = {"location_type": "building",
+                              "location": building}
         network = self.get_or_create_network(network, **network_kwargs)
         machines = []
         for i in range(count):
             machines.append(self.add_machine(desk=desk, network=network))
         return machines
 
-    def add_host(self, hostname=None, model='dl360g9',
+    def add_host(self, hostname=None, model="dl360g9",
                  prefix=None, dns_domain=None,
                  machine=None, building=None, desk=None,
                  archetype=None, personality=None, grn=None,
@@ -1160,16 +1156,16 @@ class MockHub:
 
         if hostname and (prefix or dns_domain):
             raise ValueError(
-                'Prefix or DNS domain cannot be used when hostname ({}) '
-                'already given.'.format(hostname))
+                f"Prefix or DNS domain cannot be used when hostname ({hostname}) "
+                "already given.")
         if not (hostname or prefix):
             name = prefix = self.random_name()
         elif hostname:
-            name = hostname.lower().strip().split('.')[0]
+            name = hostname.lower().strip().split(".")[0]
         else:
             name = prefix.lower().strip()
         if name in self.hosts:
-            raise ValueError(f'Host {name} already exists.')
+            raise ValueError(f"Host {name} already exists.")
 
         if machine:
             machine = self.get_or_create_machine(machine,
@@ -1177,60 +1173,60 @@ class MockHub:
         else:
             machine = self.add_machine(desk=desk, building=building,
                                        model=model)
-        if building and building != self.machines[machine]['building']:
+        if building and building != self.machines[machine]["building"]:
             raise ValueError(
-                'Machine {machine} is located in building {machine_building} '
-                'instead of building {requested_building}.'.format(
+                "Machine {machine} is located in building {machine_building} "
+                "instead of building {requested_building}.".format(
                     machine=machine,
-                    machine_building=self.machines[machine]['building'],
+                    machine_building=self.machines[machine]["building"],
                     requested_building=building))
-        if desk and desk != self.machines[machine]['desk']:
+        if desk and desk != self.machines[machine]["desk"]:
             raise ValueError(
-                'Machine {machine} is assigned to desk {machine_desk} '
-                'instead of desk {requested_desk}.'.format(
+                "Machine {machine} is assigned to desk {machine_desk} "
+                "instead of desk {requested_desk}.".format(
                     machine=machine,
-                    machine_desk=self.machines[machine]['desk'],
+                    machine_desk=self.machines[machine]["desk"],
                     requested_desk=desk))
 
-        net = self.networks[self.machines[machine]['network']]['net']
-        ip = net.usable[self.machines[machine]['net_index']]
-        mac = net.usable[self.machines[machine]['net_index']].mac
-        command = ['add_host', '--domain', self.default_domain,
-                   '--archetype', archetype,
-                   '--personality', personality,
-                   '--osname', self.default_os,
-                   '--osversion', self.default_os_version,
-                   '--ip', ip, '--machine', machine]
+        net = self.networks[self.machines[machine]["network"]]["net"]
+        ip = net.usable[self.machines[machine]["net_index"]]
+        mac = net.usable[self.machines[machine]["net_index"]].mac
+        command = ["add_host", "--domain", self.default_domain,
+                   "--archetype", archetype,
+                   "--personality", personality,
+                   "--osname", self.default_os,
+                   "--osversion", self.default_os_version,
+                   "--ip", ip, "--machine", machine]
         if hostname:
-            command.extend(['--hostname', hostname])
+            command.extend(["--hostname", hostname])
         else:
-            command.extend(['--prefix', prefix])
+            command.extend(["--prefix", prefix])
             # If no hostname, building, desk and dns_domain given, attempt to
             # create the host in self.default_dns_domain.
             if not (building or desk or dns_domain):
                 dns_domain = self.default_dns_domain
             if dns_domain:
-                command.extend(['--dns_domain', dns_domain])
+                command.extend(["--dns_domain", dns_domain])
             else:
                 dns_domain = self.get_default_dns_domain(self.get_building(
                     machine))
             if not dns_domain:
                 raise ValueError(
-                    'Could not find default DNS domain while attempting to add'
-                    ' a host with prefix {}.'.format(prefix))
+                    "Could not find default DNS domain while attempting to add"
+                    f" a host with prefix {prefix}.")
             hostname = self.get_next_available_hostname(prefix, dns_domain)
         if grn:
-            command.extend(['--grn', grn])
+            command.extend(["--grn", grn])
         if build_status:
-            command.extend(['--buildstatus', build_status])
+            command.extend(["--buildstatus", build_status])
         command.extend(extra_arguments or [])
-        self._engine.dsdb_expect_add(hostname, ip, 'eth0', mac)
+        self._engine.dsdb_expect_add(hostname, ip, "eth0", mac)
         ib_expect_add_address(hostname, ip)
         self._engine.successtest(command)
         self._engine.dsdb_verify()
         self._engine.ib_verify()
-        self.hosts[hostname] = {'machine': machine, 'dns_domain': dns_domain,
-                                'building': building, 'desk': desk}
+        self.hosts[hostname] = {"machine": machine, "dns_domain": dns_domain,
+                                "building": building, "desk": desk}
         return hostname
 
     def add_hosts(self, count=1, prefix=None, dns_domain=None,
@@ -1278,53 +1274,53 @@ class MockHub:
 
     def _initialise_dependencies(self):
         # Add the default domain if it does not exist.
-        if not self._exists_according_to_show('domain', self.default_domain):
+        if not self._exists_according_to_show("domain", self.default_domain):
             self.add_domain(self.default_domain)
         # Add the default archetype if it does not exist.
-        if not self._exists_according_to_show('archetype',
+        if not self._exists_according_to_show("archetype",
                                               self.default_archetype):
             self.add_archetype(self.default_archetype)
         # Add the default cluster archetype if it does not exist.
-        if not self._exists_according_to_show('archetype',
+        if not self._exists_according_to_show("archetype",
                                               self.default_cluster_archetype):
             self.add_archetype(self.default_cluster_archetype,
                                cluster_type=self.default_cluster_type)
         # Add the default grn change unrestricted archetype if it doesn't exist
         if not self._exists_according_to_show(
-                        'archetype',
+                        "archetype",
                         self.default_grn_change_unrestricted_archetype):
             self.add_archetype(self.default_grn_change_unrestricted_archetype)
 
         # Add the default OS if it does not exist.
         for archetype in self.archetypes:
-            os = ['--osname', self.default_os,
-                  '--osversion', self.default_os_version,
-                  '--archetype', archetype]
-            if not self._exists_according_to_show('os', None, *os):
+            os = ["--osname", self.default_os,
+                  "--osversion", self.default_os_version,
+                  "--archetype", archetype]
+            if not self._exists_according_to_show("os", None, *os):
                 self.add_os(self.default_os, self.default_os_version,
                             archetype)
         # Add the default personality for the default archetype if it does not
         # exist.
-        personality = ['--personality', self.default_personality,
-                       '--archetype', self.default_archetype]
+        personality = ["--personality", self.default_personality,
+                       "--archetype", self.default_archetype]
         if not self._exists_according_to_show(
-                'personality', None, *personality):
+                "personality", None, *personality):
             self.add_personality(self.default_personality,
                                  self.default_archetype)
 
         # Also add a cluster personality
-        personality = ['--personality', self.default_cluster_personality,
-                       '--archetype', self.default_cluster_archetype]
+        personality = ["--personality", self.default_cluster_personality,
+                       "--archetype", self.default_cluster_archetype]
         if not self._exists_according_to_show(
-                'personality', None, *personality):
+                "personality", None, *personality):
             self.add_personality(self.default_cluster_personality,
                                  self.default_cluster_archetype,
                                  cluster_required=True)
 
         # Add the default cluster
-        cluster = ['--cluster', self.default_cluster]
+        cluster = ["--cluster", self.default_cluster]
         if not self._exists_according_to_show(
-                'cluster', None, *cluster):
+                "cluster", None, *cluster):
             self.add_cluster(self.default_cluster,
                              self.default_cluster_archetype,
                              self.default_cluster_personality,
