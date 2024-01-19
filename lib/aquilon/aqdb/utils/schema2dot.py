@@ -26,7 +26,7 @@ else:
     ms.modulecmd.load('fsf/libtool/1.5.18')
     os.environ["PATH"] += os.pathsep+' /ms/dist/fsf/PROJ/graphviz/2.38.0/bin'
 
-    ms.version.addpkg('pyparsing', '1.5.5')  # pydot relies on pyparsing
+    ms.version.addpkg('pyparsing', '2.0.3')  # pydot relies on pyparsing
     ms.version.addpkg('pydot', '1.0.28')
 
 import pydot
