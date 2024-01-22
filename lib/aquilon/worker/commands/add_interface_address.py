@@ -198,7 +198,7 @@ class CommandAddInterfaceAddress(BrokerCommand):
                 dsdb_runner.update_host(dbhw_ent, oldinfo)
                 dsdb_runner.commit_or_rollback("Could not add host to DSDB")
 
-            ib_services = IBServices(logger, **kwargs)
+            ib_services = IBServices(logger, justification=justification, **kwargs)
             if newly_created and ib_services.feature_enabled("interface_address"):
                 try:
                     ib_services.add_a_ptr(

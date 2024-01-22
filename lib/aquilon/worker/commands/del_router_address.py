@@ -74,7 +74,7 @@ class CommandDelRouterAddress(BrokerCommand):
         plenaries.add(dbnetwork)
 
         with plenaries.transaction():
-            ib_services = IBServices(logger, **arguments)
+            ib_services = IBServices(logger, justification=justification, **arguments)
             if ib_services.feature_enabled("router_address"):
                 # If FQDN not passed then look it up from the DNS records associated with the router
                 if not fqdn:

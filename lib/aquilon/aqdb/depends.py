@@ -22,7 +22,6 @@ except ImportError:
     pass
 else:
     ms.version.addpkg('sqlalchemy', '1.3.23')
-    ms.version.addpkg('cx_Oracle', '7.2.3-12.2.0.1.0-py37')
     ms.version.addpkg('psycopg2', '2.8.5-11.4.0-py37')
     ms.version.addpkg('ms.modulecmd', '1.1.1')
     ms.version.addpkg('ipaddress', '1.0.23')

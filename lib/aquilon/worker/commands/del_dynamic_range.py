@@ -77,9 +77,9 @@ class CommandDelDynamicRange(BrokerCommand):
             raise ArgumentError("The range contains non-dynamic systems:\n" +
                                 "\n".join(format(i, "a") for i in invalid))
 
-        self.del_dynamic_stubs(session, logger, dbstubs, exporter, **arguments)
+        self.del_dynamic_stubs(session, logger, dbstubs, exporter, justification, **arguments)
 
-    def del_dynamic_stubs(self, session, logger, dbstubs, exporter, **arguments):
+    def del_dynamic_stubs(self, session, logger, dbstubs, exporter, justification, **arguments):
         range_class = dbstubs[0].range_class
 
         for stub in dbstubs:
@@ -90,7 +90,7 @@ class CommandDelDynamicRange(BrokerCommand):
         # A second loop, so we only send data to other systems once the AQ change is
         # confirmed to be successful.
         dsdb_runner = DSDBRunner(logger=logger)
-        ib_services = IBServices(logger, **arguments)
+        ib_services = IBServices(logger, justification=justification, **arguments)
         for stub in dbstubs:
             fqdn = str(stub.fqdn)
             dsdb_runner.delete_host_details(fqdn, stub.ip)

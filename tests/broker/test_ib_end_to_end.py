@@ -314,9 +314,14 @@ class TestIBEndToEnd(TestBrokerCommand):
         dns_checker.notfound(test_alias2_fqdn)
 
         # Final clean up
+
+        # delete in ib first
+        self.ib_services.delete_a_ptr(test_ib_a_fqdn, "2.3.4.4")
         self.dsdb_expect_delete('2.3.4.4')
+        # and check that deleting in aq succeeds
         self.noouttest(['del_address', '--fqdn', test_ib_a_fqdn] + self.valid_just_tcm)
         dns_checker.notfound(test_ib_a_fqdn)
+
         self.dsdb_expect_delete('2.3.4.5')
         self.noouttest(['del_address', '--fqdn', test_ib_a_fqdn2] + self.valid_just_tcm)
         self.dsdb_verify()

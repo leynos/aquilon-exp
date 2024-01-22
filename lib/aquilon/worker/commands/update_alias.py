@@ -142,7 +142,7 @@ class CommandUpdateAlias(BrokerCommand):
                                      old_comments)
             dsdb_runner.commit_or_rollback("Could not update alias in DSDB")
 
-        ib_services = IBServices(logger, **arguments)
+        ib_services = IBServices(logger, justification=justification, **arguments)
         if ib_services.feature_enabled("alias"):
             try:
                 if ib_services.assert_dns_environment(dbalias.fqdn.dns_environment.name) and \

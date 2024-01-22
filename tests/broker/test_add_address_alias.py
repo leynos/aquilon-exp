@@ -42,7 +42,8 @@ class TestAddAddressAlias(TestBrokerCommand):
         self.matchoutput(out, "Not all mandatory options specified!", command)
 
     def test_101_add_addralias(self):
-        ib_expect_add_address("addralias1.aqd-unittest.ms.com", "4.2.1.18", create_ptr=False)
+        ib_expect_add_address("addralias1.aqd-unittest.ms.com", "4.2.1.18", create_ptr=False,
+                              justification=self.just_sn)
         command = ["add", "address", "alias",
                    "--fqdn", "addralias1.aqd-unittest.ms.com",
                    "--target", "arecord13.aqd-unittest.ms.com"] \
@@ -90,7 +91,8 @@ class TestAddAddressAlias(TestBrokerCommand):
         self.assertEqual(json.loads(out), expected)
 
     def test_200_add_new_addralias_with_comment_and_ttl(self):
-        ib_expect_add_address("addralias1.aqd-unittest.ms.com", "4.2.1.19", ttl=1800, create_ptr=False)
+        ib_expect_add_address("addralias1.aqd-unittest.ms.com", "4.2.1.19", ttl=1800, create_ptr=False,
+                              justification=self.just_sn)
         command = ["add", "address", "alias",
                    "--fqdn", "addralias1.aqd-unittest.ms.com",
                    "--target", "arecord14.aqd-unittest.ms.com",
@@ -102,7 +104,8 @@ class TestAddAddressAlias(TestBrokerCommand):
         self.ib_verify()
 
     def test_200_add_new_addralias_with_comment2(self):
-        ib_expect_add_address("addralias1.aqd-unittest.ms.com", "4.2.1.20", create_ptr=False)
+        ib_expect_add_address("addralias1.aqd-unittest.ms.com", "4.2.1.20", create_ptr=False,
+                              justification=self.just_sn)
         command = ["add", "address", "alias",
                    "--fqdn", "addralias1.aqd-unittest.ms.com",
                    "--target", "arecord15.aqd-unittest.ms.com",
@@ -301,7 +304,8 @@ class TestAddAddressAlias(TestBrokerCommand):
         self.assertEqual(json.loads(out), expected)
 
     def test_800_grn(self):
-        ib_expect_add_address("addralias3.aqd-unittest.ms.com", "4.2.1.18", create_ptr=False)
+        ib_expect_add_address("addralias3.aqd-unittest.ms.com", "4.2.1.18", create_ptr=False,
+                              justification=self.just_sn)
         command = ["add", "address", "alias",
                    "--fqdn", "addralias3.aqd-unittest.ms.com",
                    "--target", "arecord13.aqd-unittest.ms.com",
@@ -320,7 +324,8 @@ class TestAddAddressAlias(TestBrokerCommand):
                          command)
 
     def test_810_implicit_grn(self):
-        ib_expect_add_address("addralias3.aqd-unittest.ms.com", "4.2.1.19", create_ptr=False)
+        ib_expect_add_address("addralias3.aqd-unittest.ms.com", "4.2.1.19", create_ptr=False,
+                              justification=self.just_sn)
         command = ["add", "address", "alias",
                    "--fqdn", "addralias3.aqd-unittest.ms.com",
                    "--target", "arecord14.aqd-unittest.ms.com"] \
@@ -338,7 +343,8 @@ class TestAddAddressAlias(TestBrokerCommand):
                          command)
 
     def test_820_eon_id(self):
-        ib_expect_add_address("addralias4.aqd-unittest.ms.com", "4.2.1.18", create_ptr=False)
+        ib_expect_add_address("addralias4.aqd-unittest.ms.com", "4.2.1.18", create_ptr=False,
+                              justification=self.just_sn)
         command = ["add", "address", "alias",
                    "--fqdn", "addralias4.aqd-unittest.ms.com",
                    "--target", "arecord13.aqd-unittest.ms.com",
@@ -432,9 +438,11 @@ class TestAddAddressAlias(TestBrokerCommand):
                        '--dns_environment', dns_environment] + self.valid_just_tcm
 
             if dns_environment == 'internal':
-                ib_expect_add_address("address-alias-fqdn.test-infoblox.cc", "10.25.0.1", create_ptr=False, fail=True)
+                ib_expect_add_address("address-alias-fqdn.test-infoblox.cc", "10.25.0.1", create_ptr=False,
+                                      justification=self.valid_justification, fail=True)
                 self.iberrortest(command)
-                ib_expect_add_address("address-alias-fqdn.test-infoblox.cc", "10.25.0.1", create_ptr=False)
+                ib_expect_add_address("address-alias-fqdn.test-infoblox.cc", "10.25.0.1", create_ptr=False,
+                                      justification=self.valid_justification)
             self.noouttest(command)
 
             command = ['update_address_alias',
@@ -443,10 +451,10 @@ class TestAddAddressAlias(TestBrokerCommand):
                        '--dns_environment', dns_environment] + self.valid_just_tcm
             if dns_environment == 'internal':
                 ib_expect_update_address("address-alias-fqdn.test-infoblox.cc", "10.25.0.1", new_ttl=100,
-                                         update_ptr=False, fail=True)
+                                         update_ptr=False, justification=self.valid_justification, fail=True)
                 self.iberrortest(command)
                 ib_expect_update_address("address-alias-fqdn.test-infoblox.cc", "10.25.0.1", new_ttl=100,
-                                         update_ptr=False)
+                                         update_ptr=False, justification=self.valid_justification)
             self.noouttest(command)
 
             command = ['update_address_alias',
@@ -459,9 +467,11 @@ class TestAddAddressAlias(TestBrokerCommand):
                        '--fqdn', 'address-alias-fqdn.test-infoblox.cc',
                        '--dns_environment', dns_environment] + self.valid_just_tcm
             if dns_environment == 'internal':
-                ib_expect_del_address("address-alias-fqdn.test-infoblox.cc", "10.25.0.1", delete_ptr=False, fail=True)
+                ib_expect_del_address("address-alias-fqdn.test-infoblox.cc", "10.25.0.1", delete_ptr=False,
+                                      justification=self.valid_justification, fail=True)
                 self.iberrortest(command)
-                ib_expect_del_address("address-alias-fqdn.test-infoblox.cc", "10.25.0.1", delete_ptr=False)
+                ib_expect_del_address("address-alias-fqdn.test-infoblox.cc", "10.25.0.1", delete_ptr=False,
+                                      justification=self.valid_justification)
             self.noouttest(command)
 
             self.dsdb_verify(empty=True)

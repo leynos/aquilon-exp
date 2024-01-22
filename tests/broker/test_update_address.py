@@ -34,9 +34,8 @@ class TestUpdateAddress(TestBrokerCommand):
     def test_100_update_reverse(self):
         self.dsdb_expect_update("arecord15.aqd-unittest.ms.com",
                                 comments="Some address comments")
-        ib_expect_update_address("arecord15.aqd-unittest.ms.com",
-                                      "4.2.1.20",
-                                 reverse_ptr="arecord14.aqd-unittest.ms.com")
+        ib_expect_update_address("arecord15.aqd-unittest.ms.com", "4.2.1.20",
+                                 reverse_ptr="arecord14.aqd-unittest.ms.com", justification=self.valid_justification)
         command = ["update", "address",
                    "--fqdn", "arecord15.aqd-unittest.ms.com",
                    "--reverse_ptr", "arecord14.aqd-unittest.ms.com",
@@ -96,8 +95,10 @@ class TestUpdateAddress(TestBrokerCommand):
     def test_120_update_ip(self):
         ip = self.net["unknown0"].usable[-1]
         self.dsdb_expect_update("arecord15.aqd-unittest.ms.com", ip=ip)
-        ib_expect_update_address("arecord15.aqd-unittest.ms.com", original_ip="4.2.1.20", new_ip=str(ip))
-        ib_expect_update_address("addralias1.aqd-unittest.ms.com", original_ip="4.2.1.20", new_ip=str(ip))
+        ib_expect_update_address("arecord15.aqd-unittest.ms.com", original_ip="4.2.1.20", new_ip=str(ip),
+                                 justification=self.valid_justification)
+        ib_expect_update_address("addralias1.aqd-unittest.ms.com", original_ip="4.2.1.20", new_ip=str(ip),
+                                 justification=self.valid_justification)
         command = ["update", "address",
                    "--fqdn", "arecord15.aqd-unittest.ms.com", "--ip", ip] + self.valid_just_tcm
         self.noouttest(command)
@@ -114,8 +115,10 @@ class TestUpdateAddress(TestBrokerCommand):
         # Change the IP address back not to confuse other parts of the testsuite
         ip = self.net["unknown0"].usable[15]
         self.dsdb_expect_update("arecord15.aqd-unittest.ms.com", ip=ip)
-        ib_expect_update_address("arecord15.aqd-unittest.ms.com", original_ip="4.2.1.62", new_ip=str(ip))
-        ib_expect_update_address("addralias1.aqd-unittest.ms.com", original_ip="4.2.1.62", new_ip=str(ip))
+        ib_expect_update_address("arecord15.aqd-unittest.ms.com", original_ip="4.2.1.62", new_ip=str(ip),
+                                 justification=self.valid_justification)
+        ib_expect_update_address("addralias1.aqd-unittest.ms.com", original_ip="4.2.1.62", new_ip=str(ip),
+                                 justification=self.valid_justification)
         command = ["update", "address",
                    "--fqdn", "arecord15.aqd-unittest.ms.com", "--ip", ip] + self.valid_just_tcm
         self.noouttest(command)
