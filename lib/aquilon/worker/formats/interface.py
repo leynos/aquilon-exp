@@ -18,11 +18,18 @@
 
 from operator import attrgetter
 
-from aquilon.aqdb.model import (Interface, PublicInterface, ManagementInterface,
-                                OnboardInterface, VlanInterface,
-                                BondingInterface, BridgeInterface,
-                                LoopbackInterface, VirtualInterface,
-                                PhysicalInterface)
+from aquilon.aqdb.model import (
+    BondingInterface,
+    BridgeInterface,
+    Interface,
+    LoopbackInterface,
+    ManagementInterface,
+    OnboardInterface,
+    PhysicalInterface,
+    PublicInterface,
+    VirtualInterface,
+    VlanInterface,
+)
 from aquilon.aqdb.model.feature import interface_features
 from aquilon.worker.formats.formatters import ObjectFormatter
 
@@ -30,7 +37,7 @@ from aquilon.worker.formats.formatters import ObjectFormatter
 class InterfaceFormatter(ObjectFormatter):
     def format_raw(self, interface, indent="", embedded=True,
                    indirect_attrs=True):
-        details = ''
+        details = ""
 
         if interface.hardware_entity.host:
             dbstage = interface.hardware_entity.host.personality_stage
@@ -48,15 +55,15 @@ class InterfaceFormatter(ObjectFormatter):
             flagstr = ""
 
         if interface.mac:
-            details = [indent + "Interface: %s %s%s" % (interface.name,
-                                                        interface.mac, flagstr)]
+            details = [indent + f"Interface: {interface.name} {interface.mac}{flagstr}"]
             obs = interface.last_observation
             if obs:
-                details.append(indent + "  Last switch poll: %s port %s [%s]" %
-                               (obs.network_device, obs.port, obs.last_seen))
+                details.append(
+                    indent
+                    + f"  Last switch poll: {str(obs.network_device)} port {str(obs.port)} [{str(obs.last_seen)}]"
+                )
         else:
-            details = [indent + "Interface: %s (no MAC addr)%s" %
-                       (interface.name, flagstr)]
+            details = [indent + f"Interface: {interface.name} (no MAC addr){flagstr}"]
 
         details.append(indent + "  Type: %s" % interface.interface_type)
         if interface.model_allowed:
@@ -66,16 +73,13 @@ class InterfaceFormatter(ObjectFormatter):
             details.append(indent + "  Controller Bus Address: %s" %
                            interface.bus_address)
         if interface.port_group:
-            details.append(indent + "  {0:c}: {0.name}"
-                           .format(interface.port_group))
-            details.append(indent + "    Network: %s" %
-                           interface.port_group.network)
+            details.append(indent + f"  {interface.port_group:c}: {interface.port_group.name}")
+            details.append(indent + f"    Network: {str(interface.port_group.network)}")
         elif interface.port_group_name:
             details.append(indent + "  Port Group: %s" % interface.port_group_name)
 
         if hasattr(interface, "vlan_id"):
-            details.append(indent + "  Parent Interface: %s, VLAN ID: %s" %
-                           (interface.parent.name, interface.vlan_id))
+            details.append(indent + f"  Parent Interface: {interface.parent.name}, VLAN ID: {interface.vlan_id}")
 
         if interface.master_id is not None:
             details.append(indent + "  Master Interface: %s" %
@@ -102,8 +106,7 @@ class InterfaceFormatter(ObjectFormatter):
                 tagstr = " (%s)" % ", ".join(tags)
             else:
                 tagstr = ""
-            details.append(indent + "  Provides: %s [%s]%s" %
-                           (names, addr.ip, tagstr))
+            details.append(indent + f"  Provides: {names} [{addr.ip}]{tagstr}")
             static_routes |= set(addr.network.personality_static_routes(dbstage))
 
             for dns_record in addr.dns_records:
@@ -112,10 +115,8 @@ class InterfaceFormatter(ObjectFormatter):
                                    ", ".join(sorted(str(a.fqdn) for a in
                                                     dns_record.all_aliases)))
 
-        for route in sorted(static_routes,
-                            key=attrgetter('destination', 'gateway_ip')):
-            details.append(indent + "  {0:c}: {0.destination} gateway {0.gateway_ip}"
-                           .format(route))
+        for route in sorted(static_routes, key=attrgetter("destination", "gateway_ip")):
+            details.append(indent + f"  {route:c}: {route.destination} gateway {route.gateway_ip}")
             if route.personality_stage:
                 details.append(indent + "    {0:c}: {0.name} {1:c}: {1.name}"
                                .format(route.personality_stage.personality,
@@ -124,9 +125,8 @@ class InterfaceFormatter(ObjectFormatter):
                 details.append(indent + "    Comments: %s" % route.comments)
 
         if dbstage:
-            for feature in sorted(interface_features(dbstage, interface),
-                                  key=attrgetter('name')):
-                details.append(indent + "  Template: %s" % feature.cfg_path)
+            for feature in sorted(interface_features(dbstage, interface), key=attrgetter("name")):
+                details.append(indent + f"  Template: {feature.cfg_path}")
 
         if interface.comments:
             details.append(indent + "  Comments: %s" % interface.comments)
@@ -153,6 +153,26 @@ class InterfaceFormatter(ObjectFormatter):
 
         if interface.model_allowed and indirect_attrs:
             self.redirect_proto(interface.model, skeleton.model)
+
+    def format_json(self, interface, embedded=True, indirect_attrs=True):
+        details = {
+            "name": interface.name,
+            "bootable": interface.bootable,
+            "interface_type": interface.interface_type,
+            "default_route": interface.default_route,
+            "ip": [],
+        }
+        if interface.mac:
+            details["mac"] = str(interface.mac)
+        for addr in interface.assignments:
+            details["ip"].append(str(addr.ip))
+        if indirect_attrs:
+            if interface.bus_address:
+                details["bus_address"] = interface.bus_address
+            if interface.model_allowed:
+                details["model"] = interface.model.name
+                details["vendor"] = interface.model.vendor.name
+        return details
 
 ObjectFormatter.handlers[Interface] = InterfaceFormatter()
 ObjectFormatter.handlers[PublicInterface] = InterfaceFormatter()

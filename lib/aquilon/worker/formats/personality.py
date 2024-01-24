@@ -56,14 +56,11 @@ class PersonalityStageFormatter(PersonalityFormatter):
         details.append(indent + "{0} {1:c}: {1.name} {2:c}: {2.name}"
                        .format(description, personality, personality.archetype))
         if personality.staged:
-            details.append(indent + "  Stage: {0.name}".format(persst))
-        details.append(indent + "  Environment: {0.name}"
-                       .format(personality.host_environment))
-        details.append(indent + "  Owned by {0:c}: {0.grn}"
-                       .format(personality.owner_grn))
+            details.append(indent + f"  Stage: {persst.name}")
+        details.append(indent + f"  Environment: {personality.host_environment.name}")
+        details.append(indent + f"  Owned by {personality.owner_grn:c}: {personality.owner_grn.grn}")
         for grn_rec in sorted(persst.grns, key=attrgetter("target", "eon_id")):
-            details.append(indent + "  Used by {0.grn:c}: {0.grn.grn} "
-                           "[target: {0.target}]".format(grn_rec))
+            details.append(indent + f"  Used by {grn_rec.grn:c}: {grn_rec.grn.grn} " f"[target: {grn_rec.target}]")
 
         if personality.config_override:
             details.append(indent + "  Config override: enabled")
@@ -71,11 +68,9 @@ class PersonalityStageFormatter(PersonalityFormatter):
         if personality.cluster_required:
             details.append(indent + "  Requires clustered hosts")
         for service, info in list(persst.required_services.items()):
-            details.append(indent + "  Required Service: {0.name}"
-                           .format(service))
+            details.append(indent + f"  Required Service: {service.name}")
             if info.host_environment:
-                details.append(indent + "    Environment Override: {0.name}"
-                               .format(info.host_environment))
+                details.append(indent + f"    Environment Override: {info.host_environment.name}")
 
         for usr in personality.root_users:
             details.append(indent + "  Root Access User: %s" % usr)
@@ -94,18 +89,15 @@ class PersonalityStageFormatter(PersonalityFormatter):
             else:
                 flagstr = ""
 
-            details.append(indent + "  {0:c}: {0.name}{1}"
-                           .format(link.feature, flagstr))
+            details.append(indent + f"  {link.feature:c}: {link.feature.name}{flagstr}")
             if link.model:
                 details.append(indent + "    {0:c}: {0.name} {1:c}: {1.name}"
                                .format(link.model.vendor, link.model))
             if link.interface_name:
-                details.append(indent + "    Interface: {0.interface_name}"
-                               .format(link))
+                details.append(indent + f"    Interface: {link.interface_name}")
 
         if personality.comments:
-            details.append(indent + "  Comments: {0.comments}"
-                           .format(personality))
+            details.append(indent + f"  Comments: {personality.comments}")
 
         for cltype, info in list(persst.cluster_infos.items()):
             details.append(indent + "  Extra settings for %s clusters:" % cltype)
@@ -115,10 +107,7 @@ class PersonalityStageFormatter(PersonalityFormatter):
         return "\n".join(details)
 
     def fill_proto(self, persst, skeleton, embedded=True, indirect_attrs=True):
-        super(PersonalityStageFormatter, self).fill_proto(persst.personality,
-                                                          skeleton,
-                                                          embedded=embedded,
-                                                          indirect_attrs=indirect_attrs)
+        super().fill_proto(persst.personality, skeleton, embedded=embedded, indirect_attrs=indirect_attrs)
 
         if persst.staged:
             skeleton.stage = persst.name
@@ -149,5 +138,25 @@ class PersonalityStageFormatter(PersonalityFormatter):
 
     def csv_fields(self, obj):
         yield (obj.archetype.name, obj.personality.name, obj.name)
+
+    def format_json(self, persst, embedded=True, indirect_attrs=True):
+        details = {
+            "name": persst.personality.name,
+            "archetype": persst.personality.archetype.name,
+            "environment": persst.personality.host_environment.name,
+            "owner_grn": persst.personality.owner_grn.grn,
+        }
+        if persst.staged:
+            details["stage"] = persst.name
+        if indirect_attrs:
+            details["grns"] = []
+            details["features"] = []
+            for grn_rec in sorted(persst.grns, key=attrgetter("eon_id")):
+                details["grns"].append(grn_rec.grn.grn)
+            for link in persst.features:
+                details["features"].append(link.feature.name)
+            if persst.personality.comments:
+                details["comments"] = persst.personality.comments
+        return details
 
 ObjectFormatter.handlers[PersonalityStage] = PersonalityStageFormatter()

@@ -17,9 +17,9 @@
 # limitations under the License.
 """Module for testing the add personality command."""
 
-from collections import defaultdict
-
+import json
 import unittest
+from collections import defaultdict
 
 if __name__ == "__main__":
     from broker import utils
@@ -59,6 +59,23 @@ class TestAddPersonality(VerifyGrnsMixin, PersonalityTestMixin,
         self.matchoutput(out, "Owned by GRN: %s" % GRN, command)
         self.matchoutput(out, "Used by GRN: %s [target: esp]" % GRN, command)
         self.matchclean(out, "inventory", command)
+
+    def test_105_verify_utunused_json(self):
+        command = [
+            "show_personality",
+            "--personality=utunused/dev",
+            "--archetype=aquilon",
+            "--personality_stage=next",
+            "--format",
+            "json",
+        ]
+        out = json.loads(self.commandtest(command))[0]
+        self.assertIsInstance(out, dict)
+        self.matchoutput(out["name"], "utunused/dev", command)
+        self.matchoutput(out["stage"], "next", command)
+        self.matchoutput(out["environment"], "dev", command)
+        self.matchoutput(out["comments"], "Some personality comments", command)
+        self.matchoutput(out["owner_grn"], GRN, command)
 
     def test_105_verify_utunused_proto(self):
         command = ["show_personality", "--archetype=aquilon",
@@ -221,12 +238,12 @@ class TestAddPersonality(VerifyGrnsMixin, PersonalityTestMixin,
 
     def test_173_add_aquilon_personalities(self):
         personalities = {
-            'compileserver': {'staged': False},
-            'inventory': {'staged': False},
-            'unixeng-test': {'staged': True},
-            'nostage': {'staged': True},
-            'clustered': {'cluster_required': True, 'staged': False},
-            'utpers-prod': {'environment': 'prod', 'staged': False},
+            "compileserver": {"staged": False},
+            "inventory": {"staged": False},
+            "unixeng-test": {"staged": True},
+            "nostage": {"staged": True},
+            "clustered": {"cluster_required": True, "staged": False},
+            "utpers-prod": {"environment": "prod", "staged": False},
         }
         for personality, kwargs in list(personalities.items()):
             self.create_personality("aquilon", personality, **kwargs)
@@ -399,6 +416,6 @@ class TestAddPersonality(VerifyGrnsMixin, PersonalityTestMixin,
         self.noouttest(["promote", "--personality", "unixeng-test",
                         "--archetype", "aquilon"])
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     suite = unittest.TestLoader().loadTestsFromTestCase(TestAddPersonality)
     unittest.TextTestRunner(verbosity=2).run(suite)
