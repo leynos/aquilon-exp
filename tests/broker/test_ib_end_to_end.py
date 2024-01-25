@@ -15,7 +15,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Module for testing aq integration with infoblox a_record_ptr endpoint."""
+"""Module for testing aq integration with infoblox endpoints."""
 
 import unittest
 
@@ -196,13 +196,13 @@ class TestIBEndToEnd(TestBrokerCommand):
         # Make sure the addresses we are going to create were not left lingering from a previous test run
         self.ib_services.delete_dns_alias(test_alias_fqdn)
         self.ib_services.delete_dns_alias(test_alias2_fqdn)
-        self.ib_services.delete_a_ptr(test_a_fqdn, '2.3.4.1')
-        self.ib_services.delete_a_ptr(test_a_fqdn, '2.3.4.2')
-        self.ib_services.delete_a_ptr(test_a_fqdn, '2.3.4.3')
-        self.ib_services.delete_a_ptr(test_ib_a_fqdn, '2.3.4.4')
-        self.ib_services.delete_a_ptr(test_ib_a_fqdn, '2.3.4.5')
-        self.ib_services.delete_a_ptr(test_ib_a_fqdn2, '2.3.4.4')
-        self.ib_services.delete_a_ptr(test_ib_a_fqdn2, '2.3.4.5')
+        self.ib_services.delete_a(test_a_fqdn, '2.3.4.1')
+        self.ib_services.delete_a(test_a_fqdn, '2.3.4.2')
+        self.ib_services.delete_a(test_a_fqdn, '2.3.4.3')
+        self.ib_services.delete_a(test_ib_a_fqdn, '2.3.4.4')
+        self.ib_services.delete_a(test_ib_a_fqdn, '2.3.4.5')
+        self.ib_services.delete_a(test_ib_a_fqdn2, '2.3.4.4')
+        self.ib_services.delete_a(test_ib_a_fqdn2, '2.3.4.5')
         dns_checker.notfound(test_a_fqdn)
         dns_checker.notfound(test_ib_a_fqdn)
         dns_checker.notfound(test_ib_a_fqdn2)
@@ -239,8 +239,8 @@ class TestIBEndToEnd(TestBrokerCommand):
         self.noouttest(['del_alias', '--fqdn', 'alias.' + self.test_domain])
         dns_checker.notfound('alias.' + self.test_domain)
 
-        # Delete a_ptr record in IB (but not in AQ)
-        self.ib_services.delete_a_ptr(test_a_fqdn, '2.3.4.2')
+        # Delete a record in IB (but not in AQ)
+        self.ib_services.delete_a(test_a_fqdn, '2.3.4.2')
         # Check it is no longer in DNS
         dns_checker.notfound(test_a_fqdn)
         # Update in AQ
@@ -256,7 +256,7 @@ class TestIBEndToEnd(TestBrokerCommand):
         dns_checker.notfound(test_a_fqdn)
 
         # Create a-record in ib
-        response = self.ib_services.add_a_ptr(test_ib_a_fqdn, '2.3.4.4')
+        response = self.ib_services.add_a(test_ib_a_fqdn, '2.3.4.4')
         ib_checker.check_headers(response)
 
         # Check it resolves
@@ -270,7 +270,7 @@ class TestIBEndToEnd(TestBrokerCommand):
         self.dsdb_verify()
 
         # Create a-record in ib
-        self.ib_services.add_a_ptr(test_ib_a_fqdn2, '2.3.4.4')
+        self.ib_services.add_a(test_ib_a_fqdn2, '2.3.4.4')
         # Check it resolves
         dns_checker.a_record(test_ib_a_fqdn2, '2.3.4.4')
         # Create a-record in aq with same fqdn but different ip
@@ -316,7 +316,7 @@ class TestIBEndToEnd(TestBrokerCommand):
         # Final clean up
 
         # delete in ib first
-        self.ib_services.delete_a_ptr(test_ib_a_fqdn, "2.3.4.4")
+        self.ib_services.delete_a(test_ib_a_fqdn, "2.3.4.4")
         self.dsdb_expect_delete('2.3.4.4')
         # and check that deleting in aq succeeds
         self.noouttest(['del_address', '--fqdn', test_ib_a_fqdn] + self.valid_just_tcm)
@@ -326,7 +326,7 @@ class TestIBEndToEnd(TestBrokerCommand):
         self.noouttest(['del_address', '--fqdn', test_ib_a_fqdn2] + self.valid_just_tcm)
         self.dsdb_verify()
         dns_checker.a_record(test_ib_a_fqdn2, '2.3.4.4')
-        self.ib_services.delete_a_ptr(test_ib_a_fqdn2, '2.3.4.4')
+        self.ib_services.delete_a(test_ib_a_fqdn2, '2.3.4.4')
         dns_checker.notfound(test_ib_a_fqdn2)
 
         self.noouttest(['del_network', '--ip', '2.3.4.0'])
@@ -402,7 +402,7 @@ class TestIBEndToEnd(TestBrokerCommand):
         test_fqdn = "aqd-ib-srv-test01." + self.test_domain
         test_ip = "2.3.4.1"
 
-        self.ib_services.delete_a_ptr(test_fqdn, test_ip)
+        self.ib_services.delete_a(test_fqdn, test_ip)
         self.runcommand(['del_address', '--fqdn', test_fqdn, '--ip', test_ip] + self.valid_just_tcm)
 
         self.dsdb_expect_add(test_fqdn, test_ip)

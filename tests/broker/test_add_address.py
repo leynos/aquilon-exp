@@ -20,8 +20,9 @@
 import unittest
 import json
 
+from mock_ib_services import ib_expect_add_a
 from mock_ib_services import ib_expect_add_address
-from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_del_a
 from mock_ib_services import ib_expect_update_address
 
 if __name__ == "__main__":
@@ -640,8 +641,7 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
 
         command = ["add_address_alias", "--fqdn", "address-alias.test-infoblox.cc",
                    "--target", "address.test-infoblox.cc"] + self.valid_just_tcm
-        ib_expect_add_address("address-alias.test-infoblox.cc", "10.25.0.1", create_ptr=False,
-                              justification=self.valid_justification)
+        ib_expect_add_a("address-alias.test-infoblox.cc", "10.25.0.1", justification=self.valid_justification)
         self.noouttest(command)
 
         command = ["update_address", "--fqdn", "address.test-infoblox.cc",
@@ -679,8 +679,7 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         self.dsdb_verify()
 
         command = ["del_address_alias", "--fqdn", "address-alias.test-infoblox.cc"] + self.valid_just_tcm
-        ib_expect_del_address("address-alias.test-infoblox.cc", "10.25.0.2", delete_ptr=False,
-                              justification=self.valid_justification)
+        ib_expect_del_a("address-alias.test-infoblox.cc", "10.25.0.2", justification=self.valid_justification)
         self.noouttest(command)
 
         mh.delete()
