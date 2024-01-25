@@ -30,6 +30,7 @@ from mock_ib_services import ib_expect_add_address
 from mock_ib_services import ib_expect_add_alias
 from mock_ib_services import ib_expect_del_address
 from mock_ib_services import ib_expect_del_alias
+from mock_ib_services import ib_expect_update_a
 from mock_ib_services import ib_expect_update_address
 
 
@@ -529,8 +530,8 @@ class TestAddServiceAddress(TestBrokerCommand):
         #  Set a TTL on the address_alias to test that when the rollback happens, the TTL is retained
         command = ['update_address_alias',
                    '--fqdn', 'resource-group-shared-name.test-infoblox.cc', '--ttl', 100] + self.valid_just_tcm
-        ib_expect_update_address('resource-group-shared-name.test-infoblox.cc',
-                                 '10.25.0.2', new_ttl=100, update_ptr=False, justification=self.valid_justification)
+        ib_expect_update_a('resource-group-shared-name.test-infoblox.cc', '10.25.0.2', new_ttl=100,
+                           justification=self.valid_justification)
         self.noouttest(command)
 
         self.dsdb_expect_delete("10.25.0.2")

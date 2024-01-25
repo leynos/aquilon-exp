@@ -84,7 +84,7 @@ class CommandUpdateAddressAlias(BrokerCommand):
             try:
                 for dns_rec in dbdns_records:
                     if ib_services.assert_dns_environment(dns_rec.fqdn.dns_environment.name):
-                        ib_services.update_a_ptr(str(dns_rec), dns_rec.target_ip, ttl=ttl, update_ptr=False)
+                        ib_services.update_a(str(dns_rec), dns_rec.target_ip, new_ttl=ttl)
             except ProcessException as e:
                 raise e
 

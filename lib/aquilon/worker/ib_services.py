@@ -95,6 +95,52 @@ class IBServices:
         return payload
 
     @with_timer
+    def add_a(self, name, ip, ttl=None):
+        payload = {"eonid": self.eonid, "name": str(name), "address": str(ip)}
+        if ttl is not None:
+            payload['ttl'] = ttl
+        if (self.justification is not None):
+            payload["cm_token"] = self.justification
+        r = self._http_request("POST", "/dns/a_ptr/a", payload, ignore_statuses=[409])
+        if r and r.status_code == 409:
+            self.update_a(name, ip, new_ttl=ttl)
+
+    @with_timer
+    def update_a(self, name, ip, new_ip=None, new_ttl=None):
+
+        if new_ip is None and new_ttl is None:
+            return
+
+        payload = {"eonid": self.eonid}
+        if (self.justification is not None):
+            payload["cm_token"] = self.justification
+        if new_ip is not None:
+            payload['address'] = str(new_ip)
+        if new_ttl is not None:
+            payload['ttl'] = new_ttl
+
+        url = "/dns/a_ptr/a/{}/{}".format(str(name), str(ip))
+        r = self._http_request("PATCH", url, payload, ignore_statuses=[404])
+        if r and r.status_code == 404:
+            payload['name'] = str(name)
+            payload['address'] = str(ip)
+            return self._http_request("POST", "/dns/a_ptr/a", payload)
+        else:
+            return r
+
+    @with_timer
+    def delete_a(self, name, ip):
+        params = {
+            "eonid": self.eonid,
+        }
+        if self.justification is not None:
+            params["cm_token"] = self.justification
+        url = "/dns/a_ptr/a/{}/{}".format(str(name), str(ip))
+        url = self._generate_url_from_params(url, params)
+
+        return self._http_request("DELETE", url, ignore_statuses=[404])
+
+    @with_timer
     def add_a_ptr(self, name, ip, assign_ptr_to_fqdn=None, ttl=None, create_ptr=True):
         return self.update_a_ptr(name, ip,
             new_ip=ip, # We have to specify this again to force creation.
