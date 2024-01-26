@@ -583,7 +583,7 @@ def add_address_alias(session, logger, config, dbsrcfqdn, dbtargetfqdn,
     if ib_services.feature_enabled("address_alias") and sync_ib:
         if ib_services.assert_dns_environment(dbsrcfqdn.dns_environment.name) and \
                 ib_services.assert_dns_environment(dbtargetfqdn.dns_environment.name):
-            ib_services.add_a_ptr(dbsrcfqdn.fqdn, dbaa.target_ip, ttl=ttl, create_ptr=False)
+            ib_services.add_a(dbsrcfqdn.fqdn, dbaa.target_ip, ttl=ttl)
 
     if exporter:
         other_recs = [dr for dr in dbsrcfqdn.dns_records

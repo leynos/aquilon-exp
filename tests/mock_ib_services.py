@@ -107,6 +107,58 @@ def ib_test_case(method, path, payload, response_code, response_body):
 
 eonid = "1156"
 
+def ib_expect_add_a(fqdn, ip, ttl=None, response_code=201, response_body="", justification=None, fail=False):
+    ip = str(ip)
+    if fail:
+        response_code = 400
+    payload = {
+        "name": fqdn,
+        "address": ip,
+        "eonid": eonid,
+    }
+    if ttl:
+        payload["ttl"] = ttl
+    if justification is not None:
+        payload["cm_token"] = justification
+
+    test_case = ib_test_case("POST", "/dns/a_ptr/a", payload, response_code, response_body)
+    http_monitor.expect(test_case)
+
+
+def ib_expect_del_a(fqdn, ip, response_code=204, response_body="", justification=None, fail=False):
+    ip = str(ip)
+    if fail:
+        response_code = 400
+    path = "/dns/a_ptr/a/{}/{}?eonid={}".format(str(fqdn), ip, eonid)
+    if justification is not None:
+        path = path + "&cm_token={}".format(quote_plus(justification))
+    test_case = ib_test_case(
+        "DELETE",
+        path,
+        None, response_code, response_body)
+    http_monitor.expect(test_case)
+
+
+def ib_expect_update_a(fqdn, original_ip, new_ip=None,
+                       new_ttl=None, response_code=204, response_body="",
+                       justification=None, fail=False):
+    original_ip = str(original_ip)
+    if fail:
+        response_code = 400
+    payload = {"eonid": eonid}
+    if new_ip:
+        payload["address"] = str(new_ip)
+    if new_ttl:
+        payload["ttl"] = new_ttl
+    if justification is not None:
+        payload["cm_token"] = justification
+
+    test_case = ib_test_case(
+        "PATCH",
+        "/dns/a_ptr/a/{}/{}".format(fqdn, original_ip),
+        payload, response_code, response_body)
+    http_monitor.expect(test_case)
+
 
 def ib_expect_add_address(fqdn, ip, reverse_ptr=None, create_ptr=True, ttl=None, response_code=201, response_body="",
                           justification=None, fail=False):

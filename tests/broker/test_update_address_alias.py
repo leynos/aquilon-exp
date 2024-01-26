@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
 from .brokertest import TestBrokerCommand
 
-from mock_ib_services import ib_expect_update_address
+from mock_ib_services import ib_expect_update_a
 
 class TestUpdateAddressAlias(TestBrokerCommand):
 
@@ -40,8 +40,8 @@ class TestUpdateAddressAlias(TestBrokerCommand):
         self.matchoutput(out, "Not all mandatory options specified!", command)
 
     def test_101_update_to_add_comment(self):
-        ib_expect_update_address("addralias1.aqd-unittest.ms.com", original_ip="4.2.1.18",
-                                 new_ttl=900, justification=self.just_sn, update_ptr=False)
+        ib_expect_update_a("addralias1.aqd-unittest.ms.com", original_ip="4.2.1.18", new_ttl=900,
+                           justification=self.just_sn)
         command = ["update", "address", "alias",
                    "--fqdn", "addralias1.aqd-unittest.ms.com",
                    "--target", "arecord13.aqd-unittest.ms.com",
