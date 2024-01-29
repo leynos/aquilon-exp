@@ -67,6 +67,7 @@ class TestAddNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
         self.assertEqual(
             network_device.hardware.interfaces[0].address_assignments[0].
             network_environment_name, "internal")
+        self.assertEqual(network_device.switch_type, "bor")
 
     def test_105_add_ut3gd1r04(self):
         ip = self.net["ut10_eth1"].usable[0]
