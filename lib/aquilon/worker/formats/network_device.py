@@ -80,6 +80,7 @@ class NetworkDeviceFormatter(HardwareEntityFormatter):
     def fill_proto(self, device, skeleton, embedded=True,
                    indirect_attrs=True):
         skeleton.primary_name = str(device.primary_name)
+        skeleton.switch_type = str(device.switch_type)
         if indirect_attrs:
             self._fill_hardware_proto(device, skeleton.hardware)
             self._fill_system_proto(device.host, skeleton.system)
