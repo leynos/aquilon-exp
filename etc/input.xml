@@ -147,6 +147,9 @@
     <command name="show_host">
         Shows the complete configuration for a given host. If the '--all' option
         is provided, then the command simply outputs a listing of all known hostnames.
+        <p/>
+        Supported options for --format: raw, csv, proto, json.
+        <p/>
         <optgroup mandatory="True" fields="one">
             <option name="hostname" type="string">Host name</option>
             <option name="list" type="list">Host list</option>

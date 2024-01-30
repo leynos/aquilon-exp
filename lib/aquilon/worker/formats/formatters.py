@@ -17,14 +17,14 @@
 """Base classes for formatting objects."""
 
 import csv
-import sys
 import json
+import sys
 
-from six import text_type
-from six.moves import cStringIO as StringIO  # pylint: disable=F0401
-
+import orjson
 import google.protobuf.message
 from google.protobuf.descriptor import FieldDescriptor
+from six import text_type
+from six.moves import cStringIO as StringIO  # pylint: disable=F0401
 
 from aquilon.config import Config
 from aquilon.exceptions_ import ProtocolError
@@ -32,11 +32,11 @@ from aquilon.worker.processes import build_mako_lookup
 
 # Note: the built-in "excel" dialect uses '\r\n' for line ending and that breaks
 # the tests.
-csv.register_dialect('aquilon', delimiter=',', quoting=csv.QUOTE_MINIMAL,
-                     doublequote=True, lineterminator='\n')
+csv.register_dialect("aquilon", delimiter=",", quoting=csv.QUOTE_MINIMAL,
+                     doublequote=True, lineterminator="\n")
 
 
-class ResponseFormatter(object):
+class ResponseFormatter:
     """This handles the top level of formatting results... results
         pass through here and are delegated out to ObjectFormatter
         handlers and wrapped appropriately.
@@ -78,7 +78,7 @@ class ResponseFormatter(object):
                 self.loaded_protocols[module] = __import__(module)
             except ImportError as err:  # pragma: no cover
                 self.loaded_protocols[module] = False
-                raise ProtocolError("Protocol %s: %s" % (module, err))
+                raise ProtocolError(f"Protocol {module}: {err}")
 
         self.protobuf_container = getattr(self.loaded_protocols[module],
                                           msgclass)
@@ -119,7 +119,7 @@ class ResponseFormatter(object):
 
     def format_csv(self, result, request):
         strbuf = StringIO()
-        writer = csv.writer(strbuf, dialect='aquilon')
+        writer = csv.writer(strbuf, dialect="aquilon")
         ObjectFormatter.redirect_csv(result, writer)
         request.setHeader("Content-Type", "text/csv; charset=utf-8")
         return strbuf.getvalue().encode("utf-8")
@@ -149,17 +149,17 @@ class ResponseFormatter(object):
            finally need to be converted to JSON string here since the
            mako templates are dependent on each other
         """
+        # FIXME: This should be refactored to stream results
         formatted = ObjectFormatter.redirect_json(result)
-        formatted = formatted.replace("'", '"')
-        formatted = formatted.replace("}\n,", "},")
-        formatted = formatted.replace(",\n    }", "\n    }")
-        formatted = "[\n" + formatted + "]\n"
-        formatted = formatted.encode("utf-8")
+        if isinstance(formatted, dict):
+            # All items should be in a list, even if only 1 item is expected.
+            formatted = [formatted]
         request.setHeader("Content-Type", "application/json; charset=utf-8")
-        return formatted
+        # orjson is faster than json and alreadu encoded as bytes
+        return orjson.dumps(formatted)
 
 
-class ObjectFormatter(object):
+class ObjectFormatter:
     """This class and its subclasses are meant to do the real work of
         formatting individual objects.  The standard instance methods
         do the heavy lifting, which the static methods allow for
@@ -186,9 +186,9 @@ class ObjectFormatter(object):
     # might also be an issue when we switch to multi-process.
     # Not using cache because it only has the lifetime of the template, and
     # because we do not have the beaker module installed.
-    lookup_raw = build_mako_lookup(config, "raw",
-                                   imports=['from aquilon.worker.formats.formatters import shift'],
-                                   default_filters=['unicode'])
+    lookup_raw = build_mako_lookup(
+        config, "raw", imports=["from aquilon.worker.formats.formatters import shift"], default_filters=["unicode"]
+    )
     lookup_json = build_mako_lookup(config, "json")
 
     # Pass embedded=False if this is the top-level object being rendered.
@@ -198,13 +198,12 @@ class ObjectFormatter(object):
                    indirect_attrs=True):
         if hasattr(self, "template_raw"):
             template = self.lookup_raw.get_template(self.template_raw)
-            return shift(template.render(record=result, formatter=self),
-                         indent=indent)
+            return shift(template.render(record=result, formatter=self), indent=indent)
         return indent + str(result)
 
     def csv_fields(self, result):  # pragma: no cover
-        raise ProtocolError("{0!r} does not have a CSV formatter."
-                            .format(type(result)))
+        raise ProtocolError(f"{type(result)!r} does not have a CSV formatter."
+                            )
 
     def format_csv(self, result, writer):
         for fields in self.csv_fields(result):
@@ -244,19 +243,28 @@ class ObjectFormatter(object):
                         indirect_attrs=indirect_attrs)
 
     def format_json(self, result, embedded=True, indirect_attrs=True):
-        # The JSON Formatter is set-up currently with schemas for
-        # dns records only
-
+        """JSON formatters exist in mako templates or in other methods.
+        mako templates return a string, while other format_json() return as dict or list.
+        """
         if hasattr(self, "template_json"):
-            template = self.lookup_json.get_template(self.template_json)
-            return template.render(record=result, formatter=self)
-        return json.loads(result)
+            return self.format_json_from_templates(result)
+        return result
+
+    def format_json_from_templates(self, result):
+        """Since templates return as a list, work them separately and return them as a list,
+        since this was configured to always return as list, before. Keep it that way."""
+        template = self.lookup_json.get_template(self.template_json)
+        formatted = ObjectFormatter.redirect_json(template.render(record=result, formatter=self))
+        formatted = formatted.replace("'", '"')
+        formatted = formatted.replace("}\n,", "},")
+        formatted = formatted.replace(",\n    }", "\n    }")
+        # orjson is faster than json
+        return orjson.loads(formatted)
 
     def fill_proto(self, result, skeleton, embedded=True, indirect_attrs=True):  # pragma: no cover
         # pylint: disable=W0613
         # There's no default protobuf message type
-        raise ProtocolError("{0!r} does not have a protobuf formatter."
-                            .format(type(result)))
+        raise ProtocolError(f"{type(result)!r} does not have a protobuf formatter.")
 
     @staticmethod
     def redirect_raw(result, indent="", embedded=True, indirect_attrs=True):
@@ -296,4 +304,4 @@ ObjectFormatter.default_handler = ObjectFormatter()
 
 # Convenience method for mako templates
 def shift(result, indent="  "):
-    return "\n".join("%s%s" % (indent, line) for line in result.splitlines())
+    return "\n".join(f"{indent}{line}" for line in result.splitlines())

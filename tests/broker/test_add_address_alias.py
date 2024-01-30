@@ -138,18 +138,18 @@ class TestAddAddressAlias(TestBrokerCommand):
                        "--fqdn", "addralias1.aqd-unittest.ms.com",
                        "--fullinfo", "--format", "json"]
         out = self.commandtest(command)
-        self.matchoutput(out, '"fqdn": "addralias1.aqd-unittest.ms.com"',
+        self.matchoutput(out, '"fqdn":"addralias1.aqd-unittest.ms.com"',
                          command)
-        self.matchoutput(out, '"dns_environment": "internal"', command)
+        self.matchoutput(out, '"dns_environment":"internal"', command)
         self.matchoutput(out,
-                         '"target": "arecord13.aqd-unittest.ms.com"', command)
+                         '"target":"arecord13.aqd-unittest.ms.com"', command)
         self.matchoutput(out,
-                         '"target": "arecord14.aqd-unittest.ms.com"', command)
+                         '"target":"arecord14.aqd-unittest.ms.com"', command)
         self.matchoutput(out,
-                         '"target": "arecord15.aqd-unittest.ms.com"', command)
-        self.matchoutput(out, '"ttl": 1800', command)
-        self.matchoutput(out, '"comments": "Some address alias comments"', command)
-        self.matchoutput(out, '"comments": "Some other address alias comments"', command)
+                         '"target":"arecord15.aqd-unittest.ms.com"', command)
+        self.matchoutput(out, '"ttl":1800', command)
+        self.matchoutput(out, '"comments":"Some address alias comments"', command)
+        self.matchoutput(out, '"comments":"Some other address alias comments"', command)
 
     def test_260_verify_dump_dns(self):
         # Dump all DNS

@@ -25,7 +25,7 @@ from aquilon.worker.formats.formatters import ObjectFormatter
 class OSFormatter(ObjectFormatter):
     def format_raw(self, os, indent="", embedded=True, indirect_attrs=True):
         details = []
-        details.append(indent + "{0:c}: {0.name}".format(os))
+        details.append(indent + f"{os:c}: {os.name}")
         details.append(indent + "  Version: %s" % os.version)
         if not embedded:
             details.append(indent + "  Archetype: %s" % os.archetype)
@@ -41,11 +41,24 @@ class OSFormatter(ObjectFormatter):
         skeleton.name = os.name
         skeleton.version = os.version
 
-        lifecycle_enum = skeleton.DESCRIPTOR.fields_by_name['lifecycle'].enum_type
+        lifecycle_enum = skeleton.DESCRIPTOR.fields_by_name["lifecycle"].enum_type
         skeleton.lifecycle = lifecycle_enum.values_by_name[os.lifecycle.name.upper()].number
 
         # We don't need the services here, so don't call redirect_proto()
         self.redirect_proto(os.archetype, skeleton.archetype,
                             indirect_attrs=False)
+
+    def format_json(self, os, embedded=True, indirect_attrs=True):
+        details = {
+            "name": os.name,
+            "version": os.version,
+            "lifecycle": os.lifecycle.name,
+        }
+        if indirect_attrs:
+            if not embedded:
+                details["archetype"] = os.archetype.name
+            if os.comments and indirect_attrs:
+                details["comments"] = os.comments
+        return details
 
 ObjectFormatter.handlers[OperatingSystem] = OSFormatter()

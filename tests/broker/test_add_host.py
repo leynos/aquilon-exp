@@ -17,16 +17,19 @@
 # limitations under the License.
 """Module for testing the add host command."""
 
+import json
 import unittest
 
 if __name__ == "__main__":
     from broker import utils
     utils.import_depends()
 
-from broker.brokertest import TestBrokerCommand
-from .networktest import DummyIP
-from .machinetest import MachineTestMixin
 from mock_ib_services import ib_expect_add_address, ib_expect_del_address
+
+from broker.brokertest import TestBrokerCommand
+
+from .machinetest import MachineTestMixin
+from .networktest import DummyIP
 
 
 class TestAddHost(MachineTestMixin, TestBrokerCommand):
@@ -80,6 +83,20 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         self.matchoutput(out, "Advertise Status: False", command)
         self.matchoutput(out, "Host Comments: Some host comments", command)
 
+        # JSON format
+        command = "show host --hostname unittest02.one-nyp.ms.com --format json"
+        out = self.commandtest(command.split(" "))
+        results = json.loads(out)[0]
+        self.assertIsInstance(results, dict)
+        self.matchoutput(results["machine"], "ut3c5n10", command)
+        self.matchoutput(results["hostname"], "unittest02", command)
+        self.matchoutput(results["build_status"], "build", command)
+        self.matchoutput(results["comments"], "Some host comments", command)
+        self.matchoutput(results["archetype"]["name"], "aquilon", command)
+        self.matchoutput(results["personality"]["name"], "compileserver", command)
+        self.matchoutput(results["operating_system"]["name"], "linux", command)
+        self.matchoutput(results["operating_system"]["version"], osver, command)
+
     def test_105_verify_unittest02_network_osversion(self):
         osver = self.config.get("unittest", "linux_version_prev")
         command = ["show", "network",
@@ -88,7 +105,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                    "--hosts"]
         network = self.protobuftest(command)[0]
         for i in network.hosts:
-            if i.fqdn == 'unittest02.one-nyp.ms.com':
+            if i.fqdn == "unittest02.one-nyp.ms.com":
                 self.assertEqual(i.operating_system.version, osver)
                 break
         else:
@@ -123,11 +140,11 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         self.assertEqual(len(host.eonid_maps), 0)
         self.assertEqual(host.personality.owner_eonid, 3)
         self.assertEqual(len(host.personality.eonid_maps), 1)
-        self.assertEqual(host.personality.eonid_maps[0].target, 'esp')
+        self.assertEqual(host.personality.eonid_maps[0].target, "esp")
         self.assertEqual(host.personality.eonid_maps[0].eonid, 3)
 
         for disk in host.machine.disks:
-            if disk.device_name == 'sda':
+            if disk.device_name == "sda":
                 self.assertEqual(disk.boot, True)
             else:
                 self.assertEqual(disk.boot, False)
@@ -147,6 +164,15 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         self.matchoutput(out, "Owned by GRN: grn:/ms/ei/aquilon/unittest [inherited]", command)
         self.matchoutput(out, "Used by GRN: grn:/ms/ei/aquilon/unittest [target: esp, inherited]", command)
 
+    def test_106_verify_show_host_grns_json(self):
+        command = ["show_host", "--grns", "--hostname=unittest02.one-nyp.ms.com", "--format", "json"]
+        out = self.commandtest(command)
+        results = json.loads(out)[0]
+        self.assertIsInstance(results, dict)
+        self.matchoutput(results["effective_owner_grn"], "grn:/ms/ei/aquilon/unittest", command)
+        self.matchoutput(results["grns"][0]["grn"], "grn:/ms/ei/aquilon/unittest", command)
+        self.matchoutput(results["grns"][0]["target"], "esp", command)
+
     def test_106_verify_show_host_grns_proto(self):
         command = ["show_host", "--format=proto", "--grns",
                    "--hostname=unittest02.one-nyp.ms.com"]
@@ -163,7 +189,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         self.assertEqual(len(host.eonid_maps), 0)
         self.assertEqual(host.personality.owner_eonid, 3)
         self.assertEqual(len(host.personality.eonid_maps), 1)
-        self.assertEqual(host.personality.eonid_maps[0].target, 'esp')
+        self.assertEqual(host.personality.eonid_maps[0].target, "esp")
         self.assertEqual(host.personality.eonid_maps[0].eonid, 3)
 
     def test_110_add_unittest15(self):
@@ -209,10 +235,11 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                    "--machine", "ut8s02p2", "--domain", "unittest",
                    "--archetype", "aquilon"]
         out = self.badrequesttest(command)
-        self.matchoutput(out,
-                         "Expected an IP address for --ip: "
-                         "'not-an-ip-address' does not appear to be an IPv4 or IPv6 address.",
-                         command)
+        self.matchoutput(
+            out,
+            "Expected an IP address for --ip: " "'not-an-ip-address' does not appear to be an IPv4 or IPv6 address.",
+            command,
+        )
 
     def test_122_add_unittest16_bad_domain(self):
         net = self.net["tor_net_0"]
@@ -282,8 +309,8 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                          self.net["tor_net_0"].usable[3],
                          command)
         self.searchoutput(out,
-                          r'Operating System: linux\s*'
-                          r'Version: %s$' % osversion,
+                          r"Operating System: linux\s*"
+                          r"Version: %s$" % osversion,
                           command)
         self.matchoutput(out, "Personality: inventory", command)
 
@@ -302,8 +329,8 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         self.matchoutput(out, "Personality: generic", command)
         self.matchoutput(out, "Domain: unittest", command)
         self.searchoutput(out,
-                          r'Operating System: linux\s*'
-                          r'Version: generic$',
+                          r"Operating System: linux\s*"
+                          r"Version: generic$",
                           command)
 
     def test_145_add_windows_default_os(self):
@@ -327,8 +354,8 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         self.matchoutput(out, "Personality: generic", command)
         self.matchoutput(out, "Domain: ut-prod", command)
         self.searchoutput(out,
-                          r'Operating System: windows\s*'
-                          r'Version: generic$',
+                          r"Operating System: windows\s*"
+                          r"Version: generic$",
                           command)
 
     def test_150_add_cciss_host(self):
@@ -409,7 +436,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         pri_net = self.net["ut14_net"]
         storage_net = self.net["vm_storage_net"]
         mgmt_net = self.net["ut14_oob"]
-        for i in range(0, 2):
+        for i in range(2):
             hostname = "evh%d.aqd-unittest.ms.com" % (i + 80)
             machine = "ut14s1p%d" % i
             ip = pri_net.usable[i]
@@ -554,8 +581,8 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
 
     def test_320_add_10gig_racks(self):
         for port in range(1, 13):
-            for (template, rack, offset) in [('ut11s01p%d', "ut11", 0),
-                                             ('ut12s02p%d', "ut12", 12)]:
+            for (template, rack, offset) in [("ut11s01p%d", "ut11", 0),
+                                             ("ut12s02p%d", "ut12", 12)]:
                 machine = template % port
                 # Both counts would start at 0 except the tor_net has two
                 # switches taking IPs.
@@ -663,24 +690,23 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         self.assertEqual(host.ip, str(self.net["ut10_eth0"].usable[1]))
         self.assertEqual(host.machine.name, "ut10s04p1")
         self.assertEqual(len(host.machine.interfaces), 3)
-        self.assertEqual(host.machine.location.name, 'ut10')
-        self.assertEqual(' '.join('%s:%s' % (str(loc.location_type),
-                                             str(loc.name))
+        self.assertEqual(host.machine.location.name, "ut10")
+        self.assertEqual(" ".join(f"{str(loc.location_type)}:{str(loc.name)}"
                                   for loc in host.machine.location.parents),
                          "company:ms hub:ny continent:na country:us "
                          "campus:ny city:ny building:ut")
         eth0_net = self.net["ut10_eth0"]
         mgmt_net = self.net["ut10_oob"]
         for i in host.machine.interfaces:
-            if i.device == 'eth0':
+            if i.device == "eth0":
                 self.assertEqual(i.ip, str(eth0_net.usable[1]))
                 self.assertEqual(i.mac, str(eth0_net.usable[1].mac))
                 # We're not using this field anymore...
                 self.assertEqual(i.network_id, 0)
-            elif i.device == 'eth1':
+            elif i.device == "eth1":
                 self.assertEqual(i.ip, "")
                 self.assertEqual(i.network_id, 0)
-            elif i.device == 'mgmt0':
+            elif i.device == "mgmt0":
                 self.assertEqual(i.ip, str(mgmt_net.usable[1]))
                 self.assertEqual(i.mac, str(mgmt_net.usable[1].mac))
             else:
@@ -734,7 +760,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                          eth0_fqdn="infra1-e0.aqd-unittest.ms.com",
                          eth1_mac=eth1_ip.mac, eth1_ip=eth1_ip,
                          eth1_fqdn="infra1-e1.aqd-unittest.ms.com",
-                         zebra=True, ipfromtype='localvip', personality="utpers-prod")
+                         zebra=True, ipfromtype="localvip", personality="utpers-prod")
 
     def test_431_add_utinfra2(self):
         eth0_ip = self.net["unknown0"].usable[38]
@@ -748,7 +774,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                          eth0_fqdn="infra2-e0.aqd-unittest.ms.com",
                          eth1_mac=eth1_ip.mac, eth1_ip=eth1_ip,
                          eth1_fqdn="infra2-e1.aqd-unittest.ms.com",
-                         zebra=True, ipfromtype='localvip', personality="utpers-prod")
+                         zebra=True, ipfromtype="localvip", personality="utpers-prod")
 
     def test_435_add_npinfra1(self):
         # FIXME: use networks from np
@@ -763,7 +789,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                          eth0_fqdn="infra1-e0.one-nyp.ms.com",
                          eth1_mac=eth1_ip.mac, eth1_ip=eth1_ip,
                          eth1_fqdn="infra1-e1.one-nyp.ms.com",
-                         zebra=True, ipfromtype='vip', personality="utpers-prod")
+                         zebra=True, ipfromtype="vip", personality="utpers-prod")
 
     def test_436_add_npinfra2(self):
         # FIXME: use networks from np
@@ -778,7 +804,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                          eth0_fqdn="infra2-e0.one-nyp.ms.com",
                          eth1_mac=eth1_ip.mac, eth1_ip=eth1_ip,
                          eth1_fqdn="infra2-e1.one-nyp.ms.com",
-                         zebra=True, ipfromtype='vip', personality="utpers-prod")
+                         zebra=True, ipfromtype="vip", personality="utpers-prod")
 
     def test_440_add_jack_host(self):
         ip = self.net["tor_net_0"].usable[9]
@@ -806,32 +832,32 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         self.matchoutput(out, "Used by GRN: grn:/example/cards [target: esp]", command)
 
     def _prepare_for_500(self, dns_domain):
-        cases = {'wrong': {'building': 'ut'}, 'right': {'building': 'cards'}}
+        cases = {"wrong": {"building": "ut"}, "right": {"building": "cards"}}
         for case in cases:
-            cases[case]['dns_domain'] = dns_domain
-            for k in ('desk', 'machine', 'prefix', 'net'):
-                cases[case][k] = '{}{}'.format(case, k)
-            cases[case]['net'] = '{}net'.format(case)
-            cases[case]['host'] = '{}1'.format(cases[case]['prefix'])
-            cases[case]['fqhn'] = '{}.{}'.format(
-                cases[case]['host'], cases[case]['dns_domain'])
+            cases[case]["dns_domain"] = dns_domain
+            for k in ("desk", "machine", "prefix", "net"):
+                cases[case][k] = f"{case}{k}"
+            cases[case]["net"] = f"{case}net"
+            cases[case]["host"] = "{}1".format(cases[case]["prefix"])
+            cases[case]["fqhn"] = "{}.{}".format(
+                cases[case]["host"], cases[case]["dns_domain"])
             net = self.net.allocate_network(
-                self, cases[case]['net'], 28, 'unknown',
-                'building', cases[case]['building'])
-            cases[case]['mac'] = net.usable[0].mac
-            cases[case]['ip'] = net.usable[0]
-            if case == 'right':
+                self, cases[case]["net"], 28, "unknown",
+                "building", cases[case]["building"])
+            cases[case]["mac"] = net.usable[0].mac
+            cases[case]["ip"] = net.usable[0]
+            if case == "right":
                 # Set the default DNS domain for the right building.
-                command = ['update_building',
-                           '--building', cases[case]['building'],
-                           '--default_dns_domain', dns_domain]
+                command = ["update_building",
+                           "--building", cases[case]["building"],
+                           "--default_dns_domain", dns_domain]
                 self.successtest(command)
-            command = ['add_desk', '--desk', cases[case]['desk'],
-                       '--building', cases[case]['building']]
+            command = ["add_desk", "--desk", cases[case]["desk"],
+                       "--building", cases[case]["building"]]
             self.successtest(command)
             self.create_machine_dl360g9(
-                cases[case]['machine'], desk=cases[case]['desk'],
-                eth0_mac=cases[case]['mac'])
+                cases[case]["machine"], desk=cases[case]["desk"],
+                eth0_mac=cases[case]["mac"])
         return cases
 
     def _clean_up_after_500(self, cases):
@@ -839,40 +865,40 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         for case in cases:
             fqdn = cases[case]["fqhn"]
             ip = cases[case]["ip"]
-            command = ['del_host', '--hostname={}'.format(fqdn)]
+            command = ["del_host", f"--hostname={fqdn}"]
             self.dsdb_expect_delete(ip)
             ib_expect_del_address(fqdn, ip)
             self.successtest(command)
             self.ib_verify()
-            self.noouttest(['del_machine',
-                            '--machine', cases[case]['machine']])
-            self.net.dispose_network(self, cases[case]['net'])
-            command = ['del_desk', '--desk', cases[case]['desk']]
+            self.noouttest(["del_machine",
+                            "--machine", cases[case]["machine"]])
+            self.net.dispose_network(self, cases[case]["net"])
+            command = ["del_desk", "--desk", cases[case]["desk"]]
             self.successtest(command)
-            if case == 'right':
+            if case == "right":
                 # Unset the default DNS domain for the right building.
-                command = ['update_building',
-                           '--building', cases[case]['building'],
-                           '--default_dns_domain', '']
+                command = ["update_building",
+                           "--building", cases[case]["building"],
+                           "--default_dns_domain", ""]
                 self.successtest(command)
 
     def verify_dns_domain_for_buildings(self, extend_command):
         # Set up.
-        dns_domain = 'cards.example.com'
+        dns_domain = "cards.example.com"
         cases = self._prepare_for_500(dns_domain)
-        osver = self.config.get('unittest', 'linux_version_curr')
-        common = ['add_host', '--domain', 'unittest', '--archetype', 'aquilon',
-                  '--osname', 'linux', '--osversion', osver]
+        osver = self.config.get("unittest", "linux_version_curr")
+        common = ["add_host", "--domain", "unittest", "--archetype", "aquilon",
+                  "--osname", "linux", "--osversion", osver]
         # Test.
         for case in cases:
             command = common[:]
-            command.extend(['--ip', cases[case]['ip'],
-                            '--machine', cases[case]['machine']])
+            command.extend(["--ip", cases[case]["ip"],
+                            "--machine", cases[case]["machine"]])
             extend_command(command, cases[case])
-            ib_expect_add_address(cases[case]['fqhn'], cases[case]['ip'])
-            self.dsdb_expect_add(cases[case]['fqhn'], cases[case]['ip'],
-                                 'eth0', cases[case]['mac'])
-            if case == 'right':
+            ib_expect_add_address(cases[case]["fqhn"], cases[case]["ip"])
+            self.dsdb_expect_add(cases[case]["fqhn"], cases[case]["ip"],
+                                 "eth0", cases[case]["mac"])
+            if case == "right":
                 # Try to add a host that uses a DNS domain used as the default
                 # for the building in which the machine is located. This should
                 # succeed.
@@ -890,30 +916,30 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                 self.searchoutput(
                     out,
                     (r'DNS domain "' + dns_domain + r'" is already.*'
-                     + r'being .* other buildings \(e.g. [^)]*'
-                     + cases['right']['building']
+                     + r"being .* other buildings \(e.g. [^)]*"
+                     + cases["right"]["building"]
                      + r'.*The machine .* is located in building "'
-                     + cases[case]['building']
+                     + cases[case]["building"]
                      + r'".* not associated with this domain'
-                     + r'.* use --force_dns_domain.*'),
+                     + r".* use --force_dns_domain.*"),
                     failing_command)
                 # Try to add a host that uses a DNS domain used as the default
                 # DNS domain for a building other than the one in which the
                 # machine is located.  Use the --force_dns_domain switch.  This
                 # should succeed.
                 succeeding_command = failing_command[:]
-                succeeding_command.append('--force_dns_domain')
+                succeeding_command.append("--force_dns_domain")
                 self.successtest(succeeding_command)
                 # After leaving this conditional, verify if the wrong machine
                 # with --force_dns_domain worked.
             # Verify if the right machine without --force_dns_domain and/or
             # the wrong machine with --force_dns_domain worked.
-            verify_command = ['show_host', '--format=proto',
-                              '--hostname={}'.format(cases[case]['fqhn'])]
+            verify_command = ["show_host", "--format=proto",
+                              "--hostname={}".format(cases[case]["fqhn"])]
             host = self.protobuftest(verify_command, expect=1)[0]
-            self.assertEqual(host.hostname, cases[case]['host'])
-            self.assertEqual(host.dns_domain, cases[case]['dns_domain'])
-            self.assertEqual(host.fqdn, cases[case]['fqhn'])
+            self.assertEqual(host.hostname, cases[case]["host"])
+            self.assertEqual(host.dns_domain, cases[case]["dns_domain"])
+            self.assertEqual(host.fqdn, cases[case]["fqhn"])
         # Clean up.
         self._clean_up_after_500(cases)
         self.dsdb_verify()
@@ -921,13 +947,13 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
 
     def test_500_verify_hostname_for_building(self):
         def extend_command(command, case_data):
-            command.extend(['--hostname', case_data['fqhn']])
+            command.extend(["--hostname", case_data["fqhn"]])
         self.verify_dns_domain_for_buildings(extend_command=extend_command)
 
     def test_500_verify_dns_domain_with_prefix_for_building(self):
         def extend_command(command, case_data):
-            command.extend(['--prefix', case_data['prefix'],
-                            '--dns_domain', case_data['dns_domain']])
+            command.extend(["--prefix", case_data["prefix"],
+                            "--dns_domain", case_data["dns_domain"]])
         self.verify_dns_domain_for_buildings(extend_command=extend_command)
 
     def test_800_verify_host_all(self):
@@ -950,7 +976,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
     def test_800_verify_host_all_proto(self):
         command = ["show", "host", "--all", "--format", "proto"]
         hostlist = self.protobuftest(command)
-        hostnames = set(host_msg.hostname for host_msg in hostlist)
+        hostnames = {host_msg.hostname for host_msg in hostlist}
         for hostname in ("afs-by-net.aqd-unittest.ms.com",
                          "unittest02.one-nyp.ms.com",
                          "unittest15.aqd-unittest.ms.com",
@@ -981,12 +1007,12 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
 
     def test_800_show_ut3c5(self):
         ip = self.net["unknown0"].usable[6]
-        hostname = self.config.get("unittest", "hostname")
+        self.config.get("unittest", "hostname")
         command = ["show_chassis", "--chassis", "ut3c5"]
         out = self.commandtest(command)
-        self.output_equals(out, """
+        self.output_equals(out, f"""
             Chassis: ut3c5
-              Primary Name: ut3c5.aqd-unittest.ms.com [%s]
+              Primary Name: ut3c5.aqd-unittest.ms.com [{ip}]
               Building: ut
               Bunker: zebrabucket.ut
               Campus: ny
@@ -1005,10 +1031,10 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
               Serial: ABC5678
               Comments: Some new chassis comments
               Owned by GRN: grn:/ms/ei/aquilon/aqd
-              Interface: oa %s
+              Interface: oa {ip.mac}
                 Type: oa
                 Network Environment: internal
-                Provides: ut3c5.aqd-unittest.ms.com [%s]
+                Provides: ut3c5.aqd-unittest.ms.com [{ip}]
               Slot #2 (type: machine): ut3c5n2 (unittest20.aqd-unittest.ms.com)
               Slot #3 (type: machine): ut3c5n3 (unittest21.aqd-unittest.ms.com)
               Slot #4 (type: machine): ut3c5n4 (unittest22.aqd-unittest.ms.com)
@@ -1026,7 +1052,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
               Slot #2 (type: network_device): ut3c5netdev1 (ut3c5netdev1.aqd-unittest.ms.com)
               Slot #3 (type: network_device): Empty
               Slot #5 (type: network_device): ut3c5netdev2 (ut3c5netdev2.aqd-unittest.ms.com)
-            """ % (ip, ip.mac, ip),
+            """,
             command)
 
     def test_801_show_ut8s02p6(self):
@@ -1069,8 +1095,8 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         self.ib_verify()
         command = ["show", "host", "--hostname", fqdn]
         out = self.commandtest(command)
-        self.matchoutput(out, "Provides: {} [{}]".format(fqdn, ip), command)
+        self.matchoutput(out, f"Provides: {fqdn} [{ip}]", command)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     suite = unittest.TestLoader().loadTestsFromTestCase(TestAddHost)
     unittest.TextTestRunner(verbosity=2).run(suite)
