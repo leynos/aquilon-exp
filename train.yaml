@@ -8,6 +8,14 @@ tools:
    - msde/msdlbuild/prod
    - perl5/core/5.26.1
 
+toolchains: [ rhel7, solaris11_x86_64 ]
+
+runtimes:
+  - name: rhel7
+    from_toolchain: rhel7
+  - name: solaris11_x86_64
+    from_toolchain: solaris11_x86_64
+
 test_setup: &test_setup
   - mkdir -p ../install/common/test-results/UNIT/xml/ ../install/common/test-results/INTEGRATION/coveragepy/xml/
 
@@ -20,6 +28,11 @@ build_types:
           - script: make clean
           - script: make install
           - script: msdlbuild metadata
+   - build_type:
+       name: multi
+       build:
+         - script: {command: build.sh, toolchain: rhel7}
+         - script: {command: module switch python/core/3.7.9 python/core/3.10.11; build_solaris.sh, toolchain: solaris11_x86_64}
 
 test_types:
   - test_type:
