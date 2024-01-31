@@ -94,6 +94,8 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         self.matchoutput(results["comments"], "Some host comments", command)
         self.matchoutput(results["archetype"]["name"], "aquilon", command)
         self.matchoutput(results["personality"]["name"], "compileserver", command)
+        self.matchoutput(results["personality"]["grns"][0]["grn"], "grn:/ms/ei/aquilon/unittest", command)
+        self.matchoutput(results["personality"]["grns"][0]["target"], "esp", command)
         self.matchoutput(results["operating_system"]["name"], "linux", command)
         self.matchoutput(results["operating_system"]["version"], osver, command)
 
@@ -304,14 +306,10 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         out = self.commandtest(command.split(" "))
         osversion = self.config.get("archetype_aquilon", "default_osversion")
         osversion.replace(".", r"\.")
-        self.matchoutput(out,
-                         "Primary Name: unittest17.aqd-unittest.ms.com [%s]" %
-                         self.net["tor_net_0"].usable[3],
-                         command)
-        self.searchoutput(out,
-                          r"Operating System: linux\s*"
-                          r"Version: %s$" % osversion,
-                          command)
+        self.matchoutput(
+            out, "Primary Name: unittest17.aqd-unittest.ms.com [%s]" % self.net["tor_net_0"].usable[3], command
+        )
+        self.searchoutput(out, r"Operating System: linux\s*" r"Version: %s$" % osversion, command)
         self.matchoutput(out, "Personality: inventory", command)
 
     def test_140_add_aurora_default_os(self):
@@ -328,10 +326,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         self.matchoutput(out, "Archetype: aurora", command)
         self.matchoutput(out, "Personality: generic", command)
         self.matchoutput(out, "Domain: unittest", command)
-        self.searchoutput(out,
-                          r"Operating System: linux\s*"
-                          r"Version: generic$",
-                          command)
+        self.searchoutput(out, r"Operating System: linux\s*" r"Version: generic$", command)
 
     def test_145_add_windows_default_os(self):
         ip = self.net["tor_net_0"].usable[5]
@@ -353,10 +348,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         self.matchoutput(out, "Archetype: windows", command)
         self.matchoutput(out, "Personality: generic", command)
         self.matchoutput(out, "Domain: ut-prod", command)
-        self.searchoutput(out,
-                          r"Operating System: windows\s*"
-                          r"Version: generic$",
-                          command)
+        self.searchoutput(out, r"Operating System: windows\s*" r"Version: generic$", command)
 
     def test_150_add_cciss_host(self):
         ip = self.net["unknown0"].usable[18]
@@ -581,8 +573,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
 
     def test_320_add_10gig_racks(self):
         for port in range(1, 13):
-            for (template, rack, offset) in [("ut11s01p%d", "ut11", 0),
-                                             ("ut12s02p%d", "ut12", 12)]:
+            for template, rack, offset in [("ut11s01p%d", "ut11", 0), ("ut12s02p%d", "ut12", 12)]:
                 machine = template % port
                 # Both counts would start at 0 except the tor_net has two
                 # switches taking IPs.
@@ -691,10 +682,10 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         self.assertEqual(host.machine.name, "ut10s04p1")
         self.assertEqual(len(host.machine.interfaces), 3)
         self.assertEqual(host.machine.location.name, "ut10")
-        self.assertEqual(" ".join(f"{str(loc.location_type)}:{str(loc.name)}"
-                                  for loc in host.machine.location.parents),
-                         "company:ms hub:ny continent:na country:us "
-                         "campus:ny city:ny building:ut")
+        self.assertEqual(
+            " ".join(f"{str(loc.location_type)}:{str(loc.name)}" for loc in host.machine.location.parents),
+            "company:ms hub:ny continent:na country:us " "campus:ny city:ny building:ut",
+        )
         eth0_net = self.net["ut10_eth0"]
         mgmt_net = self.net["ut10_oob"]
         for i in host.machine.interfaces:
@@ -752,59 +743,111 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         eth0_ip = self.net["unknown0"].usable[33]
         eth1_ip = self.net["unknown1"].usable[34]
         ip = self.net["zebra_vip"].usable[0]
-        self.create_host("infra1.aqd-unittest.ms.com", ip, "ut3c5n13",
-                         model="utrackmount", chassis="ut3c5", slot=13,
-                         cpuname="utcpu", cpucount=2, memory=65536,
-                         sda_size=600, sda_controller="sas",
-                         eth0_mac=eth0_ip.mac, eth0_ip=eth0_ip,
-                         eth0_fqdn="infra1-e0.aqd-unittest.ms.com",
-                         eth1_mac=eth1_ip.mac, eth1_ip=eth1_ip,
-                         eth1_fqdn="infra1-e1.aqd-unittest.ms.com",
-                         zebra=True, ipfromtype="localvip", personality="utpers-prod")
+        self.create_host(
+            "infra1.aqd-unittest.ms.com",
+            ip,
+            "ut3c5n13",
+            model="utrackmount",
+            chassis="ut3c5",
+            slot=13,
+            cpuname="utcpu",
+            cpucount=2,
+            memory=65536,
+            sda_size=600,
+            sda_controller="sas",
+            eth0_mac=eth0_ip.mac,
+            eth0_ip=eth0_ip,
+            eth0_fqdn="infra1-e0.aqd-unittest.ms.com",
+            eth1_mac=eth1_ip.mac,
+            eth1_ip=eth1_ip,
+            eth1_fqdn="infra1-e1.aqd-unittest.ms.com",
+            zebra=True,
+            ipfromtype="localvip",
+            personality="utpers-prod",
+        )
 
     def test_431_add_utinfra2(self):
         eth0_ip = self.net["unknown0"].usable[38]
         eth1_ip = self.net["unknown1"].usable[37]
         ip = self.net["zebra_vip"].usable[1]
-        self.create_host("infra2.aqd-unittest.ms.com", ip, "ut3c5n14",
-                         model="utrackmount", chassis="ut3c5", slot=14,
-                         cpuname="utcpu", cpucount=2, memory=65536,
-                         sda_size=600, sda_controller="sas",
-                         eth0_mac=eth0_ip.mac, eth0_ip=eth0_ip,
-                         eth0_fqdn="infra2-e0.aqd-unittest.ms.com",
-                         eth1_mac=eth1_ip.mac, eth1_ip=eth1_ip,
-                         eth1_fqdn="infra2-e1.aqd-unittest.ms.com",
-                         zebra=True, ipfromtype="localvip", personality="utpers-prod")
+        self.create_host(
+            "infra2.aqd-unittest.ms.com",
+            ip,
+            "ut3c5n14",
+            model="utrackmount",
+            chassis="ut3c5",
+            slot=14,
+            cpuname="utcpu",
+            cpucount=2,
+            memory=65536,
+            sda_size=600,
+            sda_controller="sas",
+            eth0_mac=eth0_ip.mac,
+            eth0_ip=eth0_ip,
+            eth0_fqdn="infra2-e0.aqd-unittest.ms.com",
+            eth1_mac=eth1_ip.mac,
+            eth1_ip=eth1_ip,
+            eth1_fqdn="infra2-e1.aqd-unittest.ms.com",
+            zebra=True,
+            ipfromtype="localvip",
+            personality="utpers-prod",
+        )
 
     def test_435_add_npinfra1(self):
         # FIXME: use networks from np
         eth0_ip = self.net["unknown0"].usable[35]
         eth1_ip = self.net["unknown1"].usable[36]
         ip = self.net["zebra_vip2"].usable[0]
-        self.create_host("infra1.one-nyp.ms.com", ip, "np3c5n13",
-                         model="utrackmount", chassis="np3c5", slot=13,
-                         cpuname="utcpu", cpucount=2, memory=65536,
-                         sda_size=600, sda_controller="sas",
-                         eth0_mac=eth0_ip.mac, eth0_ip=eth0_ip,
-                         eth0_fqdn="infra1-e0.one-nyp.ms.com",
-                         eth1_mac=eth1_ip.mac, eth1_ip=eth1_ip,
-                         eth1_fqdn="infra1-e1.one-nyp.ms.com",
-                         zebra=True, ipfromtype="vip", personality="utpers-prod")
+        self.create_host(
+            "infra1.one-nyp.ms.com",
+            ip,
+            "np3c5n13",
+            model="utrackmount",
+            chassis="np3c5",
+            slot=13,
+            cpuname="utcpu",
+            cpucount=2,
+            memory=65536,
+            sda_size=600,
+            sda_controller="sas",
+            eth0_mac=eth0_ip.mac,
+            eth0_ip=eth0_ip,
+            eth0_fqdn="infra1-e0.one-nyp.ms.com",
+            eth1_mac=eth1_ip.mac,
+            eth1_ip=eth1_ip,
+            eth1_fqdn="infra1-e1.one-nyp.ms.com",
+            zebra=True,
+            ipfromtype="vip",
+            personality="utpers-prod",
+        )
 
     def test_436_add_npinfra2(self):
         # FIXME: use networks from np
         eth0_ip = self.net["unknown0"].usable[43]
         eth1_ip = self.net["unknown1"].usable[39]
         ip = self.net["zebra_vip2"].usable[1]
-        self.create_host("infra2.one-nyp.ms.com", ip, "np3c5n14",
-                         model="utrackmount", chassis="np3c5", slot=14,
-                         cpuname="utcpu", cpucount=2, memory=65536,
-                         sda_size=600, sda_controller="sas",
-                         eth0_mac=eth0_ip.mac, eth0_ip=eth0_ip,
-                         eth0_fqdn="infra2-e0.one-nyp.ms.com",
-                         eth1_mac=eth1_ip.mac, eth1_ip=eth1_ip,
-                         eth1_fqdn="infra2-e1.one-nyp.ms.com",
-                         zebra=True, ipfromtype="vip", personality="utpers-prod")
+        self.create_host(
+            "infra2.one-nyp.ms.com",
+            ip,
+            "np3c5n14",
+            model="utrackmount",
+            chassis="np3c5",
+            slot=14,
+            cpuname="utcpu",
+            cpucount=2,
+            memory=65536,
+            sda_size=600,
+            sda_controller="sas",
+            eth0_mac=eth0_ip.mac,
+            eth0_ip=eth0_ip,
+            eth0_fqdn="infra2-e0.one-nyp.ms.com",
+            eth1_mac=eth1_ip.mac,
+            eth1_ip=eth1_ip,
+            eth1_fqdn="infra2-e1.one-nyp.ms.com",
+            zebra=True,
+            ipfromtype="vip",
+            personality="utpers-prod",
+        )
 
     def test_440_add_jack_host(self):
         ip = self.net["tor_net_0"].usable[9]
@@ -838,26 +881,20 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
             for k in ("desk", "machine", "prefix", "net"):
                 cases[case][k] = f"{case}{k}"
             cases[case]["net"] = f"{case}net"
-            cases[case]["host"] = "{}1".format(cases[case]["prefix"])
-            cases[case]["fqhn"] = "{}.{}".format(
-                cases[case]["host"], cases[case]["dns_domain"])
+            cases[case]["host"] = f"{cases[case]['prefix']}1"
+            cases[case]["fqhn"] = f"{cases[case]['host']}.{cases[case]['dns_domain']}"
             net = self.net.allocate_network(
-                self, cases[case]["net"], 28, "unknown",
-                "building", cases[case]["building"])
+                self, cases[case]["net"], 28, "unknown", "building", cases[case]["building"]
+            )
             cases[case]["mac"] = net.usable[0].mac
             cases[case]["ip"] = net.usable[0]
             if case == "right":
                 # Set the default DNS domain for the right building.
-                command = ["update_building",
-                           "--building", cases[case]["building"],
-                           "--default_dns_domain", dns_domain]
+                command = ["update_building", "--building", cases[case]["building"], "--default_dns_domain", dns_domain]
                 self.successtest(command)
-            command = ["add_desk", "--desk", cases[case]["desk"],
-                       "--building", cases[case]["building"]]
+            command = ["add_desk", "--desk", cases[case]["desk"], "--building", cases[case]["building"]]
             self.successtest(command)
-            self.create_machine_dl360g9(
-                cases[case]["machine"], desk=cases[case]["desk"],
-                eth0_mac=cases[case]["mac"])
+            self.create_machine_dl360g9(cases[case]["machine"], desk=cases[case]["desk"], eth0_mac=cases[case]["mac"])
         return cases
 
     def _clean_up_after_500(self, cases):
@@ -870,16 +907,13 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
             ib_expect_del_address(fqdn, ip)
             self.successtest(command)
             self.ib_verify()
-            self.noouttest(["del_machine",
-                            "--machine", cases[case]["machine"]])
+            self.noouttest(["del_machine", "--machine", cases[case]["machine"]])
             self.net.dispose_network(self, cases[case]["net"])
             command = ["del_desk", "--desk", cases[case]["desk"]]
             self.successtest(command)
             if case == "right":
                 # Unset the default DNS domain for the right building.
-                command = ["update_building",
-                           "--building", cases[case]["building"],
-                           "--default_dns_domain", ""]
+                command = ["update_building", "--building", cases[case]["building"], "--default_dns_domain", ""]
                 self.successtest(command)
 
     def verify_dns_domain_for_buildings(self, extend_command):
@@ -887,17 +921,24 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         dns_domain = "cards.example.com"
         cases = self._prepare_for_500(dns_domain)
         osver = self.config.get("unittest", "linux_version_curr")
-        common = ["add_host", "--domain", "unittest", "--archetype", "aquilon",
-                  "--osname", "linux", "--osversion", osver]
+        common = [
+            "add_host",
+            "--domain",
+            "unittest",
+            "--archetype",
+            "aquilon",
+            "--osname",
+            "linux",
+            "--osversion",
+            osver,
+        ]
         # Test.
         for case in cases:
             command = common[:]
-            command.extend(["--ip", cases[case]["ip"],
-                            "--machine", cases[case]["machine"]])
+            command.extend(["--ip", cases[case]["ip"], "--machine", cases[case]["machine"]])
             extend_command(command, cases[case])
             ib_expect_add_address(cases[case]["fqhn"], cases[case]["ip"])
-            self.dsdb_expect_add(cases[case]["fqhn"], cases[case]["ip"],
-                                 "eth0", cases[case]["mac"])
+            self.dsdb_expect_add(cases[case]["fqhn"], cases[case]["ip"], "eth0", cases[case]["mac"])
             if case == "right":
                 # Try to add a host that uses a DNS domain used as the default
                 # for the building in which the machine is located. This should
@@ -915,14 +956,19 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                 out = self.badrequesttest(failing_command)
                 self.searchoutput(
                     out,
-                    (r'DNS domain "' + dns_domain + r'" is already.*'
-                     + r"being .* other buildings \(e.g. [^)]*"
-                     + cases["right"]["building"]
-                     + r'.*The machine .* is located in building "'
-                     + cases[case]["building"]
-                     + r'".* not associated with this domain'
-                     + r".* use --force_dns_domain.*"),
-                    failing_command)
+                    (
+                        r'DNS domain "'
+                        + dns_domain
+                        + r'" is already.*'
+                        + r"being .* other buildings \(e.g. [^)]*"
+                        + cases["right"]["building"]
+                        + r'.*The machine .* is located in building "'
+                        + cases[case]["building"]
+                        + r'".* not associated with this domain'
+                        + r".* use --force_dns_domain.*"
+                    ),
+                    failing_command,
+                )
                 # Try to add a host that uses a DNS domain used as the default
                 # DNS domain for a building other than the one in which the
                 # machine is located.  Use the --force_dns_domain switch.  This
@@ -934,8 +980,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                 # with --force_dns_domain worked.
             # Verify if the right machine without --force_dns_domain and/or
             # the wrong machine with --force_dns_domain worked.
-            verify_command = ["show_host", "--format=proto",
-                              "--hostname={}".format(cases[case]["fqhn"])]
+            verify_command = ["show_host", "--format=proto", f"--hostname={cases[case]['fqhn']}"]
             host = self.protobuftest(verify_command, expect=1)[0]
             self.assertEqual(host.hostname, cases[case]["host"])
             self.assertEqual(host.dns_domain, cases[case]["dns_domain"])
@@ -952,8 +997,8 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
 
     def test_500_verify_dns_domain_with_prefix_for_building(self):
         def extend_command(command, case_data):
-            command.extend(["--prefix", case_data["prefix"],
-                            "--dns_domain", case_data["dns_domain"]])
+            command.extend(["--prefix", case_data["prefix"], "--dns_domain", case_data["dns_domain"]])
+
         self.verify_dns_domain_for_buildings(extend_command=extend_command)
 
     def test_800_verify_host_all(self):
@@ -1010,7 +1055,9 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         self.config.get("unittest", "hostname")
         command = ["show_chassis", "--chassis", "ut3c5"]
         out = self.commandtest(command)
-        self.output_equals(out, f"""
+        self.output_equals(
+            out,
+            f"""
             Chassis: ut3c5
               Primary Name: ut3c5.aqd-unittest.ms.com [{ip}]
               Building: ut
@@ -1096,6 +1143,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         command = ["show", "host", "--hostname", fqdn]
         out = self.commandtest(command)
         self.matchoutput(out, f"Provides: {fqdn} [{ip}]", command)
+
 
 if __name__ == "__main__":
     suite = unittest.TestLoader().loadTestsFromTestCase(TestAddHost)

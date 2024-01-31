@@ -145,14 +145,14 @@ class PersonalityStageFormatter(PersonalityFormatter):
             "archetype": persst.personality.archetype.name,
             "environment": persst.personality.host_environment.name,
             "owner_grn": persst.personality.owner_grn.grn,
+            "grns": [],
         }
         if persst.staged:
             details["stage"] = persst.name
+        for grn_rec in sorted(persst.grns, key=attrgetter("target", "eon_id")):
+            details["grns"].append({"grn": grn_rec.grn.grn, "target": grn_rec.target})
         if indirect_attrs:
-            details["grns"] = []
             details["features"] = []
-            for grn_rec in sorted(persst.grns, key=attrgetter("eon_id")):
-                details["grns"].append(grn_rec.grn.grn)
             for link in persst.features:
                 details["features"].append(link.feature.name)
             if persst.personality.comments:
