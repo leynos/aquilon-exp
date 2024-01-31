@@ -23,13 +23,15 @@
 
 """
 
+import sys
+
 try:
     import ms.version
 except ImportError:
     pass
 else:
     ms.version.addpkg('setuptools', '46.1.3')
-    ms.version.addpkg('protobuf', '3.17.3')
+    ms.version.addpkg('protobuf', '4.23.1')
     ms.version.addpkg('zope.interface', '4.6.0-py37')
     ms.version.addpkg('twisted', '21.2.0')
     ms.version.addpkg('incremental', '16.10.1')
@@ -63,8 +65,24 @@ else:
     ms.version.addpkg('urllib3', '2.0.3')
     ms.version.addpkg("requests", "2.31.0")
     ms.version.addpkg("requests-kerberos", "0.14.0")
-    ms.version.addpkg("kerberos", "1.3.1-1.16-ms2")
-    ms.version.addpkg("krb5", "0.4.0")
+    ms.version.addpkg("kerberos", "1.3.1-1.16")
     ms.version.addpkg("cffi", "1.15.1")
     ms.version.addpkg("orjson", "3.6.3-py37")
+
+import ms.version
+if sys.platform == "sunos5":
+
+    # ctypes is missing from the default Python build on Solaris, due to
+    # http://bugs.python.org/issue2552. It is available as a separate package
+    # though.
+    ms.version.addpkg("krb5", "0.4.1-1.16")
+
+    # ms.version.addpkg() appends to sys.path, but we need the entry at the
+    # front
+    sys.path.insert(0, sys.path.pop())
+else:
+    ms.version.addpkg("krb5", "0.4.0")
+    # ms.version.addpkg() appends to sys.path, but we need the entry at the
+    # front
+    sys.path.insert(0, sys.path.pop())
 
