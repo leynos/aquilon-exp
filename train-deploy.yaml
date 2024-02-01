@@ -1,0 +1,57 @@
+train_version: 1.0
+# train deploy spec at http://wiki.ms.com/MSDETrain/TrainSpecFileForDeploy
+# train deploy demos at http://wiki.ms.com/MSDETrain/TrainDeployDemos
+
+tools:
+# train will create a shell script that runs "module load msde/deploy-endpoints/prod"
+# and that will make tools such as `flip_releaselink`, `zapp` and `zapp_verify` available.
+# For a full list of available tools see https://jive.ms.com/community/msde/train/train-deployment/pages/deploy-endpoints-languages
+  - msde/deploy-endpoints/prod  
+
+# dev tam environment class
+dev:
+  - name: alpha.execute
+    script:
+      - flip_releaselink
+      - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ny-2/dev --pattern '^(alpha-aqd|alpha-aq_notifyd|alpha-knc)$'
+  - name: alpha.verify
+    script:
+      - verify_releaselink --check_cells
+
+  - name: beta.execute
+    script:
+      - flip_releaselink
+      - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ny-2/dev --pattern '^(aqd-ro-instance|next-aqd|next-aq_notifyd|next-knc)$'
+  - name: beta.verify
+    script:
+      - verify_releaselink --check_cells
+
+  - name: ring1-beta.execute
+    script:
+      - flip_releaselink
+      - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ny-2/dev --pattern '^(aqd-ring1-dev|aq_notifyd|knc-ring1-dev)$'
+  - name: ring1-beta.verify
+    script:
+      - verify_releaselink --check_cells
+
+
+# prod tam environment class
+ring1-prod:
+  - name: ring1-prod.execute
+    autodeployuser: aqdautodeploy
+    script:
+      - flip_releaselink
+      - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ring1-ny-1/prod --pattern '^(aqd|aq_notifyd|knc)$'
+  - name: ring1-prod.verify
+    script:
+      - verify_releaselink --check_cells
+
+prod:
+  - name: prod.execute
+    autodeployuser: aqdautodeploy
+    script:
+      - flip_releaselink
+      - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ny-1/prod --pattern '^(aqd|aqd-noauth|aq_notifyd|knc|aqd-ro-instance-\d|aqd-ro-knc-\d|aqd-ro-batch-instance-\d|aqd-ro-batch-knc-\d|aqd-ro-dhcp-instance-\d|aqd-ro-dhcp-knc-\d|aqd-ro-instance-\d|aqd-ro-knc-\d)$'
+  - name: prod.verify
+    script:
+      - verify_releaselink --check_cells
