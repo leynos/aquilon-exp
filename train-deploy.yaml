@@ -1,57 +1,108 @@
 train_version: 1.0
 # train deploy spec at http://wiki.ms.com/MSDETrain/TrainSpecFileForDeploy
+# train deploy language reference at http://devdocs.ms.com/docs/msde_deployment-docs_default/html/train_deploy_language.html
 # train deploy demos at http://wiki.ms.com/MSDETrain/TrainDeployDemos
+
+# When making changes to this file, always verify it:
+# Full verification docs at http://devdocs.ms.com/docs/msde_deployment-docs_default/html/traincli-deploy/core_commands.html#train-verify-schema
+# ie:
+# train verify schema --manifest ./train-deploy.yaml
 
 tools:
 # train will create a shell script that runs "module load msde/deploy-endpoints/prod"
 # and that will make tools such as `flip_releaselink`, `zapp` and `zapp_verify` available.
 # For a full list of available tools see https://jive.ms.com/community/msde/train/train-deployment/pages/deploy-endpoints-languages
-  - msde/deploy-endpoints/prod  
+  - msde/deploy-endpoints/prod
+# used to call the aq client and verify the broker is up and running
+  - aquilon/prod
 
 # dev tam environment class
 dev:
   - name: alpha.execute
+    notify-email: aqd-eng
     script:
       - flip_releaselink
       - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ny-2/dev --pattern '^(alpha-aqd|alpha-aq_notifyd|alpha-knc)$'
   - name: alpha.verify
-    script:
-      - verify_releaselink --check_cells
+    notify-email: aqd-eng
+    stages:
+      - stage:
+        name: Verify releaselink
+        script:
+          - verify_releaselink --check_cells
+      - stage:
+        name: Verify aq alpha broker
+        script:
+          - aq status --aqhost aqdalpha1.new-york.ms.com --aqservice aqddev
 
   - name: beta.execute
+    notify-email: aqd-eng
     script:
       - flip_releaselink
       - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ny-2/dev --pattern '^(aqd-ro-instance|next-aqd|next-aq_notifyd|next-knc)$'
   - name: beta.verify
-    script:
-      - verify_releaselink --check_cells
+    notify-email: aqd-eng
+    stages:
+      - stage:
+        name: Verify releaselink
+        script:
+          - verify_releaselink --check_cells
+      - stage:
+        name: Verify aq beta broker
+        script:
+          - aq status --aqhost nyaqdbeta1.ms.com --aqservice aqdqa
 
   - name: ring1-beta.execute
+    notify-email: aqd-eng
     script:
       - flip_releaselink
       - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ny-2/dev --pattern '^(aqd-ring1-dev|aq_notifyd|knc-ring1-dev)$'
   - name: ring1-beta.verify
-    script:
-      - verify_releaselink --check_cells
+    notify-email: aqd-eng
+    stages:
+      - stage:
+        name: Verify releaselink
+        script:
+          - verify_releaselink --check_cells
+      - stage:
+        name: Verify aq ring1 dev broker
+        script:
+          - aq status --aqhost devr1aqd.ms.com --aqservice aqdr1dev
 
 
 # prod tam environment class
-ring1-prod:
+prod:
   - name: ring1-prod.execute
+    notify-email: aqd-eng
     autodeployuser: aqdautodeploy
     script:
       - flip_releaselink
       - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ring1-ny-1/prod --pattern '^(aqd|aq_notifyd|knc)$'
   - name: ring1-prod.verify
-    script:
-      - verify_releaselink --check_cells
+    notify-email: aqd-eng
+    stages:
+      - stage:
+        name: Verify releaselink
+        script:
+          - verify_releaselink --check_cells
+      - stage:
+        name: Verify aq ring1 prod broker
+        script:
+          - aq status --aqhost r1aqd.new-york.ms.com --aqservice aqdr1p
 
-prod:
   - name: prod.execute
+    notify-email: aqd-eng
     autodeployuser: aqdautodeploy
     script:
       - flip_releaselink
       - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ny-1/prod --pattern '^(aqd|aqd-noauth|aq_notifyd|knc|aqd-ro-instance-\d|aqd-ro-knc-\d|aqd-ro-batch-instance-\d|aqd-ro-batch-knc-\d|aqd-ro-dhcp-instance-\d|aqd-ro-dhcp-knc-\d|aqd-ro-instance-\d|aqd-ro-knc-\d)$'
   - name: prod.verify
-    script:
-      - verify_releaselink --check_cells
+    stages:
+      - stage:
+        name: Verify releaselink
+        script:
+          - verify_releaselink --check_cells
+      - stage:
+        name: Verify aq prod broker
+        script:
+          - /ms/dist/aquilon/PROJ/aqd-scripts/prod/bin/checkout.pl
