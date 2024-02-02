@@ -36,18 +36,22 @@ ms.version.addpkg("setuptools", "45.0.0")
 
 
 if sys.platform == "sunos5":
-        # ctypes is missing from the default Python build on Solaris, due to
-        # http://bugs.python.org/issue2552. It is available as a separate package
-        # though.
-        ms.version.addpkg('lxml', '4.6.3-S')
-        ms.version.addpkg("cryptography", "41.0.3")
+    ms.version.addpkg('lxml', '4.6.3-S')
+    ms.version.addpkg("cryptography", "41.0.3")
+    ms.version.addpkg("krb5", "0.4.1-1.16")
 
-        # ms.version.addpkg() appends to sys.path, but we need the entry at the
-        # front
-        sys.path.insert(0, sys.path.pop())
+    # ms.version.addpkg() appends to sys.path, but we need the entry at the
+    # front
+    sys.path.insert(0, sys.path.pop())
 else:
-        ms.version.addpkg('lxml', '4.5.1-2.9.3')
+    if sys.version_info >= (3, 9):
+        ms.version.addpkg("lxml", "4.9.2-ms1")
+        ms.version.addpkg("cryptography", "41.0.3")
+        ms.version.addpkg("krb5", "0.5.0")
+    else:
+        ms.version.addpkg("lxml", "4.6.3-2.9.10")
         ms.version.addpkg("cryptography", "39.0.0")
-        # ms.version.addpkg() appends to sys.path, but we need the entry at the
-        # front
-        sys.path.insert(0, sys.path.pop())
+        ms.version.addpkg("krb5", "0.4.0")
+    # ms.version.addpkg() appends to sys.path, but we need the entry at the
+    # front
+    sys.path.insert(0, sys.path.pop())

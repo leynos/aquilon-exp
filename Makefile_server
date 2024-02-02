@@ -2,8 +2,8 @@ SHELL  = /bin/ksh
 COMMON = ../install/common
 QACOMMENT = -comment cmrs=qa
 PYTHON_DEFAULT = /usr/bin/env python
-PYTHON_CLIENT_PROD = /ms/dist/python/PROJ/core/3.10.11-0/exec/bin/python -E
-PYTHON_SERVER_PROD = /ms/dist/python/PROJ/core/3.10.11-0/exec/bin/python -E
+PYTHON_CLIENT_PROD = /ms/dist/python/PROJ/core/3.7.9-1/bin/python -E
+PYTHON_SERVER_PROD = /ms/dist/python/PROJ/core/3.7.9-1/bin/python -E
 
 MPR    := $(shell echo $(PWD) | awk -F/ '{print $$(NF-3), $$(NF-2), $$(NF-1)}')
 META   = $(word 1,$(MPR))
@@ -120,6 +120,10 @@ $(COMMON)/etc/rc.d/init.d/aqd: etc/rc.d/init.d/aqd
 .PHONY: install
 install: remove_stale $(INSTALLFILES) install-doc
 	ln -sf aqd "$(COMMON)/sbin/aqd_readonly"
+	$(PYTHON_CLIENT_PROD) $(COMMON)/sbin/aqd --help >/dev/null
+	$(PYTHON_CLIENT_PROD) ./tools/gen_completion.py --outputdir="$(COMMON)/etc" --templatedir="./etc/templates" --all
+	$(PYTHON_CLIENT_PROD) ./tools/graph_schema.py --outputdir="$(COMMON)/doc"
+	$(PYTHON_CLIENT_PROD) ./tools/build_schema_htdocs.py --outputdir="$(COMMON)/doc/schema"
 
 .PHONY: install-doc
 install-doc:
@@ -187,3 +191,4 @@ thaw:
 create:
 	vms create release ${META} ${PROJ} ${REL} -- -nobuildvolume
 	vms create install ${META} ${PROJ} ${REL} common
+

@@ -29,10 +29,24 @@ build_types:
           - script: make install
           - script: msdlbuild metadata
    - build_type:
-       name: multi
+       name: aqd
        build:
-         - script: {command: build.sh, toolchain: rhel7}
-         - script: {command: module switch python/core/3.7.9 python/core/3.10.11; build_solaris.sh, toolchain: solaris11_x86_64}
+         - script:
+            command:
+              - train build --type server
+              - train build --type client
+         - script: msdlbuild metadata
+   - build_type:
+       name: client
+       build:
+         - script: module switch python/core/3.7.9 python/core/3.10.11; make install -f Makefile_client
+   - build_type:
+       name: server
+       build:
+         - script: git ls-remote --sort='version:refname' --tags /ms/dev/aquilon/aqd/SCM/aqd.git | grep refs/tags/TRAIN_DIST_aquilon/aqd | tail -n 2 | head -n 1 | awk '{print $2}' | sed 's/^\([^/]\+\/\)\{2\}//' > doc/version.txt
+         - script: msdlbuild clean
+         - script: make clean
+         - script: make install -f Makefile_server
 
 test_types:
   - test_type:

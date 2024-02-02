@@ -1,0 +1,71 @@
+SHELL  = /bin/ksh
+COMMON = ../install/common
+QACOMMENT = -comment cmrs=qa
+PYTHON_DEFAULT = /usr/bin/env python
+PYTHON_CLIENT_PROD = /ms/dist/python/PROJ/core/3.10.11-0/exec/bin/python -E
+PYTHON_SERVER_PROD = /ms/dist/python/PROJ/core/3.10.11-0/exec/bin/python -E
+
+MPR    := $(shell echo $(PWD) | awk -F/ '{print $$(NF-3), $$(NF-2), $$(NF-1)}')
+META   = $(word 1,$(MPR))
+PROJ   = $(word 2,$(MPR))
+REL    = $(word 3,$(MPR))
+NON_AQ6_HOST := $(findstring 6., $(shell egrep '\s6\.[0-9]+' /etc/redhat-release))
+
+ifneq (aquilon,$(META))
+	META = aquilon
+	PROJ = aqd
+	REL := $(shell git describe | awk -F- '{print $$1}')
+endif
+
+# determine if we're in /ms/dev or our shadow
+# keep them owner writeable in shadow install
+PERMS = 755
+LIB_PERMS = 644
+
+IN_AFS = $(findstring /ms/dev/aquilon/aqd, $(PWD))
+ifneq (,$(IN_AFS))
+        COMMON = /ms/dev/aquilon/aqd/$(REL)/install/common
+        PERMS = 555
+        LIB_PERMS = 444
+endif
+
+#try make print-LIB_DIRS for an example
+#IF YOU WANT THE FILE DEFINED FROM, ADD (from $(origin $*))
+print-%: ; @$(error $* is $($*) ($(value $*)))
+BIN_FILES := $(shell find bin -type f | sed -e 's/.py$$//')
+FILES = $(BIN_FILES)
+INSTALLFILES = $(addprefix $(COMMON)/,$(FILES))
+
+# Here, we make some very easy to parse, and perhaps not very subtle,
+# The goal is to be readable by someone who doesn't know make very well,
+# to make it maintainable, not to impress you with how well I know the tool
+
+#rm -r $(COMMON)/bin/aq $(COMMON)/bin/aq_compile $(COMMON)/bin/aqd_config
+$(COMMON)/bin/aq: bin/aq.py
+	@mkdir -p `dirname $@`
+	sed -e '1s,^#!$(PYTHON_DEFAULT)\(.*\),#!$(PYTHON_CLIENT_PROD)\1,' <$< >$@
+	chmod $(PERMS) $@
+
+$(COMMON)/bin/aq_compile: bin/aq_compile.py
+	@mkdir -p `dirname $@`
+	sed -e '1s,^#!$(PYTHON_DEFAULT)\(.*\),#!$(PYTHON_CLIENT_PROD)\1,' <$< >$@
+	chmod $(PERMS) $@
+
+$(COMMON)/bin/aqd_config: bin/aqd_config.py
+	@mkdir -p `dirname $@`
+	sed -e '1s,^#!$(PYTHON_DEFAULT)\(.*\),#!$(PYTHON_CLIENT_PROD)\1,' <$< >$@
+	chmod $(PERMS) $@
+
+.PHONY: install
+install: remove_stale $(INSTALLFILES)
+
+.PHONY: remove_stale
+remove_stale:
+	$(PYTHON_CLIENT_PROD) ./tools/remove_stale.py "$(COMMON)/bin"
+
+.PHONY: clean
+clean:
+	$(MAKE) -C doc clean
+	find . -name '*.pyc' -exec rm -rf {} \;
+# This needs to be fixed
+# 	find * -type d -empty -exec rmdir {} \;

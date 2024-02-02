@@ -23,8 +23,6 @@
 
 """
 
-import sys
-
 try:
     import ms.version
 except ImportError:
@@ -68,21 +66,3 @@ else:
     ms.version.addpkg("kerberos", "1.3.1-1.16")
     ms.version.addpkg("cffi", "1.15.1")
     ms.version.addpkg("orjson", "3.6.3-py37")
-
-import ms.version
-if sys.platform == "sunos5":
-
-    # ctypes is missing from the default Python build on Solaris, due to
-    # http://bugs.python.org/issue2552. It is available as a separate package
-    # though.
-    ms.version.addpkg("krb5", "0.4.1-1.16")
-
-    # ms.version.addpkg() appends to sys.path, but we need the entry at the
-    # front
-    sys.path.insert(0, sys.path.pop())
-else:
-    ms.version.addpkg("krb5", "0.4.0")
-    # ms.version.addpkg() appends to sys.path, but we need the entry at the
-    # front
-    sys.path.insert(0, sys.path.pop())
-
