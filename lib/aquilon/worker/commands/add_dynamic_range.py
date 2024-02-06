@@ -130,8 +130,12 @@ class CommandAddDynamicRange(BrokerCommand):
 
                 # We do this in all cases, whatever the range_class value.
                 ib_services.group.add_action(
-                    lambda fqdn=str(dbfqdn), ip=ip: ib_services.add_a_ptr(fqdn, ip),
-                    lambda fqdn=str(dbfqdn), ip=ip: ib_services.del_a_ptr(fqdn, ip)
+                    lambda fqdn=str(dbfqdn), ip=ip: ib_services.add_a(fqdn, ip),
+                    lambda fqdn=str(dbfqdn), ip=ip: ib_services.del_a(fqdn, ip)
+                )
+                ib_services.group.add_action(
+                    lambda fqdn=str(dbfqdn), ip=ip: ib_services.add_ptr(fqdn, ip),
+                    lambda ip=ip: ib_services.del_ptr(ip)
                 )
 
         session.flush()

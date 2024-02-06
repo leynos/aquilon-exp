@@ -53,20 +53,20 @@ class IBServicesRequestHandler(SimpleHTTPRequestHandler, object):
             test_case = http_monitor.expects.pop(0)
             r = test_case["request"]
 
-            assert r["method"] == self.command, "Expected request with method '{}', got '{}' instead".format(
-                r["method"], self.command)
+            assert r["method"] == self.command, "Expected request {} {} {}, got {} {} {}".format(
+                r["method"], r["path"], r["payload"], self.command, self.path, body)
 
-            assert r["path"] == self.path, "Expected request with path '{}', got '{}' instead".format(
-                r["path"], self.path)
+            assert r["path"] == self.path, "Expected {} request {} {}, got {} {}".format(
+                r["method"], r["path"], r["payload"], self.path, body)
 
             if body:
                 expected_body = json.dumps(r["payload"], sort_keys=True)
                 got_body = json.dumps(json.loads(body), sort_keys=True)
-                assert expected_body == got_body, "Expected {} request with payload:\n '{}'\nbut got:\n '{}'".format(
-                    r["method"], expected_body, got_body)
+                assert expected_body == got_body, "{} {}: Expected request with payload:\n '{}'\ngot:\n '{}'".format(
+                    r["method"], r["path"], expected_body, got_body)
             else:
-                assert r["payload"] is None, "Expected {} request with no payload, but received:\n '{}'".format(
-                    r["method"], r["payload"])
+                assert r["payload"] is None, "{} {}: Expected request with no payload, but received:\n '{}'".format(
+                    r["method"], r["path"], r["payload"])
 
             self.send_response(test_case["response"]["code"])
         else:
@@ -101,6 +101,56 @@ def ib_test_case(method, path, payload, response_code, response_body):
     }
 
 eonid = "1156"
+
+
+def ib_expect_add_ptr(fqdn, ip, ttl=None, response_code=201, response_body="", justification=None, fail=False):
+    ip = str(ip)
+    if fail:
+        response_code = 400
+    payload = {
+        "name": fqdn,
+        "address": ip,
+        "eonid": eonid,
+    }
+    if ttl:
+        payload["ttl"] = ttl
+    if justification is not None:
+        payload["cm_token"] = justification
+
+    test_case = ib_test_case("POST", "/dns/a_ptr/ptr", payload, response_code, response_body)
+    http_monitor.expect(test_case)
+
+
+def ib_expect_del_ptr(ip, response_code=204, response_body="", justification=None, fail=False):
+    ip = str(ip)
+    if fail:
+        response_code = 400
+    path = "/dns/a_ptr/ptr/{}?eonid={}".format(ip, eonid)
+    if justification is not None:
+        path = path + "&cm_token={}".format(quote_plus(justification))
+    test_case = ib_test_case(
+        "DELETE",
+        path,
+        None, response_code, response_body)
+    http_monitor.expect(test_case)
+
+
+def ib_expect_update_ptr(ip, new_fqdn, new_ttl=None, response_code=201, response_body="", justification=None,
+                         fail=False):
+    ip = str(ip)
+    if fail:
+        response_code = 400
+    payload = {
+        "name": new_fqdn,
+        "eonid": eonid,
+    }
+    if new_ttl:
+        payload["ttl"] = new_ttl
+    if justification is not None:
+        payload["cm_token"] = justification
+
+    test_case = ib_test_case("PATCH", "/dns/a_ptr/ptr/{}".format(ip), payload, response_code, response_body)
+    http_monitor.expect(test_case)
 
 
 def ib_expect_add_a(fqdn, ip, ttl=None, response_code=201, response_body="", justification=None, fail=False):

@@ -79,4 +79,12 @@ class CommandAddRouterAddress(BrokerCommand):
         with plenaries.transaction():
             ib_services = IBServices(logger, justification=justification, **arguments)
             if newly_created and ib_services.feature_enabled("router_address"):
-                ib_services.add_a_ptr(str(dbdns_rec.fqdn), ip)
+                    ib_services.group.add_action(
+                        lambda: ib_services.add_a(name=str(dbdns_rec.fqdn), ip=ip),
+                        lambda: ib_services.delete_a(name=str(dbdns_rec.fqdn), ip=ip)
+                    )
+                    ib_services.group.add_action(
+                        lambda: ib_services.add_ptr(name=str(dbdns_rec.fqdn), ip=ip),
+                        lambda: ib_services.delete_ptr(name=str(dbdns_rec.fqdn), ip=ip)
+                    )
+                    ib_services.group.commit_or_rollback()

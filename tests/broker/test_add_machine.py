@@ -26,7 +26,9 @@ if __name__ == "__main__":
 from broker.utils import MockHub
 from brokertest import TestBrokerCommand
 from machinetest import MachineTestMixin
-from mock_ib_services import ib_expect_update_address, ib_expect_del_address
+from mock_ib_services import ib_expect_add_ptr
+from mock_ib_services import ib_expect_del_ptr
+from mock_ib_services import ib_expect_update_a
 from networktest import DummyIP
 
 
@@ -572,7 +574,7 @@ class TestAddMachine(MachineTestMixin, TestBrokerCommand):
         self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.6")
         self.dsdb_expect_update(hostname, iface="eth0", ip="10.25.0.1")
         self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.5")
-        ib_expect_update_address("swap.test-infoblox.cc", "10.25.0.5", new_ip="10.25.0.6", fail=True)
+        ib_expect_update_a("swap.test-infoblox.cc", "10.25.0.5", new_ip="10.25.0.6", fail=True)
         self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.6")  # Rollback
         self.dsdb_expect_update(hostname, iface="eth0", ip="10.25.0.5")  # Rollback
         self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.1")  # Rollback
@@ -583,9 +585,13 @@ class TestAddMachine(MachineTestMixin, TestBrokerCommand):
         self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.6")
         self.dsdb_expect_update(hostname, iface="eth0", ip="10.25.0.1")
         self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.5")
-        ib_expect_update_address("swap.test-infoblox.cc", "10.25.0.5", new_ip="10.25.0.6")
-        ib_expect_update_address(hostname, "10.25.0.5", new_ip="10.25.0.1", fail=True)
-        ib_expect_update_address("swap.test-infoblox.cc", "10.25.0.6", new_ip="10.25.0.5")  # Rollback
+        ib_expect_update_a("swap.test-infoblox.cc", "10.25.0.5", new_ip="10.25.0.6")
+        ib_expect_del_ptr("10.25.0.5")
+        ib_expect_add_ptr("swap.test-infoblox.cc", "10.25.0.6")
+        ib_expect_update_a(hostname, "10.25.0.5", new_ip="10.25.0.1", fail=True)
+        ib_expect_del_ptr("10.25.0.6")  # Rollback
+        ib_expect_add_ptr("swap.test-infoblox.cc", "10.25.0.5")  # Rollback
+        ib_expect_update_a("swap.test-infoblox.cc", "10.25.0.6", new_ip="10.25.0.5")  # Rollback
         self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.6")  # Rollback
         self.dsdb_expect_update(hostname, iface="eth0", ip="10.25.0.5")  # Rollback
         self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.1")  # Rollback
@@ -596,11 +602,19 @@ class TestAddMachine(MachineTestMixin, TestBrokerCommand):
         self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.6")
         self.dsdb_expect_update(hostname, iface="eth0", ip="10.25.0.1")
         self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.5")
-        ib_expect_update_address("swap.test-infoblox.cc", "10.25.0.5", new_ip="10.25.0.6")
-        ib_expect_update_address(hostname, "10.25.0.5", new_ip="10.25.0.1")
-        ib_expect_update_address("swap.test-infoblox.cc", "10.25.0.6", new_ip="10.25.0.5", fail=True)
-        ib_expect_update_address(hostname, "10.25.0.1", new_ip="10.25.0.5")  # Rollback
-        ib_expect_update_address("swap.test-infoblox.cc", "10.25.0.6", new_ip="10.25.0.5")  # Rollback
+        ib_expect_update_a("swap.test-infoblox.cc", "10.25.0.5", new_ip="10.25.0.6")
+        ib_expect_del_ptr("10.25.0.5")
+        ib_expect_add_ptr("swap.test-infoblox.cc", "10.25.0.6")
+        ib_expect_update_a(hostname, "10.25.0.5", new_ip="10.25.0.1")
+        ib_expect_del_ptr("10.25.0.5")
+        ib_expect_add_ptr(hostname, "10.25.0.1")
+        ib_expect_update_a("swap.test-infoblox.cc", "10.25.0.6", new_ip="10.25.0.5", fail=True)
+        ib_expect_del_ptr("10.25.0.1")  # Rollback
+        ib_expect_add_ptr(hostname, "10.25.0.5")  # Rollback
+        ib_expect_update_a(hostname, "10.25.0.1", new_ip="10.25.0.5")  # Rollback
+        ib_expect_del_ptr("10.25.0.6")  # Rollback
+        ib_expect_add_ptr("swap.test-infoblox.cc", "10.25.0.5")  # Rollback
+        ib_expect_update_a("swap.test-infoblox.cc", "10.25.0.6", new_ip="10.25.0.5")  # Rollback
         self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.6")  # Rollback
         self.dsdb_expect_update(hostname, iface="eth0", ip="10.25.0.5")  # Rollback
         self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.1")  # Rollback
@@ -611,9 +625,15 @@ class TestAddMachine(MachineTestMixin, TestBrokerCommand):
         self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.6")
         self.dsdb_expect_update(hostname, iface="eth0", ip="10.25.0.1")
         self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.5")
-        ib_expect_update_address("swap.test-infoblox.cc", "10.25.0.5", new_ip="10.25.0.6")
-        ib_expect_update_address(hostname, "10.25.0.5", new_ip="10.25.0.1")
-        ib_expect_update_address("swap.test-infoblox.cc", "10.25.0.6", new_ip="10.25.0.5")
+        ib_expect_update_a("swap.test-infoblox.cc", "10.25.0.5", new_ip="10.25.0.6")
+        ib_expect_del_ptr("10.25.0.5")
+        ib_expect_add_ptr("swap.test-infoblox.cc", "10.25.0.6")
+        ib_expect_update_a(hostname, "10.25.0.5", new_ip="10.25.0.1")
+        ib_expect_del_ptr("10.25.0.5")
+        ib_expect_add_ptr(hostname, "10.25.0.1")
+        ib_expect_update_a("swap.test-infoblox.cc", "10.25.0.6", new_ip="10.25.0.5")
+        ib_expect_del_ptr("10.25.0.6")
+        ib_expect_add_ptr("swap.test-infoblox.cc", "10.25.0.5")
 
         self.noouttest(command)
 
@@ -623,9 +643,15 @@ class TestAddMachine(MachineTestMixin, TestBrokerCommand):
         self.dsdb_expect_update(hostname, iface="eth0", ip="10.25.0.5")
         self.dsdb_expect_update("swap.test-infoblox.cc", ip="10.25.0.1")
 
-        ib_expect_update_address("swap.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.6")
-        ib_expect_update_address(hostname, "10.25.0.1", new_ip="10.25.0.5")
-        ib_expect_update_address("swap.test-infoblox.cc", "10.25.0.6", new_ip="10.25.0.1")
+        ib_expect_update_a("swap.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.6")
+        ib_expect_del_ptr("10.25.0.1")
+        ib_expect_add_ptr("swap.test-infoblox.cc", "10.25.0.6")
+        ib_expect_update_a(hostname, "10.25.0.1", new_ip="10.25.0.5")
+        ib_expect_del_ptr("10.25.0.1")
+        ib_expect_add_ptr(hostname, "10.25.0.5")
+        ib_expect_update_a("swap.test-infoblox.cc", "10.25.0.6", new_ip="10.25.0.1")
+        ib_expect_del_ptr("10.25.0.6")
+        ib_expect_add_ptr("swap.test-infoblox.cc", "10.25.0.1")
         self.noouttest(command)
 
         mh.delete()

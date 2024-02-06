@@ -19,8 +19,10 @@
 from collections import defaultdict
 import json
 from eventstest import EventsTestMixin
-from mock_ib_services import ib_expect_add_address
-from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_add_a
+from mock_ib_services import ib_expect_add_ptr
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
 import re
 
 
@@ -369,7 +371,8 @@ class MachineTestMixin(EventsTestMixin):
             self.dsdb_expect_add(hostname, ip, "eth0", ip.mac, comments=comments)
             command.extend(["--ip", ip])
 
-        ib_expect_add_address(hostname, ip)
+        ib_expect_add_a(hostname, ip)
+        ib_expect_add_ptr(hostname, ip)
         self.noouttest(command)
 
         for nic_name, params in machdef.interfaces.items():
@@ -383,7 +386,8 @@ class MachineTestMixin(EventsTestMixin):
                 params["fqdn"] = fqdn
                 kwargs[nic_name + "_fqdn"] = fqdn
 
-            ib_expect_add_address(fqdn, str(params["ip"]), reverse_ptr=hostname)
+            ib_expect_add_a(fqdn, str(params["ip"]))
+            ib_expect_add_ptr(hostname, str(params["ip"]))
             self.dsdb_expect_add(fqdn, params["ip"], nic_name, params["mac"],
                                  primary=hostname)
             self.statustest(["add_interface_address", "--machine", machine,
@@ -397,7 +401,8 @@ class MachineTestMixin(EventsTestMixin):
                        "--interface", manager_iface,
                        "--ip", manager_ip, "--mac", manager_ip.mac]
             short, domain = hostname.split(".", 1)
-            ib_expect_add_address(short + "r." + domain, str(manager_ip))
+            ib_expect_add_a(short + "r." + domain, str(manager_ip))
+            ib_expect_add_ptr(short + "r." + domain, str(manager_ip))
             self.dsdb_expect_add(short + "r." + domain, manager_ip,
                                  manager_iface, manager_ip.mac)
             self.noouttest(command)
@@ -430,7 +435,8 @@ class MachineTestMixin(EventsTestMixin):
         for nic_name in interfaces:
             nic_ip = kwargs.get(nic_name + "_ip", None)
             if nic_ip and nic_ip != ip:
-                ib_expect_del_address(host_map[str(nic_ip)], str(nic_ip))
+                ib_expect_del_a(host_map[str(nic_ip)], str(nic_ip))
+                ib_expect_del_ptr(str(nic_ip))
                 self.dsdb_expect_delete(nic_ip)
                 if justification:
                     command = ["del_interface_address", "--machine", machine,
@@ -443,22 +449,26 @@ class MachineTestMixin(EventsTestMixin):
 
         self.dsdb_expect_delete(ip)
         if justification:
-            ib_expect_del_address(hostname, str(ip), justification=self.valid_justification)
+            ib_expect_del_a(hostname, str(ip), justification=self.valid_justification)
+            ib_expect_del_ptr(str(ip), justification=self.valid_justification)
             command = ["del_host", "--hostname", hostname] + self.valid_just_tcm
             self.statustest(command)
         else:
-            ib_expect_del_address(hostname, str(ip))
+            ib_expect_del_a(hostname, str(ip))
+            ib_expect_del_ptr(str(ip))
             self.statustest(["del_host", "--hostname", hostname])
         if manager_ip:
             self.dsdb_expect_delete(manager_ip)
             short, domain = hostname.split(".", 1)
             manager_hostname = "{}r.{}".format(short, domain)
             if justification:
-                ib_expect_del_address(manager_hostname, manager_ip, justification=self.valid_justification)
+                ib_expect_del_a(manager_hostname, manager_ip, justification=self.valid_justification)
+                ib_expect_del_ptr(manager_ip, justification=self.valid_justification)
                 command = ["del_manager", "--manager", "%s" % (manager_hostname)] + self.valid_just_tcm
                 self.noouttest(command)
             else:
-                ib_expect_del_address(manager_hostname, manager_ip)
+                ib_expect_del_a(manager_hostname, manager_ip)
+                ib_expect_del_ptr(manager_ip)
                 self.noouttest(["del_manager", "--manager", "%s" % (manager_hostname)])
         self.noouttest(["del_machine", "--machine", machine])
         self.dsdb_verify()

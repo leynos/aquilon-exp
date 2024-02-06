@@ -19,7 +19,8 @@
 
 import unittest
 
-from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
 
 if __name__ == "__main__":
     import utils
@@ -34,7 +35,8 @@ class TestDelServiceAddress(TestBrokerCommand):
         fqdn = "unittest20.aqd-unittest.ms.com"
         ip = self.net["zebra_vip"].usable[14]
         self.dsdb_expect_delete(ip)
-        ib_expect_del_address("zebra2.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_a("zebra2.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         command = ["del", "service", "address", "--name", "zebra2",
                    "--hostname", fqdn]
         self.noouttest(command)
@@ -61,7 +63,8 @@ class TestDelServiceAddress(TestBrokerCommand):
     def test_130_delzebra3(self):
         ip = self.net["zebra_vip"].usable[13]
         self.dsdb_expect_delete(ip)
-        ib_expect_del_address("zebra3.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_a("zebra3.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         command = ["del", "service", "address",
                    "--hostname", "unittest20.aqd-unittest.ms.com",
                    "--name", "zebra3"]

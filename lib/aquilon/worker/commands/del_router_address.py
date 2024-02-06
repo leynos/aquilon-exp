@@ -86,6 +86,13 @@ class CommandDelRouterAddress(BrokerCommand):
                                  .format(ip))
                 else:
                     try:
-                        ib_services.delete_a_ptr(fqdn, ip)
+                        ib_services.group.add_action(
+                            lambda fqdn=fqdn, ip=ip: ib_services.delete_a(name=fqdn, ip=ip),
+                            lambda fqdn=fqdn, ip=ip: ib_services.add_a(name=fqdn, ip=ip)
+                        )
+                        ib_services.group.add_action(
+                            lambda ip=ip: ib_services.delete_ptr(ip=ip)
+                        )
+                        ib_services.group.commit_or_rollback()
                     except ProcessException as e:
                         raise e

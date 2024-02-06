@@ -19,7 +19,10 @@
 
 import unittest
 
-from mock_ib_services import ib_expect_add_address, ib_expect_del_address
+from mock_ib_services import ib_expect_add_a
+from mock_ib_services import ib_expect_add_ptr
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
 
 if __name__ == "__main__":
     import utils
@@ -39,7 +42,8 @@ class TestDeprecatedSwitch(TestBrokerCommand):
 
     def test_100_add_switch(self):
         self.dsdb_expect_add(self.fqdn_pri, self.ip_pri, "xge48")
-        ib_expect_add_address(self.fqdn_pri, str(self.ip_pri))
+        ib_expect_add_a(self.fqdn_pri, str(self.ip_pri))
+        ib_expect_add_ptr(self.fqdn_pri, str(self.ip_pri))
         command = ["add", "switch",
                    "--type", "tor",
                    "--switch", self.fqdn_pri,
@@ -61,7 +65,8 @@ class TestDeprecatedSwitch(TestBrokerCommand):
     def test_120_add_interface_address(self):
         self.dsdb_expect_add(self.fqdn_vlan, self.ip_vlan,
                              "vlan980", primary=self.fqdn_pri)
-        ib_expect_add_address(self.fqdn_vlan, str(self.ip_vlan))
+        ib_expect_add_a(self.fqdn_vlan, str(self.ip_vlan))
+        ib_expect_add_ptr(self.fqdn_vlan, str(self.ip_vlan))
         command = ["add", "interface", "address",
                    "--switch", self.fqdn_pri,
                    "--interface", "vlan980", "--ip", self.ip_vlan]
@@ -103,7 +108,8 @@ class TestDeprecatedSwitch(TestBrokerCommand):
 
     def test_600_del_interface_address(self):
         self.dsdb_expect_delete(self.ip_vlan)
-        ib_expect_del_address(self.fqdn_vlan, str(self.ip_vlan))
+        ib_expect_del_a(self.fqdn_vlan, str(self.ip_vlan))
+        ib_expect_del_ptr(str(self.ip_vlan))
         command = ["del", "interface", "address",
                    "--switch", self.fqdn_pri,
                    "--interface", "vlan980", "--ip", self.ip_vlan]
@@ -120,7 +126,8 @@ class TestDeprecatedSwitch(TestBrokerCommand):
 
     def test_620_del_switch(self):
         self.dsdb_expect_delete(self.ip_pri)
-        ib_expect_del_address(self.fqdn_pri, str(self.ip_pri))
+        ib_expect_del_a(self.fqdn_pri, str(self.ip_pri))
+        ib_expect_del_ptr(str(self.ip_pri))
         command = ["del", "switch",
                    "--switch", self.fqdn_pri]
         err = self.statustest(command)

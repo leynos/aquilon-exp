@@ -21,8 +21,10 @@ import os.path
 
 import unittest
 
-from mock_ib_services import ib_expect_add_address
-from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_add_a
+from mock_ib_services import ib_expect_add_ptr
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
 
 if __name__ == "__main__":
     import utils
@@ -145,7 +147,8 @@ class TestUsecaseDatabase(TestBrokerCommand):
     def test_205_add_srv(self):
         ip = self.net["unknown0"].usable[25]
         self.dsdb_expect_add('nydb1nydb1.aqd-unittest.ms.com', ip)
-        ib_expect_add_address('nydb1nydb1.aqd-unittest.ms.com', str(ip))
+        ib_expect_add_a('nydb1nydb1.aqd-unittest.ms.com', str(ip))
+        ib_expect_add_ptr('nydb1nydb1.aqd-unittest.ms.com', str(ip))
         command = ["add_service_address", "--ip", ip, "--name", "nydb1nydb1",
                    "--service_address", "nydb1nydb1.aqd-unittest.ms.com",
                    "--cluster", "nydb1", "--interfaces", "eth0"]
@@ -200,7 +203,8 @@ class TestUsecaseDatabase(TestBrokerCommand):
             self.check_plenary_exists(*path)
 
         self.dsdb_expect_delete(self.net["unknown0"].usable[25])
-        ib_expect_del_address("nydb1nydb1.aqd-unittest.ms.com", str(self.net["unknown0"].usable[25]))
+        ib_expect_del_a("nydb1nydb1.aqd-unittest.ms.com", str(self.net["unknown0"].usable[25]))
+        ib_expect_del_ptr(str(self.net["unknown0"].usable[25]))
         command = ["del_service_address", "--cluster=nydb1",
                    "--name", "nydb1nydb1"]
         self.noouttest(command)

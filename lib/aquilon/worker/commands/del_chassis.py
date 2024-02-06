@@ -59,7 +59,15 @@ class CommandDelChassis(BrokerCommand):
         ib_services = IBServices(logger, **arguments)
         if ib_services.feature_enabled("chassis") and ip:
             try:
-                ib_services.delete_a_ptr(str(dbchassis.primary_name.fqdn), ip)
+                ib_services.group.add_action(
+                    lambda name=str(dbchassis.primary_name.fqdn), ip=ip: ib_services.delete_a(name, ip=ip),
+                    lambda name=str(dbchassis.primary_name.fqdn), ip=ip: ib_services.add_a(name, ip=ip)
+                )
+                ib_services.group.add_action(
+                    lambda ip=ip: ib_services.delete_ptr(ip=ip),
+                    lambda name=str(dbchassis.primary_name.fqdn), ip=ip: ib_services.add_ptr(name, ip=ip)
+                )
+                ib_services.group.commit_or_rollback()
             except ProcessException as e:
                 dsdb_runner.rollback()
                 raise e

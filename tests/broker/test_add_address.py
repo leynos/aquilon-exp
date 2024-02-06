@@ -21,9 +21,10 @@ import unittest
 import json
 
 from mock_ib_services import ib_expect_add_a
-from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_add_ptr
 from mock_ib_services import ib_expect_del_a
-from mock_ib_services import ib_expect_update_address
+from mock_ib_services import ib_expect_del_ptr
+from mock_ib_services import ib_expect_update_a
 
 if __name__ == "__main__":
     from broker import utils
@@ -110,8 +111,10 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         )
         self.dsdb_expect_add("arecord13.aqd-unittest.ms.com",
                              self.net["unknown0"].usable[13])
-        ib_expect_add_address("arecord13.aqd-unittest.ms.com",
-                              str(self.net['unknown0'].usable[13]), justification=self.valid_justification)
+        ib_expect_add_a("arecord13.aqd-unittest.ms.com",
+                        str(self.net['unknown0'].usable[13]), justification=self.valid_justification)
+        ib_expect_add_ptr("arecord13.aqd-unittest.ms.com",
+                          str(self.net['unknown0'].usable[13]), justification=self.valid_justification)
         command = ["add_address", "--ip=%s" % self.net["unknown0"].usable[13],
                    "--fqdn=arecord13.aqd-unittest.ms.com",
                    "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_tcm
@@ -165,8 +168,10 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         hostname = "arecord14.aqd-unittest.ms.com"
         reverse_hostname = "arecord13.aqd-unittest.ms.com"
         self.dsdb_expect_add(hostname, self.net["unknown0"].usable[14])
-        ib_expect_add_address(hostname, str(self.net["unknown0"].usable[14]), reverse_hostname,
-                              justification=self.valid_justification)
+        ib_expect_add_a(hostname, str(self.net["unknown0"].usable[14]),
+                        justification=self.valid_justification)
+        ib_expect_add_ptr(reverse_hostname, str(self.net["unknown0"].usable[14]),
+                          justification=self.valid_justification)
         command = ["add_address", "--ip=%s" % self.net["unknown0"].usable[14],
                    "--fqdn="+hostname,
                    "--reverse_ptr="+reverse_hostname,
@@ -234,8 +239,10 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         )
         self.dsdb_expect_add("arecord15.aqd-unittest.ms.com",
                              self.net["unknown0"].usable[15])
-        ib_expect_add_address("arecord15.aqd-unittest.ms.com",
-                              str(self.net["unknown0"].usable[15]), justification=self.valid_justification)
+        ib_expect_add_a("arecord15.aqd-unittest.ms.com",
+                        str(self.net["unknown0"].usable[15]), justification=self.valid_justification)
+        ib_expect_add_ptr("arecord15.aqd-unittest.ms.com",
+                          str(self.net["unknown0"].usable[15]), justification=self.valid_justification)
         command = ["add_address", "--ipalgorithm=max",
                    "--ipfromip=%s" % self.net["unknown0"].ip,
                    "--fqdn=arecord15.aqd-unittest.ms.com",
@@ -387,7 +394,8 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
             dns_environment='internal',
         )
         hostname = "arecord17.aqd-unittest.ms.com"
-        ib_expect_add_address(hostname, str(ip), reverse_hostname, justification=self.valid_justification)
+        ib_expect_add_a(hostname, str(ip), justification=self.valid_justification)
+        ib_expect_add_ptr(reverse_hostname, str(ip), justification=self.valid_justification)
         self.dsdb_expect_add(hostname, ip)
         command = ["add", "address", "--fqdn", hostname,
                    "--reverse_ptr", reverse_hostname,
@@ -436,7 +444,8 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
             dns_environment='internal',
         )
         self.dsdb_expect_add(fqdn, ip)
-        ib_expect_add_address(fqdn, str(ip), justification=self.valid_justification)
+        ib_expect_add_a(fqdn, str(ip), justification=self.valid_justification)
+        ib_expect_add_ptr(fqdn, str(ip), justification=self.valid_justification)
         command = ["add", "address", "--ip", ip, "--fqdn", fqdn,
                    "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_tcm
         self.noouttest(command)
@@ -518,7 +527,8 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         self.event_add_arecord(
             fqdn=hostname, ip=ip, ttl=300, dns_environment='internal',
         )
-        ib_expect_add_address(hostname, str(ip), ttl=300, justification=self.valid_justification)
+        ib_expect_add_a(hostname, str(ip), ttl=300, justification=self.valid_justification)
+        ib_expect_add_ptr(hostname, str(ip), ttl=300, justification=self.valid_justification)
         self.dsdb_expect_add("arecord40.aqd-unittest.ms.com", ip)
         command = ["add_address", "--ip=%s" % self.net["unknown0"].usable[40],
                    "--fqdn=arecord40.aqd-unittest.ms.com",
@@ -558,8 +568,10 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         )
         self.dsdb_expect_add("arecord50.aqd-unittest.ms.com",
                              self.net["unknown0"].usable[50])
-        ib_expect_add_address("arecord50.aqd-unittest.ms.com",
-                              str(self.net["unknown0"].usable[50]), justification=self.valid_justification)
+        ib_expect_add_a("arecord50.aqd-unittest.ms.com",
+                        str(self.net["unknown0"].usable[50]), justification=self.valid_justification)
+        ib_expect_add_ptr("arecord50.aqd-unittest.ms.com",
+                          str(self.net["unknown0"].usable[50]), justification=self.valid_justification)
         command = ["add_address", "--ip=%s" % self.net["unknown0"].usable[50],
                    "--fqdn=arecord50.aqd-unittest.ms.com",
                    "--grn", "grn:/ms/ei/aquilon/aqd"] + self.valid_just_tcm
@@ -588,8 +600,10 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         )
         self.dsdb_expect_add("arecord51.aqd-unittest.ms.com",
                              self.net["unknown0"].usable[51])
-        ib_expect_add_address("arecord51.aqd-unittest.ms.com",
-                              str(self.net["unknown0"].usable[51]), justification=self.valid_justification)
+        ib_expect_add_a("arecord51.aqd-unittest.ms.com",
+                        str(self.net["unknown0"].usable[51]), justification=self.valid_justification)
+        ib_expect_add_ptr("arecord51.aqd-unittest.ms.com",
+                          str(self.net["unknown0"].usable[51]), justification=self.valid_justification)
         command = ["add_address", "--ip=%s" % self.net["unknown0"].usable[51],
                    "--fqdn=arecord51.aqd-unittest.ms.com",
                    "--eon_id", "3"] + self.valid_just_tcm
@@ -635,6 +649,7 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         # It also checks that if anything fails, the expected rollback commands will execute
         mh = MockHub(self)
 
+        # setup
         mh.add_dns_domain('test-infoblox.cc', restricted=False)
         mh.add_network()
         mh.add_address("address.test-infoblox.cc", "10.25.0.1")
@@ -643,41 +658,59 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
                    "--target", "address.test-infoblox.cc"] + self.valid_just_tcm
         ib_expect_add_a("address-alias.test-infoblox.cc", "10.25.0.1", justification=self.valid_justification)
         self.noouttest(command)
+        # setup - end
 
         command = ["update_address", "--fqdn", "address.test-infoblox.cc",
                    "--ip", "10.25.0.2"] + self.valid_just_tcm
 
+        # test case when dsdb fails
         self.dsdb_expect_update("address.test-infoblox.cc", ip="10.25.0.2", fail=True)
         self.dsdberrortest(command)
         self.dsdb_verify()
+        # test case when dsdb fails - end
 
+        # test case when first ib update_a request fails
         self.dsdb_expect_update("address.test-infoblox.cc", ip="10.25.0.2")
-        ib_expect_update_address("address.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2", fail=True,
-                                 justification=self.valid_justification)
+        ib_expect_update_a("address.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2", fail=True,
+                           justification=self.valid_justification)
         self.dsdb_expect_update("address.test-infoblox.cc", ip="10.25.0.1")  # Rollback dsdb call
         self.iberrortest(command)
         self.dsdb_verify()
+        # test case when first ib request fails - end
 
+        # test case when second ib update_a request fails
         self.dsdb_expect_update("address.test-infoblox.cc", ip="10.25.0.2")
-        ib_expect_update_address("address.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2",
-                                 justification=self.valid_justification)
-        ib_expect_update_address("address-alias.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2", fail=True,
-                                 justification=self.valid_justification)
-        self.dsdb_expect_update("address.test-infoblox.cc", ip="10.25.0.1")  # Rollback dsdb call
-        ib_expect_update_address("address.test-infoblox.cc", "10.25.0.2", new_ip="10.25.0.1",
-                                 justification=self.valid_justification)  # Rolback first ib call
+        ib_expect_update_a("address.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2",
+                           justification=self.valid_justification)
+        ib_expect_del_ptr("10.25.0.1", justification=self.valid_justification)
+        ib_expect_add_ptr(fqdn="address.test-infoblox.cc", ip="10.25.0.2", justification=self.valid_justification)
+
+        ib_expect_update_a("address-alias.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2", fail=True,
+                           justification=self.valid_justification)
+        self.dsdb_expect_update("address.test-infoblox.cc", ip="10.25.0.1")   # Rollback dsdb call
+        ib_expect_del_ptr("10.25.0.2", justification=self.valid_justification)  # Rollback first ib call
+        ib_expect_add_ptr(fqdn="address.test-infoblox.cc", ip="10.25.0.1",
+                          justification=self.valid_justification)  # Rollback first ib call
+        ib_expect_update_a("address.test-infoblox.cc", "10.25.0.2", new_ip="10.25.0.1",
+                           justification=self.valid_justification)  # Rollback first ib call
         self.iberrortest(command)
         self.dsdb_verify()
+        # test case when second ib request fails - end
 
+        # test case when neither dsdb nor ib fail
         self.dsdb_expect_update("address.test-infoblox.cc", ip="10.25.0.2")
-        ib_expect_update_address("address.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2",
-                                 justification=self.valid_justification)
-        ib_expect_update_address("address-alias.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2",
-                                 justification=self.valid_justification)
+        ib_expect_update_a("address.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2",
+                           justification=self.valid_justification)
+        ib_expect_del_ptr("10.25.0.1", justification=self.valid_justification)
+        ib_expect_add_ptr(fqdn="address.test-infoblox.cc", ip="10.25.0.2", justification=self.valid_justification)
+        ib_expect_update_a("address-alias.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2",
+                           justification=self.valid_justification)
         self.noouttest(command)
         mh.addresses["address.test-infoblox.cc", "internal"] = {"ip": "10.25.0.2"}
         self.dsdb_verify()
+        # test case when neither dsdb nor ib fail - end
 
+        # cleanup
         command = ["del_address_alias", "--fqdn", "address-alias.test-infoblox.cc"] + self.valid_just_tcm
         ib_expect_del_a("address-alias.test-infoblox.cc", "10.25.0.2", justification=self.valid_justification)
         self.noouttest(command)

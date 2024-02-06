@@ -21,8 +21,10 @@ import os.path
 
 import unittest
 
-from mock_ib_services import ib_expect_add_address
-from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_add_a
+from mock_ib_services import ib_expect_add_ptr
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
 
 if __name__ == "__main__":
     import utils
@@ -76,14 +78,16 @@ class TestUsecaseHACluster(TestBrokerCommand):
         ip1 = self.net["unknown0"].usable[26]
         ip2 = self.net["unknown0"].usable[27]
         self.dsdb_expect_add("hacl1.aqd-unittest.ms.com", ip1)
-        ib_expect_add_address("hacl1.aqd-unittest.ms.com", str(ip1))
+        ib_expect_add_a("hacl1.aqd-unittest.ms.com", str(ip1))
+        ib_expect_add_ptr("hacl1.aqd-unittest.ms.com", str(ip1))
         self.statustest(["add", "service", "address",
                          "--shortname", "hacl1",
                          "--name", "hacl1", "--cluster", "hacl1",
                          "--ip", ip1])
 
         self.dsdb_expect_add("hacl2.new-york.ms.com", ip2)
-        ib_expect_add_address("hacl2.new-york.ms.com", str(ip2))
+        ib_expect_add_a("hacl2.new-york.ms.com", str(ip2))
+        ib_expect_add_ptr("hacl2.new-york.ms.com", str(ip2))
         self.statustest(["add", "service", "address",
                          "--shortname", "hacl2",
                          "--name", "hacl2", "--cluster", "hacl2",
@@ -148,9 +152,11 @@ class TestUsecaseHACluster(TestBrokerCommand):
 
         # Different location, different default DNS domains
         self.dsdb_expect_add("hacl1g1.aqd-unittest.ms.com", ips[0])
-        ib_expect_add_address("hacl1g1.aqd-unittest.ms.com", str(ips[0]))
+        ib_expect_add_a("hacl1g1.aqd-unittest.ms.com", str(ips[0]))
+        ib_expect_add_ptr("hacl1g1.aqd-unittest.ms.com", str(ips[0]))
         self.dsdb_expect_add("hacl2g1.new-york.ms.com", ips[1])
-        ib_expect_add_address("hacl2g1.new-york.ms.com", str(ips[1]))
+        ib_expect_add_a("hacl2g1.new-york.ms.com", str(ips[1]))
+        ib_expect_add_ptr("hacl2g1.new-york.ms.com", str(ips[1]))
 
         for cl in range(1, 3):
             self.statustest(["add", "service", "address",
@@ -174,7 +180,8 @@ class TestUsecaseHACluster(TestBrokerCommand):
         # TODO: range(1, 3) once multi-A records are sorted out
         for cl in range(1, 2):
             self.dsdb_expect_add("hashared.aqd-unittest.ms.com", ips[cl - 1])
-            ib_expect_add_address("hashared.aqd-unittest.ms.com", str(ips[cl - 1]))
+            ib_expect_add_a("hashared.aqd-unittest.ms.com", str(ips[cl - 1]))
+            ib_expect_add_ptr("hashared.aqd-unittest.ms.com", str(ips[cl - 1]))
             self.statustest(["add", "service", "address",
                              "--cluster", "hacl%d" % cl,
                              "--resourcegroup", "hacl%dg2" % cl,
@@ -350,7 +357,8 @@ class TestUsecaseHACluster(TestBrokerCommand):
         domains = ["aqd-unittest.ms.com", "new-york.ms.com", "aqd-unittest.ms.com"]
         for cl in range(1, 3):
             self.dsdb_expect_delete(ips[cl - 1])
-            ib_expect_del_address("hacl{}g1.{}".format(cl, domains[cl - 1]), str(ips[cl - 1]))
+            ib_expect_del_a("hacl{}g1.{}".format(cl, domains[cl - 1]), str(ips[cl - 1]))
+            ib_expect_del_ptr(str(ips[cl - 1]))
             self.noouttest(["del", "service", "address",
                             "--cluster", "hacl%d" % cl,
                             "--resourcegroup", "hacl%dg1" % cl,
@@ -398,7 +406,8 @@ class TestUsecaseHACluster(TestBrokerCommand):
         ips = [self.net["unknown0"].usable[30],
                self.net["unknown0"].usable[31]]
         self.dsdb_expect_delete(ips[0])
-        ib_expect_del_address("hashared.aqd-unittest.ms.com", str(ips[0]))
+        ib_expect_del_a("hashared.aqd-unittest.ms.com", str(ips[0]))
+        ib_expect_del_ptr(str(ips[0]))
         self.noouttest(["del", "service", "address", "--cluster", "hacl1",
                         "--resourcegroup", "hacl1g2",
                         "--name", "hacl1g2addr"])
@@ -450,10 +459,12 @@ class TestUsecaseHACluster(TestBrokerCommand):
 
     def test_360_del_clustersrv(self):
         self.dsdb_expect_delete(self.net["unknown0"].usable[26])
-        ib_expect_del_address("hacl1.aqd-unittest.ms.com", str(self.net["unknown0"].usable[26]))
+        ib_expect_del_a("hacl1.aqd-unittest.ms.com", str(self.net["unknown0"].usable[26]))
+        ib_expect_del_ptr(str(self.net["unknown0"].usable[26]))
 
         self.dsdb_expect_delete(self.net["unknown0"].usable[27])
-        ib_expect_del_address("hacl2.new-york.ms.com", str(self.net["unknown0"].usable[27]))
+        ib_expect_del_a("hacl2.new-york.ms.com", str(self.net["unknown0"].usable[27]))
+        ib_expect_del_ptr(str(self.net["unknown0"].usable[27]))
         self.noouttest(["del", "service", "address", "--cluster", "hacl1",
                         "--name", "hacl1"])
         self.noouttest(["del", "service", "address", "--cluster", "hacl2",

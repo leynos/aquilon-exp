@@ -26,8 +26,10 @@ if __name__ == "__main__":
 from six import iteritems
 
 from brokertest import TestBrokerCommand
-from mock_ib_services import ib_expect_add_address
-from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_add_a
+from mock_ib_services import ib_expect_add_ptr
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
 
 # This test case sets up a network that look like the following:
 #
@@ -252,7 +254,8 @@ class TestUsecaseNetworks(TestBrokerCommand):
             ip = net[if_attrs['ipidx']]
             iftype = if_attrs['type'] if 'type' in if_attrs else 'loopback'
             self.dsdb_expect_add(fqdn, ip, interface)
-            ib_expect_add_address(fqdn, str(ip))
+            ib_expect_add_a(fqdn, str(ip))
+            ib_expect_add_ptr(fqdn, str(ip))
             self.successtest(["add", "network_device", "--type", "misc",
                               "--network_device", fqdn,
                               "--ip", ip, "--interface", interface,
@@ -289,7 +292,8 @@ class TestUsecaseNetworks(TestBrokerCommand):
                 ip = net[if_attrs['ipidx']]
                 if_fqdn = dev_name + '-' + if_name + '.' + config['domain']
                 self.dsdb_expect_add(if_fqdn, ip, if_name, primary=fqdn)
-                ib_expect_add_address(if_fqdn, str(ip))
+                ib_expect_add_a(if_fqdn, str(ip))
+                ib_expect_add_ptr(if_fqdn, str(ip))
                 command = ["add", "interface", "address",
                            "--network_device", fqdn,
                            "--interface", if_name, "--ip", ip]
@@ -311,7 +315,8 @@ class TestUsecaseNetworks(TestBrokerCommand):
                 # Note, this only happens the first time an address is added
                 if priority == 100:
                     self.dsdb_expect_add(gw_fqdn, ip)
-                    ib_expect_add_address(gw_fqdn, str(ip))
+                    ib_expect_add_a(gw_fqdn, str(ip))
+                    ib_expect_add_ptr(gw_fqdn, str(ip))
                 # We only specify the FQDN when creating the first interface
                 command = ["add", "interface", "address",
                            "--network_device", fqdn,
@@ -333,19 +338,22 @@ class TestUsecaseNetworks(TestBrokerCommand):
 
         for network in net_list[:5]:
             fqdn = '-'.join(network.name.split('_')[1:] + ['gateway']) + '.' + config['domain']
-            ib_expect_add_address(fqdn, str(network[1]))
+            ib_expect_add_a(fqdn, str(network[1]))
+            ib_expect_add_ptr(fqdn, str(network[1]))
             command = ["add_router_address", "--fqdn", fqdn]
             self.noouttest(command)
 
         for network in net_list[5:10]:
             fqdn = '-'.join(network.name.split('_')[1:] + ['gateway']) + '.' + config['domain']
-            ib_expect_add_address(fqdn, str(network[1]))
+            ib_expect_add_a(fqdn, str(network[1]))
+            ib_expect_add_ptr(fqdn, str(network[1]))
             command = ["add_router_address", "--ip", network[1]]
             self.noouttest(command)
 
         for network in net_list[10:]:
             fqdn = '-'.join(network.name.split('_')[1:] + ['gateway']) + '.' + config['domain']
-            ib_expect_add_address(fqdn, str(network[1]))
+            ib_expect_add_a(fqdn, str(network[1]))
+            ib_expect_add_ptr(fqdn, str(network[1]))
             command = ["add_router_address", "--fqdn", fqdn, "--ip", network[1]]
             self.noouttest(command)
 
@@ -400,7 +408,8 @@ class TestUsecaseNetworks(TestBrokerCommand):
         command = ['add_interface', '--iftype', 'virtual', '--interface', 'v700',
                    '--network_device', 'ut3gd1r01.aqd-unittest.ms.com']
         self.noouttest(command)
-        ib_expect_add_address("ut3gd1r01-v700.aqd-unittest.ms.com", str(ip))
+        ib_expect_add_a("ut3gd1r01-v700.aqd-unittest.ms.com", str(ip))
+        ib_expect_add_ptr("ut3gd1r01-v700.aqd-unittest.ms.com", str(ip))
         self.dsdb_expect_add("ut3gd1r01-v700.aqd-unittest.ms.com", ip,
                              "v700", primary="ut3gd1r01.aqd-unittest.ms.com")
         command = ['add_interface_address', '--interface', 'v700', '--ip',
@@ -430,7 +439,8 @@ class TestUsecaseNetworks(TestBrokerCommand):
     def test_307_test_router_address_using_netdev_del(self):
         ip = self.net["tor_net_12"][1]
         self.dsdb_expect_delete(ip)
-        ib_expect_del_address("ut3gd1r01-v700.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_a("ut3gd1r01-v700.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         command = ['del_interface_address', '--interface', 'v700', '--ip',
                    ip, '--network_device', 'ut3gd1r01.aqd-unittest.ms.com']
         self.noouttest(command)
@@ -461,7 +471,8 @@ class TestUsecaseNetworks(TestBrokerCommand):
             if network.nettype == 'management':
                 continue
             fqdn = '-'.join(network.name.split('_')[1:] + ['gateway']) + '.' + config['domain']
-            ib_expect_del_address(fqdn, str(network[1]))
+            ib_expect_del_a(fqdn, str(network[1]))
+            ib_expect_del_ptr(str(network[1]))
             command = ["del_router_address", "--fqdn", fqdn]
             self.noouttest(command)
             self.ib_verify()
@@ -477,7 +488,8 @@ class TestUsecaseNetworks(TestBrokerCommand):
             gw_fqdn = '-'.join(net_name.split('_')[1:] + ['gateway']) + '.' + config['domain']
             for (dev_name, if_name) in gateways:
                 # TODO, we are sending the same delete twice to IB ?
-                ib_expect_del_address(gw_fqdn, str(ip))
+                ib_expect_del_a(gw_fqdn, str(ip))
+                ib_expect_del_ptr(str(ip))
                 fqdn = dev_name + '.' + config['domain']
                 # We only specify the FQDN when creating the first interface
                 command = ["del", "interface", "address",
@@ -500,7 +512,8 @@ class TestUsecaseNetworks(TestBrokerCommand):
                 net = self.net[if_attrs['net']]
                 if_fqdn = dev_name + '-' + if_name + '.' + config['domain']
                 ip = net[if_attrs['ipidx']]
-                ib_expect_del_address(if_fqdn, str(ip))
+                ib_expect_del_a(if_fqdn, str(ip))
+                ib_expect_del_ptr(str(ip))
                 self.dsdb_expect_delete(ip)
                 command = ["del", "interface", "address",
                            "--network_device", fqdn,
@@ -531,7 +544,8 @@ class TestUsecaseNetworks(TestBrokerCommand):
             if_attrs = dev_attrs['interfaces'][interface]
             net = self.net[if_attrs['net']]
             ip = net[if_attrs['ipidx']]
-            ib_expect_del_address(fqdn, str(ip))
+            ib_expect_del_a(fqdn, str(ip))
+            ib_expect_del_ptr(str(ip))
             self.dsdb_expect_delete(ip)
             command = "del network_device --network_device %s" % fqdn
             self.noouttest(command.split(" "))

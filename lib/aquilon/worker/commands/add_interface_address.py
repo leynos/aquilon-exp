@@ -200,10 +200,17 @@ class CommandAddInterfaceAddress(BrokerCommand):
 
             ib_services = IBServices(logger, justification=justification, **kwargs)
             if newly_created and ib_services.feature_enabled("interface_address"):
+                ib_services.group.add_action(
+                    lambda fqdn=fqdn, ip=ip: ib_services.add_a(fqdn, ip),
+                    lambda fqdn=fqdn, ip=ip: ib_services.delete_a(fqdn, ip)
+                )
+                ib_services.group.add_action(
+                    lambda fqdn=fqdn, ip=ip:
+                        ib_services.add_ptr(fqdn if dbdns_rec.reverse_ptr is None else str(dbdns_rec.reverse_ptr), ip),
+                    lambda ip=ip: ib_services.delete_ptr(ip)
+                )
                 try:
-                    ib_services.add_a_ptr(
-                        fqdn, ip,
-                        assign_ptr_to_fqdn=None if dbdns_rec.reverse_ptr is None else str(dbdns_rec.reverse_ptr))
+                    ib_services.group.commit_or_rollback()
                 except ProcessException as e:
                     dsdb_runner.rollback()
                     raise e

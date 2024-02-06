@@ -19,7 +19,9 @@
 
 import unittest
 
-from mock_ib_services import ib_expect_del_address, ib_expect_del_range
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
+from mock_ib_services import ib_expect_del_range
 
 if __name__ == "__main__":
     import utils
@@ -91,8 +93,9 @@ class TestDelDynamicRange(TestBrokerCommand):
             address = IPv4Address(ip)
             self.dsdb_expect_delete(address)
             messages.append("DSDB: delete_host -ip_address %s" % address)
-            ib_expect_del_address(self.dynname(address, domain="aqd-unittest.ms.com"), address,
-                                  justification=self.valid_justification)
+            ib_expect_del_a(self.dynname(address, domain="aqd-unittest.ms.com"), address,
+                            justification=self.valid_justification)
+            ib_expect_del_ptr(address, justification=self.valid_justification)
         ib_expect_del_range(str(startip), str(endip), justification=self.valid_justification)
         command = ["del_dynamic_range",
                    "--startip", startip,
@@ -111,8 +114,9 @@ class TestDelDynamicRange(TestBrokerCommand):
             address = IPv4Address(ip)
             self.dsdb_expect_delete(address)
             messages.append("DSDB: delete_host -ip_address %s" % address)
-            ib_expect_del_address(self.dynname(address, domain="aqd-unittest.ms.com"), address,
-                                  justification=self.valid_justification)
+            ib_expect_del_a(self.dynname(address, domain="aqd-unittest.ms.com"), address,
+                            justification=self.valid_justification)
+            ib_expect_del_ptr(address, justification=self.valid_justification)
         command = ["del_dynamic_range",
                    "--startip", startip,
                    "--endip", endip] + self.valid_just_tcm
@@ -123,8 +127,9 @@ class TestDelDynamicRange(TestBrokerCommand):
 
     def test_210_del_end_in_range(self):
         ip = self.net["dyndhcp1"].usable[-1]
-        ib_expect_del_address(self.dynname(ip, domain="aqd-unittest.ms.com"), ip,
-                              justification=self.valid_justification)
+        ib_expect_del_a(self.dynname(ip, domain="aqd-unittest.ms.com"), ip,
+                        justification=self.valid_justification)
+        ib_expect_del_ptr(ip, justification=self.valid_justification)
         ib_expect_del_range(str(ip), str(ip), justification=self.valid_justification)
         self.dsdb_expect_delete(ip)
         command = ["del_dynamic_range", "--startip", ip, "--endip", ip] + self.valid_just_tcm
@@ -141,8 +146,9 @@ class TestDelDynamicRange(TestBrokerCommand):
             address = IPv4Address(ip)
             self.dsdb_expect_delete(address)
             messages.append("DSDB: delete_host -ip_address %s" % address)
-            ib_expect_del_address(self.dynname(address, domain="aqd-unittest.ms.com"), address,
-                                  justification=self.valid_justification)
+            ib_expect_del_a(self.dynname(address, domain="aqd-unittest.ms.com"), address,
+                            justification=self.valid_justification)
+            ib_expect_del_ptr(address, justification=self.valid_justification)
         ib_expect_del_range(str(startip), str(endip), justification=self.valid_justification)
         command = ["del_dynamic_range",
                    "--startip", startip,
@@ -162,8 +168,9 @@ class TestDelDynamicRange(TestBrokerCommand):
                 continue
 
             address = IPv4Address(ip)
-            ib_expect_del_address(self.dynname(str(address), domain="one-nyp.ms.com"), str(address),
-                                  justification=self.valid_justification)
+            ib_expect_del_a(self.dynname(str(address), domain="one-nyp.ms.com"), str(address),
+                            justification=self.valid_justification)
+            ib_expect_del_ptr(str(address), justification=self.valid_justification)
             self.dsdb_expect_delete(address)
             messages.append("DSDB: delete_host -ip_address %s" % address)
 

@@ -25,7 +25,6 @@ if __name__ == "__main__":
 
 from brokertest import TestBrokerCommand
 from machinetest import MachineTestMixin
-from mock_ib_services import ib_expect_del_address
 
 
 class TestDelStaticRoute(MachineTestMixin, TestBrokerCommand):

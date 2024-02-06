@@ -19,7 +19,10 @@
 
 import unittest
 
-from mock_ib_services import ib_expect_add_address, ib_expect_del_address
+from mock_ib_services import ib_expect_add_a
+from mock_ib_services import ib_expect_add_ptr
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
 
 if __name__ == "__main__":
     import utils
@@ -34,7 +37,8 @@ class TestDiscoverNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
     def test_100_add_swsync(self):
         ip = self.net["switch_sync"].usable[0]
         hostname = "swsync.aqd-unittest.ms.com"
-        ib_expect_add_address(hostname, str(ip))
+        ib_expect_add_a(hostname, str(ip))
+        ib_expect_add_ptr(hostname, str(ip))
         self.dsdb_expect_add(hostname, ip,
                              interface="mgmt0", mac=ip.mac)
         self.noouttest(["add", "network_device", "--type", "misc",
@@ -59,9 +63,12 @@ class TestDiscoverNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
         ip1 = self.net["switch_sync"].usable[1]
         ip2 = self.net["switch_sync"].usable[2]
         ip3 = self.net["switch_sync"].usable[3]
-        ib_expect_add_address("swsync-vlan100.aqd-unittest.ms.com", str(ip1))
-        ib_expect_add_address("swsync-nomatch.aqd-unittest.ms.com", str(ip2))
-        ib_expect_add_address("swsync-vlan300.aqd-unittest.ms.com", str(ip3))
+        ib_expect_add_a("swsync-vlan100.aqd-unittest.ms.com", str(ip1))
+        ib_expect_add_ptr("swsync-vlan100.aqd-unittest.ms.com", str(ip1))
+        ib_expect_add_a("swsync-nomatch.aqd-unittest.ms.com", str(ip2))
+        ib_expect_add_ptr("swsync-nomatch.aqd-unittest.ms.com", str(ip2))
+        ib_expect_add_a("swsync-vlan300.aqd-unittest.ms.com", str(ip3))
+        ib_expect_add_ptr("swsync-vlan300.aqd-unittest.ms.com", str(ip3))
         self.dsdb_expect_add("swsync-vlan100.aqd-unittest.ms.com",
                              ip1, "vlan100",
                              primary="swsync.aqd-unittest.ms.com")
@@ -214,11 +221,16 @@ class TestDiscoverNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
         self.dsdb_expect_delete(ip3)
         self.dsdb_expect_delete(ip4)
         self.dsdb_expect_delete(ip5)
-        ib_expect_del_address("swsync-vlan100-hsrp.aqd-unittest.ms.com", ip1)
-        ib_expect_del_address("swsync-vlan100.aqd-unittest.ms.com", ip4)
-        ib_expect_del_address("swsync-nomatch.aqd-unittest.ms.com", ip2)
-        ib_expect_del_address("swsync-vlan310.aqd-unittest.ms.com", ip3)
-        ib_expect_del_address("swsync-vlan500.aqd-unittest.ms.com", ip5)
+        ib_expect_del_a("swsync-vlan100-hsrp.aqd-unittest.ms.com", ip1)
+        ib_expect_del_ptr(ip1)
+        ib_expect_del_a("swsync-vlan100.aqd-unittest.ms.com", ip4)
+        ib_expect_del_ptr(ip4)
+        ib_expect_del_a("swsync-nomatch.aqd-unittest.ms.com", ip2)
+        ib_expect_del_ptr(ip2)
+        ib_expect_del_a("swsync-vlan310.aqd-unittest.ms.com", ip3)
+        ib_expect_del_ptr(ip3)
+        ib_expect_del_a("swsync-vlan500.aqd-unittest.ms.com", ip5)
+        ib_expect_del_ptr(ip5)
         self.noouttest(["del", "interface", "address", "--network_device", "swsync",
                         "--interface", "vlan100", "--ip", ip1])
         self.noouttest(["del", "interface", "address", "--network_device", "swsync",
@@ -233,7 +245,8 @@ class TestDiscoverNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
 
     def test_410_del_swsync(self):
         ip = self.net["switch_sync"].usable[0]
-        ib_expect_del_address("swsync.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_a("swsync.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         self.dsdb_expect_delete(str(ip))
         self.noouttest(["del", "network_device", "--network_device", "swsync"])
         self.dsdb_verify()

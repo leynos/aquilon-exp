@@ -24,14 +24,16 @@ if __name__ == "__main__":
     utils.import_depends()
 
 from brokertest import TestBrokerCommand
-from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
 
 
 class TestDelAuxiliary(TestBrokerCommand):
 
     def testdelunittest00e1(self):
         ip = self.net["unknown0"].usable[3]
-        ib_expect_del_address("unittest00-e1.one-nyp.ms.com", str(ip))
+        ib_expect_del_a("unittest00-e1.one-nyp.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         self.dsdb_expect_delete(ip)
         command = "del_interface_address --machine ut3c1n3 " \
                   "--fqdn unittest00-e1.one-nyp.ms.com --interface eth1"

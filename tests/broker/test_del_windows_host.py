@@ -24,7 +24,8 @@ if __name__ == "__main__":
     utils.import_depends()
 
 from brokertest import TestBrokerCommand
-from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
 
 
 class TestDelWindowsHost(TestBrokerCommand):
@@ -40,7 +41,8 @@ class TestDelWindowsHost(TestBrokerCommand):
     def testdelunittest01(self):
         fqdn = "unittest01.one-nyp.ms.com"
         ip = self.net["unknown0"].usable[10]
-        ib_expect_del_address(fqdn, ip)
+        ib_expect_del_a(fqdn, ip)
+        ib_expect_del_ptr(ip)
         self.dsdb_expect_delete(ip)
         command = "del windows host --hostname {}".format(fqdn)
         self.statustest(command.split(" "))

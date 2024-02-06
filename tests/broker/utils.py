@@ -24,13 +24,15 @@ import string
 
 from broker.brokertest import TestBrokerCommand
 from broker.machinetest import MachineTestMixin
-from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_add_a
 from mock_ib_services import ib_expect_add_alias
 from mock_ib_services import ib_expect_add_dns_srv_record
-from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_add_ptr
+from mock_ib_services import ib_expect_del_a
 from mock_ib_services import ib_expect_del_alias
 from mock_ib_services import ib_expect_del_dns_srv_record
-from mock_ib_services import ib_expect_update_address
+from mock_ib_services import ib_expect_del_ptr
+from mock_ib_services import ib_expect_update_a
 
 
 def import_depends():
@@ -265,8 +267,9 @@ class MockHub(object):
                 self._engine.dsdb_expect_delete(ip)
 
             if not fail_dsdb:
-                ib_expect_add_address(fqdn, ip, reverse_ptr=reverse_ptr, ttl=ttl, create_ptr=create_ptr, fail=fail_ib,
-                                      justification=self._engine.valid_justification)
+                ib_expect_add_a(fqdn, ip, ttl=ttl, fail=fail_ib, justification=self._engine.valid_justification)
+                if not fail_ib:
+                    ib_expect_add_ptr(fqdn, ip, ttl=ttl, fail=fail_ib, justification=self._engine.valid_justification)
 
         command = ['add_address', '--fqdn', fqdn,
                    '--ip', ip,
@@ -296,8 +299,12 @@ class MockHub(object):
         if fail_ib:
             self._engine.dsdb_expect_update(fqdn, ip=original_ip)
         if not fail_dsdb:
-            ib_expect_update_address(fqdn, original_ip, new_ip=new_ip, reverse_ptr=reverse_ptr,
-                                     new_ttl=new_ttl, fail=fail_ib, justification=self._engine.valid_justification)
+            ib_expect_update_a(fqdn, original_ip, new_ip=new_ip, new_ttl=new_ttl, fail=fail_ib,
+                               justification=self._engine.valid_justification)
+            if not fail_ib:
+                ib_expect_del_ptr(original_ip, justification=self._engine.valid_justification)
+                ib_expect_add_ptr(fqdn=fqdn, ip=new_ip, ttl=new_ttl, justification=self._engine.valid_justification)
+
         command = ['update_address', '--fqdn', fqdn]
         if dns_environment is not None:
             command.extend(['--dns_environment', dns_environment])
@@ -339,7 +346,9 @@ class MockHub(object):
             if fail_ib:
                 self._engine.dsdb_expect_add(fqdn, ip)
             if not fail_dsdb:
-                ib_expect_del_address(fqdn, ip, fail=fail_ib, justification=self._engine.valid_justification)
+                ib_expect_del_a(fqdn, ip, fail=fail_ib, justification=self._engine.valid_justification)
+                if not fail_ib:
+                    ib_expect_del_ptr(ip, fail=fail_ib, justification=self._engine.valid_justification)
 
         command = ['del_address', '--fqdn', fqdn, '--ip', ip]
         if dns_environment is not None:
@@ -601,7 +610,8 @@ class MockHub(object):
         for i in range(len(hosts)):
             self._engine.successtest(['change_status', '--hostname', hosts[i],
                                       '--buildstatus', 'decommissioned'])
-            ib_expect_del_address(hosts[i], ips[i])
+            ib_expect_del_a(hosts[i], ips[i])
+            ib_expect_del_ptr(ips[i])
             self._engine.dsdb_expect_delete(ip=ips[i])
             self._engine.successtest(['del_host', '--hostname', hosts[i]])
             self._engine.dsdb_verify()
@@ -1200,7 +1210,8 @@ class MockHub(object):
             command.extend(['--buildstatus', build_status])
         command.extend(extra_arguments or [])
         self._engine.dsdb_expect_add(hostname, ip, 'eth0', mac)
-        ib_expect_add_address(hostname, ip)
+        ib_expect_add_a(hostname, ip)
+        ib_expect_add_ptr(hostname, ip)
         self._engine.successtest(command)
         self._engine.dsdb_verify()
         self._engine.ib_verify()

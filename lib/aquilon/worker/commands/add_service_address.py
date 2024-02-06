@@ -194,7 +194,9 @@ class CommandAddServiceAddress(BrokerCommand):
                                                 exporter=exporter,
                                                 require_grn=False)
         ip = dbdns_rec.ip
-        ibs_args = {'name': str(dbdns_rec.fqdn)}
+        ibs_name = str(dbdns_rec.fqdn)
+        ibs_assign_ptr_to_fqdn = None
+        ibs_rb_assign_ptr_to_fqdn = None
         ibs_rollback_args = {'name': str(dbdns_rec.fqdn), 'ip': ip}
 
         if map_to_primary and map_to_shared_name:
@@ -205,10 +207,9 @@ class CommandAddServiceAddress(BrokerCommand):
             # resource, then set the PTR record as the SharedServiceName's FQDN
             if sibling_ssn:
                 if not newly_created:
-                    ibs_rollback_args['assign_to_ptr'] = None if dbdns_rec.reverse_ptr is None \
-                                                                else str(dbdns_rec.reverse_ptr)
+                    ibs_rb_assign_ptr_to_fqdn = None if dbdns_rec.reverse_ptr is None else str(dbdns_rec.reverse_ptr)
                 dbdns_rec.reverse_ptr = sibling_ssn.fqdn
-                ibs_args['assign_ptr_to_fqdn'] = str(dbdns_rec.reverse_ptr)
+                ibs_assign_ptr_to_fqdn = str(dbdns_rec.reverse_ptr)
             else:
                 raise ArgumentError("--map_to_shared_name specified, but no "
                                     "shared service name in {0:l}".
@@ -216,11 +217,9 @@ class CommandAddServiceAddress(BrokerCommand):
         elif map_to_primary:
             if isinstance(toplevel_holder, Host):
                 if not newly_created:
-                    ibs_rollback_args['assign_to_ptr'] = None if dbdns_rec.reverse_ptr is None \
-                                                                else str(dbdns_rec.reverse_ptr)
-                dbdns_rec.reverse_ptr = \
-                    toplevel_holder.hardware_entity.primary_name.fqdn
-                ibs_args['assign_ptr_to_fqdn'] = str(dbdns_rec.reverse_ptr)
+                    ibs_rb_assign_ptr_to_fqdn = None if dbdns_rec.reverse_ptr is None else str(dbdns_rec.reverse_ptr)
+                dbdns_rec.reverse_ptr = toplevel_holder.hardware_entity.primary_name.fqdn
+                ibs_assign_ptr_to_fqdn = str(dbdns_rec.reverse_ptr)
             else:
                 raise ArgumentError("The --map_to_primary option works only "
                                     "for host-based service addresses or "
@@ -248,13 +247,19 @@ class CommandAddServiceAddress(BrokerCommand):
         ib_services = IBServices(logger, justification=justification, **kwargs)
         if newly_created:
             ib_services.group.add_action(
-                lambda: ib_services.add_a_ptr(ip=ip, **ibs_args),
-                lambda: ib_services.delete_a_ptr(**ibs_rollback_args))
+                lambda name=ibs_name, ip=ip: ib_services.add_a(name=name, ip=ip),
+                lambda name=ibs_name, ip=ip: ib_services.delete_a(name=name, ip=ip))
+            ib_services.group.add_action(
+                lambda name=ibs_name if ibs_assign_ptr_to_fqdn is None else ibs_assign_ptr_to_fqdn, ip=ip:
+                    ib_services.add_ptr(name=name, ip=ip),
+                lambda ip=ip: ib_services.delete_ptr(ip=ip))
         else:
-            if (len(ibs_args.keys()) > 2):
+            if ibs_assign_ptr_to_fqdn is not None:
                 ib_services.group.add_action(
-                    lambda: ib_services.update_a_ptr(ip=ip, **ibs_args),
-                    lambda: ib_services.update_a_ptr(**ibs_rollback_args))
+                    lambda name=ibs_name, ip=ip, new_name=ibs_assign_ptr_to_fqdn:
+                        ib_services.update_ptr(ip=ip, name=name, new_name=new_name),
+                    lambda name=ibs_name, ip=ip, new_name=ibs_rb_assign_ptr_to_fqdn:
+                        ib_services.update_ptr(ip=ip, name=ibs_name, new_name=ibs_rb_assign_ptr_to_fqdn))
 
         session.flush()
 
@@ -268,8 +273,11 @@ class CommandAddServiceAddress(BrokerCommand):
                               comments=None, exporter=exporter,
                               flush_session=True, sync_ib=False)
             ib_services.group.add_action(
-                lambda: ib_services.add_a_ptr(str(sibling_ssn.fqdn), dbdns_rec.ip),
-                lambda: ib_services.delete_a_ptr(str(sibling_ssn.fqdn)))
+                lambda name=str(sibling_ssn.fqdn), ip=dbdns_rec.ip: ib_services.add_a(name, ip),
+                lambda name=str(sibling_ssn.fqdn), ip=dbdns_rec.ip: ib_services.delete_a(name, ip))
+            ib_services.group.add_action(
+                lambda name=str(sibling_ssn.fqdn), ip=dbdns_rec.ip: ib_services.add_ptr(name, ip),
+                lambda ip=dbdns_rec.ip: ib_services.delete_ptr(ip))
 
         plenaries.add(holder.holder_object)
         plenaries.add(dbsrv)

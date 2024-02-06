@@ -20,7 +20,8 @@
 
 import unittest
 
-from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_add_a
+from mock_ib_services import ib_expect_add_ptr
 
 if __name__ == "__main__":
     import utils
@@ -80,8 +81,10 @@ class TestAddServiceAddressSNAliases(TestBrokerCommand):
         # address alias creation
         ip = self.net['np_bucket2_vip'].usable[2]
         service_addr = 'utvcs1sa1.aqd-unittest.ms.com'
-        ib_expect_add_address(service_addr, str(ip), create_ptr=True, reverse_ptr="utvcs1pn1.aqd-unittest.ms.com")
-        ib_expect_add_address("utvcs1pn1.aqd-unittest.ms.com", str(ip))
+        ib_expect_add_a(service_addr, str(ip))
+        ib_expect_add_ptr("utvcs1pn1.aqd-unittest.ms.com", str(ip))
+        ib_expect_add_a("utvcs1pn1.aqd-unittest.ms.com", str(ip))
+        ib_expect_add_ptr("utvcs1pn1.aqd-unittest.ms.com", str(ip))
         self.dsdb_expect_add(service_addr, ip)
         command = ['add_service_address', '--resourcegroup=utvcs1ifset',
                    '--name=utvcs1sa1', '--service_address', service_addr,
@@ -96,7 +99,8 @@ class TestAddServiceAddressSNAliases(TestBrokerCommand):
         ip = self.net['np_bucket2_vip'].usable[3]
         service_addr = 'utvcs1sa2.aqd-unittest.ms.com'
         self.dsdb_expect_add(service_addr, ip)
-        ib_expect_add_address(service_addr, str(ip), create_ptr=True, reverse_ptr="utvcs1pn2.aqd-unittest.ms.com")
+        ib_expect_add_a(service_addr, str(ip))
+        ib_expect_add_ptr("utvcs1pn2.aqd-unittest.ms.com", str(ip))
         command = ['add_service_address', '--resourcegroup=utvcs1ifset2',
                    '--name=utvcs1sa2', '--service_address', service_addr,
                    '--ip', ip, '--map_to_shared_name']

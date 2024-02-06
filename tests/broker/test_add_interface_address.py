@@ -20,8 +20,10 @@
 import unittest
 
 from broker.utils import MockHub
-from mock_ib_services import ib_expect_add_address
-from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_add_a
+from mock_ib_services import ib_expect_add_ptr
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
 
 if __name__ == "__main__":
     import utils
@@ -35,7 +37,8 @@ class TestAddInterfaceAddress(TestBrokerCommand):
     def test_100_addunittest20e0(self):
         ip = self.net["zebra_eth0"].usable[0]
         fqdn = "unittest20-e0.aqd-unittest.ms.com"
-        ib_expect_add_address(fqdn, str(ip), reverse_ptr="unittest20.aqd-unittest.ms.com")
+        ib_expect_add_a(fqdn, str(ip))
+        ib_expect_add_ptr("unittest20.aqd-unittest.ms.com", str(ip))
         self.dsdb_expect_add(fqdn, ip, "eth0", ip.mac, primary="unittest20.aqd-unittest.ms.com")
         command = ["add", "interface", "address", "--machine", "ut3c5n2",
                    "--interface", "eth0", "--fqdn", fqdn, "--ip", ip]
@@ -113,7 +116,8 @@ class TestAddInterfaceAddress(TestBrokerCommand):
     def test_160_addbyip(self):
         ip = self.net["zebra_eth1"].usable[3]
         fqdn = "unittest20-e1-1.aqd-unittest.ms.com"
-        ib_expect_add_address(fqdn, str(ip))
+        ib_expect_add_a(fqdn, str(ip))
+        ib_expect_add_ptr(fqdn, str(ip))
         self.dsdb_expect_add(fqdn, ip, "eth1_e1")
         command = ["add", "interface", "address", "--machine", "ut3c5n2",
                    "--interface", "eth1", "--label", "e1",
@@ -249,7 +253,8 @@ class TestAddInterfaceAddress(TestBrokerCommand):
         fqdn = "unittest25-e1.utcolo.aqd-unittest.ms.com"
         net = self.net["unknown1"]
         ip = net[4]
-        ib_expect_add_address(fqdn, str(ip))
+        ib_expect_add_a(fqdn, str(ip))
+        ib_expect_add_ptr(fqdn, str(ip))
         command = ["add", "interface", "address", "--machine", "ut3c5n7",
                    "--interface", "eth1", "--ip", ip,
                    "--fqdn", fqdn,
@@ -270,7 +275,8 @@ class TestAddInterfaceAddress(TestBrokerCommand):
     def test_300_addunittest25utcolo2(self):
         net = self.net["unknown1"]
         hostname = "unittest25-e2.utcolo.aqd-unittest.ms.com"
-        ib_expect_add_address(hostname, "4.2.1.69") # --ipfromip net.ip returns this value
+        ib_expect_add_a(hostname, "4.2.1.69")  # --ipfromip net.ip returns this value
+        ib_expect_add_ptr(hostname, "4.2.1.69")
         command = ["add", "interface", "address", "--machine", "ut3c5n7",
                    "--interface", "eth2", "--ipfromip", net.ip,
                    "--fqdn", hostname,
@@ -334,7 +340,8 @@ class TestAddInterfaceAddress(TestBrokerCommand):
     def test_340_addunittest26_defaultdomain(self):
         ip = self.net["routing1"].usable[0]
         fqdn = "unittest26-e1.aqd-unittest.ms.com"
-        ib_expect_add_address(fqdn, str(ip), reverse_ptr="unittest26.aqd-unittest.ms.com")
+        ib_expect_add_a(fqdn, str(ip))
+        ib_expect_add_ptr("unittest26.aqd-unittest.ms.com", str(ip))
         self.dsdb_expect_add(fqdn, ip, "eth1", ip.mac, primary="unittest26.aqd-unittest.ms.com")
         command = ["add", "interface", "address",
                    "--machine", "unittest26.aqd-unittest.ms.com",
@@ -354,7 +361,8 @@ class TestAddInterfaceAddress(TestBrokerCommand):
     def test_355_add_unittest17_hostname(self):
         ip = self.net["routing1"].usable[13]
         fqdn = "unittest17-eth2.aqd-unittest.ms.com"
-        ib_expect_add_address(fqdn, str(ip), reverse_ptr="unittest17.aqd-unittest.ms.com")
+        ib_expect_add_a(fqdn, str(ip))
+        ib_expect_add_ptr("unittest17.aqd-unittest.ms.com", str(ip))
         self.dsdb_expect_add(fqdn, ip, "eth2", ip.mac, primary="unittest17.aqd-unittest.ms.com")
         command = ["add", "interface", "address",
                    "--hostname", "unittest17.aqd-unittest.ms.com",
@@ -366,7 +374,8 @@ class TestAddInterfaceAddress(TestBrokerCommand):
     def test_360_addut3gd1r04vlan110(self):
         ip = self.net["unknown1"].usable[44]
         fqdn = "ut3gd1r04-vlan110.aqd-unittest.ms.com"
-        ib_expect_add_address(fqdn, str(ip))
+        ib_expect_add_a(fqdn, str(ip))
+        ib_expect_add_ptr(fqdn, str(ip))
         self.dsdb_expect_add(fqdn, ip,
                              "vlan110", primary="ut3gd1r04.aqd-unittest.ms.com",
                              comments="Some new switch comments")
@@ -390,7 +399,8 @@ class TestAddInterfaceAddress(TestBrokerCommand):
     def test_380_addut3gd1r04vlan110hsrp(self):
         ip = self.net["unknown1"].usable[42]
         hostname = "ut3gd1r04-vlan110-hsrp.aqd-unittest.ms.com"
-        ib_expect_add_address(hostname, str(ip))
+        ib_expect_add_a(hostname, str(ip))
+        ib_expect_add_ptr(hostname, str(ip))
         self.dsdb_expect_add(hostname, ip,
                              "vlan110_hsrp", primary="ut3gd1r04.aqd-unittest.ms.com",
                              comments="Some new switch comments")
@@ -407,7 +417,8 @@ class TestAddInterfaceAddress(TestBrokerCommand):
         # Use the network address
         ip = self.net["unknown1"][0]
         hostname = "ut3gd1r04-loop0.aqd-unittest.ms.com"
-        ib_expect_add_address(hostname, str(ip))
+        ib_expect_add_a(hostname, str(ip))
+        ib_expect_add_ptr(hostname, str(ip))
         self.dsdb_expect_add(hostname, ip,
                              "loop0", primary="ut3gd1r04.aqd-unittest.ms.com",
                              comments="Some new switch comments")
@@ -423,7 +434,8 @@ class TestAddInterfaceAddress(TestBrokerCommand):
     def test_400_addut3c5n16eth0(self):
         ip = self.net["zebra_eth0"].usable[16]
         fqdn = "ut3c5n16-e0.aqd-unittest.ms.com"
-        ib_expect_add_address(fqdn, str(ip))
+        ib_expect_add_a(fqdn, str(ip))
+        ib_expect_add_ptr(fqdn, str(ip))
         self.dsdb_expect_add(fqdn, ip, "eth0", ip.mac)
         command = ["add", "interface", "address", "--machine", "ut3c5n16",
                    "--interface", "eth0", "--fqdn", fqdn, "--ip", ip]
@@ -434,7 +446,8 @@ class TestAddInterfaceAddress(TestBrokerCommand):
     def test_410_addut3c5n16eth1(self):
         ip = self.net["zebra_eth1"].usable[16]
         fqdn = "ut3c5n16-e1.aqd-unittest.ms.com"
-        ib_expect_add_address(fqdn, str(ip))
+        ib_expect_add_a(fqdn, str(ip))
+        ib_expect_add_ptr(fqdn, str(ip))
         self.dsdb_expect_add(fqdn, ip, "eth1", ip.mac)
         command = ["add", "interface", "address", "--machine", "ut3c5n16",
                    "--interface", "eth1", "--fqdn", fqdn, "--ip", ip]
@@ -467,7 +480,8 @@ class TestAddInterfaceAddress(TestBrokerCommand):
         # has been created
         ip = self.net["tor_net_0"].usable[6]
         fqdn = "test-aurora-default-os-v0.ms.com"
-        ib_expect_add_address(fqdn, str(ip), reverse_ptr="test-aurora-default-os.ms.com")
+        ib_expect_add_a(fqdn, str(ip))
+        ib_expect_add_ptr("test-aurora-default-os.ms.com", str(ip))
         self.noouttest(["add_interface_address", "--machine", "ut8s02p4",
                         "--interface", "eth0", "--label", "v0", "--ip", ip,
                         "--fqdn", fqdn])
@@ -499,13 +513,14 @@ class TestAddInterfaceAddress(TestBrokerCommand):
         self.dsdb_verify()
 
         self.dsdb_expect_add("gi0.test-infoblox.cc", "10.25.0.1", interface="gi0")
-        ib_expect_add_address("gi0.test-infoblox.cc", "10.25.0.1", fail=True)
+        ib_expect_add_a("gi0.test-infoblox.cc", "10.25.0.1", fail=True)
         self.dsdb_expect_delete("10.25.0.1")
         self.iberrortest(command)
         self.dsdb_verify()
 
         self.dsdb_expect_add("gi0.test-infoblox.cc", "10.25.0.1", interface="gi0")
-        ib_expect_add_address("gi0.test-infoblox.cc", "10.25.0.1")
+        ib_expect_add_a("gi0.test-infoblox.cc", "10.25.0.1")
+        ib_expect_add_ptr("gi0.test-infoblox.cc", "10.25.0.1")
         self.noouttest(command)
         self.dsdb_verify()
 
@@ -516,13 +531,14 @@ class TestAddInterfaceAddress(TestBrokerCommand):
         self.dsdb_verify()
 
         self.dsdb_expect_delete("10.25.0.1")
-        ib_expect_del_address("gi0.test-infoblox.cc", "10.25.0.1", fail=True)
+        ib_expect_del_a("gi0.test-infoblox.cc", "10.25.0.1", fail=True)
         self.dsdb_expect_add("gi0.test-infoblox.cc", "10.25.0.1", interface="gi0")
         self.iberrortest(command)
         self.dsdb_verify()
 
         self.dsdb_expect_delete("10.25.0.1")
-        ib_expect_del_address("gi0.test-infoblox.cc", "10.25.0.1")
+        ib_expect_del_a("gi0.test-infoblox.cc", "10.25.0.1")
+        ib_expect_del_ptr("10.25.0.1")
         self.noouttest(command)
         self.dsdb_verify()
 
@@ -550,13 +566,14 @@ class TestAddInterfaceAddress(TestBrokerCommand):
         self.dsdb_verify()
 
         self.dsdb_expect_add("gi0.test-infoblox.cc", "10.25.0.1", interface="gi0", primary=hname)
-        ib_expect_add_address("gi0.test-infoblox.cc", "10.25.0.1", reverse_ptr=hname, fail=True)
+        ib_expect_add_a("gi0.test-infoblox.cc", "10.25.0.1", fail=True)
         self.dsdb_expect_delete("10.25.0.1")
         self.iberrortest(command)
         self.dsdb_verify()
 
         self.dsdb_expect_add("gi0.test-infoblox.cc", "10.25.0.1", interface="gi0", primary=hname)
-        ib_expect_add_address("gi0.test-infoblox.cc", "10.25.0.1", reverse_ptr=hname)
+        ib_expect_add_a("gi0.test-infoblox.cc", "10.25.0.1")
+        ib_expect_add_ptr(hname, "10.25.0.1")
         self.noouttest(command)
         self.dsdb_verify()
 
@@ -567,13 +584,14 @@ class TestAddInterfaceAddress(TestBrokerCommand):
         self.dsdb_verify()
 
         self.dsdb_expect_delete("10.25.0.1")
-        ib_expect_del_address("gi0.test-infoblox.cc", "10.25.0.1", fail=True)
+        ib_expect_del_a("gi0.test-infoblox.cc", "10.25.0.1", fail=True)
         self.dsdb_expect_add("gi0.test-infoblox.cc", "10.25.0.1", interface="gi0", primary=hname)
         self.iberrortest(command)
         self.dsdb_verify()
 
         self.dsdb_expect_delete("10.25.0.1")
-        ib_expect_del_address("gi0.test-infoblox.cc", "10.25.0.1")
+        ib_expect_del_a("gi0.test-infoblox.cc", "10.25.0.1")
+        ib_expect_del_ptr("10.25.0.1")
         self.noouttest(command)
         self.dsdb_verify()
 

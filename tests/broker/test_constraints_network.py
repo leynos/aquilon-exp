@@ -23,8 +23,10 @@ if __name__ == "__main__":
     utils.import_depends()
 
 from brokertest import TestBrokerCommand
-from mock_ib_services import ib_expect_add_address
-from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_add_a
+from mock_ib_services import ib_expect_add_ptr
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
 
 
 class TestNetworkConstraints(TestBrokerCommand):
@@ -40,7 +42,8 @@ class TestNetworkConstraints(TestBrokerCommand):
         ip = net.usable[0]
         self.dsdb_expect_add("mismatch1.aqd-unittest.ms.com", ip, "eth0_bunkertest",
                              primary="aquilon61.aqd-unittest.ms.com")
-        ib_expect_add_address("mismatch1.aqd-unittest.ms.com", str(ip), reverse_ptr="aquilon61.aqd-unittest.ms.com")
+        ib_expect_add_a("mismatch1.aqd-unittest.ms.com", str(ip))
+        ib_expect_add_ptr("aquilon61.aqd-unittest.ms.com", str(ip))
         command = ["add_interface_address",
                    "--machine", "aquilon61.aqd-unittest.ms.com",
                    "--interface", "eth0", "--label", "bunkertest",
@@ -60,7 +63,8 @@ class TestNetworkConstraints(TestBrokerCommand):
         ip = net.usable[0]
         self.dsdb_expect_add("mismatch2.aqd-unittest.ms.com", ip, "eth0_bunkertest",
                              primary="aquilon62.aqd-unittest.ms.com")
-        ib_expect_add_address("mismatch2.aqd-unittest.ms.com", str(ip), reverse_ptr="aquilon62.aqd-unittest.ms.com")
+        ib_expect_add_a("mismatch2.aqd-unittest.ms.com", str(ip))
+        ib_expect_add_ptr("aquilon62.aqd-unittest.ms.com", str(ip))
         command = ["add_interface_address",
                    "--machine", "aquilon62.aqd-unittest.ms.com",
                    "--interface", "eth0", "--label", "bunkertest",
@@ -80,7 +84,8 @@ class TestNetworkConstraints(TestBrokerCommand):
         ip = net.usable[1]
         self.dsdb_expect_add("mismatch3.aqd-unittest.ms.com", ip, "eth0_bunkertest",
                              primary="server9.aqd-unittest.ms.com")
-        ib_expect_add_address("mismatch3.aqd-unittest.ms.com", str(ip), reverse_ptr="server9.aqd-unittest.ms.com")
+        ib_expect_add_a("mismatch3.aqd-unittest.ms.com", str(ip))
+        ib_expect_add_ptr("server9.aqd-unittest.ms.com", str(ip))
         command = ["add_interface_address",
                    "--machine", "server9.aqd-unittest.ms.com",
                    "--interface", "eth0", "--label", "bunkertest",
@@ -132,7 +137,8 @@ class TestNetworkConstraints(TestBrokerCommand):
         net = self.net["bunker_mismatch1"]
         ip = net.usable[0]
         self.dsdb_expect_delete(ip)
-        ib_expect_del_address("mismatch1.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_a("mismatch1.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         command = ["del_interface_address",
                    "--machine", "aquilon61.aqd-unittest.ms.com",
                    "--interface", "eth0", "--label", "bunkertest"]
@@ -144,7 +150,8 @@ class TestNetworkConstraints(TestBrokerCommand):
         net = self.net["bunker_mismatch2"]
         ip = net.usable[0]
         self.dsdb_expect_delete(ip)
-        ib_expect_del_address("mismatch2.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_a("mismatch2.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         command = ["del_interface_address",
                    "--machine", "aquilon62.aqd-unittest.ms.com",
                    "--interface", "eth0", "--label", "bunkertest"]
@@ -156,7 +163,8 @@ class TestNetworkConstraints(TestBrokerCommand):
         net = self.net["bunker_mismatch2"]
         ip = net.usable[1]
         self.dsdb_expect_delete(ip)
-        ib_expect_del_address("mismatch3.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_a("mismatch3.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         command = ["del_interface_address",
                    "--machine", "server9.aqd-unittest.ms.com",
                    "--interface", "eth0", "--label", "bunkertest"]

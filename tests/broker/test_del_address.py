@@ -19,7 +19,8 @@
 
 import unittest
 
-from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
 
 if __name__ == "__main__":
     import utils
@@ -32,8 +33,9 @@ class TestDelAddress(TestBrokerCommand):
 
     def testbasic(self):
         self.dsdb_expect_delete(self.net["unknown0"].usable[13])
-        ib_expect_del_address("arecord13.aqd-unittest.ms.com", self.net["unknown0"].usable[13],
-                              justification=self.valid_justification)
+        ib_expect_del_a("arecord13.aqd-unittest.ms.com", self.net["unknown0"].usable[13],
+                        justification=self.valid_justification)
+        ib_expect_del_ptr(self.net["unknown0"].usable[13], justification=self.valid_justification)
         command = ["del_address", "--ip=%s" % self.net["unknown0"].usable[13]] + self.valid_just_tcm
         self.noouttest(command)
         self.dsdb_verify()
@@ -56,8 +58,9 @@ class TestDelAddress(TestBrokerCommand):
 
     def testdefaultenv(self):
         self.dsdb_expect_delete(self.net["unknown0"].usable[14])
-        ib_expect_del_address("arecord14.aqd-unittest.ms.com", self.net["unknown0"].usable[14],
-                              justification=self.valid_justification)
+        ib_expect_del_a("arecord14.aqd-unittest.ms.com", self.net["unknown0"].usable[14],
+                        justification=self.valid_justification)
+        ib_expect_del_ptr(self.net["unknown0"].usable[14], justification=self.valid_justification)
         default = self.config.get("site", "default_dns_environment")
         command = ["del_address", "--fqdn", "arecord14.aqd-unittest.ms.com",
                    "--dns_environment", default] + self.valid_just_tcm
@@ -92,8 +95,9 @@ class TestDelAddress(TestBrokerCommand):
 
     def testcleanup(self):
         self.dsdb_expect_delete(self.net["unknown0"].usable[15])
-        ib_expect_del_address("arecord15.aqd-unittest.ms.com", self.net["unknown0"].usable[15],
-                              justification=self.valid_justification)
+        ib_expect_del_a("arecord15.aqd-unittest.ms.com", self.net["unknown0"].usable[15],
+                        justification=self.valid_justification)
+        ib_expect_del_ptr(self.net["unknown0"].usable[15], justification=self.valid_justification)
         command = ["del_address", "--ip=%s" % self.net["unknown0"].usable[15],
                    "--fqdn=arecord15.aqd-unittest.ms.com"] + self.valid_just_tcm
         self.noouttest(command)
@@ -153,8 +157,9 @@ class TestDelAddress(TestBrokerCommand):
 
     def test_delreservedreverse(self):
         self.dsdb_expect_delete(self.net["unknown0"].usable[32])
-        ib_expect_del_address("arecord17.aqd-unittest.ms.com", self.net["unknown0"].usable[32],
-                              justification=self.valid_justification)
+        ib_expect_del_a("arecord17.aqd-unittest.ms.com", self.net["unknown0"].usable[32],
+                        justification=self.valid_justification)
+        ib_expect_del_ptr(self.net["unknown0"].usable[32], justification=self.valid_justification)
         command = ["del", "address",
                    "--fqdn", "arecord17.aqd-unittest.ms.com"] + self.valid_just_tcm
         self.noouttest(command)
@@ -186,7 +191,8 @@ class TestDelAddress(TestBrokerCommand):
         fqdn = "arecord40.aqd-unittest.ms.com"
         ip = self.net["unknown0"].usable[40]
         self.dsdb_expect_delete(ip)
-        ib_expect_del_address(fqdn, str(ip), justification=self.valid_justification)
+        ib_expect_del_a(fqdn, str(ip), justification=self.valid_justification)
+        ib_expect_del_ptr(str(ip), justification=self.valid_justification)
         command = ["del", "address", "--ip=%s" % ip] + self.valid_just_tcm
         self.noouttest(command)
         self.dsdb_verify()
@@ -200,7 +206,8 @@ class TestDelAddress(TestBrokerCommand):
         fqdn = "arecord50.aqd-unittest.ms.com"
         ip = self.net["unknown0"].usable[50]
         self.dsdb_expect_delete(ip)
-        ib_expect_del_address(fqdn, str(ip), justification=self.valid_justification)
+        ib_expect_del_a(fqdn, str(ip), justification=self.valid_justification)
+        ib_expect_del_ptr(str(ip), justification=self.valid_justification)
         command = ["del", "address", "--ip=%s" % ip] + self.valid_just_tcm
         self.noouttest(command)
         self.dsdb_verify()
@@ -214,7 +221,8 @@ class TestDelAddress(TestBrokerCommand):
         fqdn = "arecord51.aqd-unittest.ms.com"
         ip = self.net["unknown0"].usable[51]
         self.dsdb_expect_delete(ip)
-        ib_expect_del_address(fqdn, str(ip), justification=self.valid_justification)
+        ib_expect_del_a(fqdn, str(ip), justification=self.valid_justification)
+        ib_expect_del_ptr(str(ip), justification=self.valid_justification)
         command = ["del", "address", "--ip=%s" % ip] + self.valid_just_tcm
         self.noouttest(command)
         self.dsdb_verify()

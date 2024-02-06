@@ -26,12 +26,14 @@ if __name__ == "__main__":
 from broker.utils import MockHub
 from brokertest import TestBrokerCommand
 
-from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_add_a
 from mock_ib_services import ib_expect_add_alias
-from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_add_ptr
+from mock_ib_services import ib_expect_del_a
 from mock_ib_services import ib_expect_del_alias
+from mock_ib_services import ib_expect_del_ptr
 from mock_ib_services import ib_expect_update_a
-from mock_ib_services import ib_expect_update_address
+from mock_ib_services import ib_expect_update_ptr
 
 
 class TestAddServiceAddress(TestBrokerCommand):
@@ -52,7 +54,8 @@ class TestAddServiceAddress(TestBrokerCommand):
         # Use an address that is smaller than the primary IP to verify that the
         # primary IP is not removed
         ip = self.net["zebra_vip"].usable[14]
-        ib_expect_add_address("zebra2.aqd-unittest.ms.com", str(ip))
+        ib_expect_add_a("zebra2.aqd-unittest.ms.com", str(ip))
+        ib_expect_add_ptr("zebra2.aqd-unittest.ms.com", str(ip))
         self.dsdb_expect_add("zebra2.aqd-unittest.ms.com", ip)
         command = ["add", "service", "address",
                    "--hostname", "unittest20.aqd-unittest.ms.com",
@@ -107,8 +110,8 @@ class TestAddServiceAddress(TestBrokerCommand):
 
     def test_300_addzebra3(self):
         zebra3_ip = self.net["zebra_vip"].usable[13]
-        ib_expect_add_address("zebra3.aqd-unittest.ms.com", str(zebra3_ip),
-                              reverse_ptr="unittest20.aqd-unittest.ms.com")
+        ib_expect_add_a("zebra3.aqd-unittest.ms.com", str(zebra3_ip))
+        ib_expect_add_ptr("unittest20.aqd-unittest.ms.com", str(zebra3_ip))
         self.dsdb_expect_add("zebra3.aqd-unittest.ms.com", zebra3_ip,
                              comments="Some service address comments")
         command = ["add", "service", "address",
@@ -219,7 +222,8 @@ class TestAddServiceAddress(TestBrokerCommand):
     def test_605_addunittest20eth2addr(self):
         fqdn = "unittest20-e2.aqd-unittest.ms.com"
         ip = "192.168.5.24"
-        ib_expect_add_address(fqdn, ip)
+        ib_expect_add_a(fqdn, ip)
+        ib_expect_add_ptr(fqdn, ip)
         command = ["add_interface_address", "--machine", "ut3c5n2",
                    "--interface", "eth2", "--network_environment", "excx",
                    "--fqdn", fqdn, "--ip", ip]
@@ -261,7 +265,8 @@ class TestAddServiceAddress(TestBrokerCommand):
         # Test nextip generation for VIP serviceaddreses
         ip = self.net["np_bucket2_vip"].usable[0]
         service_addr = "testaddress.ms.com"
-        ib_expect_add_address(service_addr, str(ip))
+        ib_expect_add_a(service_addr, str(ip))
+        ib_expect_add_ptr(service_addr, str(ip))
         self.dsdb_expect_add(service_addr, ip)
         command = ["add", "service", "address", "--hostname", "aquilon67.aqd-unittest.ms.com",
                    "--service_address", service_addr, "--name", "test", "--ipfromtype", "vip"]
@@ -296,7 +301,8 @@ class TestAddServiceAddress(TestBrokerCommand):
         # Test nextip generation for localvip serviceaddreses
         ip = self.net["ut_bucket2_localvip"].usable[1]
         service_addr = "testlocalvipaddress.ms.com"
-        ib_expect_add_address(service_addr, str(ip))
+        ib_expect_add_a(service_addr, str(ip))
+        ib_expect_add_ptr(service_addr, str(ip))
         self.dsdb_expect_add(service_addr, ip)
         command = ["add", "service", "address", "--hostname", "aquilon67.aqd-unittest.ms.com",
                    "--service_address", service_addr, "--name", "test2", "--ipfromtype", "localvip"]
@@ -382,14 +388,16 @@ class TestAddServiceAddress(TestBrokerCommand):
     def test_645_test_del_ipfromtype_test(self):
         ip1 = self.net["np_bucket2_vip"].usable[0]
         ip2 = self.net["ut_bucket2_localvip"].usable[1]
-        ib_expect_del_address("testaddress.ms.com", str(ip1))
+        ib_expect_del_a("testaddress.ms.com", str(ip1))
+        ib_expect_del_ptr(str(ip1))
         self.dsdb_expect_delete(ip1)
         command = ["del", "service", "address", "--hostname", "aquilon67.aqd-unittest.ms.com",
                    "--name", "test"]
         self.successtest(command)
         self.dsdb_verify()
         self.ib_verify()
-        ib_expect_del_address("testlocalvipaddress.ms.com", str(ip2))
+        ib_expect_del_a("testlocalvipaddress.ms.com", str(ip2))
+        ib_expect_del_ptr(str(ip2))
         self.dsdb_expect_delete(ip2)
         command = ["del", "service", "address", "--hostname", "aquilon67.aqd-unittest.ms.com",
                    "--name", "test2"]
@@ -434,14 +442,15 @@ class TestAddServiceAddress(TestBrokerCommand):
         self.noouttest(command)
         self.dsdb_verify()
 
-        ib_expect_update_address(fqdn="sa.test-infoblox.cc", original_ip="10.25.0.1", reverse_ptr=hname, fail=True)
         command = ['update_service_address', '--name', 'test-service', '--hostname', hname, '--map_to_primary']
+        ib_expect_update_ptr(ip="10.25.0.1", new_fqdn=hname, fail=True)
         self.iberrortest(command)
 
-        ib_expect_update_address(fqdn="sa.test-infoblox.cc", original_ip="10.25.0.1", reverse_ptr=hname)
+        ib_expect_update_ptr(ip="10.25.0.1", new_fqdn=hname)
         command = ['update_service_address', '--name', 'test-service', '--hostname', hname, '--map_to_primary']
         self.noouttest(command)
         self.ib_verify()
+        self.dsdb_verify(empty=True)
 
         self.dsdb_expect_update("sa.test-infoblox.cc", ip="10.25.0.2", fail=True)
         command = ['update_service_address', '--name', 'test-service', '--hostname', hname, '--ip', '10.25.0.2']
@@ -449,13 +458,15 @@ class TestAddServiceAddress(TestBrokerCommand):
         self.dsdb_verify()
 
         self.dsdb_expect_update("sa.test-infoblox.cc", ip="10.25.0.2")
-        ib_expect_update_address(fqdn="sa.test-infoblox.cc", original_ip="10.25.0.1", new_ip="10.25.0.2", fail=True)
+        ib_expect_update_a(fqdn="sa.test-infoblox.cc", original_ip="10.25.0.1", new_ip="10.25.0.2", fail=True)
         self.dsdb_expect_update("sa.test-infoblox.cc", ip="10.25.0.1")  # Expect dsdb rollback because infoblox fails
         self.iberrortest(command)
         self.dsdb_verify()
 
         self.dsdb_expect_update("sa.test-infoblox.cc", ip="10.25.0.2")
-        ib_expect_update_address(fqdn="sa.test-infoblox.cc", original_ip="10.25.0.1", new_ip="10.25.0.2")
+        ib_expect_update_a(fqdn="sa.test-infoblox.cc", original_ip="10.25.0.1", new_ip="10.25.0.2")
+        ib_expect_del_ptr(ip="10.25.0.1")
+        ib_expect_add_ptr(fqdn="sa.test-infoblox.cc", ip="10.25.0.2")
         self.noouttest(command)
         self.dsdb_verify()
 
@@ -466,14 +477,15 @@ class TestAddServiceAddress(TestBrokerCommand):
         self.dsdb_verify()
 
         self.dsdb_expect_delete("10.25.0.2")
-        ib_expect_del_address("sa.test-infoblox.cc", "10.25.0.2", fail=True)
+        ib_expect_del_a("sa.test-infoblox.cc", "10.25.0.2", fail=True)
         self.dsdb_expect_add("sa.test-infoblox.cc", ip="10.25.0.2")  # Expect dsdb rollback because infoblox fails
         self.iberrortest(command)
         self.dsdb_verify()
         self.ib_verify()
 
         self.dsdb_expect_delete("10.25.0.2")
-        ib_expect_del_address("sa.test-infoblox.cc", "10.25.0.2")
+        ib_expect_del_a("sa.test-infoblox.cc", "10.25.0.2")
+        ib_expect_del_ptr("10.25.0.2")
         self.noouttest(command)
         self.dsdb_verify()
         self.ib_verify()
@@ -494,7 +506,8 @@ class TestAddServiceAddress(TestBrokerCommand):
 
         self.dsdb_expect_delete("10.25.0.1")
         self.dsdb_expect_add("sa.test-infoblox.cc", "10.25.0.1")
-        ib_expect_add_address("resource-group-shared-name.test-infoblox.cc", "10.25.0.1")
+        ib_expect_add_a("resource-group-shared-name.test-infoblox.cc", "10.25.0.1")
+        ib_expect_add_ptr("resource-group-shared-name.test-infoblox.cc", "10.25.0.1")
         command = ['add_service_address', '--name', 'test-service', '--service_address', 'sa.test-infoblox.cc',
                    '--resourcegroup', 'test-resource-group']
         self.noouttest(command)
@@ -508,8 +521,7 @@ class TestAddServiceAddress(TestBrokerCommand):
         self.dsdb_verify()
 
         self.dsdb_expect_update("sa.test-infoblox.cc", ip="10.25.0.2")
-        ib_expect_update_address(fqdn="sa.test-infoblox.cc", original_ip="10.25.0.1", fail=True,
-                                 new_ip="10.25.0.2", reverse_ptr="resource-group-shared-name.test-infoblox.cc")
+        ib_expect_update_a(fqdn="sa.test-infoblox.cc", original_ip="10.25.0.1", new_ip="10.25.0.2", fail=True)
         self.dsdb_expect_update("sa.test-infoblox.cc", ip="10.25.0.1")  # Expect DSDB rollback when IB fails
         command = ['update_service_address', '--name', 'test-service', '--resourcegroup', 'test-resource-group',
                    '--ip', '10.25.0.2', '--map_to_shared']
@@ -517,15 +529,16 @@ class TestAddServiceAddress(TestBrokerCommand):
         self.dsdb_verify()
 
         self.dsdb_expect_update("sa.test-infoblox.cc", ip="10.25.0.2")
-        ib_expect_update_address(fqdn="sa.test-infoblox.cc", original_ip="10.25.0.1",
-                                 new_ip="10.25.0.2", reverse_ptr="resource-group-shared-name.test-infoblox.cc")
+        ib_expect_update_a(fqdn="sa.test-infoblox.cc", original_ip="10.25.0.1", new_ip="10.25.0.2")
+        ib_expect_del_ptr(ip="10.25.0.1")
+        ib_expect_add_ptr(fqdn="resource-group-shared-name.test-infoblox.cc", ip="10.25.0.2")
         command = ['update_service_address', '--name', 'test-service', '--resourcegroup', 'test-resource-group',
                    '--ip', '10.25.0.2', '--map_to_shared']
         self.noouttest(command)
         self.dsdb_verify()
 
         # Test that when we send 2 IB requests and the first one succeeds but the second one fails,
-        # the second one is rolled back
+        # the first one is rolled back
 
         #  Set a TTL on the address_alias to test that when the rollback happens, the TTL is retained
         command = ['update_address_alias',
@@ -535,17 +548,21 @@ class TestAddServiceAddress(TestBrokerCommand):
         self.noouttest(command)
 
         self.dsdb_expect_delete("10.25.0.2")
-        ib_expect_del_address("resource-group-shared-name.test-infoblox.cc", "10.25.0.2")
-        ib_expect_del_address("sa.test-infoblox.cc", "10.25.0.2", fail=True)
-        ib_expect_add_address("resource-group-shared-name.test-infoblox.cc", "10.25.0.2", ttl=100)  # Expect IB rollback
+        ib_expect_del_a("resource-group-shared-name.test-infoblox.cc", "10.25.0.2")
+        ib_expect_del_ptr("10.25.0.2")
+        ib_expect_del_a("sa.test-infoblox.cc", "10.25.0.2", fail=True)
+        ib_expect_add_ptr("sa.test-infoblox.cc", "10.25.0.2", ttl=100)
+        ib_expect_add_a("resource-group-shared-name.test-infoblox.cc", "10.25.0.2", ttl=100)  # Expect IB rollback
         self.dsdb_expect_add("sa.test-infoblox.cc", "10.25.0.2")  # Expect DSDB rollback
         command = ['del_service_address', '--name', 'test-service', '--resourcegroup', 'test-resource-group']
         self.iberrortest(command)
         self.dsdb_verify()
 
         self.dsdb_expect_delete("10.25.0.2")
-        ib_expect_del_address("resource-group-shared-name.test-infoblox.cc", "10.25.0.2")
-        ib_expect_del_address("sa.test-infoblox.cc", "10.25.0.2")
+        ib_expect_del_a("resource-group-shared-name.test-infoblox.cc", "10.25.0.2")
+        ib_expect_del_ptr("10.25.0.2")
+        ib_expect_del_a("sa.test-infoblox.cc", "10.25.0.2")
+        ib_expect_del_ptr("10.25.0.2")  # This is odd, why are we trying to delete the PTR twice ?
         command = ['del_service_address', '--name', 'test-service', '--resourcegroup', 'test-resource-group']
         self.noouttest(command)
         self.dsdb_verify()

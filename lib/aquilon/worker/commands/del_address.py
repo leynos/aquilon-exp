@@ -106,7 +106,15 @@ class CommandDelAddress(BrokerCommand):
             ib_services = IBServices(logger, justification=justification, **arguments)
             if ib_services.feature_enabled("address"):
                 try:
-                    ib_services.delete_a_ptr(old_fqdn, ip)
+                    ib_services.group.add_action(
+                        lambda name=str(old_fqdn), ip=ip: ib_services.delete_a(name=name, ip=ip),
+                        lambda name=str(old_fqdn), ip=ip: ib_services.add_a(name=name, ip=ip)
+                    )
+                    ib_services.group.add_action(
+                        lambda ip=ip: ib_services.delete_ptr(ip=ip),
+                        lambda name=str(old_fqdn), ip=ip: ib_services.add_ptr(name=name, ip=ip)
+                    )
+                    ib_services.group.commit_or_rollback()
                 except ProcessException as e:
                     if dsdb_runner:
                         dsdb_runner.rollback()

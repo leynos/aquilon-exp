@@ -132,8 +132,12 @@ class CommandDelInterfaceAddress(BrokerCommand):
         ib_services = IBServices(logger, justification=justification, **kwargs)
         for dns_rec in addr.dns_records:
             ib_services.group.add_action(
-                lambda fqdn=dns_rec, ip=ip: ib_services.delete_a_ptr(fqdn, ip),
-                lambda fqdn=dns_rec, ip=ip: ib_services.add_a_ptr(fqdn, ip)
+                lambda fqdn=dns_rec, ip=ip: ib_services.delete_a(fqdn, ip),
+                lambda fqdn=dns_rec, ip=ip: ib_services.add_a(fqdn, ip)
+            )
+            ib_services.group.add_action(
+                lambda ip=ip: ib_services.delete_ptr(ip),
+                lambda fqdn=dns_rec, ip=ip: ib_services.add_ptr(fqdn, ip)
             )
 
         with plenaries.transaction():

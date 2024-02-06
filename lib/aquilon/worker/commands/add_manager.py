@@ -82,8 +82,16 @@ class CommandAddManager(BrokerCommand):
 
             ib_services = IBServices(logger, justification=justification, **arguments)
             if ib_services.feature_enabled("manager"):
+                ib_services.group.add_action(
+                    lambda fqdn=manager, ip=ip: ib_services.add_a(fqdn, ip),
+                    lambda fqdn=manager, ip=ip: ib_services.delete_a(fqdn, ip)
+                )
+                ib_services.group.add_action(
+                    lambda fqdn=manager, ip=ip: ib_services.add_ptr(fqdn, ip),
+                    lambda ip=ip: ib_services.delete_ptr(ip)
+                )
                 try:
-                    ib_services.add_a_ptr(manager, ip)
+                    ib_services.group.commit_or_rollback()
                 except ProcessException as e:
                     dsdb_runner.rollback()
                     raise e

@@ -154,8 +154,22 @@ class CommandUpdateNetworkDevice(BrokerCommand):
 
             ib_services = IBServices(logger, justification=justification, **arguments)
             if ip and ib_services.feature_enabled("network_device"):
+                ib_services.group.add_action(
+                    lambda fqdn=str(dbnetdev.primary_name.fqdn), ip=old_ip, new_ip=ip:
+                        ib_services.update_a(fqdn, ip, new_ip=new_ip),
+                    lambda fqdn=str(dbnetdev.primary_name.fqdn), ip=ip, new_ip=old_ip:
+                        ib_services.update_a(fqdn, ip, new_ip=new_ip)
+                )
+                ib_services.group.add_action(
+                    lambda ip=old_ip: ib_services.delete_ptr(ip),
+                    lambda fqdn=str(dbnetdev.primary_name.fqdn), ip=old_ip: ib_services.add_ptr(fqdn, ip)
+                )
+                ib_services.group.add_action(
+                    lambda fqdn=str(dbnetdev.primary_name.fqdn), ip=ip: ib_services.add_ptr(fqdn, ip),
+                    lambda ip=ip: ib_services.delete_ptr(ip)
+                )
                 try:
-                    ib_services.update_a_ptr(str(dbnetdev.primary_name.fqdn), old_ip, ip)
+                    ib_services.group.commit_or_rollback()
                 except ProcessException as e:
                     dsdb_runner.rollback()
                     raise e

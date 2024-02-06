@@ -28,7 +28,8 @@ if __name__ == "__main__":
 from brokertest import TestBrokerCommand
 from notificationtest import VerifyNotificationsMixin
 from machinetest import MachineTestMixin
-from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
 from utils import MockHub
 
 
@@ -51,7 +52,8 @@ class TestDelHost(VerifyNotificationsMixin, MachineTestMixin,
     def test_100_del_unittest02(self):
         host = 'unittest02.one-nyp.ms.com'
         ip = self.net['unknown0'].usable[11]
-        ib_expect_del_address(host, ip)
+        ib_expect_del_a(host, ip)
+        ib_expect_del_ptr(ip)
         self.dsdb_expect_delete(ip)
         self.to_windows(host)
         command = ['del_host', '--hostname', host]
@@ -77,7 +79,8 @@ class TestDelHost(VerifyNotificationsMixin, MachineTestMixin,
         dsdb_command = "delete_host -ip_address {0}".format(ip)
         errstr = "Host with IP address {0} is not defined".format(ip)
         self.dsdb_expect(dsdb_command, True, errstr)
-        ib_expect_del_address(fqdn, ip)
+        ib_expect_del_a(fqdn, ip)
+        ib_expect_del_ptr(ip)
 
         command = ['del_host', '--hostname', fqdn]
         err = self.statustest(command)
@@ -154,7 +157,8 @@ class TestDelHost(VerifyNotificationsMixin, MachineTestMixin,
         fqdn = "test-windows-default-os.msad.ms.com"
         ip = self.net["tor_net_0"].usable[5]
         self.dsdb_expect_delete(ip)
-        ib_expect_del_address(fqdn, ip)
+        ib_expect_del_a(fqdn, ip)
+        ib_expect_del_ptr(ip)
         command = "del host --hostname {} --quiet".format(fqdn)
         self.noouttest(command.split(" "))
         self.dsdb_verify()
@@ -167,7 +171,8 @@ class TestDelHost(VerifyNotificationsMixin, MachineTestMixin,
     def test_160_del_jack(self):
         fqdn = "jack.cards.example.com"
         ip = self.net["tor_net_0"].usable[9]
-        ib_expect_del_address(fqdn, ip)
+        ib_expect_del_a(fqdn, ip)
+        ib_expect_del_ptr(ip)
         self.dsdb_expect_delete(ip)
         command = "del host --hostname {}".format(fqdn)
         self.statustest(command.split(" "))
@@ -191,7 +196,8 @@ class TestDelHost(VerifyNotificationsMixin, MachineTestMixin,
     def test_171_del_notify(self):
         hostname = self.config.get("unittest", "hostname")
         self.to_windows(hostname)
-        ib_expect_del_address(hostname, "127.0.0.1")
+        ib_expect_del_a(hostname, "127.0.0.1")
+        ib_expect_del_ptr("127.0.0.1")
         self.dsdb_expect_delete("127.0.0.1")
         basetime = datetime.now()
         command = ["del", "host", "--hostname", hostname]
@@ -216,7 +222,8 @@ class TestDelHost(VerifyNotificationsMixin, MachineTestMixin,
             machine = mh.hosts[host]['machine']
             net = mh.networks[mh.machines[machine]['network']]['net']
             ip = net.usable[mh.machines[machine]['net_index']]
-            ib_expect_del_address(host, ip)
+            ib_expect_del_a(host, ip)
+            ib_expect_del_ptr(ip)
             self.dsdb_expect_delete(ip=ip)
             self.successtest(['del_host', '--hostname', host])
             self.dsdb_verify()

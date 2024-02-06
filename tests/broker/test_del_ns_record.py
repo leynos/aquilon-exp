@@ -19,7 +19,8 @@
 
 import unittest
 
-from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
 
 if __name__ == '__main__':
     import utils
@@ -47,7 +48,8 @@ class TestDelNSRecord(TestBrokerCommand):
     # although this is already tested elsewhere, just for tidyness
     def test_200_delete_a_record(self):
         self.dsdb_expect_delete(self.IP)
-        ib_expect_del_address(NAME, self.IP, justification=self.valid_justification)
+        ib_expect_del_a(NAME, self.IP, justification=self.valid_justification)
+        ib_expect_del_ptr(self.IP, justification=self.valid_justification)
         cmd = ["del_address", "--fqdn", NAME, "--ip", self.IP] + self.valid_just_tcm
         self.noouttest(cmd)
         self.dsdb_verify()

@@ -19,7 +19,10 @@
 
 import unittest
 
-from mock_ib_services import ib_expect_add_address, ib_expect_del_address
+from mock_ib_services import ib_expect_add_a
+from mock_ib_services import ib_expect_add_ptr
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
 
 if __name__ == "__main__":
     import utils
@@ -168,13 +171,15 @@ class TestCluster(TestBrokerCommand):
         # which is a bug, but it means we cannot just switch the archetype. We
         # need to delete & re-add the host instead. Sigh...
         ip = self.net["hp_eth0"].usable[11]
-        ib_expect_del_address(fqdn, ip)
+        ib_expect_del_a(fqdn, ip)
+        ib_expect_del_ptr(ip)
         self.dsdb_expect_delete(ip)
         self.statustest(["del_host", "--hostname", fqdn])
         self.dsdb_expect_add(fqdn,
                              self.net["hp_eth0"].usable[11], "eth0",
                              self.net["hp_eth0"].usable[11].mac)
-        ib_expect_add_address(fqdn, ip)
+        ib_expect_add_a(fqdn, ip)
+        ib_expect_add_ptr(fqdn, ip)
         self.noouttest(["add_host", "--hostname", fqdn,
                         "--archetype", "vmhost", "--personality", "esx_server",
                         "--osname", "esxi", "--osversion", "7.0.3",
@@ -235,7 +240,8 @@ class TestCluster(TestBrokerCommand):
         command = ["add", "service", "address", "--resourcegroup", "testnextip", "--service_address",
                    service_addr, "--name", "test", "--ipfromtype", "vip"]
         self.dsdb_expect_add(service_addr, ip)
-        ib_expect_add_address(service_addr, str(ip))
+        ib_expect_add_a(service_addr, str(ip))
+        ib_expect_add_ptr(service_addr, str(ip))
         self.successtest(command)
         command = ["show", "service", "address", "--name", "test",
                    "--resourcegroup", "testnextip"]
@@ -251,7 +257,8 @@ class TestCluster(TestBrokerCommand):
     def test_133_ipfromtype_resourcegroup_restore(self):
         ip1 = self.net["np_bucket2_vip"].usable[0]
         self.dsdb_expect_delete(ip1)
-        ib_expect_del_address("testresgr.ms.com", str(ip1))
+        ib_expect_del_a("testresgr.ms.com", str(ip1))
+        ib_expect_del_ptr(str(ip1))
         command = ["del", "service", "address", "--name", "test",
                    "--resourcegroup", "testnextip"]
         self.successtest(command)

@@ -24,7 +24,8 @@ if __name__ == "__main__":
     utils.import_depends()
 
 from brokertest import TestBrokerCommand
-from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
 
 
 class TestDelChassis(TestBrokerCommand):
@@ -39,7 +40,8 @@ class TestDelChassis(TestBrokerCommand):
 
     def test_101_del_ut3c5(self):
         ip = self.net["unknown0"].usable[6]
-        ib_expect_del_address("ut3c5.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_a("ut3c5.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         self.dsdb_expect_delete(ip)
         command = "del chassis --chassis ut3c5.aqd-unittest.ms.com --clear_slots"
         self.noouttest(command.split(" "))
@@ -70,7 +72,8 @@ class TestDelChassis(TestBrokerCommand):
         for i in range(1, 8):
             fqdn = "ut9c%d.aqd-unittest.ms.com" % i
             ip = self.net["ut9_chassis"].usable[i]
-            ib_expect_del_address(fqdn, str(ip))
+            ib_expect_del_a(fqdn, str(ip))
+            ib_expect_del_ptr(str(ip))
             self.dsdb_expect_delete(ip)
             command = "del chassis --chassis " + fqdn
             self.noouttest(command.split(" "))

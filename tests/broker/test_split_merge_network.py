@@ -27,8 +27,10 @@ if __name__ == "__main__":
 from ipaddress import IPv4Network
 
 from brokertest import TestBrokerCommand
-from mock_ib_services import ib_expect_add_address
-from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_add_a
+from mock_ib_services import ib_expect_add_ptr
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
 
 
 class TestSplitMergeNetwork(TestBrokerCommand):
@@ -53,13 +55,15 @@ class TestSplitMergeNetwork(TestBrokerCommand):
 
     def test_110_add_dns_records(self):
         self.dsdb_expect_add("merge1.aqd-unittest.ms.com", "0.2.2.200")
-        ib_expect_add_address("merge1.aqd-unittest.ms.com", "0.2.2.200", justification=self.valid_justification)
+        ib_expect_add_a("merge1.aqd-unittest.ms.com", "0.2.2.200", justification=self.valid_justification)
+        ib_expect_add_ptr("merge1.aqd-unittest.ms.com", "0.2.2.200", justification=self.valid_justification)
         self.noouttest(["add", "address", "--ip", "0.2.2.200",
                         "--fqdn", "merge1.aqd-unittest.ms.com",
                         "--grn=grn:/ms/ei/aquilon/unittest"] + self.valid_just_tcm)
         self.ib_verify()
         self.dsdb_expect_add("merge2.aqd-unittest.ms.com", "0.2.3.192")
-        ib_expect_add_address("merge2.aqd-unittest.ms.com", "0.2.3.192", justification=self.valid_justification)
+        ib_expect_add_a("merge2.aqd-unittest.ms.com", "0.2.3.192", justification=self.valid_justification)
+        ib_expect_add_ptr("merge2.aqd-unittest.ms.com", "0.2.3.192", justification=self.valid_justification)
         self.noouttest(["add", "address", "--ip", "0.2.3.192",
                         "--fqdn", "merge2.aqd-unittest.ms.com",
                         "--grn=grn:/ms/ei/aquilon/unittest"] + self.valid_just_tcm)
@@ -67,13 +71,16 @@ class TestSplitMergeNetwork(TestBrokerCommand):
         self.ib_verify()
 
     def test_120_add_routers(self):
-        ib_expect_add_address("rtr1-merge1.aqd-unittest.ms.com", "0.2.2.1")
+        ib_expect_add_a("rtr1-merge1.aqd-unittest.ms.com", "0.2.2.1")
+        ib_expect_add_ptr("rtr1-merge1.aqd-unittest.ms.com", "0.2.2.1")
         self.noouttest(["add", "router", "address", "--ip", "0.2.2.1",
                         "--fqdn", "rtr1-merge1.aqd-unittest.ms.com"])
-        ib_expect_add_address("rtr2-merge1.aqd-unittest.ms.com", "0.2.2.193")
+        ib_expect_add_a("rtr2-merge1.aqd-unittest.ms.com", "0.2.2.193")
+        ib_expect_add_ptr("rtr2-merge1.aqd-unittest.ms.com", "0.2.2.193")
         self.noouttest(["add", "router", "address", "--ip", "0.2.2.193",
                         "--fqdn", "rtr2-merge1.aqd-unittest.ms.com"])
-        ib_expect_add_address("rtr1-merge2.aqd-unittest.ms.com", "0.2.3.129")
+        ib_expect_add_a("rtr1-merge2.aqd-unittest.ms.com", "0.2.3.129")
+        ib_expect_add_ptr("rtr1-merge2.aqd-unittest.ms.com", "0.2.3.129")
         self.noouttest(["add", "router", "address", "--ip", "0.2.3.129",
                         "--fqdn", "rtr1-merge2.aqd-unittest.ms.com"])
         self.ib_verify()
@@ -192,14 +199,16 @@ class TestSplitMergeNetwork(TestBrokerCommand):
     def test_900_clean_dns(self):
         fqdn = "merge1.aqd-unittest.ms.com"
         self.dsdb_expect_delete("0.2.2.200")
-        ib_expect_del_address(fqdn, "0.2.2.200", justification=self.valid_justification)
+        ib_expect_del_a(fqdn, "0.2.2.200", justification=self.valid_justification)
+        ib_expect_del_ptr("0.2.2.200", justification=self.valid_justification)
         self.noouttest(["del", "address", "--ip", "0.2.2.200",
                         "--fqdn", fqdn] + self.valid_just_tcm)
         self.ib_verify()
 
         fqdn = "merge2.aqd-unittest.ms.com"
         self.dsdb_expect_delete("0.2.3.192")
-        ib_expect_del_address(fqdn, "0.2.3.192", justification=self.valid_justification)
+        ib_expect_del_a(fqdn, "0.2.3.192", justification=self.valid_justification)
+        ib_expect_del_ptr("0.2.3.192", justification=self.valid_justification)
         self.noouttest(["del", "address", "--ip", "0.2.3.192",
                         "--fqdn", fqdn] + self.valid_just_tcm)
         self.dsdb_verify()

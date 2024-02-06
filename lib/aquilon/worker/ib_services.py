@@ -95,7 +95,64 @@ class IBServices(object):
         return payload
 
     @with_timer
+    def add_ptr(self, name, ip, ttl=None):
+        if not self._assert_ip(ip):
+            return
+        if not name:
+            raise ArgumentError("Required argument 'name' is missing")
+        payload = {"eonid": self.eonid, "name": str(name), "address": str(ip)}
+        if ttl is not None:
+            payload['ttl'] = ttl
+        if (self.justification is not None):
+            payload["cm_token"] = self.justification
+        r = self._http_request("POST", "/dns/a_ptr/ptr", payload, ignore_statuses=[409])
+        if r and r.status_code == 409:
+            self.update_ptr(name, ip, new_ttl=ttl)
+
+    @with_timer
+    def update_ptr(self, name, ip, new_name=None, new_ttl=None):
+        if not self._assert_ip(ip):
+            return
+        if new_name is None and new_ttl is None:
+            return
+
+        payload = {"eonid": self.eonid}
+        if (self.justification is not None):
+            payload["cm_token"] = self.justification
+        if new_name is not None:
+            payload['name'] = str(new_name)
+        if new_ttl is not None:
+            payload['ttl'] = new_ttl
+
+        url = "/dns/a_ptr/ptr/{}".format(str(ip))
+        r = self._http_request("PATCH", url, payload, ignore_statuses=[404])
+        if r and r.status_code == 404:
+            if new_name is None:
+                payload['name'] = str(name)
+            else:
+                payload['name'] = str(new_name)
+            return self._http_request("POST", "/dns/a_ptr/ptr", payload)
+        else:
+            return r
+
+    @with_timer
+    def delete_ptr(self, ip):
+        if not self._assert_ip(ip):
+            return
+        params = {
+            "eonid": self.eonid,
+        }
+        if self.justification is not None:
+            params["cm_token"] = self.justification
+        url = "/dns/a_ptr/ptr/{}".format(str(ip))
+        url = self._generate_url_from_params(url, params)
+
+        return self._http_request("DELETE", url, ignore_statuses=[404])
+
+    @with_timer
     def add_a(self, name, ip, ttl=None):
+        if not self._assert_ip(ip):
+            return
         payload = {"eonid": self.eonid, "name": str(name), "address": str(ip)}
         if ttl is not None:
             payload['ttl'] = ttl
@@ -103,11 +160,13 @@ class IBServices(object):
             payload["cm_token"] = self.justification
         r = self._http_request("POST", "/dns/a_ptr/a", payload, ignore_statuses=[409])
         if r and r.status_code == 409:
-            self.update_a(name, ip, new_ttl=ttl)
+            r = self.update_a(name, ip, new_ttl=ttl)
+        return r
 
     @with_timer
     def update_a(self, name, ip, new_ip=None, new_ttl=None):
-
+        if not self._assert_ip(ip):
+            return
         if new_ip is None and new_ttl is None:
             return
 
@@ -130,6 +189,8 @@ class IBServices(object):
 
     @with_timer
     def delete_a(self, name, ip):
+        if not self._assert_ip(ip):
+            return
         params = {
             "eonid": self.eonid,
         }
@@ -241,7 +302,7 @@ class IBServices(object):
             # Things to update
             elif old_hwdata[fqdn] != new_hwdata[fqdn]:
                 self._update_a_ptr_from_hwdata(fqdn, old_hwdata, new_hwdata)
- 
+
         # Things to add
         for fqdn in new_hwdata:
             if fqdn not in old_hwdata:
@@ -249,53 +310,60 @@ class IBServices(object):
 
     def _add_a_ptr_from_hwdata(self, fqdn, old_hwdata, new_hwdata):
         ip, new_ptr, new_ttl = (new_hwdata[fqdn][key] for key in ["ip", "ptr", "ttl"])
-        kwargs = {}
-
-        if new_ptr:
-            kwargs["assign_ptr_to_fqdn"] = new_ptr
-        if new_ttl:
-            kwargs["ttl"] = new_ttl
 
         self.group.add_action(
-            lambda fqdn=fqdn, ip=ip, kwargs=kwargs:
-                self.add_a_ptr(fqdn, ip, **kwargs),
+            lambda fqdn=fqdn, ip=ip, ttl=new_ttl:
+                self.add_a(fqdn, ip, ttl),
             lambda fqdn=fqdn, ip=ip:
-                self.delete_a_ptr(fqdn, ip)
+                self.delete_a(fqdn, ip)
         )
-        self.log.info("add_a_ptr({}, {}, {}), rollback delete_a_ptr({}, {})".format(fqdn, ip, kwargs, fqdn, ip))
+
+        self.group.add_action(
+            lambda fqdn=fqdn if new_ptr is None else new_ptr, ip=ip, ttl=new_ttl:
+                self.add_ptr(fqdn, ip, ttl),
+            lambda ip=ip:
+                self.delete_ptr(ip)
+        )
+        self.log.info("add_a_ptr({}, {}, {}, {}), rollback delete_a_ptr({}, {})".format(fqdn, ip, new_ttl, new_ptr,
+                                                                                        fqdn, ip))
 
     def _update_a_ptr_from_hwdata(self, fqdn, old_hwdata, new_hwdata):
+        self.log.info("_update_a_ptr_from_hwdata(): old {}, new {}".format(old_hwdata, new_hwdata))
         old_ip, old_ptr, old_ttl = (old_hwdata[fqdn][key] for key in ["ip", "ptr", "ttl"])
         new_ip, new_ptr, new_ttl = (new_hwdata[fqdn][key] for key in ["ip", "ptr", "ttl"])
-        kwargs = {}
-        rollback_kwargs = {}
 
-        if old_ptr != new_ptr:
-            kwargs["assign_ptr_to_fqdn"] = new_ptr
-            rollback_kwargs["assign_ptr_to_fqdn"] = old_ptr
         if old_ttl != new_ttl:
-            kwargs["ttl"] = new_ttl
-            rollback_kwargs["ttl"] = old_ttl
+            self.log.info("update_a({} {} {} {})".format(fqdn, old_ip, old_ttl, new_ttl))
+            self.group.add_action(
+                lambda fqdn=fqdn, ip=old_ip, ttl=new_ttl: self.update_a(fqdn, ip, new_ttl=ttl),
+                lambda fqdn=fqdn, ip=old_ip, ttl=old_ttl: self.update_a(fqdn, ip, new_ttl=ttl)
+            )
 
-        self.group.add_action(
-            lambda fqdn=fqdn, old_ip=old_ip, kwargs=kwargs:
-                self.update_a_ptr(fqdn, old_ip, **kwargs),
-            lambda fqdn=fqdn, new_ip=new_ip, rollback_kwargs=rollback_kwargs:
-                self.update_a_ptr(fqdn, new_ip, **rollback_kwargs)
-        )
-        self.log.info("update_a_ptr({}, {}, {}), rollback update_a_ptr({}, {}, {})".format(fqdn, old_ip, kwargs, fqdn, new_ip, rollback_kwargs))
+        if old_ptr != new_ptr or old_ttl != new_ttl:
+            self.log.info("update_ptr({} {} {} {} {} {})".format(fqdn, old_ip, new_ptr, new_ttl, old_ptr, old_ttl))
+            self.group.add_action(
+                lambda fqdn=fqdn, ip=old_ip, ptr=fqdn if new_ptr is None else new_ptr, ttl=new_ttl:
+                    self.update_ptr(fqdn, ip, new_name=new_ptr, new_ttl=new_ttl),
+                lambda fqdn=fqdn, ip=old_ip, ptr=fqdn if old_ptr is None else old_ptr, ttl=old_ttl:
+                    self.update_ptr(fqdn, ip, new_name=ptr, new_ttl=ttl)
+            )
 
     def _delete_a_ptr_from_hwdata(self, fqdn, old_hwdata, new_hwdata):
         ip, ptr, ttl = (old_hwdata[fqdn][key] for key in ["ip", "ptr", "ttl"])
-        rollback_kwargs = { "ptr": ptr, "ttl": ttl }
 
         self.group.add_action(
             lambda fqdn=fqdn, ip=ip:
-                self.delete_a_ptr(fqdn, ip),
-            lambda fqdn=fqdn, ip=ip, rollback_kwargs=rollback_kwargs:
-                self.add_a_ptr(fqdn, ip, **rollback_kwargs)
+                self.delete_a(fqdn, ip),
+            lambda fqdn=fqdn, ip=ip, ttl=ttl:
+                self.add_a(fqdn, ip, ttl)
         )
-        self.log.info("delete_a_ptr({}, {}), rollback add_a_ptr({}, {}, {})".format(fqdn, ip, fqdn, ip, rollback_kwargs))
+        self.group.add_action(
+            lambda ip=ip:
+                self.delete_ptr(ip),
+            lambda fqdn=fqdn if ptr is None else ptr, ip=ip, ttl=ttl:
+                self.add_ptr(fqdn, ip, ttl)
+        )
+        self.log.info("delete_a_ptr({}, {}), rollback add_a_ptr({}, {}, {}, {})".format(fqdn, ip, fqdn, ip, ptr, ttl))
 
     @with_timer
     def add_dns_alias(self, name, target, ttl=None):

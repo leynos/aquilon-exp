@@ -19,9 +19,11 @@
 
 import unittest
 
-from mock_ib_services import ib_expect_add_address
-from mock_ib_services import ib_expect_del_address
-from mock_ib_services import ib_expect_update_address
+from mock_ib_services import ib_expect_add_a
+from mock_ib_services import ib_expect_add_ptr
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
+from mock_ib_services import ib_expect_update_a
 
 if __name__ == "__main__":
     import utils
@@ -104,7 +106,8 @@ class TestAddChassis(TestBrokerCommand, VerifyChassisMixin):
         for i in range(1, 8):
             ip = self.net["ut9_chassis"].usable[i]
             hostname = "ut9c%d.aqd-unittest.ms.com" % i
-            ib_expect_add_address(hostname, str(ip))
+            ib_expect_add_a(hostname, str(ip))
+            ib_expect_add_ptr(hostname, str(ip))
             self.dsdb_expect_add(hostname, ip, "oa", ip.mac)
             command = ["add", "chassis",
                        "--chassis", hostname,
@@ -253,13 +256,14 @@ class TestAddChassis(TestBrokerCommand, VerifyChassisMixin):
         self.dsdb_verify()
 
         self.dsdb_expect_add(chassis, "10.25.0.1", interface="oa")
-        ib_expect_add_address(chassis, "10.25.0.1", fail=True)
+        ib_expect_add_a(chassis, "10.25.0.1", fail=True)
         self.dsdb_expect_delete("10.25.0.1")
         self.iberrortest(command)
         self.dsdb_verify()
 
         self.dsdb_expect_add(chassis, "10.25.0.1", interface="oa")
-        ib_expect_add_address(chassis, "10.25.0.1")
+        ib_expect_add_a(chassis, "10.25.0.1")
+        ib_expect_add_ptr(chassis, "10.25.0.1")
         self.noouttest(command)
         self.dsdb_verify()
 
@@ -271,13 +275,15 @@ class TestAddChassis(TestBrokerCommand, VerifyChassisMixin):
         self.dsdb_verify()
 
         self.dsdb_expect_update(chassis, ip="10.25.0.2", iface="oa")
-        ib_expect_update_address(chassis, "10.25.0.1", new_ip="10.25.0.2", fail=True)
+        ib_expect_update_a(chassis, "10.25.0.1", new_ip="10.25.0.2", fail=True)
         self.dsdb_expect_update(chassis, ip="10.25.0.1", iface="oa")
         self.iberrortest(command)
         self.dsdb_verify()
 
         self.dsdb_expect_update(chassis, ip="10.25.0.2", iface="oa")
-        ib_expect_update_address(chassis, "10.25.0.1", new_ip="10.25.0.2")
+        ib_expect_update_a(chassis, "10.25.0.1", new_ip="10.25.0.2")
+        ib_expect_del_ptr("10.25.0.1")
+        ib_expect_add_ptr(chassis, "10.25.0.2")
         self.noouttest(command)
         self.dsdb_verify()
 
@@ -289,13 +295,14 @@ class TestAddChassis(TestBrokerCommand, VerifyChassisMixin):
         self.ib_verify(empty=True)
 
         self.dsdb_expect_delete("10.25.0.2")
-        ib_expect_del_address(chassis, "10.25.0.2", fail=True)
+        ib_expect_del_a(chassis, "10.25.0.2", fail=True)
         self.dsdb_expect_add(chassis, "10.25.0.2", interface="oa")
         self.iberrortest(command)
         self.dsdb_verify()
 
         self.dsdb_expect_delete("10.25.0.2")
-        ib_expect_del_address(chassis, "10.25.0.2")
+        ib_expect_del_a(chassis, "10.25.0.2")
+        ib_expect_del_ptr("10.25.0.2")
         self.noouttest(command)
         self.dsdb_verify()
 
@@ -309,14 +316,15 @@ class TestAddChassis(TestBrokerCommand, VerifyChassisMixin):
 
         # test case when dsdb succeeds, ib fails and dsdb is rolled back
         self.dsdb_expect_add(chassis, "10.25.0.1", interface="oa")
-        ib_expect_add_address(chassis, "10.25.0.1", fail=True)
+        ib_expect_add_a(chassis, "10.25.0.1", fail=True)
         self.dsdb_expect_delete("10.25.0.1")
         self.iberrortest(command)
         self.dsdb_verify()
 
         # test case when both dsdb and ib succeed
         self.dsdb_expect_add(chassis, "10.25.0.1", interface="oa")
-        ib_expect_add_address(chassis, "10.25.0.1")
+        ib_expect_add_a(chassis, "10.25.0.1")
+        ib_expect_add_ptr(chassis, "10.25.0.1")
         self.noouttest(command)
         self.dsdb_verify()
 
@@ -327,7 +335,8 @@ class TestAddChassis(TestBrokerCommand, VerifyChassisMixin):
 
         command = ['del_chassis', "--chassis", chassis]
         self.dsdb_expect_delete("10.25.0.1")
-        ib_expect_del_address(chassis, "10.25.0.1")
+        ib_expect_del_a(chassis, "10.25.0.1")
+        ib_expect_del_ptr("10.25.0.1")
         self.noouttest(command)
         self.dsdb_verify()
 

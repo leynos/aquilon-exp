@@ -168,8 +168,16 @@ def update_interface_bindings(session, logger, dbmachine, autoip,
 
             fqdn = str(dbinterface.hardware_entity.primary_name.fqdn)
             ib_services.group.add_action(
-                lambda: ib_services.update_a_ptr(fqdn, old_ip, new_ip=new_ip),
-                lambda: ib_services.update_a_ptr(fqdn, new_ip, new_ip=old_ip)
+                lambda: ib_services.update_a(fqdn, old_ip, new_ip=new_ip),
+                lambda: ib_services.update_a(fqdn, new_ip, new_ip=old_ip)
+            )
+            ib_services.group.add_action(
+                lambda: ib_services.delete_ptr(old_ip),
+                lambda: ib_services.add_ptr(fqdn, old_ip)
+            )
+            ib_services.group.add_action(
+                lambda: ib_services.add_ptr(fqdn, new_ip),
+                lambda: ib_services.delete_ptr(new_ip)
             )
 
         dbinterface.check_pg_consistency(logger=logger)
@@ -487,8 +495,16 @@ class CommandUpdateMachine(BrokerCommand):
 
             fqdn = str(swap_addr.fqdn)
             ib_services.group.add_action(
-                lambda: ib_services.update_a_ptr(fqdn, swap_addr.ip, new_ip=temp_ip),
-                lambda: ib_services.update_a_ptr(fqdn, temp_ip,      new_ip=swap_addr.ip)
+                lambda: ib_services.update_a(fqdn, swap_addr.ip, new_ip=temp_ip),
+                lambda: ib_services.update_a(fqdn, temp_ip, new_ip=swap_addr.ip)
+            )
+            ib_services.group.add_action(
+                lambda: ib_services.delete_ptr(swap_addr.ip),
+                lambda: ib_services.add_ptr(fqdn, swap_addr.ip)
+            )
+            ib_services.group.add_action(
+                lambda: ib_services.add_ptr(fqdn, temp_ip),
+                lambda: ib_services.delete_ptr(temp_ip)
             )
 
         if (ip or swap_ip):
@@ -501,8 +517,16 @@ class CommandUpdateMachine(BrokerCommand):
             swap_fqdn = str(dbmachine.primary_name.fqdn)
 
             ib_services.group.add_action(
-                lambda: ib_services.update_a_ptr(swap_fqdn, old_ip,    new_ip=target_ip),
-                lambda: ib_services.update_a_ptr(swap_fqdn, target_ip, new_ip=old_ip)
+                lambda: ib_services.update_a(swap_fqdn, old_ip, new_ip=target_ip),
+                lambda: ib_services.update_a(swap_fqdn, target_ip, new_ip=old_ip)
+            )
+            ib_services.group.add_action(
+                lambda: ib_services.delete_ptr(old_ip),
+                lambda: ib_services.add_ptr(swap_fqdn, old_ip)
+            )
+            ib_services.group.add_action(
+                lambda: ib_services.add_ptr(swap_fqdn, target_ip),
+                lambda: ib_services.delete_ptr(target_ip)
             )
 
         if swap_ip:
@@ -510,8 +534,16 @@ class CommandUpdateMachine(BrokerCommand):
 
             fqdn = str(swap_addr.fqdn)
             ib_services.group.add_action(
-                lambda: ib_services.update_a_ptr(fqdn, temp_ip, new_ip=old_ip),
-                lambda: ib_services.update_a_ptr(fqdn, old_ip,  new_ip=temp_ip)
+                lambda: ib_services.update_a(fqdn, temp_ip, new_ip=old_ip),
+                lambda: ib_services.update_a(fqdn, old_ip, new_ip=temp_ip)
+            )
+            ib_services.group.add_action(
+                lambda: ib_services.delete_ptr(temp_ip),
+                lambda: ib_services.add_ptr(fqdn, temp_ip)
+            )
+            ib_services.group.add_action(
+                lambda: ib_services.add_ptr(fqdn, old_ip),
+                lambda: ib_services.delete_ptr(old_ip)
             )
 
         if dbmachine.location != old_location and dbmachine.host:

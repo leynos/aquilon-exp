@@ -26,7 +26,10 @@ if __name__ == "__main__":
 from broker.brokertest import TestBrokerCommand
 from networktest import DummyIP
 from machinetest import MachineTestMixin
-from mock_ib_services import ib_expect_add_address, ib_expect_del_address
+from mock_ib_services import ib_expect_add_a
+from mock_ib_services import ib_expect_add_ptr
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
 
 
 class TestAddHost(MachineTestMixin, TestBrokerCommand):
@@ -46,7 +49,8 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
     def test_101_add_unittest02(self):
         ip = self.net["unknown0"].usable[0]
         fqdn = "unittest02.one-nyp.ms.com"
-        ib_expect_add_address(fqdn, ip)
+        ib_expect_add_a(fqdn, ip)
+        ib_expect_add_ptr(fqdn, ip)
         # DSDB sync uses the machine comments, not the host comments
         self.dsdb_expect_add(fqdn, ip, "eth0", ip.mac,
                              comments="Some machine comments")
@@ -169,7 +173,8 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
     def test_110_add_unittest15(self):
         ip = self.net["tor_net_0"].usable[1]
         fqdn = "unittest15.aqd-unittest.ms.com"
-        ib_expect_add_address(fqdn, ip)
+        ib_expect_add_a(fqdn, ip)
+        ib_expect_add_ptr(fqdn, ip)
         self.dsdb_expect_add(fqdn, ip, "eth0", ip.mac)
         self.noouttest(["add", "host",
                         "--hostname", "unittest15.aqd-unittest.ms.com",
@@ -238,7 +243,8 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         net = self.net["tor_net_0"]
         ip = net.usable[2]
         fqdn = "unittest16.aqd-unittest.ms.com"
-        ib_expect_add_address(fqdn, ip)
+        ib_expect_add_a(fqdn, ip)
+        ib_expect_add_ptr(fqdn, ip)
         self.dsdb_expect_add(fqdn, ip, "eth0", net.usable[2].mac)
         self.noouttest(["add", "host",
                         "--hostname", "unittest16.aqd-unittest.ms.com",
@@ -261,7 +267,8 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
     def test_130_add_unittest17(self):
         ip = self.net["tor_net_0"].usable[3]
         fqdn = "unittest17.aqd-unittest.ms.com"
-        ib_expect_add_address(fqdn, ip)
+        ib_expect_add_a(fqdn, ip)
+        ib_expect_add_ptr(fqdn, ip)
         self.dsdb_expect_add(fqdn, ip, "eth0", ip.mac)
         self.noouttest(["add", "host",
                         "--hostname", "unittest17.aqd-unittest.ms.com",
@@ -309,7 +316,8 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
     def test_145_add_windows_default_os(self):
         ip = self.net["tor_net_0"].usable[5]
         fqdn = "test-windows-default-os.msad.ms.com"
-        ib_expect_add_address(fqdn, ip)
+        ib_expect_add_a(fqdn, ip)
+        ib_expect_add_ptr(fqdn, ip)
         self.dsdb_expect_add(fqdn, ip,
                              "eth0", self.net["tor_net_0"].usable[5].mac)
         self.noouttest(["add", "host", "--archetype", "windows",
@@ -334,7 +342,8 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
     def test_150_add_cciss_host(self):
         ip = self.net["unknown0"].usable[18]
         fqdn = "unittest18.aqd-unittest.ms.com"
-        ib_expect_add_address(fqdn, ip)
+        ib_expect_add_a(fqdn, ip)
+        ib_expect_add_ptr(fqdn, ip)
         self.dsdb_expect_add(fqdn, ip, "eth0", ip.mac)
         command = ["add", "host", "--archetype", "aquilon",
                    "--hostname", "unittest18.aqd-unittest.ms.com", "--ip", ip,
@@ -347,7 +356,8 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         # The IP address is also a /32 network
         ip = self.net["f5test"].ip
         fqdn = "f5test.aqd-unittest.ms.com"
-        ib_expect_add_address(fqdn, ip)
+        ib_expect_add_a(fqdn, ip)
+        ib_expect_add_ptr(fqdn, ip)
         self.dsdb_expect_add("f5test.aqd-unittest.ms.com", ip, "eth0",
                              DummyIP(ip).mac)
         command = ["add", "host", "--hostname", "f5test.aqd-unittest.ms.com",
@@ -369,7 +379,8 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
     def test_165_add_filer(self):
         ip = self.net["vm_storage_net"].usable[25]
         fqdn = "filer1.ms.com"
-        ib_expect_add_address(fqdn, ip)
+        ib_expect_add_a(fqdn, ip)
+        ib_expect_add_ptr(fqdn, ip)
         self.dsdb_expect_add("filer1.ms.com", ip, "v0")
         command = ["add", "host", "--archetype", "filer",
                    "--hostname", "filer1.ms.com", "--ip", ip,
@@ -595,8 +606,10 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                 machine = "ut12s02p%d" % port
                 mgmt_net = self.net["ut12_oob"]
             ip = net.usable[i + 1]
-            ib_expect_add_address(hostname, ip)
-            ib_expect_add_address(manager, mgmt_net[port])
+            ib_expect_add_a(hostname, ip)
+            ib_expect_add_ptr(hostname, ip)
+            ib_expect_add_a(manager, mgmt_net[port])
+            ib_expect_add_ptr(manager, mgmt_net[port])
             self.dsdb_expect_add(hostname, ip, "eth0", ip.mac)
             self.dsdb_expect_add(manager, mgmt_net[port], "mgmt0",
                                  mgmt_net[port].mac)
@@ -690,7 +703,8 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         hostname = self.config.get("unittest", "hostname")
         # We _could_ also look up the real address of the host...
         ip = "127.0.0.1"
-        ib_expect_add_address(hostname, ip)
+        ib_expect_add_a(hostname, ip)
+        ib_expect_add_ptr(hostname, ip)
         self.dsdb_expect_add(hostname, "127.0.0.1", "eth0",
                              self.net["tor_net_0"].usable[8].mac)
         self.noouttest(["add", "host",
@@ -841,7 +855,8 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
             ip = cases[case]["ip"]
             command = ['del_host', '--hostname={}'.format(fqdn)]
             self.dsdb_expect_delete(ip)
-            ib_expect_del_address(fqdn, ip)
+            ib_expect_del_a(fqdn, ip)
+            ib_expect_del_ptr(ip)
             self.successtest(command)
             self.ib_verify()
             self.noouttest(['del_machine',
@@ -869,7 +884,8 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
             command.extend(['--ip', cases[case]['ip'],
                             '--machine', cases[case]['machine']])
             extend_command(command, cases[case])
-            ib_expect_add_address(cases[case]['fqhn'], cases[case]['ip'])
+            ib_expect_add_a(cases[case]['fqhn'], cases[case]['ip'])
+            ib_expect_add_ptr(cases[case]['fqhn'], cases[case]['ip'])
             self.dsdb_expect_add(cases[case]['fqhn'], cases[case]['ip'],
                                  'eth0', cases[case]['mac'])
             if case == 'right':
@@ -1043,7 +1059,8 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         out = self.commandtest(command)
         self.matchoutput(out, "Bunker: bucket2.ut", command)
         self.dsdb_expect_delete(ip)
-        ib_expect_del_address(fqdn, ip)
+        ib_expect_del_a(fqdn, ip)
+        ib_expect_del_ptr(ip)
         self.statustest(["del_host", "--hostname", "aquilon67.aqd-unittest.ms.com"])
         command = ["search", "network", "--type", "localvip", "--exact_location", "--bunker", "bucket2.ut", "--fullinfo"]
         out = self.commandtest(command)
@@ -1060,7 +1077,8 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         self.dsdb_expect_add(fqdn,
                              ip, "eth0",
                              mac)
-        ib_expect_add_address(fqdn, ip)
+        ib_expect_add_a(fqdn, ip)
+        ib_expect_add_ptr(fqdn, ip)
         self.noouttest(["add_host", "--hostname", fqdn,
                         "--archetype", "aquilon",
                         "--machine", "ut9s03p17",

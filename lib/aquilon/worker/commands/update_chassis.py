@@ -94,9 +94,32 @@ class CommandUpdateChassis(BrokerCommand):
             try:
                 # If no existing IP, we must now create one.
                 if old_ip:
-                    ib_services.update_a_ptr(str(dbchassis.primary_name.fqdn), old_ip, ip)
+                    ib_services.group.add_action(
+                        lambda name=str(dbchassis.primary_name.fqdn), old_ip=old_ip, new_ip=ip:
+                            ib_services.update_a(name, old_ip, new_ip),
+                        lambda name=str(dbchassis.primary_name.fqdn), old_ip=old_ip, new_ip=ip:
+                            ib_services.update_a(name, ip, old_ip)
+                    )
+                    ib_services.group.add_action(
+                        lambda old_ip=old_ip: ib_services.delete_ptr(old_ip),
+                        lambda name=str(dbchassis.primary_name.fqdn), old_ip=old_ip: ib_services.add_ptr(name, old_ip)
+                    )
+                    ib_services.group.add_action(
+                        lambda name=str(dbchassis.primary_name.fqdn), ip=ip: ib_services.add_ptr(name, ip),
+                        lambda ip=ip: ib_services.delete_ptr(ip)
+                    )
                 else:
-                    ib_services.add_a_ptr(str(dbchassis.primary_name.fqdn), ip)
+                    ib_services.group.add_action(
+                        lambda name=str(dbchassis.primary_name.fqdn), ip=ip: ib_services.add_a(name, ip),
+                        lambda name=str(dbchassis.primary_name.fqdn), ip=ip: ib_services.del_a(name, ip)
+                    )
+
+                    ib_services.group.add_action(
+                        lambda name=str(dbchassis.primary_name.fqdn), ip=ip: ib_services.add_ptr(name, ip),
+                        lambda ip=ip: ib_services.delete_ptr(ip)
+                    )
+
+                ib_services.group.commit_or_rollback()
             except ProcessException as e:
                 dsdb_runner.rollback()
                 raise e

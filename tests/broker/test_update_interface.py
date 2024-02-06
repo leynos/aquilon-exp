@@ -19,7 +19,11 @@
 
 import unittest
 
-from mock_ib_services import ib_expect_add_address, ib_expect_del_address, ib_expect_update_address
+from mock_ib_services import ib_expect_add_a
+from mock_ib_services import ib_expect_add_ptr
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
+from mock_ib_services import ib_expect_update_a
 
 if __name__ == "__main__":
     import utils
@@ -75,7 +79,9 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
         oldip = self.net["unknown0"].usable[0]
         newip = self.net["unknown0"].usable[11]
         self.dsdb_expect_update(self.badhost, "eth0", newip)
-        ib_expect_update_address(self.badhost, oldip, new_ip=newip)
+        ib_expect_update_a(self.badhost, oldip, new_ip=newip)
+        ib_expect_del_ptr(oldip)
+        ib_expect_add_ptr(self.badhost, newip)
 
         self.noouttest(["update", "machine", "--machine", "ut3c5n10",
                         "--ip", newip])
@@ -258,10 +264,14 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
         ip      = str(self.net["unknown1"].usable[44])
         ip_hsrp = str(self.net["unknown1"].usable[42])
 
-        ib_expect_del_address(fqdn_hsrp_pre, ip_hsrp)
-        ib_expect_del_address(fqdn_pre, ip)
-        ib_expect_add_address(fqdn_post, ip)
-        ib_expect_add_address(fqdn_hsrp_post, ip_hsrp)
+        ib_expect_del_a(fqdn_hsrp_pre, ip_hsrp)
+        ib_expect_del_ptr(ip_hsrp)
+        ib_expect_del_a(fqdn_pre, ip)
+        ib_expect_del_ptr(ip)
+        ib_expect_add_a(fqdn_post, ip)
+        ib_expect_add_ptr(fqdn_post, ip)
+        ib_expect_add_a(fqdn_hsrp_post, ip_hsrp)
+        ib_expect_add_ptr(fqdn_hsrp_post, ip_hsrp)
 
         self.dsdb_expect_rename(fqdn_pre, fqdn_post, "vlan110", "vlan220")
         self.dsdb_expect_rename(fqdn_hsrp_pre, fqdn_hsrp_post, "vlan110_hsrp", "vlan220_hsrp")
@@ -280,7 +290,8 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
                    "--interfaces", "eth0", "--name", "renametest",
                    "--service_address", "renametest-ivirt.aqd-unittest.ms.com"]
         self.dsdb_expect_add("renametest-ivirt.aqd-unittest.ms.com", ip)
-        ib_expect_add_address("renametest-ivirt.aqd-unittest.ms.com", str(ip))
+        ib_expect_add_a("renametest-ivirt.aqd-unittest.ms.com", str(ip))
+        ib_expect_add_ptr("renametest-ivirt.aqd-unittest.ms.com", str(ip))
         self.noouttest(command)
         self.dsdb_verify()
         self.ib_verify()
@@ -343,7 +354,8 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
         fqdn = "ivirt11.aqd-unittest.ms.com"
         ip = self.net["zebra_vip"].usable[5]
         self.dsdb_expect_delete(ip)
-        ib_expect_del_address("renametest-ivirt.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_a("renametest-ivirt.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         self.noouttest(["del_service_address", "--name", "renametest",
                         "--hostname", fqdn])
         self.dsdb_verify()
