@@ -36,6 +36,7 @@ from pathlib import Path
 # -- begin path_setup --
 BINDIR = os.path.dirname(os.path.realpath(sys.argv[0]))
 LIBDIR = os.path.join(BINDIR, "..", "lib")
+MAXAMOUNT = 1048576
 
 if LIBDIR not in sys.path:
     sys.path.append(LIBDIR)
@@ -593,7 +594,16 @@ if __name__ == "__main__":
             print(f"Error: {repr(e)}: {msg}", file=sys.stderr)
         sys.exit(1)
 
-    pageData = res.read()
+    if int(res.headers.get("Content-Length", 0)) < MAXAMOUNT:
+        pageData = res.read()
+    else:
+        amt = int(res.headers.get("Content-Length", 0))
+        s = []
+        while amt > 0:
+            chunk = res.read(min(amt, MAXAMOUNT))
+            s.append(chunk)
+            amt -= len(chunk)
+        pageData = b"".join(s)
 
     # Wait for additional status messages to arrive, but not for long
     if status_thread:
