@@ -36,7 +36,7 @@ from pathlib import Path
 # -- begin path_setup --
 BINDIR = os.path.dirname(os.path.realpath(sys.argv[0]))
 LIBDIR = os.path.join(BINDIR, "..", "lib")
-MAXAMOUNT = 1048576
+MAXAMOUNT = 32768
 
 if LIBDIR not in sys.path:
     sys.path.append(LIBDIR)
