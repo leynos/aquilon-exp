@@ -264,7 +264,9 @@ class BrokerCommand:
                 status = request.status
 
                 if self.requires_audit:
-                    start_xtn(session, status.requestid, status.user,
+                    start_xtn(session, status.requestid,
+                              status.user.decode() if
+                              isinstance(status.user, bytes) else status.user,
                               status.command, self.requires_readonly,
                               kwargs, _IGNORED_AUDIT_ARGS)
 
