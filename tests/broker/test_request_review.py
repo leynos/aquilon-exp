@@ -24,10 +24,10 @@ from subprocess import Popen
 
 import unittest
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
 

@@ -23,10 +23,10 @@ import unittest
 from mock_ib_services import ib_expect_del_address
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 
 class TestDelServiceAddressSNAliases(TestBrokerCommand):

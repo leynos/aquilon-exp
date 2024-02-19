@@ -20,10 +20,10 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 archetype_required = {
     'aquilon': ["dns", "aqd", "ntp", "bootserver", "support-group", "lemon",
@@ -94,7 +94,7 @@ class TestAddRequiredService(TestBrokerCommand):
 
     def test_110_add_defaults(self):
         # Setup required services, as expected by the templates.
-        for archetype, servicelist in archetype_required.items():
+        for archetype, servicelist in list(archetype_required.items()):
             for service in servicelist:
                 command = ["add_required_service", "--service", service,
                            "--archetype", archetype] + self.valid_just_tcm
@@ -102,10 +102,10 @@ class TestAddRequiredService(TestBrokerCommand):
 
     def test_115_verify_defaults(self):
         all_services = set()
-        for archetype, servicelist in archetype_required.items():
+        for archetype, servicelist in list(archetype_required.items()):
             all_services.update(servicelist)
 
-        for archetype, servicelist in archetype_required.items():
+        for archetype, servicelist in list(archetype_required.items()):
             command = ["show_archetype", "--archetype", archetype]
             out = self.commandtest(command)
             for service in servicelist:

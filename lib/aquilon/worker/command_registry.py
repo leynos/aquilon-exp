@@ -75,13 +75,12 @@ class CommandRegistry(object):
         self._readonly_commands = []
         self._commands_options = {}
         tree = ElementTree.parse(lookup_file_path("input.xml"))
-
-        for command in tree.getiterator("command"):
+        for command in tree.iter("command"):
             if 'name' not in command.attrib:
                 continue
             name = command.attrib['name']
             self._commands_options[name] = set()
-            for transport in command.getiterator("transport"):
+            for transport in command.iter("transport"):
                 if "method" not in transport.attrib or \
                    "path" not in transport.attrib:
                     log.msg("Warning: incorrect transport specification "
@@ -97,10 +96,11 @@ class CommandRegistry(object):
                     fullname = fullname + "_" + trigger
 
                 entry = self.new_entry(fullname, method, path, name, trigger)
+
                 if not entry:
                     continue
 
-                for option in command.getiterator("option"):
+                for option in command.iter("option"):
                     if 'name' not in option.attrib or \
                        'type' not in option.attrib:
                         log.msg("Warning: incorrect options specification "
@@ -113,7 +113,7 @@ class CommandRegistry(object):
                     entry.add_option(option_name, paramtype, enumtype,
                                      actiontype)
 
-                for format in command.getiterator("format"):
+                for format in command.iter("format"):
                     if "name" not in format.attrib:
                         log.msg("Warning: incorrect format specification "
                                 "for %s." % fullname)

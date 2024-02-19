@@ -21,15 +21,15 @@ Small utility to populate static objects (i.e. those that do not have plenary
 templates) in the database.
 """
 
-from __future__ import print_function
+
 
 import argparse
 import logging
 from shlex import shlex
 from inspect import isclass
 
-import utils
-utils.load_classpath()
+from utils import load_classpath
+load_classpath()
 
 from sqlalchemy.exc import IntegrityError
 

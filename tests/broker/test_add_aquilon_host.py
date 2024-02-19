@@ -20,12 +20,12 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from eventstest import EventsTestMixin
-from brokertest import TestBrokerCommand
-from dnstest import inaddr_ptr
+from .eventstest import EventsTestMixin
+from .brokertest import TestBrokerCommand
+from .dnstest import inaddr_ptr
 from mock_ib_services import ib_expect_add_address, ib_expect_update_address
 
 # TODO: this file should be merged into test_add_host.py

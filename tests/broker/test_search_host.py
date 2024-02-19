@@ -16,16 +16,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Module for testing the search host command."""
-
+import json
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
-from mock_ib_services import ib_expect_add_address
-from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_add_address, ib_expect_del_address
+
+from .brokertest import TestBrokerCommand
 
 
 class TestSearchHost(TestBrokerCommand):
@@ -52,6 +52,12 @@ class TestSearchHost(TestBrokerCommand):
         command = "search host --hostname unittest00.one-nyp.ms.com"
         out = self.commandtest(command.split(" "))
         self.matchoutput(out, "unittest00.one-nyp.ms.com", command)
+
+    def testfqdnavailable_json(self):
+        command = "search host --hostname unittest00.one-nyp.ms.com --format json"
+        out = self.commandtest(command.split(" "))
+        self.assertIsInstance(json.loads(out), list)
+        self.matchoutput(json.loads(out)[0]["fqdn"], "unittest00.one-nyp.ms.com", command)
 
     def testfqdnunavailablerealdomain(self):
         command = "search host --hostname does-not-exist.one-nyp.ms.com"
@@ -172,10 +178,11 @@ class TestSearchHost(TestBrokerCommand):
     def testipbad(self):
         command = "search host --ip not-an-ip-address"
         out = self.badrequesttest(command.split(" "))
-        self.matchoutput(out,
-                         "Expected an IP address for --ip: "
-                         "u'not-an-ip-address' does not appear to be an IPv4 or IPv6 address.",
-                         command)
+        self.matchoutput(
+            out,
+            "Expected an IP address for --ip: " "'not-an-ip-address' does not appear to be an IPv4 or IPv6 address.",
+            command,
+        )
 
     def testnetworkipavailable(self):
         command = "search host --networkip %s" % self.net["unknown0"].ip
@@ -599,7 +606,7 @@ class TestSearchHost(TestBrokerCommand):
         command = "search host --hostname unittest02.one-nyp.ms.com --format proto"
         host_proto = self.protobuftest(command.split(" "), expect=1)[0]
         for disk in host_proto.machine.disks:
-            if disk.device_name == 'sda':
+            if disk.device_name == "sda":
                 self.assertEqual(disk.boot, True)
             else:
                 self.assertEqual(disk.boot, False)
@@ -608,7 +615,7 @@ class TestSearchHost(TestBrokerCommand):
         # Pick network with Machine as well as NetworkDevices
         ip = self.net["vmotion_net"].network_address
         command = ["search_host", "--networkip", ip, "--format=proto"]
-        hosts = self.protobuftest(command)
+        self.protobuftest(command)
 
     def testip(self):
         ip = self.net["unknown0"].usable[2]
@@ -695,6 +702,6 @@ class TestSearchHost(TestBrokerCommand):
         self.dsdb_verify()
         self.ib_verify()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     suite = unittest.TestLoader().loadTestsFromTestCase(TestSearchHost)
     unittest.TextTestRunner(verbosity=5).run(suite)

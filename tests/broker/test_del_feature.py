@@ -20,10 +20,10 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 from .test_add_feature import default_features
 
@@ -31,7 +31,7 @@ from .test_add_feature import default_features
 class TestDelFeature(TestBrokerCommand):
 
     def test_100_del_features(self):
-        for feature_type, features in default_features.items():
+        for feature_type, features in list(default_features.items()):
             for name in features:
                 self.noouttest(["del_feature", "--feature", name,
                                 "--type", feature_type])

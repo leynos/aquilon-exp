@@ -36,7 +36,7 @@ class CommandAddNetwork(BrokerCommand):
             netmask = prefixlen
 
         try:
-            address = ip_network(u"%s/%s" % (ip, netmask))
+            address = ip_network("%s/%s" % (ip, netmask))
         except ValueError as e:
             raise ArgumentError("Failed to parse the network address: %s." % e)
 

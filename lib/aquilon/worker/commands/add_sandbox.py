@@ -36,12 +36,13 @@ class CommandAddSandbox(CommandGet):
 
     def render(self, session, logger, dbuser, sandbox, start, get, comments,
                **_):
+        print("add_sandbox")
         if not dbuser:
             raise AuthorizationException("Cannot create a sandbox without an "
                                          "authenticated connection.")
 
         sandbox, dbauthor = force_my_sandbox(session, dbuser, sandbox)
-
+        # print("sandbox",  sandbox)
         # Check that the user has cleared up a directory of the same
         # name; if this is not the case the branch may be created (in git)
         # and added to the database - however CommandGet will fail roleing

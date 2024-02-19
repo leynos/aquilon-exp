@@ -29,11 +29,13 @@ from textwrap import dedent
 
 from aquilon.config import Config, lookup_file_path
 from lxml import etree
-from six import string_types
+from google.protobuf.message import DecodeError
+
+from .networktest import DummyNetworks
 from mock_ib_services import http_monitor
 
 from aqdb.utils import copy_sqldb
-from networktest import DummyNetworks
+
 
 DSDB_EXPECT_SUCCESS_FILE = "expected_dsdb_cmds"
 DSDB_EXPECT_FAILURE_FILE = "fail_expected_dsdb_cmds"
@@ -46,6 +48,9 @@ CM_WARN = 'Continuing with execution; however in the future this operation will 
 LOGGER = logging.getLogger(__name__)
 CM_VALID_ROLE = 'Approval Warning: Executing an emergency change without a justification, EDM has not be called.'
 
+import logging
+
+logger = logging.getLogger(__name__)
 
 class TestBrokerCommand(unittest.TestCase):
 
@@ -97,7 +102,7 @@ class TestBrokerCommand(unittest.TestCase):
         out, err = p.communicate()
         m = re.search(r'^\s*(?:Default p|P)rincipal:\s*'
                       r'(?P<principal>(?P<user>\S.*)@(?P<realm>.*?))$',
-                      out, re.M)
+                      out.decode(), re.M)
         cls.principal = m.group('principal')
         cls.realm = m.group('realm')
 
@@ -241,7 +246,7 @@ class TestBrokerCommand(unittest.TestCase):
         :param file:
         :return:
         """
-        with open(file, "r") as f:
+        with open(file) as f:
             for line in f:
                 pass
         self.assertTrue(bool(line.strip()), "Last line is empty")
@@ -250,7 +255,7 @@ class TestBrokerCommand(unittest.TestCase):
     msversion_dev_re = re.compile(r'WARNING:msversion:Loading \S* from dev\n')
 
     def runcommand(self, command, auth=True, **kwargs):
-        aq = os.path.join(self.config.get("broker", "srcdir"), "bin", "aq.py")
+        aq = os.path.join(self.config.get("broker", "srcdir"), "../install/common", "bin", "aq")
         if auth:
             port = self.config.get("broker", "kncport")
         else:
@@ -273,24 +278,31 @@ class TestBrokerCommand(unittest.TestCase):
             # Make sure that kerberos tickets are still present if the
             # environment is being overridden...
             env = {}
-            for (key, value) in kwargs["env"].items():
+            for (key, value) in list(kwargs["env"].items()):
                 env[key] = value
-            for (key, value) in os.environ.items():
+            for (key, value) in list(os.environ.items()):
                 if key.find("KRB") == 0 and key not in env:
                     env[key] = value
             if 'USER' not in env:
                 env['USER'] = os.environ.get('USER', '')
             kwargs["env"] = env
+
         LOGGER.debug("Running command {}".format(args))
-        p = Popen(args, stdout=PIPE, stderr=PIPE, **kwargs)
-        (out, err) = p.communicate()
+        p = Popen(args, stdout=PIPE, stderr=PIPE, text=False, **kwargs)
+        out, err = p.communicate()
         if err:
             LOGGER.debug(err)
-        # Strip any msversion dev warnings out of STDERR
-        err = self.msversion_dev_re.sub('', err)
+        err = self.msversion_dev_re.sub('', err.decode())
+
         # Lock messages are pretty common...
         err = err.replace('Client status messages disabled, retries exceeded.\n', '')
-        return (p, out, err)
+
+        try:
+            return p, out.decode(), err
+        except (DecodeError, UnicodeDecodeError):
+            return p, out.decode("ISO-8859-1"), err
+        except Exception as e:
+            return p, str(out), err
 
     def successtest(self, command, **kwargs):
         (p, out, err) = self.runcommand(command, **kwargs)
@@ -299,7 +311,7 @@ class TestBrokerCommand(unittest.TestCase):
                          "STDOUT:\n@@@\n'%s'\n@@@\n"
                          "STDERR:\n@@@\n'%s'\n@@@\n"
                          % (command, out, err))
-        return (out, err)
+        return out, err
 
     def statustest(self, command, **kwargs):
         (out, err) = self.successtest(command, **kwargs)
@@ -467,7 +479,7 @@ class TestBrokerCommand(unittest.TestCase):
                          "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n" %
                          (command, out))
         self.assertTrue(
-            "Command {} is deprecated".format(command[0]) in err_splited[0],
+            f"Command {command[0]} is deprecated" in err_splited[0],
             "'Command {} is deprecated' not in {}".format(command[0],
                                                           err_splited[0]))
         self.assertTrue(err_splited[1].startswith("Not Implemented"),
@@ -522,8 +534,8 @@ class TestBrokerCommand(unittest.TestCase):
 
     def matchnooutput(self, out, s, command):
         self.assertFalse(out.find(s) >= 0,
-                        "output for %s did not include '%s':\n@@@\n'%s'\n@@@\n" %
-                        (command, s, out))
+                         "output for %s did not include '%s':\n@@@\n'%s'\n@@@\n" %
+                         (command, s, out))
 
     def matchclean(self, out, s, command):
         self.assertTrue(out.find(s) < 0,
@@ -532,11 +544,11 @@ class TestBrokerCommand(unittest.TestCase):
 
     def matchnoclean(self, out, s, command):
         self.assertFalse(out.find(s) < 0,
-                        "output for %s includes '%s':\n@@@\n'%s'\n@@@\n" %
-                        (command, s, out))
+                         "output for %s includes '%s':\n@@@\n'%s'\n@@@\n" %
+                         (command, s, out))
 
     def searchoutput(self, out, r, command):
-        if isinstance(r, string_types):
+        if isinstance(r, str):
             m = re.search(r, out, re.MULTILINE)
         else:
             m = re.search(r, out)
@@ -546,17 +558,17 @@ class TestBrokerCommand(unittest.TestCase):
         return m
 
     def searchnooutput(self, out, r, command):
-        if isinstance(r, string_types):
+        if isinstance(r, str):
             m = re.search(r, out, re.MULTILINE)
         else:
             m = re.search(r, out)
         self.assertFalse(m,
-                        "output for %s did not match '%s':\n@@@\n'%s'\n@@@\n"
-                        % (command, r, out))
+                         "output for %s did not match '%s':\n@@@\n'%s'\n@@@\n"
+                         % (command, r, out))
         return m
 
     def searchclean(self, out, r, command):
-        if isinstance(r, string_types):
+        if isinstance(r, str):
             m = re.search(r, out, re.MULTILINE)
         else:
             m = re.search(r, out)
@@ -586,7 +598,7 @@ class TestBrokerCommand(unittest.TestCase):
         unmatched = []
         for s in sl:
             s = dedent(s).strip()
-            m = re.search('^{}$'.format(re.escape(s)), out, re.MULTILINE)
+            m = re.search(f'^{re.escape(s)}$', out, re.MULTILINE)
             if not m:
                 unmatched.append(s)
             else:
@@ -598,7 +610,7 @@ class TestBrokerCommand(unittest.TestCase):
         self.assertFalse(unmatched,
                          'Unmatched blocks for {}:\n{}{}'.format(
                              command, '\n--\n'.join(unmatched),
-                             '\n>>> Leftover output:\n{}'.format(out)
+                             f'\n>>> Leftover output:\n{out}'
                              if bool(out) else ''))
 
         if match_all:
@@ -613,7 +625,7 @@ class TestBrokerCommand(unittest.TestCase):
         matched = []
         for s in sl:
             s = dedent(s).strip()
-            m = re.search('^{}$'.format(re.escape(s)), out, re.MULTILINE)
+            m = re.search(f'^{re.escape(s)}$', out, re.MULTILINE)
             if m:
                 matched.append(s)
                 out = out[:max(0, m.start() - 1)] + out[m.end():]
@@ -624,7 +636,7 @@ class TestBrokerCommand(unittest.TestCase):
         self.assertFalse(matched,
                          'Matched blocks for {}:\n{}{}'.format(
                              command, '\n--\n'.join(matched),
-                             '\n>>> Leftover output:\n{}'.format(out)
+                             f'\n>>> Leftover output:\n{out}'
                              if bool(out) else ''))
 
     def parse_proto_msg(self, listclass, attr, msg, expect=None):
@@ -671,10 +683,13 @@ class TestBrokerCommand(unittest.TestCase):
         cls_name = msg_node.attrib["name"]
 
         msg_cls = getattr(self.protocols[module_name], cls_name)
-        field = msg_cls.DESCRIPTOR.fields[0]
 
+        field = msg_cls.DESCRIPTOR.fields[0]
         out = self.commandtest(command, **kwargs)
-        return self.parse_proto_msg(msg_cls, field.name, out, expect=expect)
+        try:
+            return self.parse_proto_msg(msg_cls, field.name, out.encode("utf-8"), expect=expect)
+        except DecodeError:
+            return self.parse_proto_msg(msg_cls, field.name, out.encode("ISO-8859-1"), expect=expect)
 
     @classmethod
     def gitenv(cls, env=None):
@@ -731,7 +746,7 @@ class TestBrokerCommand(unittest.TestCase):
                          "STDOUT:\n@@@\n'%s'\n@@@\n"
                          "STDERR:\n@@@\n'%s'\n@@@\n"
                          % (command, out, err))
-        return (out, err)
+        return out.decode(), err.decode()
 
     def gitcommand_expectfailure(self, command, **kwargs):
         p = self.gitcommand_raw(command, **kwargs)
@@ -742,7 +757,7 @@ class TestBrokerCommand(unittest.TestCase):
                             "STDOUT:\n@@@\n'%s'\n@@@\n"
                             "STDERR:\n@@@\n'%s'\n@@@\n"
                             % (command, out, err))
-        return (out, err)
+        return (out.decode(), err.decode())
 
     def check_git_merge_health(self, repo):
         command = "merge HEAD"
@@ -897,11 +912,11 @@ class TestBrokerCommand(unittest.TestCase):
         for filename in [DSDB_EXPECT_SUCCESS_FILE, DSDB_EXPECT_FAILURE_FILE]:
             expected_name = os.path.join(self.dsdb_coverage_dir, filename)
             try:
-                with open(expected_name, "r") as fp:
+                with open(expected_name) as fp:
                     for line in fp:
                         expected[line.rstrip("\n")] = True
                 os.remove(expected_name)
-            except IOError:
+            except OSError:
                 pass
 
         # This is likely a logic error in the test
@@ -911,15 +926,15 @@ class TestBrokerCommand(unittest.TestCase):
 
         issued = {}
         try:
-            with open(issued_name, "r") as fp:
+            with open(issued_name) as fp:
                 for line in fp:
                     issued[line.rstrip("\n")] = True
             os.remove(issued_name)
-        except IOError:
+        except OSError:
             pass
 
         errors = []
-        for cmd, dummy in expected.items():
+        for cmd, dummy in list(expected.items()):
             if cmd not in issued:
                 errors.append("'%s'" % cmd)
         # Unexpected DSDB commands are caught by the fake_dsdb script
@@ -976,7 +991,7 @@ class TestBrokerCommand(unittest.TestCase):
 
     def demote_current_user(self, role="nobody"):
         command = ["permission", "--role", role,
-                   "--principal", "%s@%s" % (self.user, self.realm)] + self.valid_just_sn
+                   "--principal", "{}@{}".format(self.user, self.realm)] + self.valid_just_sn
         self.noouttest(command)
 
     def promote_current_user(self):
@@ -992,7 +1007,7 @@ class TestBrokerCommand(unittest.TestCase):
                          (out, err))
 
     def assertTruedeprecation(self, depr_str, testfunc):
-        with open(self.config.get("broker", "logfile"), "r") as logfile:
+        with open(self.config.get("broker", "logfile")) as logfile:
             # Let's seek to the end of it, matching only against the relevant part.
             logfile.seek(0, 2)
             # Now call the function that should generate the deprecation warning
@@ -1001,7 +1016,7 @@ class TestBrokerCommand(unittest.TestCase):
 
     @staticmethod
     def dynname(ip, domain="aqd-unittest.ms.com"):
-        return "dynamic-%s.%s" % (str(ip).replace(".", "-"), domain)
+        return "dynamic-{}.{}".format(str(ip).replace(".", "-"), domain)
 
     def ib_verify(self, empty=False):
         if empty and http_monitor.invoked_without_expected_test:

@@ -29,10 +29,10 @@ def kill_from_pid_file(pid_file):
         p = f.read()
         f.close()
         pid = int(p)
-        print 'killing pid %s'%(pid)
+        print('killing pid %s'%(pid))
         try:
             os.kill(pid, signal.SIGQUIT)
-        except Exception,e:
+        except Exception as e:
             pass
 
 def monkeypatch(cls):
@@ -69,11 +69,11 @@ def confirm(prompt=None, resp=False):
         prompt = '%s [%s]|%s: ' % (prompt, 'n', 'y')
 
     while True:
-        ans = raw_input(prompt)
+        ans = input(prompt)
         if not ans:
             return resp
         if ans not in ['y', 'Y', 'n', 'N']:
-            print 'please enter y or n.'
+            print('please enter y or n.')
             continue
         if ans == 'y' or ans == 'Y':
             return True

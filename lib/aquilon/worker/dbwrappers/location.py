@@ -84,6 +84,7 @@ def get_locations(session, query_options=None, compel=False,
         if kwargs.get(locfunc(key)) is not None:
             # If the data is not a list, put it in a form of one
             values = kwargs[locfunc(key)]
+
             if not isinstance(values, list):
                 values = [values, ]
 
@@ -107,12 +108,14 @@ def get_locations(session, query_options=None, compel=False,
         return None if single_location else []
     elif single_location and (
             len(location_args) > 1 or
-            len(location_args.itervalues().next()['values']) > 1):
+            len(iter(location_args.values()).__next__()['values']) > 1):
+            # len(iter(next(list(location_args.values()))['values'])) > 1):
+            # len(iter(list(location_args.values()))['values']) > 1):
         raise ArgumentError("Please specify just a single location "
                             "parameter.")
 
     locations = []
-    for locinfo in location_args.itervalues():
+    for locinfo in location_args.values():
         cls = locinfo['class']
         values = locinfo['values']
 

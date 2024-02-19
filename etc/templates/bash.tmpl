@@ -9,8 +9,8 @@ cheetahVarStartToken = ~
 <%
 commands = filter(lambda c: "name" in c.attrib and c.attrib["name"] != "*",
                   self.tree.getiterator("command"))
-global_command = filter(lambda c: "name" in c.attrib and c.attrib["name"] == "*",
-                        self.tree.getiterator("command"))[0]
+global_command = next(filter(lambda c: "name" in c.attrib and c.attrib["name"] == "*",
+                        self.tree.getiterator("command")))
 global_options = global_command.getiterator("option")
 
 def option_has_parameter(opt):
@@ -159,12 +159,15 @@ _aq ()
     cmdOpts=
     case ${COMP_WORDS[1]} in
     #for cmd in commands
+    '#echo cmd #'
 <%
 
 options = filter(lambda o: "name" in o.attrib, cmd.getiterator("option"))
-options_with_params = filter(option_has_parameter, options) 
+options_with_params = filter(option_has_parameter, options)
 
 %>
+    '#echo options #'
+    '#echo options_with_params #'
     ~{cmd.attrib["name"]})
         cmdOpts='#echo " ".join( [ "--" + opt.attrib["name"] for opt in options ] ) #'
         optsParam='#echo "|".join( [ "--" + opt.attrib["name"] for opt in options_with_params ] ) #'

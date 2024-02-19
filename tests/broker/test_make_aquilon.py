@@ -24,11 +24,11 @@ from datetime import datetime
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
-from notificationtest import VerifyNotificationsMixin
+from .brokertest import TestBrokerCommand
+from .notificationtest import VerifyNotificationsMixin
 
 # TODO: this file should be merged into test_make.py and/or test_reconfigure.py
 

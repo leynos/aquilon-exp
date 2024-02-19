@@ -20,10 +20,10 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 services_to_delete = {
     "afs": ["q.ny.ms.com", "afs-by-net", "afs-by-net2", "q.ln.ms.com"],
@@ -58,7 +58,7 @@ class TestDelService(TestBrokerCommand):
                               "service/%s/%s/client/config",
                               "service/%s/%s/server/config"]
 
-        for service, instances in services_to_delete.items():
+        for service, instances in list(services_to_delete.items()):
             for pattern in service_plenaries:
                 self.check_plenary_exists(pattern % service)
 

@@ -22,7 +22,7 @@ def deprecated(message):
     warnings.warn(message, DeprecationWarning, stacklevel=2)
 
 
-class AquilonError(StandardError):
+class AquilonError(Exception):
     '''Generic error class.'''
 
 
@@ -61,7 +61,7 @@ class ProcessException(AquilonError):
             msg = msg + " and stderr:\n%s" % err
         elif out and out.strip():
             msg = msg + " and stdout:\n%s" % out
-        StandardError.__init__(self, msg)
+        Exception.__init__(self, msg)
 
 
 class RollbackException(AquilonError):

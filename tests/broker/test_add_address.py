@@ -32,9 +32,9 @@ if __name__ == "__main__":
 from broker.utils import MockHub
 from ipaddress import IPv6Address, ip_address
 
-from broker.brokertest import TestBrokerCommand
-from eventstest import EventsTestMixin
-from dnstest import inaddr_ptr, in6addr_ptr
+from .brokertest import TestBrokerCommand
+from .eventstest import EventsTestMixin
+from .dnstest import inaddr_ptr, in6addr_ptr
 
 
 class TestAddAddress(EventsTestMixin, TestBrokerCommand):
@@ -44,7 +44,7 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
                           network_environment='internal',
                           reverse_dns_environment=None):
         # Determine the IP type
-        ip = ip_address(unicode(ip))
+        ip = ip_address(ip)
         if isinstance(ip, IPv6Address):
             inaddr = in6addr_ptr
             rrtype = 'AAAA'

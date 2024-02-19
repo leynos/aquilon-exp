@@ -53,7 +53,7 @@ def populate(sess, *args, **kw):
             sess.add(dt)
         try:
             sess.commit()
-        except Exception, e:
+        except Exception as e:
             sess.rollback()
             raise e
 

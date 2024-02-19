@@ -52,7 +52,7 @@ class SandboxChecker(ConsistencyChecker):
         #
 
         # Branches in the database and not in the filesystem
-        for branch in set(db_sandboxes.keys()).difference(fs_sandboxes.keys()):
+        for branch in set(db_sandboxes.keys()).difference(list(fs_sandboxes.keys())):
             self.failure(branch, format(db_sandboxes[branch]),
                          "found in the database but not on the filesystem")
             # No repair mode - the users can fix missing sandboxes themselves by

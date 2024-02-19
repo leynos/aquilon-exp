@@ -206,7 +206,7 @@ class Network(Base):
             # ip_network(int(self.ip)).supernet(new_prefix=self.cidr) looks
             # promising at first, but unfortunately it uses the same string
             # conversion internally...
-            self._network = ip_network(u"%s/%s" % (self.ip, self.cidr))
+            self._network = ip_network("%s/%s" % (self.ip, self.cidr))
         return self._network
 
     @network.setter

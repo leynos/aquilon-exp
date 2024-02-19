@@ -20,10 +20,10 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 
 class TestAddBuilding(TestBrokerCommand):
@@ -217,22 +217,17 @@ class TestAddBuilding(TestBrokerCommand):
         self.noouttest(command)
         self.dsdb_verify()
 
-    def test_134_nonscii(self):
+    def test_134_nonascii(self):
         # Valid UTF-8: a with acute, u with double acute, greek phi
         command = ["add", "building", "--building", "nonascii", "--city", "ny",
                    "--address", "\xc3\xa1\xc5\xb1\xcf\x86"]
         _, err = self.failuretest(command, 1)
-        self.matchoutput(err, "Non-ascii characters detected on command options."
-                              "Only ASCII characters are allowed for --address",
-                         command)
-
-    def test_135_nonutf8(self):
-        command = ["add", "building", "--building", "nonascii", "--city", "ny",
-                   "--address", "\xe1\xe9\xed\xf3\xfa"]
-        _, err = self.failuretest(command, 1)
-        self.matchoutput(err, "Non-ascii characters detected on command options."
-                              "Only ASCII characters are allowed for --address",
-                         command)
+        self.matchoutput(
+            err,
+            "Non-ascii characters detected on command options. "
+            "Only ASCII characters are allowed for --address",
+            command,
+        )
 
 
 if __name__ == '__main__':

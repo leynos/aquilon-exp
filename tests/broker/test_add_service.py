@@ -20,10 +20,10 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 default_services = {
     "aqd": ["ny-prod"],
@@ -92,7 +92,7 @@ class TestAddService(TestBrokerCommand):
                               "service/%s/%s/client/config",
                               "service/%s/%s/server/config"]
 
-        for service, instances in default_services.items():
+        for service, instances in list(default_services.items()):
             for pattern in service_plenaries:
                 self.check_plenary_gone(pattern % service)
 
@@ -119,7 +119,7 @@ class TestAddService(TestBrokerCommand):
                 self.check_plenary_exists(pattern % service)
 
     def test_105_verify_defaults(self):
-        for service, instances in default_services.items():
+        for service, instances in list(default_services.items()):
             command = ["show_service", "--service", service]
             out = self.commandtest(command)
             for instance in instances:

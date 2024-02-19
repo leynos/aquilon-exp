@@ -23,7 +23,6 @@ connect directly.
 
 '''
 
-from __future__ import print_function
 
 import sys
 import os
@@ -32,10 +31,12 @@ import subprocess
 import socket
 import csv
 from threading import Thread
+from pathlib import Path
 
 # -- begin path_setup --
 BINDIR = os.path.dirname(os.path.realpath(sys.argv[0]))
 LIBDIR = os.path.join(BINDIR, "..", "lib")
+MAXAMOUNT = 32768
 
 if LIBDIR not in sys.path:
     sys.path.append(LIBDIR)
@@ -46,21 +47,23 @@ from aquilon.client.ldap_search import check_ldap_filter
 from aquilon.config import lookup_file_path, get_username
 from aquilon.exceptions_ import AquilonError
 from aquilon.client.knchttp import KNCHTTPConnection
-from aquilon.client.chunked import ChunkedHTTPConnection
 from aquilon.client.optparser import OptParser, ParsingError
 from aquilon.python_patches import load_uuid_quickly
 
-from six.moves.urllib_parse import urlencode, quote  # pylint: disable=F0401
-from six.moves.configparser import SafeConfigParser  # pylint: disable=F0401
-import six.moves.http_client as httplib  # pylint: disable=F0401
-from six import iteritems
+from urllib.parse import urlencode, quote  # pylint: disable=F0401
+from configparser import ConfigParser  # pylint: disable=F0401
+import http.client as httplib  # pylint: disable=F0401
+import codecs
+
+from urllib3.connection import HTTPConnection
+from urllib3.exceptions import HTTPError
 
 # Stolen from aquilon.worker.formats.fomatters
 csv.register_dialect('aquilon', delimiter=',', quoting=csv.QUOTE_MINIMAL,
                      doublequote=True, lineterminator='\n')
 
 
-class RESTResource(object):
+class RESTResource:
     def __init__(self, httpconnection, uri):
         self.httpconnection = httpconnection
         self.uri = uri
@@ -80,16 +83,16 @@ class RESTResource(object):
         return self._sendRequest('DELETE')
 
     def _sendRequest(self, method, data=None, mimeType=None):
-        headers = {}
+        headers = {"User-Agent": f"aq client {Path(__file__).parent.parent.resolve()}"}
         if mimeType:
             headers['Content-Type'] = mimeType
-        self.httpconnection.request(method, self.uri, data, headers)
+        self.httpconnection.request(method, self.uri, data, headers, preload_content=False)
 
     def getresponse(self):
         return self.httpconnection.getresponse()
 
 
-class CustomAction(object):
+class CustomAction:
     """Any custom code that needs to be written to run before contacting
     the server can go here for now.
 
@@ -139,7 +142,7 @@ class CustomAction(object):
             print("Failed to find toplevel of sandbox, aborting", file=sys.stderr)
             sys.exit(1)
         # Prevent the branch being published unless the unit tests pass
-        testdir = os.path.join(sandbox_dir, 't')
+        testdir = os.path.join(sandbox_dir.decode(), 't')
         if os.path.exists(os.path.join(testdir, 'Makefile')):
             p = Popen(['/usr/bin/make', '-C', testdir, 'test',
                        'AQCMD=%s' % os.path.realpath(sys.argv[0]),
@@ -165,7 +168,7 @@ class CustomAction(object):
             print("\nThe following changes will be included in this push:\n",
                   file=sys.stdout)
             print("------------------------", file=sys.stdout)
-            print(str(out), file=sys.stdout)
+            print(out.decode(), file=sys.stdout)
             print("------------------------", file=sys.stdout)
         else:
             print("\nYou haven't made any changes on this branch\n",
@@ -181,7 +184,7 @@ class CustomAction(object):
                       file=sys.stderr)
                 sys.exit(1)
 
-            commandOptions["bundle"] = b64encode(open(filename).read())
+            commandOptions["bundle"] = b64encode(open(filename, 'rb').read())
         finally:
             os.unlink(filename)
 
@@ -192,7 +195,7 @@ def create_sandbox(pageData, noexec=False):
         # The 'add' command may have no output if --noget was used,
         # but the 'get' command should always have something...
         return 0
-    reader = csv.reader(output, dialect='aquilon')
+    reader = csv.reader(codecs.iterdecode(output, 'utf-8'), dialect='aquilon')
     for row in reader:
         (template_king_url, sandbox_name, user_base) = row[0:3]
         break
@@ -224,7 +227,7 @@ def create_sandbox(pageData, noexec=False):
         p_clone = subprocess.Popen(cmd_clone, cwd=user_base, stdin=None,
                                    stdout=1, stderr=2)
     except OSError as e:
-        print("Could not execute %s: %s" % (cmd_clone, e), file=sys.stderr)
+        print(f"Could not execute {cmd_clone}: {e}", file=sys.stderr)
         return 1
     exit_clone = p_clone.wait()
     if exit_clone == 0:
@@ -237,7 +240,7 @@ def create_sandbox(pageData, noexec=False):
         p_prepare = subprocess.Popen(cmd_prepare, cwd=user_base, stdin=None,
                                      stdout=1, stderr=2)
     except OSError as e:
-        print("Could not execute %s: %s" % (cmd_prepare, e), file=sys.stderr)
+        print(f"Could not execute {cmd_prepare}: {e}", file=sys.stderr)
         return 1
     exit_prepare = p_prepare.wait()
     if exit_prepare == 0:
@@ -267,7 +270,7 @@ class StatusThread(Thread):
     def run(self):
         try:
             self.show_request()
-        except:
+        except Exception:
             # Weird stuff can happen in threads.  Just ignore it.
             pass
 
@@ -279,50 +282,52 @@ class StatusThread(Thread):
         if self.authuser:
             sconn = KNCHTTPConnection(self.host, self.port, self.authuser)
         else:
-            sconn = ChunkedHTTPConnection(self.host, self.port)
+            sconn = HTTPConnection(self.host, self.port)
         parameters = ""
         if self.debug:
             parameters = "?debug=True"
             sconn.set_debuglevel(10)
         if self.auditid:
-            uri = "/status/auditid/%s%s" % (self.auditid, parameters)
+            uri = f"/status/auditid/{self.auditid}{parameters}"
         else:
-            uri = "/status/requestid/%s%s" % (self.requestid, parameters)
+            uri = f"/status/requestid/{self.requestid}{parameters}"
         RESTResource(sconn, uri).get()
         # handle failed requests
         res = sconn.getresponse()
         self.response_status = res.status
-
         if res.status != httplib.OK:
             if self.debug:
-                print("%s: %s" % (httplib.responses[res.status], res.read()),
+                print(f"{httplib.responses[res.status]}: {res.read().decode()}",
                       file=sys.stderr)
             sconn.close()
             return
-
-        while res.fp:
-            pageData = res.read_chunk()
-            if pageData:
-                self.outstream.write(pageData)
+        for chunk in res.stream():
+            self.outstream.write(chunk.decode())
         sconn.close()
-        return
 
 
 def quoteOptions(options):
-    return "&".join(quote(k) + "=" + quote(v) for k, v in iteritems(options))
+    return "&".join(quote(k) + "=" + quote(v) for k, v in options.items())
 
 
 def is_readonly(command):
-    return (command.startswith('show_') or
-            command.startswith('search_') or
-            command.startswith('dump_'))
+    return command.startswith(('show_', 'search_', 'dump_'))
+
+
+def not_ascii(argument):
+    """
+    Exit if command line contains non-ascii value.
+    """
+    print(f"Non-ascii characters detected on command options. "
+          f"Only ASCII characters are allowed for --{argument}", file=sys.stderr)
+    sys.exit(1)
 
 
 def get_default_opts(auth_option, conf_file=None, readonly=None,
                      globalopts_aqhost=None, env_aqhost=None):
 
     allow_override = False
-    config = SafeConfigParser()
+    config = ConfigParser()
 
     if not conf_file:
         conf_file = lookup_file_path("aq.conf")
@@ -366,27 +371,22 @@ if __name__ == "__main__":
         (command, transport, commandOptions, globalOptions) = \
             parser.parse(sys.argv[1:])
     except ParsingError as e:
-        print('%s: %s' % (sys.argv[0], e.error), file=sys.stderr)
+        print(f'{sys.argv[0]}: {e.error}', file=sys.stderr)
         print('%s: Try --help for usage details.' % (sys.argv[0]),
               file=sys.stderr)
         sys.exit(1)
 
-    for k, v in iteritems(commandOptions):
-        try:
-            if isinstance(v, str) and v.decode('ascii'):
-                pass
-            elif isinstance(v, list):
-                for i in v:
-                    if isinstance(i, str) and i.decode('ascii'):
-                        pass
-            # if (k != 'list' and isinstance(v, str)) and len(v) > 2599:
-            #    print("The character count in {0} is beyond the permitted "
-            #          "value. Please specify argument value less "
-            #          "than 2600".format(k))
-            #    sys.exit(0)
-        except UnicodeDecodeError as e:
-            print("Non-ascii characters detected on command options."
-                  "Only ASCII characters are allowed for --%s" %k, file=sys.stderr)
+    for k, v in commandOptions.items():
+        if isinstance(v, str) and not v.isascii():
+            not_ascii(k)
+        elif isinstance(v, list):
+            for i in v:
+                if isinstance(i, str) and not i.isascii():
+                    not_ascii(k)
+        if (k != 'list' and isinstance(v, str)) and len(v) > 2599:
+            print("The character count in {} is beyond the permitted "
+                  "value. Please specify argument value less "
+                  "than 2600".format(k), file=sys.stderr)
             sys.exit(1)
 
     # if a client config file is specified on command line
@@ -451,11 +451,12 @@ if __name__ == "__main__":
         print("Unimplemented command ", command, file=sys.stderr)
         exit(1)
 
-    # Convert unicode options to strings
     newOptions = {}
-    for k, v in iteritems(commandOptions):
+
+    for k, v in commandOptions.items():
         newOptions[str(k)] = str(v)
     commandOptions = newOptions
+
     # Should maybe have an input.xml flag on which global options
     # to include... for now it's just debug.
     if globalOptions.get("debug", None):
@@ -466,7 +467,7 @@ if __name__ == "__main__":
 
     # Quote options so that they can be safely included in the URI
     cleanOptions = {}
-    for k, v in iteritems(commandOptions):
+    for k, v in commandOptions.items():
         # urllib.quote() does not escape '/' by default. We have to turn off
         # this behavior because otherwise a parameter containing '/' would
         # confuse the URL parsing logic on the server side.
@@ -500,7 +501,7 @@ if __name__ == "__main__":
     if authuser:
         conn = KNCHTTPConnection(host, port, authuser)
     else:
-        conn = ChunkedHTTPConnection(host, port)
+        conn = HTTPConnection(host, port)
 
     if globalOptions.get('debug'):
         conn.set_debuglevel(10)
@@ -574,7 +575,7 @@ if __name__ == "__main__":
 
         res = conn.getresponse()
 
-    except (httplib.HTTPException, socket.error) as e:
+    except (HTTPError, OSError) as e:
         # noauth connections
         if not hasattr(conn, "getError"):
             print("Error: %s" % e, file=sys.stderr)
@@ -582,7 +583,7 @@ if __name__ == "__main__":
         # KNC connections
         msg = conn.getError()
         host_failed = "Failed to connect to %s" % host
-        port_failed = "%s port %s" % (host_failed, port)
+        port_failed = f"{host_failed} port {port}"
         if msg.find(b'Connection refused') >= 0:
             print("%s: Connection refused." % port_failed, file=sys.stderr)
         elif msg.find(b'Connection timed out') >= 0:
@@ -590,23 +591,31 @@ if __name__ == "__main__":
         elif msg.find(b'Unknown host') >= 0:
             print("%s: Unknown host." % host_failed, file=sys.stderr)
         else:
-            print("Error: %s: %s" % (repr(e), msg), file=sys.stderr)
+            print(f"Error: {repr(e)}: {msg}", file=sys.stderr)
         sys.exit(1)
 
-    pageData = res.read()
+    if int(res.headers.get("Content-Length", 0)) < MAXAMOUNT:
+        pageData = res.read()
+    else:
+        amt = int(res.headers.get("Content-Length", 0))
+        s = []
+        while amt > 0:
+            chunk = res.read(min(amt, MAXAMOUNT))
+            s.append(chunk)
+            amt -= len(chunk)
+        pageData = b"".join(s)
 
     # Wait for additional status messages to arrive, but not for long
     if status_thread:
         status_thread.join(5)
 
     if res.status != httplib.OK:
-        print("%s: %s" % (httplib.responses.get(res.status, res.status),
-                          pageData), file=sys.stderr)
+        print("{}: {}".format(httplib.responses.get(res.status, res.status),
+                          pageData.decode()), file=sys.stderr)
         if res.status == httplib.MULTI_STATUS and \
            globalOptions.get('partialok'):
             sys.exit(0)
         sys.exit(res.status // 100)
-
     exit_status = 0
 
     if transport.expect == 'command':
@@ -617,7 +626,7 @@ if __name__ == "__main__":
                 proc = subprocess.Popen(pageData, shell=True, stdin=sys.stdin,
                                         stdout=sys.stdout, stderr=sys.stderr)
             except OSError as e:
-                print(e, file=sys.stderr)
+                print(str(e), file=sys.stderr)
                 sys.exit(1)
 
             exit_status = proc.wait()
@@ -625,15 +634,18 @@ if __name__ == "__main__":
         noexec = not globalOptions.get('exec')
         exit_status = create_sandbox(pageData, noexec=noexec)
     else:
-        if res.getheader('content-type').startswith('text/'):
-            # TODO: honour the charset in the header, if any - not that the
-            # broker would use anything else
-            pageData = pageData.decode("utf-8")
-            sys.stdout.write(pageData)
-            # The CSV formatter adds a terminating newline, raw formatters not
-            # necessarily
-            if pageData and not pageData.endswith("\n"):
-                sys.stdout.write("\n")
+        if int(res.headers.get("Content-Length", 0)) > 0 and res.headers.get("Content-Type", "").startswith('text/'):
+                # TODO: honour the charset in the header, if any - not that the
+                # broker would use anything else
+                # if isinstance(pageData, bytes):
+                #     pageData = str(pageData, "utf-8")
+                # pageData = str(pageData, "utf-8")
+                pageData = pageData.decode("utf-8")
+                sys.stdout.write(pageData)
+                # The CSV formatter adds a terminating newline, raw formatters not
+                # necessarily
+                if pageData and not pageData.endswith("\n"):
+                    sys.stdout.write("\n")
         else:
             # Non-text result - avoid buffering and charset conversion
             os.write(sys.stdout.fileno(), pageData)

@@ -3,11 +3,21 @@ language: python
 train_version: 1.0
 
 tools:
-   - msde/git/2.9.5
-   - python/core/2.7.18-64
+   - msde/git/2.35.3
+   - python/core/3.7.9
    - msde/msdlbuild/prod
    - perl5/core/5.26.1
 
+toolchains: [ rhel7, solaris11_x86_64 ]
+
+runtimes:
+  - name: rhel7
+    from_toolchain: rhel7
+  - name: solaris11_x86_64
+    from_toolchain: solaris11_x86_64
+
+test_setup: &test_setup
+  - mkdir -p ../install/common/test-results/UNIT/xml/ ../install/common/test-results/INTEGRATION/coveragepy/xml/
 
 build_types:
    - build_type:
@@ -18,40 +28,62 @@ build_types:
           - script: make clean
           - script: make install
           - script: msdlbuild metadata
+   - build_type:
+       name: aqd
+       build:
+         - script:
+            command:
+              - train build --type server
+              - train build --type client
+         - script: msdlbuild metadata
+   - build_type:
+       name: client
+       build:
+         - script: module switch python/core/3.7.9 python/core/3.10.11; make install -f Makefile_client
+   - build_type:
+       name: server
+       build:
+         - script: git ls-remote --sort='version:refname' --tags /ms/dev/aquilon/aqd/SCM/aqd.git | grep refs/tags/TRAIN_DIST_aquilon/aqd | tail -n 2 | head -n 1 | awk '{print $2}' | sed 's/^\([^/]\+\/\)\{2\}//' > doc/version.txt
+         - script: msdlbuild clean
+         - script: make clean
+         - script: make install -f Makefile_server
 
 test_types:
-    - test_type:
-         name: unit
-         test: mkdir -p ../install/common/test-results/UNIT/xml/; python test/test_xmlrunner.py
-    - test_type:
+  - test_type:
+        name: unit
+        test: set -o pipefail; ./tests/runtests.py --config=./tests/unittest.conf --no-interactive -x integration | tee ./tests/aqdtests.log
+  - test_type:
          name: all
          test: set -o pipefail; ./tests/runtests.py --config=./tests/unittest.conf --no-interactive | tee ./tests/aqdtests.log
-    - test_type:
-         name: failfast
-         test: set -o pipefail; ./tests/runtests.py --config=./tests/unittest.conf --failfast --no-interactive --coverage | tee ./tests/aqdtests.log
-    - test_type:
-         name: restart
-         test: ./tests/restarttests.sh
-    - test_type:
-         name: infoblox-end-to-end
-         test: set -o pipefail; AQDCONF=tests/ib-end-to-end.conf ./tests/runtests.py --infoblox-integration --no-interactive --config=tests/ib-end-to-end.conf --failfast | tee ./tests/aqdtests.log
-    - test_type:
-         name: lint  # for compatibility with Python 3 branch - do not commit back in Python3
-         test: /bin/true
-    - test_type:
-         name: jenkins
-         test: 
-         - script: |
-               mkdir -p ../install/common/test-results/UNIT/xml/
-               AQDCONF=tests/unittest.conf python test/test_xmlrunner.py
-               ./tests/jenkinstest.sh
-               cp tests/aqdtests.log ../install/common/test-results/aqdtests.log
-               cp -R /var/tmp/$USER/run/quattor/logs/ ../install/common/test-results/quattor-logs
-               mkdir -p ../install/common/test-results/INTEGRATION/coveragepy/xml/
-               cp ../install/common/test-results/quattor-logs/coverage/aqd.xml ../install/common/test-results/INTEGRATION/coveragepy/xml/coverage-test.xml
-               cp ../install/common/test-results/UNIT/xml/test.xml ../install/common/test-results/INTEGRATION/coveragepy/xml/
-               PYLINTHOME=../run/.pylint.d tests/pylint --msg-template='{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}' lib/aquilon/ bin/*.py sbin/*.py > ../install/common/test-results/pylint.out || /bin/true
-               # In the past, commits did not have the codestyle.py file available; let's use the flake8 checker directly
-               module unload python/core/2.7.18-64
-               module load python/core/3.4.4
-               ./tests/codestyle.py --all > ../install/common/test-results/flake8.out || /bin/true
+  - test_type:
+       name: failfast
+       test: which python; set -o pipefail; python tests/runtests.py --config=tests/unittest.conf --failfast --no-interactive --coverage --verbose | tee tests/aqdtests.log
+  - test_type:
+       name: restart
+       test: ./tests/restarttests.sh
+  - test_type:
+       name: infoblox-end-to-end
+       test: set -o pipefail; AQDCONF=tests/ib-end-to-end.conf ./tests/runtests.py --infoblox-integration --no-interactive --config=tests/ib-end-to-end.conf --failfast | tee ./tests/aqdtests.log
+  - test_type:
+      name: lint
+      test:
+        - script:
+            command:  # Do not fail build on error, for now.
+              - *test_setup
+              - echo -e "\n-- ruff linter check --"
+              - /ms/dist/python/PROJ/ruff/0.0.289-py37/bin/ruff check --config pyproject.toml . && /ms/dist/python/PROJ/ruff/0.0.289-py37/bin/ruff check --config pyproject.toml --format junit -o ../install/common/test-results/ruff.xml .
+              - echo -e "\n** ruff is currently informative only, but try to fix issues when possible. Try 'ruff check --fix' on your file for quick wins.**".
+              - echo -e "\n-- black (darker) code reformatter on commit check --"
+              - tools/darker --diff --check --revision $(git rev-parse --abbrev-ref --symbolic-full-name @{u}) || echo -e "\nFAILED - !!! darker found formating issue. Please run **black** or *tools/darker** on new code to fix and resubmit code. !!!\n"
+  - test_type:
+      name: jenkins
+      test:
+      - script:
+          command:
+            - *test_setup
+            - AQDCONF=tests/unittest.conf python test/test_xmlrunner.py
+            - ./tests/jenkinstest.sh
+            - cp tests/aqdtests.log ../install/common/test-results/aqdtests.log
+            - cp -R /var/tmp/$USER/run/quattor/logs/ ../install/common/test-results/quattor-logs
+            - cp ../install/common/test-results/quattor-logs/coverage/aqd.xml ../install/common/test-results/INTEGRATION/coveragepy/xml/coverage-test.xml
+            - cp ../install/common/test-results/UNIT/xml/test.xml ../install/common/test-results/INTEGRATION/coveragepy/xml/

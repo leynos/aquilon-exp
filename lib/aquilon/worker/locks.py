@@ -34,7 +34,7 @@ lock_queue = LockQueue()
 class NoLockKey(LockKey):
     """ A key that does not lock anything """
     def __init__(self, logger=LOGGER, loglevel=CLIENT_INFO):
-        super(NoLockKey, self).__init__(logger=logger, loglevel=loglevel,
+        super().__init__(logger=logger, loglevel=loglevel,
                                         lock_queue=lock_queue)
         self.transition("initialized")
 
@@ -63,7 +63,7 @@ class CompileKey(LockKey):
         A profile could be a host or a cluster.
 
         """
-        super(CompileKey, self).__init__(logger=logger, loglevel=loglevel,
+        super().__init__(logger=logger, loglevel=loglevel,
                                          lock_queue=lock_queue)
 
         # Emulate the previous behavior:
@@ -93,7 +93,7 @@ class PlenaryKey(LockKey):
                  cluster_member=None, network_device=None, virtual_switch=None,
                  exclusive=True,
                  logger=LOGGER, loglevel=CLIENT_INFO):
-        super(PlenaryKey, self).__init__(logger=logger, loglevel=loglevel,
+        super().__init__(logger=logger, loglevel=loglevel,
                                          lock_queue=lock_queue)
 
         if exclusive:
@@ -118,7 +118,7 @@ class PlenaryKey(LockKey):
         if virtual_switch:
             lockset["virtual_switch"].add(str(virtual_switch))
         if network:
-            lockset["network"].add("%s/%s" % (network.network_environment,
+            lockset["network"].add("{}/{}".format(network.network_environment,
                                               network.network_address))
 
         # Make sure plenary updates conflict with the global compile lock, which
@@ -136,7 +136,7 @@ class SyncKey(LockKey):
     parallel.
     """
     def __init__(self, data, logger=LOGGER, loglevel=CLIENT_INFO):
-        super(SyncKey, self).__init__(logger=logger, loglevel=loglevel,
+        super().__init__(logger=logger, loglevel=loglevel,
                                       lock_queue=lock_queue)
 
         self.exclusive["sync"].add(data)
@@ -151,7 +151,7 @@ class ExternalKey(LockKey):
     exactly needs to be locked.
     """
     def __init__(self, service, items, logger=LOGGER, loglevel=CLIENT_INFO):
-        super(ExternalKey, self).__init__(logger=logger, loglevel=loglevel,
+        super().__init__(logger=logger, loglevel=loglevel,
                                           lock_queue=lock_queue)
         self.exclusive["external/" + service].update(str(item) for item in items)
         self.transition("initalized")

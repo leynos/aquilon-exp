@@ -18,14 +18,14 @@
 """Module for testing the add reboot_intervention command."""
 
 import json
-from datetime import datetime, timedelta
 import unittest
+from datetime import datetime, timedelta
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 EXPIRY = datetime.utcnow().replace(microsecond=0) + timedelta(days=1)
 EXPIRY = EXPIRY.isoformat().replace("T", " ")
@@ -60,9 +60,9 @@ class TestAddRebootIntervention(TestBrokerCommand):
                          "/host/server1.aqd-unittest.ms.com"
                          "/reboot_iv/reboot_intervention/config;",
                          command)
-        self.matchoutput(out, "\"name\" = \"reboot_intervention\";", command)
-        self.matchoutput(out, "\"start\" =", command)
-        self.matchoutput(out, "\"expiry\" =", command)
+        self.matchoutput(out, '"name" = "reboot_intervention";', command)
+        self.matchoutput(out, '"start" =', command)
+        self.matchoutput(out, '"expiry" =', command)
 
         command = ["cat", "--reboot_intervention",
                    "--hostname=server1.aqd-unittest.ms.com",
@@ -128,10 +128,10 @@ class TestAddRebootIntervention(TestBrokerCommand):
                          "/host/server2.aqd-unittest.ms.com"
                          "/reboot_iv/reboot_intervention/config;",
                          command)
-        self.matchoutput(out, "\"name\" = \"reboot_intervention\";", command)
-        self.matchoutput(out, "\"start\" =", command)
-        self.matchoutput(out, "\"expiry\" =", command)
-        self.matchoutput(out, "\"justification\" = \"test Users\";", command)
+        self.matchoutput(out, '"name" = "reboot_intervention";', command)
+        self.matchoutput(out, '"start" =', command)
+        self.matchoutput(out, '"expiry" =', command)
+        self.matchoutput(out, '"justification" = "test Users";', command)
 
         command = ["cat", "--reboot_intervention",
                    "--hostname=server2.aqd-unittest.ms.com",
@@ -165,7 +165,23 @@ class TestAddRebootIntervention(TestBrokerCommand):
                 found = True
         self.assertTrue(found, "No reboot_iv found in host protobuf.")
 
-if __name__ == '__main__':
+    def test_40_reboot_intervention_with_obo_servicesids(self):
+        command = [
+            "add_reboot_intervention",
+            "--expiry",
+            EXPIRY,
+            "--reason=test",
+            "--comments=txid:aa1a76e6-b0b5-11ee-85b8-00505601c098 obo:anotheruser",
+            "--hostname=server3.aqd-unittest.ms.com",
+        ]
+        self.successtest(command)
+        cmlogfile = self.config.get("broker", "cmlogfile")
+        last_entry = json.loads(self.tail_file(cmlogfile))
+        self.assertEqual(last_entry["requestor"], "anotheruser")
+        self.assertEqual(last_entry["reason"], "txid:aa1a76e6-b0b5-11ee-85b8-00505601c098 obo:anotheruser")
+
+
+if __name__ == "__main__":
     suite = unittest.TestLoader().loadTestsFromTestCase(
         TestAddRebootIntervention)
     unittest.TextTestRunner(verbosity=2).run(suite)

@@ -20,10 +20,10 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 default_maps = {
     "afs": {
@@ -97,9 +97,9 @@ default_maps = {
 
 class TestMapService(TestBrokerCommand):
     def test_100_map_defaults(self):
-        for service, maps in default_maps.items():
-            for instance, locations in maps.items():
-                for loc_type, loc_names in locations.items():
+        for service, maps in list(default_maps.items()):
+            for instance, locations in list(maps.items()):
+                for loc_type, loc_names in list(locations.items()):
                     for loc_name in loc_names:
                         self.noouttest(["map_service", "--service", service,
                                         "--instance", instance,
@@ -109,9 +109,9 @@ class TestMapService(TestBrokerCommand):
         command = ["show_map", "--all"]
         mapstr = "Service: %s Instance: %s Map: %s %s"
         out = self.commandtest(command)
-        for service, maps in default_maps.items():
-            for instance, locations in maps.items():
-                for loc_type, loc_names in locations.items():
+        for service, maps in list(default_maps.items()):
+            for instance, locations in list(maps.items()):
+                for loc_type, loc_names in list(locations.items()):
                     for loc_name in loc_names:
                         self.matchoutput(out, mapstr % (service, instance,
                                                         loc_type.capitalize(),

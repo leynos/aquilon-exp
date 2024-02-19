@@ -24,10 +24,10 @@ else:
     import ms.modulecmd
 
     ms.modulecmd.load('fsf/libtool/1.5.18')
-    os.environ["PATH"] += os.pathsep+' /ms/dist/fsf/PROJ/graphviz/2.38.0/bin'
+    os.environ['PATH'] = os.environ['PATH'] + ';' + '/ms/dist/fsf/PROJ/graphviz/2.38.0/bin'
 
-    ms.version.addpkg('pyparsing', '2.0.3')  # pydot relies on pyparsing
-    ms.version.addpkg('pydot', '1.0.28')
+    ms.version.addpkg('pyparsing', '2.3.1')  # pydot relies on pyparsing
+    ms.version.addpkg('pydot', '1.4.1')
 
 import pydot
 
@@ -123,7 +123,7 @@ def create_schema_graph(tables=None, metadata=None, show_datatypes=False,
     elif not tables and metadata:
         if not len(metadata.tables):
             metadata.reflect()
-        tables = metadata.tables.values()
+        tables = list(metadata.tables.values())
     else:
         raise Exception("You need to specify at least tables or metadata")
 

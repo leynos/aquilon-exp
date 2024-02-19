@@ -179,7 +179,7 @@ class CommandManageList(BrokerCommand):
                     features[dbstage.archetype].update(pre)
                     features[dbstage.archetype].update(post)
 
-                for dbarch, featureset in features.items():
+                for dbarch, featureset in list(features.items()):
                     for dbfeature in featureset:
                         check_feature_template(self.config, dbarch, dbfeature,
                                                dbbranch)

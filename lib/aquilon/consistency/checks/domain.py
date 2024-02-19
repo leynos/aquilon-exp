@@ -68,7 +68,7 @@ class DomainChecker(ConsistencyChecker):
         #
 
         # Branches on filesystem but not in the database
-        for branch in fs_domains.difference(db_domains.keys()):
+        for branch in fs_domains.difference(list(db_domains.keys())):
             if repair:
                 self.logger.info("Removing %s", fsinfo[branch])
                 rmtree(fsinfo[branch])

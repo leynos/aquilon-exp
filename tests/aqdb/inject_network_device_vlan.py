@@ -30,10 +30,12 @@ site.addsitedir(LIBDIR)
 # -- end path_setup --
 
 import ms.version
-ms.version.addpkg('mako', '1.0.4')
-ms.version.addpkg('twisted', '15.4.0')
-ms.version.addpkg('zope.interface', '4.5.0')
-ms.version.addpkg('six', '1.9.0')
+ms.version.addpkg('mako', '1.0.7')
+ms.version.addpkg('twisted', '21.2.0')
+ms.version.addpkg('incremental', '16.10.1')
+ms.version.addpkg('constantly', '15.1.0')
+ms.version.addpkg('zope.interface', '4.6.0-py37')
+ms.version.addpkg('six', '1.15.0')
 
 from six import text_type
 import zope.interface

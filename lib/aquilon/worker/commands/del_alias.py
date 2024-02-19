@@ -26,7 +26,6 @@ from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
 
 
-
 class CommandDelAlias(BrokerCommand):
 
     required_parameters = ["fqdn"]

@@ -56,7 +56,7 @@ class CommandAddResource(BrokerCommand):
                                      **kwargs)
 
         # Validate ChangeManagement
-        cm = ChangeManagement(session, user, justification, reason, logger, self.command, **kwargs)
+        cm = ChangeManagement(session, user, justification, reason, logger, self.command, comments=comments, **kwargs)
         cm.consider(holder)
         cm.validate()
 
@@ -83,4 +83,3 @@ class CommandAddResource(BrokerCommand):
         plenaries.add(dbresource)
         plenaries.write()
 
-        return

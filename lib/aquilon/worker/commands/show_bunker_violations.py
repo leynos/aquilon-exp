@@ -145,20 +145,20 @@ class CommandShowBunkerViolations(BrokerCommand):
             rack_bucket = bunker_bucket[rack.bunker]
             buckets = addr_by_rack[rack]
             if rack_bucket:
-                errors.append("Warning: {0} is part of {1:l}, but also "
+                errors.append("Warning: {} is part of {:l}, but also "
                               "has networks from:".format(rack, rack.bunker))
             else:
-                errors.append("Warning: {0} is not part of a bunker, but "
+                errors.append("Warning: {} is not part of a bunker, but "
                               "it uses bunkerized networks:".format(rack))
-            for bucket in sorted(buckets):
+            for bucket in buckets:
                 if bucket == rack_bucket:
                     continue
-                hws = sorted(set(addr.interface.qualified_name
-                                 for addr in buckets[bucket]))
+                hws = sorted({addr.interface.qualified_name
+                                 for addr in buckets[bucket]})
                 names = ", ".join(hws)
                 if bucket is None:
                     bucket = "(No bucket)"
-                errors.append("    {0}: {1}".format(bucket, names))
+                errors.append(f"    {bucket}: {names}")
             errors.append("")
 
         result = "\n".join(errors)

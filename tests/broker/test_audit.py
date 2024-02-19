@@ -24,7 +24,7 @@ from datetime import datetime, timedelta
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
 from dateutil.parser import parse
@@ -38,7 +38,7 @@ AUDIT_RAW_RE = re.compile(r'^(?P<datetime>(?P<date>'
                           r'(?P<year>\d{4,})-(?P<month>\d{2})-(?P<day>\d{2})) '
                           r'(?P<hour>\d{2}):(?P<minute>\d{2}):'
                           r'(?P<second>\d{2})(?P<offset>[-\+]\d{4})) '
-                          r'(?P<principal>(?P<user>\w+)'
+                          r'(?P<principal>(?P<user>(?!\b[a-z]\d+)\w+)'
                           r'(?:@(?P<realm>[\w\.]+))?) '
                           r'(?P<returncode>\d+|-) '
                           r'aq (?P<command>\w+)\b(?P<args>.*)$', re.M)
@@ -140,6 +140,14 @@ class TestAudit(TestBrokerCommand):
         # Even if a user with the bad capitalization does exist on the system,
         # it should not appear in the tests
         command = ["search_audit", "--username", badcap]
+        self.noouttest(command)
+
+    def test_216_encoded_user(self):
+        if self.principal[0].islower():
+            encoded_user = "\a1234" + self.principal.capitalize()
+        else:
+            encoded_user = "\a1234" + self.principal.lower()
+        command = ["search_audit", "--username", encoded_user]
         self.noouttest(command)
 
     def test_220_cmd_protobuf(self):

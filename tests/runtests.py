@@ -141,7 +141,7 @@ if not os.path.exists(opts.config):
     sys.exit(1)
 
 if os.environ.get("AQDCONF") and \
-   os.path.realpath(opts.config) != os.path.realpath(os.environ["AQDCONF"]):
+        os.path.realpath(opts.config) != os.path.realpath(os.environ["AQDCONF"]):
     if opts.interactive:
         force_yes("""Will ignore AQDCONF variable value:
     %s
@@ -203,7 +203,7 @@ if opts.resume:
     dumfile = config.get('unittest', 'last_success_db_snapshot')
     if not os.path.isfile(dumfile) and database_type == 'database_sqlite':
         print("Tests cannot be started from the test {0}. "
-          "Database dumpfile - {1} does not exist.".format(opts.start, dumfile),
+              "Database dumpfile - {1} does not exist.".format(opts.start, dumfile),
               file=sys.stderr)
         sys.exit(1)
     if database_type == 'database_sqlite':
@@ -248,7 +248,7 @@ kill_from_pid_file(pid_file)
 
 dirs = []
 broker_dir_list = ["quattordir", "templatesdir", "domainsdir", "rundir", "logdir",
-                        "profilesdir", "plenarydir", "cfgdir", "kingdir"]
+                   "profilesdir", "plenarydir", "cfgdir", "kingdir"]
 
 if not opts.resume:
     # FIXME: Need to be careful about attempting to nuke templatesdir.

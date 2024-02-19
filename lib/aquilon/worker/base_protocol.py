@@ -16,12 +16,10 @@
 # limitations under the License.
 """Provide an anonymous access channel to the Site."""
 
-from six import text_type
 from twisted.web import server
 
 from aquilon.worker.logger import RequestLogger
 from aquilon.worker.messages import StatusCatalog
-
 
 _next_sequence_no = 0
 """Next request sequence number, see _get_next_sequence_no()"""
@@ -41,12 +39,10 @@ def alt_repr(s):
     # Small helper borrowed from twisted: a version of repr() which always uses
     # double quotes
     r = repr(s)
-    if not isinstance(r, text_type):
-        r = r.decode("ascii")
-    if r.startswith(u"b"):
+    if r.startswith("b"):
         r = r[1:]
-    if r.startswith(u"'"):
-        return r[1:-1].replace(u'"', u'\\"').replace(u"\\'", u"'")
+    if r.startswith("'"):
+        return r[1:-1].replace('"', '\\"').replace("\\'", "'")
     return r[1:-1]
 
 
@@ -56,7 +52,7 @@ class AQDRequest(server.Request):
     """
 
     def __init__(self, *args, **kwargs):
-        server.Request.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.__sequence_no = _get_next_sequence_no()
         self.status = catalog.create_request_status(auditid=self.__sequence_no)
         self.logger = RequestLogger(self.status)
@@ -66,7 +62,7 @@ class AQDRequest(server.Request):
 
     def getPrincipal(self):
         """By default we return None."""
-        return None
+        return
 
     @property
     def sequence_no(self):
@@ -85,10 +81,12 @@ class AQDRequest(server.Request):
         # Pass through
         return result
 
+
 class AQDSite(server.Site):
     """
     Override server.Site to provide a better implemtation of log.
     """
+
     requestFactory = AQDRequest
 
     # Overriding http.HTTPFactory's log() to log the username instead
@@ -98,13 +96,14 @@ class AQDSite(server.Site):
         if hasattr(self, "logFile"):
             line = '%s - %s %s "%s" %d %s "%s" "%s"\n' % (
                 request.getClientIP(),
-                request.getPrincipal() or "-",
+                alt_repr(request.getPrincipal()) if request.getPrincipal() else "-",
                 self._logDateTime,
-                '%s %s %s' % (alt_repr(request.method),
+                '{} {} {}'.format(alt_repr(request.method),
                               alt_repr(request.uri),
                               alt_repr(request.clientproto)),
                 request.code,
                 request.sentLength or "-",
                 alt_repr(request.getHeader("referer") or "-"),
-                alt_repr(request.getHeader("user-agent") or "-"))
+                alt_repr(request.getHeader("user-agent") or "-"),
+            )
             self.logFile.write(line)

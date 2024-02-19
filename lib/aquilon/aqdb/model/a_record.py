@@ -144,8 +144,8 @@ __j = __j.join(Network, and_(Network.id == ARecord.network_id,
 dns_fqdn_mapper = mapper(ARecord, __j,
                          # Only map the columns from the join which ARecord
                          # would normally have
-                         include_properties=(DnsRecord.__table__.c.values() +
-                                             ARecord.__table__.c.values()),
+                         include_properties=(list(DnsRecord.__table__.c.values()) +
+                                             list(ARecord.__table__.c.values())),
                          properties={
                              # Both DnsRecord and Fqdn have a column named 'id'.
                              # Tell the ORM that DnsRecord.fqdn_id and Fqdn.id are

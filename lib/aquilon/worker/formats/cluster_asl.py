@@ -39,7 +39,7 @@ class PriorityListFormatter(ResourceFormatter):
             rg = None
 
         container_proxy = getattr(skeleton, self.resource_field)
-        for entry in pri_list.entries.values():
+        for entry in list(pri_list.entries.values()):
             msg = container_proxy.add()
             msg.cluster = dbcluster.name
             if rg:
@@ -55,7 +55,7 @@ class SystemListFormatter(PriorityListFormatter):
 
     def extra_details(self, sl, indent=""):
         details = []
-        for entry in sorted(sl.entries.values(), key=attrgetter("priority")):
+        for entry in sorted(list(sl.entries.values()), key=attrgetter("priority")):
             details.append(indent + "  Member: %s Priority: %d" %
                            (entry.host, entry.priority))
         return details
@@ -71,7 +71,7 @@ class AutoStartListFormatter(PriorityListFormatter):
 
     def extra_details(self, asl, indent=""):
         details = []
-        for entry in sorted(asl.entries.values(),
+        for entry in sorted(list(asl.entries.values()),
                             key=attrgetter("priority", "member.node_index")):
             details.append(indent + "  Member: %s Order: %d" %
                            (entry.host, entry.priority))

@@ -49,7 +49,7 @@ vendor.append_constraint(UniqueConstraint('name',name='%s_uk'%(_ABV)))
 def populate(sess, **kw):
 
     if len(sess.query(Vendor).all()) < 1:
-        import cfg_path as cfg
+        from . import cfg_path as cfg
         created = []
 
         cfg_base = kw['cfg_base']
@@ -70,7 +70,7 @@ def populate(sess, **kw):
                     a=Vendor(name=j)
                     try:
                         sess.add(a)
-                    except Exception,e:
+                    except Exception as e:
                         sess.rollback()
                         sys.stderr.write(e)
                         continue
@@ -81,14 +81,14 @@ def populate(sess, **kw):
                 dbv = Vendor(name=v)
                 try:
                     sess.add(dbv)
-                except Exception, e:
+                except Exception as e:
                     sess.rollback()
                     raise e
                 created.append(v)
 
         try:
             sess.commit()
-        except Exception,e:
+        except Exception as e:
             raise e
         finally:
             sess.close()

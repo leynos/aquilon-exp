@@ -29,11 +29,11 @@ from ipaddress import (IPv4Network, IPv4Address, IPv6Network, IPv6Address,
 # Ranges for dynamic network allocation. The idea is to allocate a /N network
 # inside 10.N.0.0/16.
 SUBNET_RANGE = {
-    24: IPv4Network(u'10.24.0.0/16'),
-    25: IPv4Network(u'10.25.0.0/16'),
-    26: IPv4Network(u'10.26.0.0/16'),
-    27: IPv4Network(u'10.27.0.0/16'),
-    28: IPv4Network(u'10.28.0.0/16')}
+    24: IPv4Network('10.24.0.0/16'),
+    25: IPv4Network('10.25.0.0/16'),
+    26: IPv4Network('10.26.0.0/16'),
+    27: IPv4Network('10.27.0.0/16'),
+    28: IPv4Network('10.28.0.0/16')}
 
 
 @total_ordering

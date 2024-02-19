@@ -23,10 +23,10 @@ import os.path
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 default_features = {
     "host": {
@@ -96,7 +96,7 @@ class TestAddFeature(TestBrokerCommand):
 
     def test_100_add_default_features(self):
         for feature_type in default_features:
-            for name, params in default_features[feature_type].items():
+            for name, params in list(default_features[feature_type].items()):
                 command = ["add_feature", "--feature", name,
                            "--type", feature_type,
                            "--grn", "grn:/ms/ei/aquilon/aqd"]
@@ -181,8 +181,8 @@ class TestAddFeature(TestBrokerCommand):
         for feature in self.protobuftest(command):
             result[feature.type][feature.name] = feature
 
-        for feature_type, features in default_features.items():
-            for name, params in features.items():
+        for feature_type, features in list(default_features.items()):
+            for name, params in list(features.items()):
                 self.assertIn(name, result[feature_type])
                 data = result[feature_type][name]
                 self.assertEqual(data.name, name)

@@ -16,29 +16,40 @@
 # limitations under the License.
 """RebootSchedule Resource formatter."""
 
+from aquilon.aqdb.model import RebootSchedule
 from aquilon.worker.formats.formatters import ObjectFormatter
 from aquilon.worker.formats.resource import ResourceFormatter
-from aquilon.aqdb.model import RebootSchedule
 
 
 class RebootScheduleFormatter(ResourceFormatter):
 
     suppress_name = True
 
-    template_json = "reboot_schedule.mako"
 
     def extra_details(self, rs, indent=""):
         details = []
-        details.append(indent + "  Week: {0.week}".format(rs))
-        details.append(indent + "  Day: {0.day}".format(rs))
-        details.append(indent + "  Time: {0.time}".format(rs))
+        details.append(indent + f"  Week: {rs.week}")
+        details.append(indent + f"  Day: {rs.day}")
+        details.append(indent + f"  Time: {rs.time}")
         return details
 
     def fill_proto(self, rs, skeleton, embedded=True, indirect_attrs=True):
-        super(RebootScheduleFormatter, self).fill_proto(rs, skeleton)
+        super().fill_proto(rs, skeleton)
         skeleton.reboot_schedule.week = rs.week
         skeleton.reboot_schedule.day = rs.day
         if rs.time:
             skeleton.reboot_schedule.time = rs.time
+
+    def format_json(self, resource, embedded=True, indirect_attrs=True):
+        details = {
+            "host": resource.holder.holder_name,
+            "bound_to": resource.holder.holder_type,
+            "type": resource.resource_type,
+            "week": resource.week,
+            "day": resource.day,
+        }
+        if resource.time:
+            details["time"] = resource.time
+        return details
 
 ObjectFormatter.handlers[RebootSchedule] = RebootScheduleFormatter()

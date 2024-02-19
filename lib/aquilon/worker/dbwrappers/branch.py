@@ -76,7 +76,7 @@ def trigger_review_pipeline(dbreview, user, logger):
     logger.debug("Starting Gerrit trigger")
     try:
         out = run_command(cmd)
-        logger.debug("Response returned: {}".format(out))
+        logger.debug(f"Response returned: {out}")
         out_dict = json.loads(out)
         if out_dict.get("URL"):
             dbreview.review_url = out_dict["URL"]
@@ -101,7 +101,7 @@ def trigger_review_domain_update(target, logger):
     logger.debug("Starting Gerrit branch update")
     try:
         out = run_command(cmd)
-        logger.debug("Response returned: {}".format(out))
+        logger.debug(f"Response returned: {out}")
     except Exception as err:
         logger.debug("Warning: Gerrit branch update Failed, "
                      "but continue. Reason: {}.".format(str(err)))
@@ -117,7 +117,6 @@ def parse_sandbox(session, sandbox, default_author=None):
             dbauthor = User.get_unique(session, default_author, compel=True)
         else:
             dbauthor = None
-
     # This function may be called when the branch does not exist (yet) in the
     # DB, so we need to do the normalization manually
     branch = AqStr.normalize(branch)
@@ -151,20 +150,18 @@ def get_branch_and_author(session, domain=None, sandbox=None, branch=None,
 
 def force_my_sandbox(session, dbuser, sandbox):
     if not dbuser.realm.trusted:
-        raise AuthorizationException("{0} is not trusted to handle "
-                                     "sandboxes.".format(dbuser.realm))
+        raise AuthorizationException(f"{dbuser.realm} is not trusted to handle sandboxes.")
 
     sandbox, dbauthor = parse_sandbox(session, sandbox,
                                       default_author=dbuser.name)
+
     sandbox = AqStr.normalize(sandbox)
 
     # User used the name/branch syntax - that's fine.  They can't
     # do anything on behalf of anyone else, though, so error if the
     # user given is anyone else.
     if dbauthor.name != dbuser.name:
-        raise ArgumentError("Principal {0!s} cannot add or get a sandbox "
-                            "on behalf of '{1!s}'."
-                            .format(dbuser, dbauthor))
+        raise ArgumentError(f"Principal {dbuser!s} cannot add or get a sandbox on behalf of '{dbauthor!s}'.")
 
     return (sandbox, dbauthor)
 
@@ -183,8 +180,7 @@ def get_branch_dependencies(dbbranch):
         q = q.filter(cls_.branch_id == dbbranch.id)
         cnt = q.count()
         if cnt:
-            ret.append("{0} {1!s}s are still attached to {2:l}."
-                       .format(cnt, cls_._get_class_label().lower(), dbbranch))
+            ret.append(f"{cnt} {cls_._get_class_label().lower()!s}s are still attached to {dbbranch:l}.")
 
     if dbbranch.trackers:
         ret.append("%s is tracked by %s." %
@@ -235,7 +231,7 @@ def remove_branch(logger, dbbranch, dbauthor=None):
     kingrepo = GitRepo.template_king(logger)
     hash = kingrepo.ref_commit("refs/heads/" + dbbranch.name, compel=False)
     if hash:
-        logger.info("{0} head commit was: {1!s}".format(dbbranch, hash))
+        logger.info(f"{dbbranch} head commit was: {hash!s}")
         try:
             kingrepo.run(["branch", "-D", dbbranch.name])
         except ProcessException as e:
@@ -342,7 +338,7 @@ def merge_into_trash(config, logger, branch, merge_msg, loglevel=logging.INFO):
             temprepo.run(["merge", "-s", "ours", hash, "-m", merge_msg])
             temprepo.push_origin(trash_branch)
     except ProcessException as e:
-        raise ArgumentError("\n%s%s" % (e.out, e.err))
+        raise ArgumentError(f"\n{e.out}{e.err}")
 
 
 def sync_domain(dbdomain, logger):
@@ -359,10 +355,9 @@ def sync_domain(dbdomain, logger):
     if dbdomain.tracked_branch:
         # Might need to revisit if using this helper from rollback...
         kingrepo.run(["push", ".",
-                      "%s:%s" % (dbdomain.tracked_branch.name, dbdomain.name)])
+                      f"{dbdomain.tracked_branch.name}:{dbdomain.name}"])
 
-    logger.client_info("Updating the checked out copy of {0:l}..."
-                       .format(dbdomain))
+    logger.client_info(f"Updating the checked out copy of {dbdomain:l}...")
 
     with CompileKey(domain=dbdomain.name, logger=logger):
         domainrepo.run(["fetch", "--prune"])
@@ -376,12 +371,13 @@ def sync_domain(dbdomain, logger):
 
 
 def sync_all_trackers(dbbranch, logger):
+
     for domain in dbbranch.trackers:
+        print(f"domain: {domain}")
         if not domain.autosync:
-            logger.warning("{0} has autosync disabled, skipping."
-                           .format(domain))
+            logger.warning(f"{domain} has autosync disabled, skipping.")
             continue
         try:
             sync_domain(domain, logger=logger)
         except ProcessException as e:
-            logger.warning("Error syncing domain %s: %s" % (domain.name, e))
+            logger.warning(f"Error syncing domain {domain.name}: {e}")

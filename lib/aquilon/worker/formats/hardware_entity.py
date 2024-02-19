@@ -28,11 +28,10 @@ class HardwareEntityFormatter(ObjectFormatter):
         pass
 
     def format_raw(self, hwe, indent="", embedded=True, indirect_attrs=True):
-        details = [indent + "{0:c}: {0.label}".format(hwe)]
+        details = [indent + f"{hwe:c}: {hwe.label}"]
 
         if hwe.primary_name:
-            details.append(indent + "  Primary Name: "
-                           "{0:a}".format(hwe.primary_name))
+            details.append(indent + "  Primary Name: " f"{hwe.primary_name:a}")
 
         self.header_raw(hwe, details, indent, embedded=embedded,
                         indirect_attrs=indirect_attrs)
@@ -40,8 +39,8 @@ class HardwareEntityFormatter(ObjectFormatter):
         for location_type in sorted(Location.__mapper__.polymorphic_map):
             if getattr(hwe.location, location_type, None) is not None:
                 loc = getattr(hwe.location, location_type)
-                details.append(indent + "  {0:c}: {0.name}".format(loc))
-                if location_type == 'rack':
+                details.append(indent + f"  {loc:c}: {loc.name}")
+                if location_type == "rack":
                     details.append(indent + "    Row: %s" %
                                    hwe.location.rack.rack_row)
                     details.append(indent + "    Column: %s" %
@@ -57,10 +56,9 @@ class HardwareEntityFormatter(ObjectFormatter):
         if hwe.comments:
             details.append(indent + "  Comments: %s" % hwe.comments)
         if hwe.owner_grn:
-            details.append(indent + "  Owned by {0:c}: {0.grn}"
-                           .format(hwe.owner_grn))
+            details.append(indent + f"  Owned by {hwe.owner_grn:c}: {hwe.owner_grn.grn}")
 
-        for i in sorted(hwe.interfaces, key=attrgetter('name')):
+        for i in sorted(hwe.interfaces, key=attrgetter("name")):
             details.append(self.redirect_raw(i, indent + "  "))
         for port in hwe.consoles:
             console_port = hwe.consoles[port]
@@ -70,6 +68,32 @@ class HardwareEntityFormatter(ObjectFormatter):
                            .format(console_port.console_server, console_port.port_number))
 
         return "\n".join(details)
+
+    def format_json(self, hwent, embedded=True, indirect_attrs=True):
+        details = {
+            "machine": hwent.label,
+            "hostname": hwent.primary_name.fqdn.name,
+            "fqdn": str(hwent.primary_name.fqdn),
+            "dns_domain_name": hwent.primary_name.fqdn.dns_domain.name,
+        }
+        sysloc = hwent.location.sysloc()
+        if sysloc:
+            details["sysloc"] = sysloc
+        if hwent.primary_ip:
+            details["primary_ip"] = str(hwent.primary_ip)
+        if hwent.serial_no:
+            details["serial_no"] = hwent.serial_no
+        if hwent.owner_eon_id:
+            details["owner_eonid"] = hwent.owner_eon_id
+        if hwent.owner_grn:
+            details["owner_grn"] = hwent.owner_grn
+        if hwent.comments:
+            details["comments"] = hwent.comments
+        if hwent.interfaces:
+            details["interfaces"] = []
+        for i in sorted(hwent.interfaces, key=attrgetter("name")):
+            details["interfaces"].append(self.redirect_json(i, indirect_attrs=False))
+        return details
 
     def fill_proto(self, hwent, skeleton, embedded=True, indirect_attrs=True):
         skeleton.name = hwent.label
@@ -87,7 +111,7 @@ class HardwareEntityFormatter(ObjectFormatter):
         self.redirect_proto(hwent.model, skeleton.model, indirect_attrs=False)
 
         if indirect_attrs:
-            for iface in sorted(hwent.interfaces, key=attrgetter('name')):
+            for iface in sorted(hwent.interfaces, key=attrgetter("name")):
                 has_addrs = False
                 for addr in iface.assignments:
                     has_addrs = True

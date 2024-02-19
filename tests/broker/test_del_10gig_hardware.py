@@ -21,10 +21,10 @@ from itertools import chain
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 from mock_ib_services import ib_expect_del_address
 
 
@@ -35,7 +35,7 @@ class TestDel10GigHardware(TestBrokerCommand):
                 self.net["ut01ga2s01_v712"], self.net["ut01ga2s01_v713"],
                 self.net["ut01ga2s02_v710"], self.net["ut01ga2s02_v711"],
                 self.net["ut01ga2s02_v712"], self.net["ut01ga2s02_v713"])
-        for i in chain(range(0, 8), range(9, 16)):
+        for i in chain(list(range(0, 8)), list(range(9, 16))):
             hostname = "ivirt%d.aqd-unittest.ms.com" % (1 + i)
             command = "del_host --hostname %s" % hostname
 
@@ -72,7 +72,7 @@ class TestDel10GigHardware(TestBrokerCommand):
         self.ib_verify()
 
     def test_700_delmachines(self):
-        for i in chain(range(0, 8), range(9, 16)):
+        for i in chain(list(range(0, 8)), list(range(9, 16))):
             machine = "evm%d" % (10 + i)
             self.noouttest(["del", "machine", "--machine", machine])
 

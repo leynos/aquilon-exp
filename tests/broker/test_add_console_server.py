@@ -25,11 +25,12 @@ from mock_ib_services import ib_expect_del_address
 from mock_ib_services import ib_expect_update_address
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
-from consoleservertest import VerifyConsoleServerMixin
+from .utils import MockHub
+from .brokertest import TestBrokerCommand
+from .consoleservertest import VerifyConsoleServerMixin
 
 class TestAddConsoleServer(TestBrokerCommand, VerifyConsoleServerMixin):
     def test_100_add_utcs01(self):

@@ -91,7 +91,7 @@ class Cluster(CompileableMixin, Base):
 
     def __init__(self, name=None, **kwargs):
         name = AqStr.normalize(name)
-        super(Cluster, self).__init__(name=name, **kwargs)
+        super().__init__(name=name, **kwargs)
 
     @property
     def title(self):
@@ -131,8 +131,8 @@ class Cluster(CompileableMixin, Base):
                 return dblocation
             return getattr(dblocation, attr)
 
-        return set([filter(host.hardware_entity.location, attr)
-                   for host in self.hosts if filter(host.hardware_entity.location, attr)])
+        return {filter(host.hardware_entity.location, attr)
+                for host in self.hosts if filter(host.hardware_entity.location, attr)}
 
     @property
     def minimum_location(self):
@@ -156,8 +156,7 @@ class Cluster(CompileableMixin, Base):
 
     def all_objects(self):
         yield self
-        for dbobj in self.hosts:
-            yield dbobj
+        yield from self.hosts
 
     @validates('_hosts')
     def validate_host_member(self, key, value):  # pylint: disable=W0613
@@ -186,21 +185,21 @@ class Cluster(CompileableMixin, Base):
                 host.personality not in self.allowed_personalities:
             allowed = sorted(pers.qualified_name for pers in
                              self.allowed_personalities)
-            raise ArgumentError("{0} is not allowed by the cluster.  Allowed "
-                                "personalities are: {1!s}"
+            raise ArgumentError("{} is not allowed by the cluster.  Allowed "
+                                "personalities are: {!s}"
                                 .format(host.personality, ", ".join(allowed)))
 
         if host.hardware_entity.location != self.location_constraint and \
                 self.location_constraint not in \
                 host.hardware_entity.location.parents:
-            raise ArgumentError("Host location {0} is not within cluster "
-                                "location {1}."
+            raise ArgumentError("Host location {} is not within cluster "
+                                "location {}."
                                 .format(host.hardware_entity.location,
                                         self.location_constraint))
 
         if host.branch != self.branch or \
                 host.sandbox_author != self.sandbox_author:
-            raise ArgumentError("{0} {1} {2} does not match {3:l} {4} {5}."
+            raise ArgumentError("{} {} {} does not match {:l} {} {}."
                                 .format(host, host.branch.branch_type,
                                         host.authored_branch, self,
                                         self.branch.branch_type,
@@ -218,16 +217,16 @@ class Cluster(CompileableMixin, Base):
         if self.preferred_location:
             member_locs = self.member_locations(location_class=self.preferred_location.__class__)
             if self.preferred_location not in member_locs:
-                raise ArgumentError("{0} has no members inside preferred {1:l}."
+                raise ArgumentError("{} has no members inside preferred {:l}."
                                     .format(self, self.preferred_location))
 
             if len(member_locs) == 1:
-                raise ArgumentError("{0} does not span two {1}s."
+                raise ArgumentError("{} does not span two {}s."
                                     .format(self, self.preferred_location.location_type))
 
         if self.max_hosts is not None and len(self.hosts) > self.max_hosts:
-            raise ArgumentError("{0} has {1} hosts bound, which exceeds the "
-                                "requested limit of {2}."
+            raise ArgumentError("{} has {} hosts bound, which exceeds the "
+                                "requested limit of {}."
                                 .format(self, len(self.hosts), self.max_hosts))
         if self.metacluster:
             self.metacluster.validate()
@@ -255,7 +254,7 @@ class Cluster(CompileableMixin, Base):
                                for x in clsname.split())
         if class_only:
             return clsname.__format__(passthrough)
-        val = "%s %s" % (clsname, instance)
+        val = "{} {}".format(clsname, instance)
         return val.__format__(passthrough)
 
 
@@ -285,7 +284,7 @@ class StorageCluster(Cluster):
     __mapper_args__ = {'polymorphic_identity': 'storage'}
 
     def validate_membership(self, host):
-        super(StorageCluster, self).validate_membership(host)
+        super().validate_membership(host)
         # FIXME: this should be in the configuration, not in the code
         if host.archetype.name != "filer":
             raise ArgumentError("Only hosts with archetype 'filer' can be "
@@ -316,7 +315,7 @@ class EsxCluster(Cluster):
     __mapper_args__ = {'polymorphic_identity': 'esx'}
 
     def validate(self):
-        super(EsxCluster, self).validate()
+        super().validate()
 
         # It doesn't matter how many vmhosts we have if there are no
         # virtual machines.

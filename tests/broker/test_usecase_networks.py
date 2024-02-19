@@ -20,12 +20,12 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
 from six import iteritems
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 from mock_ib_services import ib_expect_add_address
 from mock_ib_services import ib_expect_del_address
 

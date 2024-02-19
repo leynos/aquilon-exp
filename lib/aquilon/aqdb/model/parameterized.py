@@ -48,7 +48,7 @@ class Parameterized(object):
     def __init__(self, *args, **kwargs):
         objects = {}
 
-        for k, v in kwargs.items():
+        for k, v in list(kwargs.items()):
             # Check that the key exists in the _objects definition, as if it
             # does not, we want to raise an exception
             if k not in self._objects:
@@ -60,7 +60,7 @@ class Parameterized(object):
 
         for v in args:
             # Get all the parameters of the same type as the object
-            params = [name for name, cls in self._objects.items()
+            params = [name for name, cls in list(self._objects.items())
                       if issubclass(v.__class__, cls)]
             if not params:
                 raise TypeError('__init__() got an unexpected argument '
@@ -94,7 +94,7 @@ class Parameterized(object):
                             for k in missing)))
 
         objects['_main'] = objects['main']
-        for k, v in objects.items():
+        for k, v in list(objects.items()):
             setattr(self, k, v)
 
     @property
@@ -125,7 +125,7 @@ class Parameterized(object):
                 set(other._objects.items()) ^ set(self._objects.items())):
             return False
         return all(getattr(other, name) == getattr(self, name)
-                   for name in self._objects.keys())
+                   for name in list(self._objects.keys()))
 
     def __hash__(self):
-        return hash(getattr(self, name) for name in self._objects.keys())
+        return hash(getattr(self, name) for name in list(self._objects.keys()))

@@ -15,7 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Host formatter."""
-
 from collections import defaultdict
 from operator import attrgetter
 
@@ -23,14 +22,14 @@ from sqlalchemy.inspection import inspect
 
 from aquilon.aqdb.model import Host, Machine
 from aquilon.aqdb.model.feature import hardware_features, host_features
-from aquilon.worker.formats.formatters import ObjectFormatter
 from aquilon.worker.formats.compileable import CompileableFormatter
+from aquilon.worker.formats.formatters import ObjectFormatter
 from aquilon.worker.formats.list import ListFormatter
 
 
 class HostFormatter(CompileableFormatter):
     def fill_proto(self, host, skeleton, embedded=True, indirect_attrs=True):
-        super(HostFormatter, self).fill_proto(host, skeleton)
+        super().fill_proto(host, skeleton)
         skeleton.type = "host"  # Deprecated
         dbhw_ent = host.hardware_entity
         dbfqdn = dbhw_ent.primary_name.fqdn
@@ -45,7 +44,7 @@ class HostFormatter(CompileableFormatter):
         if dbhw_ent.primary_ip:
             skeleton.ip = str(dbhw_ent.primary_ip)
         for iface in dbhw_ent.interfaces:
-            if iface.interface_type != 'public' or not iface.bootable:
+            if iface.interface_type != "public" or not iface.bootable:
                 continue
             skeleton.mac = str(iface.mac)
 
@@ -92,12 +91,10 @@ class HostFormatter(CompileableFormatter):
         # turn invoke this method.
         details = []
         if host.cluster:
-            details.append(indent + "  Member of {0:c}: {0.name}"
-                           .format(host.cluster))
+            details.append(indent + f"  Member of {host.cluster:c}: {host.cluster.name}")
         if host.resholder and host.resholder.resources:
             details.append(indent + "  Resources:")
-            for resource in sorted(host.resholder.resources,
-                                   key=attrgetter('resource_type', 'name')):
+            for resource in sorted(host.resholder.resources, key=attrgetter("resource_type", "name")):
                 details.append(self.redirect_raw(resource, indent + "    "))
 
         # TODO: supress features when redirecting personality/archetype
@@ -106,50 +103,67 @@ class HostFormatter(CompileableFormatter):
         details.append(self.redirect_raw(host.archetype, indent + "  "))
 
         details.append(self.redirect_raw(host.operating_system, indent + "  "))
-        details.append(indent + "  {0:c}: {1}"
-                       .format(host.branch, host.authored_branch))
-        details.append(indent + "  Build Status: %s" % host.status)
-        details.append(indent +
-                       "  Advertise Status: %s" % host.advertise_status)
+        details.append(indent + f"  {host.branch:c}: {host.authored_branch}")
+        details.append(indent + f"  Build Status: {str(host.status)}")
+        details.append(indent + f"  Advertise Status: {host.advertise_status}")
 
         if host.owner_grn:
-            details.append(indent + "  Owned by {0:c}: {0.grn}"
-                           .format(host.owner_grn))
+            details.append(indent + f"  Owned by {host.owner_grn:c}: {host.owner_grn.grn}")
         for grn_rec in sorted(host.grns, key=attrgetter("target", "eon_id")):
-            details.append(indent + "  Used by {0.grn:c}: {0.grn.grn} "
-                           "[target: {0.target}]".format(grn_rec))
+            details.append(indent + f"  Used by {grn_rec.grn:c}: {grn_rec.grn.grn} " f"[target: {grn_rec.target}]")
 
         if host.virtual_switch:
             details.append(self.redirect_raw(host.virtual_switch,
                                              indent + "  "))
 
-        for feature in sorted(hardware_features(host.personality_stage,
-                                                host.hardware_entity.model),
-                              key=attrgetter('name')):
-            details.append(indent + "  {0:c}: {0.name}".format(feature))
+        for feature in sorted(
+            hardware_features(host.personality_stage, host.hardware_entity.model), key=attrgetter("name")
+        ):
+            details.append(indent + f"  {feature:c}: {feature.name}")
         (pre, post) = host_features(host.personality_stage)
-        for feature in sorted(pre, key=attrgetter('name')):
-            details.append(indent + "  {0:c}: {0.name} [pre_personality]"
-                           .format(feature))
-        for feature in sorted(post, key=attrgetter('name')):
-            details.append(indent + "  {0:c}: {0.name} [post_personality]"
-                           .format(feature))
+        for feature in sorted(pre, key=attrgetter("name")):
+            details.append(indent + f"  {feature:c}: {feature.name} [pre_personality]")
+        for feature in sorted(post, key=attrgetter("name")):
+            details.append(indent + f"  {feature:c}: {feature.name} [post_personality]")
 
         for si in sorted(host.services_used,
                          key=attrgetter("service.name", "name")):
-            details.append(indent + "  Uses Service: %s Instance: %s"
-                           % (si.service.name, si.name))
-        for srv in sorted(host.services_provided,
-                          key=attrgetter("service_instance.service.name",
-                                         "service_instance.name")):
-            details.append(indent + "  Provides Service: %s Instance: %s"
-                           % (srv.service_instance.service.name,
-                              srv.service_instance.name))
+            details.append(indent + f"  Uses Service: {si.service.name} Instance: {si.name}")
+        for srv in sorted(
+            host.services_provided, key=attrgetter("service_instance.service.name", "service_instance.name")
+        ):
+            details.append(
+                indent
+                + f"  Provides Service: {srv.service_instance.service.name} Instance: {srv.service_instance.name}"
+            )
             details.append(self.redirect_raw(srv, indent + "    "))
         if host.comments:
             details.append(indent + "  Host Comments: %s" % host.comments)
 
         return "\n".join(details)
+
+    def format_json(self, host, embedded=True, indirect_attrs=True):
+        """Format host as a dictionnary and return it for json output"""
+        # Create from hardware entity and update after.
+        details = self.redirect_json(host.hardware_entity, indirect_attrs=False)
+
+        details["branch"] = host.authored_branch
+        details["build_status"] = host.status.name
+        details["owner_eonid"] = host.effective_owner_grn.eon_id
+        if host.cluster:
+            details["cluster"] = host.cluster.name
+        if host.resholder and host.resholder.resources:
+            details["resources"] = []
+            for resource in sorted(host.resholder.resources, key=attrgetter("resource_type", "name")):
+                details["resources"].append(self.redirect_json(resource))
+        details["personality"] = self.redirect_json(host.personality_stage, indirect_attrs=False)
+        details["archetype"] = self.redirect_json(host.archetype, indirect_attrs=False)
+        details["operating_system"] = self.redirect_json(host.operating_system, indirect_attrs=False)
+        if host.comments:
+            details["comments"] = host.comments
+
+        return details
+
 
 ObjectFormatter.handlers[Host] = HostFormatter()
 
@@ -157,7 +171,6 @@ ObjectFormatter.handlers[Host] = HostFormatter()
 class GrnHostList(list):
     """By convention, holds a list of hosts to be formatted to provide
        (grn-only) data."""
-    pass
 
 
 class GrnHostListFormatter(ListFormatter):
@@ -166,9 +179,8 @@ class GrnHostListFormatter(ListFormatter):
         details = []
         for host in shlist:
             if host.hardware_entity.primary_name:
-                details.append(indent + "Primary Name: "
-                                        "{0:a}".format(host.hardware_entity.primary_name))
-            hstr = "  Owned by {0:c}: {0.grn}".format(host.effective_owner_grn)
+                details.append(indent + "Primary Name: " f"{host.hardware_entity.primary_name:a}")
+            hstr = f"  Owned by {host.effective_owner_grn:c}: {host.effective_owner_grn.grn}"
 
             if host.owner_grn:
                 details.append(indent + hstr)
@@ -217,5 +229,24 @@ class GrnHostListFormatter(ListFormatter):
                 map = msg.eonid_maps.add()
                 map.target = grn_rec.target
                 map.eonid = grn_rec.eon_id
+
+    def format_json(self, hostlist, embedded=True, indirect_attrs=True):
+        details = {}
+        for host in hostlist:
+            # This is list of 1 single item
+            sub = {
+                "name": str(host.hardware_entity.primary_name),
+                "effective_owner_grn": host.effective_owner_grn.grn,
+            }
+            grns = []
+            for grn_rec in host.personality_stage.grns:
+                grns.append({"grn": grn_rec.grn.grn, "target": grn_rec.target})
+            for grn_rec in host.grns:
+                if grn_rec.grn.grn not in [x["grn"] for x in grns]:
+                    grns.append({"grn": grn_rec.grn.grn, "target": grn_rec.target})
+            sub["grns"] = grns
+            details.update(sub)
+        return details
+
 
 ObjectFormatter.handlers[GrnHostList] = GrnHostListFormatter()

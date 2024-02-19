@@ -43,7 +43,7 @@ class CommandUpdateModel(BrokerCommand):
     def render(self, session, plenaries, model, vendor, newvendor,
                comments, update_existing_machines, user, justification, reason,
                logger, **arguments):
-        for (arg, value) in arguments.items():
+        for (arg, value) in list(arguments.items()):
             # Cleaning the strings isn't strictly necessary but allows
             # for simple equality checks below and removes the need to
             # call refresh().
@@ -94,16 +94,16 @@ class CommandUpdateModel(BrokerCommand):
         cpu_args = ['cpuname', 'cpuvendor']
         cpu_info = {self.argument_lookup[arg]: arguments[arg]
                     for arg in cpu_args}
-        cpu_values = [v for v in cpu_info.values() if v is not None]
+        cpu_values = [v for v in list(cpu_info.values()) if v is not None]
         nic_args = ['nicmodel', 'nicvendor']
         nic_info = {self.argument_lookup[arg]: arguments[arg]
                     for arg in nic_args}
-        nic_values = [v for v in nic_info.values() if v is not None]
+        nic_values = [v for v in list(nic_info.values()) if v is not None]
         spec_args = ['cpunum', 'memory', 'disktype', 'diskcontroller',
                      'disksize']
         specs = {self.argument_lookup[arg]: arguments[arg]
                  for arg in spec_args}
-        spec_values = [v for v in specs.values() if v is not None]
+        spec_values = [v for v in list(specs.values()) if v is not None]
 
         if not dbmodel.machine_specs:
             if cpu_values or nic_values or spec_values:

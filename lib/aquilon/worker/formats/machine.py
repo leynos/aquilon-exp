@@ -18,7 +18,7 @@
 
 from operator import attrgetter
 
-from aquilon.aqdb.model import Machine, VirtualDisk, Host, Cluster
+from aquilon.aqdb.model import Cluster, Host, Machine, VirtualDisk
 from aquilon.worker.formats.formatters import ObjectFormatter
 from aquilon.worker.formats.hardware_entity import HardwareEntityFormatter
 
@@ -27,8 +27,7 @@ class MachineFormatter(HardwareEntityFormatter):
     def header_raw(self, machine, details, indent="", embedded=True,
                    indirect_attrs=True):
         if machine.vm_container and not embedded:
-            details.append(indent + "  Hosted by: {0}"
-                           .format(machine.vm_container.holder))
+            details.append(indent + f"  Hosted by: {machine.vm_container.holder}")
 
         # FIXME: This is now somewhat redundant
         managers = []
@@ -36,34 +35,29 @@ class MachineFormatter(HardwareEntityFormatter):
         for addr in machine.all_addresses():
             if addr.ip == machine.primary_ip:
                 continue
-            elif addr.interface.interface_type == 'management':
+            elif addr.interface.interface_type == "management":
                 managers.append(([str(fqdn) for fqdn in addr.fqdns], addr.ip))
             else:
                 auxiliaries.append(([str(fqdn) for fqdn in addr.fqdns], addr.ip))
 
         for mgr in managers:
-            details.append(indent + "  Manager: %s [%s]" %
-                           (", ".join(sorted(mgr[0])), mgr[1]))
+            details.append(indent + f"  Manager: {', '.join(sorted(mgr[0]))} [{mgr[1]}]")
         for aux in auxiliaries:
-            details.append(indent + "  Auxiliary: %s [%s]" %
-                           (", ".join(sorted(aux[0])), aux[1]))
+            details.append(indent + f"  Auxiliary: {', '.join(sorted(aux[0]))} [{aux[1]}]")
 
-    def format_raw(self, machine, indent="", embedded=True,
-                   indirect_attrs=True):
-        details = [super(MachineFormatter, self)
-                   .format_raw(machine, indent, embedded=embedded,
-                               indirect_attrs=indirect_attrs)]
+    def format_raw(self, machine, indent="", embedded=True, indirect_attrs=True):
+        details = [super().format_raw(machine, indent, embedded=embedded, indirect_attrs=indirect_attrs)]
 
         for slot in machine.chassis_slot:
-            details.append(indent + "  {0:c}: {0!s}".format(slot.chassis))
+            details.append(indent + f"  {slot.chassis:c}: {slot.chassis!s}")
             details.append(indent + "  Slot: %d" % slot.slot_number)
         details.append(indent + "  Cpu: %s x %d" % (machine.cpu_model,
                                                     machine.cpu_quantity))
         details.append(indent + "  Memory: %d MB" % machine.memory)
-        for d in sorted(machine.disks, key=attrgetter('device_name')):
+        for d in sorted(machine.disks, key=attrgetter("device_name")):
             extra = [d.disk_type]
             if isinstance(d, VirtualDisk):
-                extra.append("stored on {0:l}".format(d.backing_store))
+                extra.append(f"stored on {d.backing_store:l}")
 
             flag_list = []
             if d.bootable:
@@ -138,7 +132,7 @@ class MachineFormatter(HardwareEntityFormatter):
 
     def fill_proto(self, machine, skeleton, embedded=True,
                    indirect_attrs=True):
-        super(MachineFormatter, self).fill_proto(machine, skeleton)
+        super().fill_proto(machine, skeleton)
 
         skeleton.cpu = machine.cpu_model.name
         skeleton.cpu_count = machine.cpu_quantity
@@ -149,7 +143,7 @@ class MachineFormatter(HardwareEntityFormatter):
             skeleton.uuid = str(machine.uuid)
 
         if indirect_attrs:
-            for disk in sorted(machine.disks, key=attrgetter('device_name')):
+            for disk in sorted(machine.disks, key=attrgetter("device_name")):
                 disk_msg = skeleton.disks.add()
                 disk_msg.device_name = disk.device_name
                 disk_msg.capacity = disk.capacity
@@ -190,5 +184,45 @@ class MachineFormatter(HardwareEntityFormatter):
             elif isinstance(holder, Cluster):
                 self.redirect_proto(holder, skeleton.vm_cluster,
                                     indirect_attrs=False)
+
+    def format_json(self, machine, embedded=True, indirect_attrs=True):
+        details = super().format_json(machine)
+        details["cpu"] = machine.cpu_model.name
+        details["cpu_count"] = machine.cpu_quantity
+        details["memory"] = machine.memory
+        if machine.uri:
+            details["uri"] = machine.uri
+        if machine.uuid:
+            details["uuid"] = str(machine.uuid)
+        if machine.vm_container:
+            details["vm_container"] = str(machine.vm_container.holder.holder_object)
+
+        details["disks"] = []
+        for disk in sorted(machine.disks, key=attrgetter("device_name")):
+            newdisk = {
+                "device_name": disk.device_name,
+                "capacity": disk.capacity,
+                "device_type": disk.controller_type,
+                "bootable": disk.bootable,
+            }
+            if indirect_attrs:
+                if disk.wwn:
+                    newdisk["wwn"] = disk.wwn
+                if disk.address:
+                    newdisk["address"] = disk.address
+                if disk.bus_address:
+                    newdisk["bus_address"] = disk.bus_address
+                if isinstance(disk, VirtualDisk) and disk.iops_limit:
+                    newdisk["iops_limit"] = disk.iops_limit
+                if disk.disk_tech:
+                    newdisk["disk_tech"] = disk.disk_tech
+                if disk.diskgroup_key:
+                    newdisk["diskgroup_key"] = disk.diskgroup_key
+                if disk.model_key:
+                    newdisk["model_key"] = disk.model_key
+                if disk.usage:
+                    newdisk["usage"] = disk.usage
+            details["disks"].append(newdisk)
+        return details
 
 ObjectFormatter.handlers[Machine] = MachineFormatter()

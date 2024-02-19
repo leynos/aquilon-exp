@@ -99,7 +99,7 @@ class CommandSearchAudit(BrokerCommand):
             username = username.strip()
             # 'nobody' is special, it is stored without any realm
             if '@' in username or username == 'nobody':
-                q = q.filter_by(username=str(username))
+                q = q.filter_by(username=username)
             else:
                 q = q.filter(Xtn.username.like(username + '@%'))
 

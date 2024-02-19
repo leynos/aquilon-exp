@@ -17,32 +17,41 @@
 """ Suggested versions of external libraries, and the defaults for the
     binaries shipped.
 """
+import sys
+import ms.version
 
-try:
-    import ms.version
-except ImportError:
-    pass
+ms.version.addpkg('six', '1.16.0')
+ms.version.addpkg("requests-kerberos", "0.12.0")
+ms.version.addpkg("ms.directory", "4.0.0")
+ms.version.addpkg("pykerberos", "1.2.4")
+ms.version.addpkg("urllib3", "2.0.2")
+ms.version.addpkg("chardet", "3.0.4")
+ms.version.addpkg("certifi", "2020.6.20")
+ms.version.addpkg("cffi", "1.15.1")
+ms.version.addpkg("idna", "2.10")
+ms.version.addpkg("requests", "2.31.0")
+ms.version.addpkg("ms.netkrb", "2.1a")
+ms.version.addpkg("kerberos", "1.3.1-1.16")
+ms.version.addpkg("setuptools", "45.0.0")
+
+
+if sys.platform == "sunos5":
+    ms.version.addpkg('lxml', '4.6.3-S')
+    ms.version.addpkg("cryptography", "41.0.3")
+    ms.version.addpkg("krb5", "0.4.1-1.16")
+
+    # ms.version.addpkg() appends to sys.path, but we need the entry at the
+    # front
+    sys.path.insert(0, sys.path.pop())
 else:
-    import sys
-
-    ms.version.addpkg('lxml', '3.2.5')
-    ms.version.addpkg('six', '1.16.0')
-    ms.version.addpkg("ms.directory", "4.0.0")
-    ms.version.addpkg("decorator", "4.4.2")
-    ms.version.addpkg("pykerberos", "1.2.1-1.16")
-    ms.version.addpkg("winkerberos", "0.7.0")
-    ms.version.addpkg("pyasn1", "0.4.8")
-    ms.version.addpkg("ldap3", "2.7")
-    ms.version.addpkg("setuptools", "41.0.1")
-    ms.version.addpkg("kerberos", "1.3.1-1.16")
-
-
-    if sys.platform == "sunos5":
-        # ctypes is missing from the default Python build on Solaris, due to
-        # http://bugs.python.org/issue2552. It is available as a separate package
-        # though.
-        ms.version.addpkg("ctypes", "1.0.2")
-
-        # ms.version.addpkg() appends to sys.path, but we need the entry at the
-        # front
-        sys.path.insert(0, sys.path.pop())
+    if sys.version_info >= (3, 9):
+        ms.version.addpkg("lxml", "4.9.2-ms1")
+        ms.version.addpkg("cryptography", "41.0.3")
+        ms.version.addpkg("krb5", "0.5.0")
+    else:
+        ms.version.addpkg("lxml", "4.6.3-2.9.10")
+        ms.version.addpkg("cryptography", "39.0.0")
+        ms.version.addpkg("krb5", "0.4.0")
+    # ms.version.addpkg() appends to sys.path, but we need the entry at the
+    # front
+    sys.path.insert(0, sys.path.pop())

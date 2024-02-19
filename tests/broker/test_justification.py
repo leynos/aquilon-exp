@@ -22,7 +22,7 @@ import unittest
 from mock_ib_services import ib_expect_add_alias, ib_expect_del_alias
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
 from broker.brokertest import TestBrokerCommand
@@ -33,9 +33,7 @@ PPROD = "justify-prod"
 QPROD = "justify-qa"
 
 
-
 class TestJustification(PersonalityTestMixin, TestBrokerCommand):
-
     def test_100_setup(self):
 
         command = ["add", "feature", "--feature", "testfeature",
@@ -677,7 +675,7 @@ class TestJustification(PersonalityTestMixin, TestBrokerCommand):
         command = ["del_domain", "--domain", "deployable"] + self.exception_trigger_just_tcm
         err = self.internalerrortest(command)
         self.matchoutput(err, "Invalid response received for the change "
-                              "management check. No JSON object could be decoded", command)
+                              "management check. Expecting value:", command)
         command = ["update_domain", "--domain", "deployable", "--noarchived"]
         out = self.commandtest(command)
 

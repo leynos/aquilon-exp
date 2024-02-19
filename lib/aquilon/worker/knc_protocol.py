@@ -17,9 +17,10 @@
 """Wrappers for using knc with the stock twisted server implementations."""
 
 import logging
-from twisted.web import http
+
 from twisted.python import context
 from twisted.python.log import ILogContext
+from twisted.web import http
 
 from aquilon.exceptions_ import ArgumentError
 from aquilon.utils import force_ascii, force_ip
@@ -29,7 +30,6 @@ LOGGER = logging.getLogger(__name__)
 
 
 class KNCRequest(AQDRequest):
-
     def getPrincipal(self):
         return self.channel.kncinfo.get(b"CREDS")
 
@@ -50,59 +50,55 @@ class KNCHTTPChannel(http.HTTPChannel):
     few lines of data contain extra information about the connection.
     We take these data and stash them into the KNC Request.
     """
-    __KNC_fields = {
-        b'CREDS': force_ascii,
-        b'REMOTE_IP': force_ip
-    }
 
-    def __init__(self, *args, **kwargs):
+    __KNC_fields = {b"CREDS": force_ascii, b"REMOTE_IP": force_ip}
+
+    def __init__(self):
+        super().__init__()
         self.__need_knc_data = 1
         self.logger = LOGGER
         self.kncinfo = {}
-        http.HTTPChannel.__init__(self, *args, **kwargs)
 
     def kncLineReceived(self, data):
         # KNC uses '\n' to delimit lines, while HTTP uses '\n\r', therefore
         # all of the KNC data comes on the first line.  Split these up
         # and process them speratly.
-        lines = data.split(b'\n')
+        lines = data.split(b"\n")
         for line in lines:
             if not self.__need_knc_data:
                 # Pass remaining data through the the HTTP Channel
                 http.HTTPChannel.lineReceived(self, line)
-            elif line == b'END':
+            elif line == b"END":
                 # Check that we have now recieved all of the metadata
                 # that we are expecting...
                 for field in self.__KNC_fields:
                     if field not in self.kncinfo:
-                        raise KNCProtocolException('Missing %s' % field)
+                        raise KNCProtocolException(f"Missing {field}")
                 self.__need_knc_data = 0
 
                 # Fix the log prefix to include the real remote IP
-                logstr = "%s,%s,%s" % (self.__class__.__name__,
-                                       self.transport.sessionno,
-                                       self.kncinfo[b"REMOTE_IP"])
+                logstr = f"{self.__class__.__name__},{self.transport.sessionno},{self.kncinfo[b'REMOTE_IP']}"
                 ctx = context.get(ILogContext)
                 ctx.update({"system": logstr})
             else:
                 if not line:
-                    raise KNCProtocolException('Malformed KNC request')
-                if b':' not in line:
-                    raise KNCProtocolException('Malformed KNC metatdata')
-                key, value = line.split(b':', 1)
+                    raise KNCProtocolException("Malformed KNC request")
+                if b":" not in line:
+                    raise KNCProtocolException("Malformed KNC metatdata")
+                key, value = line.split(b":", 1)
                 if not key:
-                    raise KNCProtocolException('KNC Metadata key missing')
+                    raise KNCProtocolException("KNC Metadata key missing")
                 if not value:
-                    raise KNCProtocolException('KNC Metadata value missing')
+                    raise KNCProtocolException("KNC Metadata value missing")
                 if key in self.__KNC_fields:
                     try:
-                        value = value.decode("ascii")
-                    except UnicodeDecodeError:
-                        raise KNCProtocolException('Non-ASCII value in KNC metadata')
+                        value = value.decode()
+                    except UnicodeDecodeError as err:
+                        raise KNCProtocolException("Non-ASCII value in KNC metadata") from err
                     try:
                         self.kncinfo[key] = self.__KNC_fields[key](key, value)
                     except ArgumentError as err:
-                        raise KNCProtocolException(err)
+                        raise KNCProtocolException(err) from err
 
     def lineReceived(self, line):
         if self.__need_knc_data:
@@ -114,7 +110,7 @@ class KNCHTTPChannel(http.HTTPChannel):
                 self.transport.write(b"HTTP/1.1 400 Bad KNC Request\r\n\r\n")
                 self.transport.loseConnection()
         else:
-            http.HTTPChannel.lineReceived(self, line)
+            super().lineReceived(line)
 
 
 class KNCSite(AQDSite):

@@ -54,7 +54,7 @@ def main():
 
     session = db.Session()
 
-    print "Using database:", str(db.engine.url)
+    print("Using database:", str(db.engine.url))
 
     # Cache warmup
     q = session.query(PersonalityStage)
@@ -78,8 +78,8 @@ def main():
             session.delete(dbparam)
             count += 1
 
-    print "Deleted %d empty parameter objects." % count
-    print "Flushing changes to the database..."
+    print("Deleted %d empty parameter objects." % count)
+    print("Flushing changes to the database...")
 
     session.flush()
     plenaries.stash()
@@ -88,8 +88,8 @@ def main():
         with plenaries.transaction():
             session.commit()
     else:
-        print "**** WARNING ****"
-        print "The --commit option was not specified, changes are not persisted."
+        print("**** WARNING ****")
+        print("The --commit option was not specified, changes are not persisted.")
         session.rollback()
         plenaries.restore_stash()
 

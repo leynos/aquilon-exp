@@ -22,11 +22,11 @@ import unittest
 from mock_ib_services import ib_expect_add_address, ib_expect_del_address, ib_expect_update_address
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
-from eventstest import EventsTestMixin
+from .brokertest import TestBrokerCommand
+from .eventstest import EventsTestMixin
 
 
 class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
@@ -258,8 +258,8 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
         ip      = str(self.net["unknown1"].usable[44])
         ip_hsrp = str(self.net["unknown1"].usable[42])
 
-        ib_expect_del_address(fqdn_hsrp_pre, ip_hsrp)
         ib_expect_del_address(fqdn_pre, ip)
+        ib_expect_del_address(fqdn_hsrp_pre, ip_hsrp)
         ib_expect_add_address(fqdn_post, ip)
         ib_expect_add_address(fqdn_hsrp_post, ip_hsrp)
 

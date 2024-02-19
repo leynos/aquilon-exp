@@ -62,16 +62,16 @@ class VerboseTextTestResult(unittest._TextTestResult):
             suite.addTest(tests)
             unittest.TextTestRunner(verbosity=self.verbosity).run(suite)
             if "TRAIN_TEST_TYPE" in os.environ:
-                print(
+                print((
                     "UnitTests failed: fix and re-start tests from here with "
                     "'train test -t restart' command. Last test failed: {}.{}"
-                    .format(test.__class__.__name__, test._testMethodName))
+                    .format(test.__class__.__name__, test._testMethodName)))
             else:
                 # noinspection PyProtectedMember
-                print(
+                print((
                     'UnitTests failed: fix and re-start tests from failed one '
                     'by passing options: --resume --start {}.{}'
-                    .format(test.__class__.__name__, test._testMethodName))
+                    .format(test.__class__.__name__, test._testMethodName)))
 
     def addError(self, test, err):
         self.printModule(test)

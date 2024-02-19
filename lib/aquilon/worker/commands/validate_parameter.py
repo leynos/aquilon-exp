@@ -37,4 +37,3 @@ class CommandValidateParameter(BrokerCommand):
                                 "\n".join(error for error in errors))
 
         logger.client_info("All required parameters specified.")
-        return

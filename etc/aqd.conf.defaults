@@ -224,6 +224,7 @@ urls =
 # (syntax checking will still be performed)
 enable = False
 allow_emergency_user_roles = aqd_admin operations
+obo_service_ids =
 
 [tool_locations]
 dsdb = /ms/dist/aurora/PROJ/dsdb/6.x-prod/bin/dsdb

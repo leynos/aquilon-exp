@@ -21,11 +21,15 @@ try:
 except ImportError:
     pass
 else:
-    ms.version.addpkg('setuptools', '0.6c11')
-    ms.version.addpkg('coverage', '3.6')
-    ms.version.addpkg('lxml', '3.2.5')
-    ms.version.addpkg('ipaddress', '1.0.6')
+    ms.version.addpkg('setuptools', '46.1.3')
+    ms.version.addpkg('coverage', '5.3.1-py37')
+    ms.version.addpkg('lxml', '4.6.3-2.9.10-py37')
+    ms.version.addpkg('ipaddress', '1.0.23')
     ms.version.addpkg('dateutil', '2.8.1')
-    ms.version.addpkg('six', '1.16.0')
-    ms.version.addpkg('jsonschema', '2.3.0')
-    ms.version.addpkg("httplib2", "0.9-py27")
+    ms.version.addpkg('six', '1.15.0')
+    ms.version.addpkg('jsonschema', '3.0.1')
+    ms.version.addpkg('attrs', '20.3.0')
+    ms.version.addpkg('pyrsistent', '0.15.7-py37')
+    ms.version.addpkg("httplib2", "0.22.0")
+    ms.version.addpkg('pyspnego', '0.8.0')
+    ms.version.addpkg("cryptography", "39.0.0")

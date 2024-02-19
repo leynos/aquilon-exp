@@ -27,10 +27,10 @@ def dq_to_int(dq):
 
 def int_to_dq(n):
     #Force incoming Decimal to a long to prevent odd issues from struct.pack()
-    return inet_ntoa(pack('!L', long(n)))
+    return inet_ntoa(pack('!L', int(n)))
 
 def cidr_to_int(cidr):
-    return(0xffffffffL >> (32- cidr)) << (32 - cidr)
+    return(0xffffffff >> (32- cidr)) << (32 - cidr)
 
 def get_bcast(ip, cidr):
     return int_to_dq( dq_to_int(ip) |  (0xffffffff - cidr_to_int(cidr)))
@@ -84,7 +84,7 @@ def test_ipv4():
     t.insert().execute(e='192.168.1.1')
     t.insert().execute(e='144.14.47.54')
 
-    print list(t.select().execute())
+    print(list(t.select().execute()))
 
     try:
         t.insert().execute(e = 'lalalala')
@@ -96,6 +96,6 @@ def test_ipv4():
     except TypeError:
         pass
 
-    print list(t.select().execute())
+    print(list(t.select().execute()))
 
 

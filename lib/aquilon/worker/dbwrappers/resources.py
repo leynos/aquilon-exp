@@ -188,7 +188,7 @@ def get_resource(session, holder, **arguments_in):
     # Filter out arguments that are not resources
     arguments = dict()
     mapper = inspect(Resource)
-    for key, value in arguments_in.items():
+    for key, value in list(arguments_in.items()):
         # Shortcut for resources which do not really have a name
         if value is True:
             value = key
