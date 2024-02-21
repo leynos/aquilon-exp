@@ -17,6 +17,7 @@
 # limitations under the License.
 """Module for testing GRN mapping."""
 
+import json
 import unittest
 
 if __name__ == "__main__":
@@ -68,18 +69,18 @@ class TestMapGrn(VerifyGrnsMixin, PersonalityTestMixin, TestBrokerCommand):
         self.assertEqual(personality.name, "compileserver")
         self.assertEqual(personality.owner_eonid,
                          self.grns["grn:/ms/ei/aquilon/unittest"])
-        grns = set((rec.target, rec.eonid) for rec in personality.eonid_maps)
-        self.assertEqual(grns, set([('atarget', 6), ('esp', 2), ('esp', 3)]))
+        grns = {(rec.target, rec.eonid) for rec in personality.eonid_maps}
+        self.assertEqual(grns, {("atarget", 6), ("esp", 2), ("esp", 3)})
 
     def test_115_verify_diff(self):
         command = ["show_diff", "--archetype", "aquilon",
                    "--personality", "compileserver", "--other", "inventory"]
         out = self.commandtest(command)
         self.searchoutput(out,
-                          r'Differences for Grns:\s*'
-                          r'missing Grns in Personality aquilon/inventory:\s*'
-                          r'atarget: grn:/example/cards\s*'
-                          r'esp: grn:/ms/ei/aquilon/aqd\s*',
+                          r"Differences for Grns:\s*"
+                          r"missing Grns in Personality aquilon/inventory:\s*"
+                          r"atarget: grn:/example/cards\s*"
+                          r"esp: grn:/ms/ei/aquilon/aqd\s*",
                           command)
 
     def test_120_verify_host(self):
@@ -92,6 +93,14 @@ class TestMapGrn(VerifyGrnsMixin, PersonalityTestMixin, TestBrokerCommand):
                    "--hostname", "unittest12.aqd-unittest.ms.com",
                    "--target", "esp"]
         self.statustest(command)
+
+    def test_131_verify_host_json(self):
+        command = ["show_host", "--hostname", "unittest12.aqd-unittest.ms.com", "--format", "json"]
+        out = self.commandtest(command)
+        results = json.loads(out)[0]
+        self.assertIsInstance(results, dict)
+        self.matchoutput(results["grns"][0]["grn"], "grn:/ms/ei/aquilon/aqd", command)
+        self.matchoutput(results["grns"][0]["target"], "esp", command)
 
     def test_131_map_host_again(self):
         scratchfile = self.writescratch("hostlist",
@@ -290,8 +299,8 @@ class TestMapGrn(VerifyGrnsMixin, PersonalityTestMixin, TestBrokerCommand):
                    "--list", scratchfile, "--target", "esp"]
         out = self.badrequesttest(command)
         self.matchoutput(out,
-                         "The number of hosts in list {0:d} can not be more "
-                         "than {1:d}".format(len(hosts), hostlimit),
+                         f"The number of hosts in list {len(hosts):d} can not be more "
+                         f"than {hostlimit:d}",
                          command)
 
     def test_500_fail_unmap_overlimitlist(self):
@@ -304,8 +313,8 @@ class TestMapGrn(VerifyGrnsMixin, PersonalityTestMixin, TestBrokerCommand):
                    "--list", scratchfile, "--target", "esp"]
         out = self.badrequesttest(command)
         self.matchoutput(out,
-                         "The number of hosts in list {0:d} can not be more "
-                         "than {1:d}".format(len(hosts), hostlimit),
+                         f"The number of hosts in list {len(hosts):d} can not be more "
+                         f"than {hostlimit:d}",
                          command)
 
     def test_500_no_target_configured(self):
@@ -445,6 +454,6 @@ class TestMapGrn(VerifyGrnsMixin, PersonalityTestMixin, TestBrokerCommand):
             self.matchoutput(out, "Used by GRN: grn:/ms/ei/aquilon/aqd [target: esp, inherited]", command)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     suite = unittest.TestLoader().loadTestsFromTestCase(TestMapGrn)
     unittest.TextTestRunner(verbosity=2).run(suite)
