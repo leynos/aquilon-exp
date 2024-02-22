@@ -150,6 +150,11 @@ class HostFormatter(CompileableFormatter):
         details["branch"] = host.authored_branch
         details["build_status"] = host.status.name
         details["owner_eonid"] = host.effective_owner_grn.eon_id
+        details["owner_grn"] = host.owner_grn.grn if host.owner_grn else None
+        details["grns"] = []
+        for grn_rec in host.grns:
+            if grn_rec.grn.grn not in [x["grn"] for x in details["grns"]]:
+                details["grns"].append({"grn": grn_rec.grn.grn, "target": grn_rec.target})
         if host.cluster:
             details["cluster"] = host.cluster.name
         if host.resholder and host.resholder.resources:

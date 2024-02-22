@@ -8,11 +8,13 @@ tools:
    - msde/msdlbuild/prod
    - perl5/core/5.26.1
 
-toolchains: [ rhel7, solaris11_x86_64 ]
+toolchains: [ rhel7, rhel8, solaris11_x86_64 ]
 
 runtimes:
   - name: rhel7
     from_toolchain: rhel7
+  - name: rhel8
+    from_toolchain: rhel8
   - name: solaris11_x86_64
     from_toolchain: solaris11_x86_64
 
