@@ -31,7 +31,7 @@ def partial_match(want, got):
     if isinstance(want, dict):
         if not isinstance(got, dict):
             return False
-        for field, value in want.items():
+        for field, value in list(want.items()):
             if field not in got:
                 return False
             if not partial_match(value, got[field]):

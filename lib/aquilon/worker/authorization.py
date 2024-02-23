@@ -72,9 +72,11 @@ class AuthorizationBroker(object):
 
     def raise_auth_error(self, principal, action, resource):
         auth_msg = self.config.get("broker", "authorization_error")
-        raise AuthorizationException("Unauthorized access attempt by %s to %s "
-                                     "on %s.  %s" %
-                                     (principal, action, resource, auth_msg))
+        raise AuthorizationException("Unauthorized access attempt by %s to %s on %s.  %s" %
+                                     (principal.decode() if isinstance(principal, bytes) else principal,
+                                      action,
+                                      resource.decode() if isinstance(resource, bytes) else resource,
+                                      auth_msg))
 
     # FIXME: Hard coded check for now.
     def check(self, principal, dbuser, action, resource):
@@ -151,7 +153,7 @@ class AuthorizationBroker(object):
         command with or without option"""
 
         exist = False
-        for k in self.cregistry._commands_cache.values():
+        for k in list(self.cregistry._commands_cache.values()):
             if k["command"] == command:
                 exist = True
                 break
@@ -165,14 +167,14 @@ class AuthorizationBroker(object):
 
         elif option is None:
             to_check = []  # composed commands related to the one searched
-            for k, v in self.cregistry._commands_cache.items():
+            for k, v in list(self.cregistry._commands_cache.items()):
                 if v["command"] == command:
                     to_check.append(k)
             return self.check_commands_role(session, to_check)
 
         else:
             c = '{}_{}'.format(command, option)
-            if c not in self.cregistry._commands_cache.keys():
+            if c not in list(self.cregistry._commands_cache.keys()):
                 raise ArgumentError("{} option does not exist in {} command"
                                     .format(option, command))
             return self.check_commands_role(session, [c])
@@ -190,7 +192,7 @@ class AuthorizationBroker(object):
                 roles = roles.union(set(self.action_whitelist[c]))
             else:
                 roles = roles.union(set(self.default_allow.keys()))
-                for r, actions in self.role_whitelist.iteritems():
+                for r, actions in self.role_whitelist.items():
                     if c in actions:
                         roles = roles.union(set([r]))
 
@@ -238,7 +240,7 @@ class AuthorizationBroker(object):
         # has permissions to execute.
         # option_dict : {command: {option1, option2}, command2: {option1}..}
         option_dict = {}
-        for c, v in self.cregistry._commands_cache.items():
+        for c, v in list(self.cregistry._commands_cache.items()):
             if c in self.cregistry._readonly_commands:
                 self.add_command_to_option_dict(option_dict, v)
             elif c in self.action_whitelist and \
@@ -262,7 +264,7 @@ class AuthorizationBroker(object):
         :return: a list of strings (please see: method check_role_permission)
         """
         result = []
-        for c, s in option_dict.items():
+        for c, s in list(option_dict.items()):
             if self.cregistry._commands_options[c] == s:
                 result.append(c)
             elif None in s:

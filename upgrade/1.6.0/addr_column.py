@@ -37,15 +37,15 @@ buildings = dsdb.run_query(dsdb_select)
 for row in buildings.fetchall():
     try:
         dbf.engine.execute(upd.format(row[1], row[0]))
-    except Exception, e:
-        print e
+    except Exception as e:
+        print(e)
 
 #wipe redundant comments fields
 upd = "update location set comments = NULL where location_type='building'"
 try:
     dbf.engine.execute(upd)
-except Exception, e:
-    print e
+except Exception as e:
+    print(e)
 
 #what about redundant fullname fields? pull the 5 character codes from FBI?
 #or LDAP names?

@@ -23,10 +23,10 @@ from mock_ib_services import ib_expect_add_a
 from mock_ib_services import ib_expect_del_a
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 
 class TestAddSharedServiceName(TestBrokerCommand):

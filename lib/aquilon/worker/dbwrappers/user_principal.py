@@ -40,7 +40,10 @@ def get_or_create_user_principal(session, principal, createuser=True,
     if principal is None:
         return None
 
-    m = principal_re.match(principal)
+    if isinstance(principal, bytes):
+        m = principal_re.match(principal.decode())
+    else:
+        m = principal_re.match(principal)
     if not m:
         raise ArgumentError("User principal '%s' is not valid." % principal)
     realm = m.group(2)

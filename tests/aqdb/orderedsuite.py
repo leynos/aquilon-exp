@@ -21,7 +21,7 @@ import os
 from subprocess import Popen
 import unittest
 
-from utils import load_classpath
+from .utils import load_classpath
 load_classpath()
 
 from aquilon.config import Config
@@ -30,7 +30,7 @@ from aquilon.config import Config
 class TestRebuild(unittest.TestCase):
     def testrebuild(self):
         env = {}
-        for (key, value) in os.environ.items():
+        for (key, value) in list(os.environ.items()):
             env[key] = value
         env["AQDCONF"] = Config().baseconfig
 

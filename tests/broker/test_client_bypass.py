@@ -20,14 +20,15 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
 from six.moves.urllib_parse import urlencode, quote  # pylint: disable=F0401
 from six.moves.urllib_request import urlopen  # pylint: disable=F0401
 from six.moves.urllib_error import HTTPError  # pylint: disable=F0401
+import urllib.request
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 
 # This is a bit rough now. There are some error conditions (like syntax checks
@@ -45,16 +46,16 @@ class TestClientBypass(TestBrokerCommand):
                 stream = urlopen(url, data)
             else:
                 arglist = []
-                for key, value in kwargs.items():
+                for key, value in list(kwargs.items()):
                     arglist.append("%s=%s" % (quote(key), quote(value)))
                 if arglist:
                     url += "?" + "&".join(arglist)
-                stream = urlopen(url)
+                stream = urllib.request.urlopen(url)
             status = stream.getcode()
-            output = stream.read()
+            output = stream.read().decode()
         except HTTPError as err:
             status = err.code
-            output = err.read()
+            output = err.read().decode()
 
         self.assertEqual(status, expect_status,
                          "HTTP status code for %s (%s) was %d instead of %d"

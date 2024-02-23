@@ -18,11 +18,11 @@
 
 from collections import defaultdict
 import json
-from eventstest import EventsTestMixin
 from mock_ib_services import ib_expect_add_a
 from mock_ib_services import ib_expect_add_ptr
 from mock_ib_services import ib_expect_del_a
 from mock_ib_services import ib_expect_del_ptr
+from .eventstest import EventsTestMixin
 import re
 
 
@@ -113,11 +113,11 @@ class MachineTestMixin(EventsTestMixin):
 
         iface_params = defaultdict(dict)
         for nic_name in interfaces:
-            for name, value in kwargs.items():
+            for name, value in list(kwargs.items()):
                 if name.startswith(nic_name + "_"):
                     iface_params[nic_name][name[len(nic_name) + 1:]] = value
 
-        for nic_name, params in iface_params.items():
+        for nic_name, params in list(iface_params.items()):
             if nic_name == "eth0":
                 flagstr = r" \[boot, default_route\]"
             elif zebra and nic_name == "eth1":
@@ -169,11 +169,11 @@ class MachineTestMixin(EventsTestMixin):
 
         disk_params = defaultdict(dict)
         for disk_name in disks:
-            for name, value in kwargs.items():
+            for name, value in list(kwargs.items()):
                 if name.startswith(disk_name + "_"):
                     disk_params[disk_name][name[len(disk_name) + 1:]] = value
 
-        for disk_name, params in disk_params.items():
+        for disk_name, params in list(disk_params.items()):
             regexp = r"Disk: %s %d GB %s \(local\).*$\s*" % (
                 disk_name, params["size"], params["controller"])
             if "address" in params:
@@ -235,7 +235,7 @@ class MachineTestMixin(EventsTestMixin):
                     recipe["interfaces"][nic_name][arg_name] = value
 
             # Skip parameters not relevant for add_machine (e.g. IP address)
-            for arg_name in kwargs.keys()[:]:
+            for arg_name in list(kwargs.keys())[:]:
                 if arg_name.startswith(nic_name + "_"):
                     value = kwargs.pop(arg_name)
                     if value is None:
@@ -351,7 +351,7 @@ class MachineTestMixin(EventsTestMixin):
 
         command = ["add_host", "--hostname", hostname,
                    "--machine", machine, "--archetype", archetype]
-        for arg, value in host_kwargs.items():
+        for arg, value in list(host_kwargs.items()):
             if value is None:
                 continue
             command.extend(["--" + arg, value])
@@ -375,7 +375,7 @@ class MachineTestMixin(EventsTestMixin):
         ib_expect_add_ptr(hostname, ip)
         self.noouttest(command)
 
-        for nic_name, params in machdef.interfaces.items():
+        for nic_name, params in list(machdef.interfaces.items()):
             if "ip" not in params:
                 continue
 
@@ -413,7 +413,7 @@ class MachineTestMixin(EventsTestMixin):
                                                       zebra=zebra, **kwargs)
         self.matchoutput(show_out, "Primary Name: %s [%s]" % (hostname, ip),
                          show_cmd)
-        for nic_name, params in machdef.interfaces.items():
+        for nic_name, params in list(machdef.interfaces.items()):
             if "ip" not in params:
                 continue
             self.matchoutput(show_out, "Auxiliary: %s [%s]" % (params["fqdn"],

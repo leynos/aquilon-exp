@@ -175,7 +175,7 @@ class TestCommandDelHost(unittest.TestCase):
             command._validate_buildstatus(dbhost=mock_host,
                                           logger=mock_logger)
         for s in expected:
-            self.assertIn(s, cm.exception.message)
+            self.assertIn(s, str(cm.exception))
 
         # Case 2: not all status protected, status sorted alphabetically.
         mock_host = self.get_mock_host('another_protected')
@@ -190,7 +190,7 @@ class TestCommandDelHost(unittest.TestCase):
             command._validate_buildstatus(dbhost=mock_host,
                                           logger=mock_logger)
         for s in expected:
-            self.assertIn(s, cm.exception.message)
+            self.assertIn(s, str(cm.exception))
 
     def test_validate_buildstatus_validates_allowed_status(
             self):
@@ -232,4 +232,4 @@ class TestCommandDelHost(unittest.TestCase):
         with mock.patch.object(del_host, 'hostname_to_host'):
             with self.assertRaises(ArgumentError) as cm:
                 command.render(*([mock.MagicMock()] * 8))
-        self.assertIn(expected, cm.exception.message)
+        self.assertIn(expected, str(cm.exception))

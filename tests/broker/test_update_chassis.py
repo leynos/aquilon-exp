@@ -23,11 +23,11 @@ from mock_ib_services import ib_expect_add_a
 from mock_ib_services import ib_expect_add_ptr
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
-from chassistest import VerifyChassisMixin
+from .brokertest import TestBrokerCommand
+from .chassistest import VerifyChassisMixin
 
 
 class TestUpdateChassis(TestBrokerCommand, VerifyChassisMixin):

@@ -29,9 +29,9 @@ if __name__ == "__main__":
     import utils
     utils.import_depends()
 
+from .brokertest import TestBrokerCommand
+from .netdevtest import VerifyNetworkDeviceMixin
 from broker.utils import MockHub
-from brokertest import TestBrokerCommand
-from netdevtest import VerifyNetworkDeviceMixin
 
 
 class TestAddNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):

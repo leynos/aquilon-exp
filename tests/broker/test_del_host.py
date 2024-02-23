@@ -22,15 +22,15 @@ from datetime import datetime
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
-from notificationtest import VerifyNotificationsMixin
-from machinetest import MachineTestMixin
 from mock_ib_services import ib_expect_del_a
 from mock_ib_services import ib_expect_del_ptr
-from utils import MockHub
+from .brokertest import TestBrokerCommand
+from .notificationtest import VerifyNotificationsMixin
+from .machinetest import MachineTestMixin
+from .utils import MockHub
 
 
 class TestDelHost(VerifyNotificationsMixin, MachineTestMixin,
@@ -407,7 +407,7 @@ class TestDelHost(VerifyNotificationsMixin, MachineTestMixin,
             if hostname == 'aquilon67.aqd-unittest.ms.com':
                 ip = self.net["ut_bucket2_localvip"].usable[0]
             if hostname == 'aquilon71.aqd-unittest.ms.com' \
-            or hostname == 'aquilon91.aqd-unittest.ms.com':
+                or hostname == 'aquilon91.aqd-unittest.ms.com':
                 self.to_windows(hostname, personality='genericaqd')
             else:
                 self.to_windows(hostname)

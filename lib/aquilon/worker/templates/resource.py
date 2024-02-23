@@ -237,12 +237,12 @@ class PlenaryResource(StructurePlenary):
     def body_auto_start_list(self, lines):
         key = attrgetter("priority", "member.node_index")
         hosts = [str(entry.host)
-                 for entry in sorted(self.dbobj.entries.values(), key=key)]
+                 for entry in sorted(list(self.dbobj.entries.values()), key=key)]
         pan_assign(lines, "members", hosts)
 
     def body_system_list(self, lines):
         hosts = {str(entry.host): entry.priority
-                 for entry in self.dbobj.entries.values()}
+                 for entry in list(self.dbobj.entries.values())}
         pan_assign(lines, "members", hosts)
 
     def body_subscription(self, lines):

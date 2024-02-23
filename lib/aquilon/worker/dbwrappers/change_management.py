@@ -18,10 +18,16 @@
 """ Helper functions for change management """
 
 import collections
-from datetime import datetime
 import json
 import logging
+import re
 import shlex
+from datetime import datetime
+from functools import total_ordering
+
+from sqlalchemy.orm import aliased, contains_eager, load_only
+from sqlalchemy.orm.query import Query
+from sqlalchemy.orm.session import object_session
 
 from aquilon.aqdb.model import (
     AddressAlias,
@@ -86,21 +92,17 @@ from aquilon.aqdb.model import (
     StorageCluster,
     User,
 )
-from aquilon.aqdb.model.host_environment import Development, UAT, QA, Legacy, Production, Infra
+from aquilon.aqdb.model.host_environment import QA, UAT, Development, Infra, Legacy, Production
 from aquilon.config import Config
-from aquilon.exceptions_ import ArgumentError
-from aquilon.exceptions_ import AuthorizationException, InternalError, AquilonError
+from aquilon.exceptions_ import AquilonError, ArgumentError, AuthorizationException, InternalError
 from aquilon.worker.dbwrappers.user_principal import get_or_create_user_principal
 from aquilon.worker.processes import run_command
-from sqlalchemy.orm import contains_eager, load_only, aliased
-from sqlalchemy.orm.session import object_session
-from sqlalchemy.orm.query import Query
+
+cm_logger = logging.getLogger("change_management")
 
 
-cm_logger = logging.getLogger('change_management')
-
-
-class ChangeManagement(object):
+@total_ordering
+class ChangeManagement:
     """
     Class calculate impacted environments with number objects in them
     for impacted target
@@ -114,7 +116,7 @@ class ChangeManagement(object):
     config = Config()
     extra_options = ""
     handlers = {}
-    lifecycle_status_edm_check = ['ready']  # Crash and burn: 'build', 'rebuild',
+    lifecycle_status_edm_check = ["ready"]  # Crash and burn: 'build', 'rebuild',
 
     # 'decommissioned', 'blind', 'install', 'reinstall', 'almostready', 'failed'
 
@@ -125,7 +127,9 @@ class ChangeManagement(object):
         self.justification = justification
         self.reason = reason
         self.logger = logger
-        self.requestid = arguments.get('requestid', '')
+        self.requestid = arguments.get("requestid", "")
+        self.comments = arguments.get("comments")
+        self.args = arguments
 
         self.dict_of_impacted_envs = {}
         self.impacted_objects = {}
@@ -145,8 +149,16 @@ class ChangeManagement(object):
         self.username = dbuser.name
         self.role_name = dbuser.role.name
         # check if user is part of group for which change management can be skipped
-        self.is_user_exempt = self.username in self.config.get("database", 
-                                                               "skip_members")
+        self.is_user_exempt = self.username in self.config.get("database", "skip_members")
+
+    def __eq__(self, other):
+        return self.impacted_objects == other.impacted_objects
+
+    def __ne__(self, other):
+        return self.impacted_objects != other.impacted_objects
+
+    def __lt__(self, other):
+        return self.impacted_objects < other.impacted_objects
 
     def consider(self, target_obj, enforce_validation=False):
         """
@@ -160,17 +172,17 @@ class ChangeManagement(object):
         if enforce_validation:
             self.enforce_validation = enforce_validation
         if not self.check_enabled:
-            self.logger.debug('Change management is disabled. Exiting validate.')
+            self.logger.debug("Change management is disabled. Exiting validate.")
             return
-        self.logger.debug('Determine if the input object is a queryset or a single object')
+        self.logger.debug("Determine if the input object is a queryset or a single object")
         if not target_obj:
-            self.logger.debug('Given objects is None. Nothing to validate.')
+            self.logger.debug("Given objects is None. Nothing to validate.")
             return
         # If given object is query use it for validation
         # to optimize validation of large amount of data
         if isinstance(target_obj, Query):
             if target_obj.count() == 0:
-                self.logger.debug('No impacted targets exiting')
+                self.logger.debug("No impacted targets exiting")
                 return
             self._call_handler_method(target_obj.first(), queryset=target_obj)
         # If given Query is evaluated with .all() it is an instance of collections.Iterable
@@ -180,26 +192,51 @@ class ChangeManagement(object):
                 self._call_handler_method(obj)
         else:
             self._call_handler_method(target_obj)
-        self.logger.debug('Call aqd_checkedm with metadata')
+        self.logger.debug("Call aqd_checkedm with metadata")
 
     def _get_in_scope_objects_as_text(self):
         if not self.impacted_objects:
-            return '\n\t - no affected objects in-scope for change ' \
-                   'management found -'
-        in_scope_list = '\n'.join('\t{}'.format(o)
-                                  for k in sorted(self.impacted_objects)
-                                  for o in sorted(self.impacted_objects[k]))
+            return "\n\t - no affected objects in-scope for change management found -"
+        in_scope_list = "\n".join(f"\t{o}" for k in (self.impacted_objects) for o in (self.impacted_objects[k]))
         return in_scope_list
 
     def _call_handler_method(self, obj, queryset=None):
         env_calculate_method = self.handlers.get(obj.__class__, None)
         if not env_calculate_method:
-            raise InternalError('Change management calculate impact fail. Target class unknown.')
-        self.logger.debug('Calculate impacted environments and target status')
+            raise InternalError("Change management calculate impact fail. Target class unknown.")
+        self.logger.debug("Calculate impacted environments and target status")
         if queryset:
             env_calculate_method(self, queryset)
         else:
             env_calculate_method(self, obj)
+
+    def _from_obo_service_id(self):
+        """
+        Check if commmand was run using AQ Selfservice API.
+
+        If yes, check if it has the needed reason, parse it and use the username of the person running the lone
+        instead of the proid running the Selfservice API.
+        """
+
+        permitted_ids = self.config.get("change_management", "obo_service_ids", fallback="")
+
+        if not permitted_ids or self.username not in permitted_ids.lower().replace(" ", "").split(","):
+            # If user role is not permitted, quit
+            return
+        # should look like: txid:uuidformat obo:username
+        reason_pat = re.compile(r"^txid:([a-zA-Z0-9\-]+)\sobo:([a-zA-Z0-9]+)$")
+
+        if self.command == "add_reboot_intervention" and self.comments and reason_pat.match(self.comments):
+            # For reboot_intervention, AQ Selfservice uses "comment" field for obo instead of reason.
+            self.reason = self.comments
+        if not self.reason or not reason_pat.match(self.reason):
+            # If reason is empty, no need to continue
+            return
+
+        match = reason_pat.match(self.reason)
+        txid, self.username = match.groups()
+        self.logger.info(f"Running {self.command} using Selfservice as {self.username} with transaction id {txid}.")
+
 
     def validate(self):
         """Perform change management validation, or return in-scope objects.
@@ -216,11 +253,12 @@ class ChangeManagement(object):
         """
         if self.cm_check:
             raise ArgumentError(
-                'aborting upon user request (option --cm_check used).  Please '
-                'find the list of in-scope objects you have requested below:\n'
-                '{}\n'.format(self._get_in_scope_objects_as_text()))
+                "aborting upon user request (option --cm_check used).  Please "
+                "find the list of in-scope objects you have requested below:\n"
+                f"{self._get_in_scope_objects_as_text()}\n"
+            )
         if not self.check_enabled:
-            self.logger.debug('Change management is disabled. Exiting validate.')
+            self.logger.debug("Change management is disabled. Exiting validate.")
             return
 
         if self.is_user_exempt:
@@ -228,19 +266,21 @@ class ChangeManagement(object):
                               '"Reason": Proid is exempted from change management controls.')
             return
 
-        if self.justification and 'emergency' in self.justification \
-                and self.reason:
+        if self.justification and "emergency" in self.justification and self.reason:
             if self.role_name in self.allow_emergency_user_roles:
-                self.logger.client_info('Approval Warning: Executing an emergency change '
-                                  'without a justification, EDM has not be called.')
+                self.logger.client_info(
+                    "Approval Warning: Executing an emergency change without a justification, EDM has not be called."
+                )
                 return
             else:
-                raise AuthorizationException('User role is not allowed to execute Emergency '
-                                    'changes.')
+                raise AuthorizationException("User role is not allowed to execute Emergency changes.")
+
+        # Check if command is running using AQ Selfservice API
+        self._from_obo_service_id()
 
         # Clean final impacted env list
-        self.logger.debug('Prepare impacted envs to call EDM')
-        for env, build_status_list in self.dict_of_impacted_envs.items():
+        self.logger.debug("Prepare impacted envs to call EDM")
+        for env, build_status_list in list(self.dict_of_impacted_envs.items()):
             self.dict_of_impacted_envs[env] = list(set(build_status_list))
         # Prepare aqd_checkedm input dict
         cm_extra_options = shlex.split(self.extra_options)
@@ -259,8 +299,7 @@ class ChangeManagement(object):
         try:
             out_dict = json.loads(out)
         except Exception as err:
-            raise AquilonError("Invalid response received for the "
-                               "change management check. {}".format(str(err)))
+            raise AquilonError(f"Invalid response received for the change management check. {err}")
 
         # Log Change Management validation results
         self.log_change_management_validation(metadata, cm_extra_options, out_dict)
@@ -268,35 +307,35 @@ class ChangeManagement(object):
         self.logger.info("Change Management validation "
                          "finished. Status: {}. {}".format(out_dict.get("Status"),
                                                            out_dict.get("Reason")))
-        if out_dict.get("Status") == 'Permitted':
+        if out_dict.get("Status") == "Permitted":
             self.logger.client_info("Approval Warning: "
                                     "{}".format(out_dict.get("Reason")))
-        elif out_dict.get("Status") != 'Approved':
+        elif out_dict.get("Status") != "Approved":
             raise AuthorizationException(out_dict.get("Reason"))
 
     def log_change_management_validation(self, metadata, cm_extra_options, out_dict):
-        if '--edm-instance' in cm_extra_options:
-            edm_ins = cm_extra_options[cm_extra_options.index('--edm-instance') + 1]
+        if "--edm-instance" in cm_extra_options:
+            edm_ins = cm_extra_options[cm_extra_options.index("--edm-instance") + 1]
         else:
-            edm_ins = 'prod'
-        if '--mode' in cm_extra_options:
-            mode = cm_extra_options[cm_extra_options.index('--mode') + 1]
+            edm_ins = "prod"
+        if "--mode" in cm_extra_options:
+            mode = cm_extra_options[cm_extra_options.index("--mode") + 1]
         else:
-            mode = 'enforce'
-        if '--disable_edm' in cm_extra_options:
-            disable_edm = 'Yes'
+            mode = "enforce"
+        if "--disable_edm" in cm_extra_options:
+            disable_edm = "Yes"
         else:
-            disable_edm = 'No'
+            disable_edm = "No"
         log_dict = {"edm_instance": edm_ins, "mode": mode, "disable_edm": disable_edm, "request_id": str(self.requestid)}
-        date_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S +0000')
-        log_dict['timestamp'] = date_time
+        date_time = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S +0000")
+        log_dict["timestamp"] = date_time
         log_dict.update(metadata)
         log_dict.update(out_dict)
-        if log_dict['impacted_envs'].get('prod') and 'ready' in log_dict['impacted_envs'].get('prod'):
-            log_dict['prod_ready_env_impact'] = 'Yes'
+        if log_dict["impacted_envs"].get("prod") and "ready" in log_dict["impacted_envs"].get("prod"):
+            log_dict["prod_ready_env_impact"] = "Yes"
         else:
-            log_dict['prod_ready_env_impact'] = 'No'
-        log_dict['impacted_eonids'] = list(self.impacted_eonids)
+            log_dict["prod_ready_env_impact"] = "No"
+        log_dict["impacted_eonids"] = list(self.impacted_eonids)
         cm_logger.info(json.dumps(log_dict))
 
     def validate_default(self, obj):
@@ -326,9 +365,9 @@ class ChangeManagement(object):
             q = q.filter(Host.personality_stage.has(
                 PersonalityStage.personality == personality))
             q = q.join(HostLifecycle)
-        q = q.options(contains_eager('status'))
+        q = q.options(contains_eager("status"))
         q = q.join(PersonalityStage, Personality, HostEnvironment)
-        q = q.options(contains_eager('personality_stage.personality.host_environment'))
+        q = q.options(contains_eager("personality_stage.personality.host_environment"))
 
         if isinstance(q.first(), Cluster):
             for cluster in q.all():
@@ -347,9 +386,9 @@ class ChangeManagement(object):
             q = session.query(Host)
             q = q.filter_by(personality_stage=personality_stage)
             q = q.join(HostLifecycle)
-        q = q.options(contains_eager('status'))
+        q = q.options(contains_eager("status"))
         q = q.join(PersonalityStage, Personality, HostEnvironment)
-        q = q.options(contains_eager('personality_stage.personality.host_environment'))
+        q = q.options(contains_eager("personality_stage.personality.host_environment"))
 
         if isinstance(q.first(), Cluster):
             for cluster in q.all():
@@ -373,7 +412,7 @@ class ChangeManagement(object):
         # Also validate cluster hosts
         for host in cluster.hosts:
             self.validate_host(host)
-        if hasattr(cluster, 'members'):
+        if hasattr(cluster, "members"):
             for cluster_member in cluster.members:
                 self.validate_cluster(cluster_member)
                 # To do: Do we want to check if cluster is assigned
@@ -404,7 +443,7 @@ class ChangeManagement(object):
             if hwentities_or_hwentity.host:
                 self.validate_host(hwentities_or_hwentity.host)
         else:
-            hwentities_or_hwentity = hwentities_or_hwentity.join(Host).options(contains_eager('host'))
+            hwentities_or_hwentity = hwentities_or_hwentity.join(Host).options(contains_eager("host"))
             for hwentity in hwentities_or_hwentity.all():
                 self.validate_host(hwentity.host)
 
@@ -430,20 +469,22 @@ class ChangeManagement(object):
                     Location.id.in_(chunk_loc_ids))
 
             q = q.reset_joinpoint()
-            q = q.join(HostLifecycle).options(contains_eager('status'))
-            q = q.join(PersonalityStage, Personality).join(
-                HostEnvironment).options(
-                    contains_eager(
-                        'personality_stage.personality.host_environment'))
+            q = q.join(HostLifecycle).options(contains_eager("status"))
+            q = (
+                q.join(PersonalityStage, Personality)
+                .join(HostEnvironment)
+                .options(contains_eager("personality_stage.personality.host_environment"))
+            )
             for host in q.all():
                 self.validate_host(host)
 
             q1 = q1.reset_joinpoint()
-            q1 = q1.join(ClusterLifecycle).options(contains_eager('status'))
-            q1 = q1.join(PersonalityStage, Personality).join(
-                HostEnvironment).options(
-                    contains_eager(
-                        'personality_stage.personality.host_environment'))
+            q1 = q1.join(ClusterLifecycle).options(contains_eager("status"))
+            q1 = (
+                q1.join(PersonalityStage, Personality)
+                .join(HostEnvironment)
+                .options(contains_eager("personality_stage.personality.host_environment"))
+            )
             for cluster in q1.all():
                 self.validate_cluster(cluster)
 
@@ -520,18 +561,24 @@ class ChangeManagement(object):
         # Validate clusters
         for q in [q2, q5]:
             q = q.reset_joinpoint()
-            q = q.join(ClusterLifecycle).options(contains_eager('status'))
-            q = q.join(PersonalityStage, Personality).join(HostEnvironment).options(
-                contains_eager('personality_stage.personality.host_environment'))
+            q = q.join(ClusterLifecycle).options(contains_eager("status"))
+            q = (
+                q.join(PersonalityStage, Personality)
+                .join(HostEnvironment)
+                .options(contains_eager("personality_stage.personality.host_environment"))
+            )
             for cluster in q.all():
                 self.validate_cluster(cluster)
 
         # Validate hosts
         for q in [q3, q4, q6]:
             q = q.reset_joinpoint()
-            q = q.join(HostLifecycle).options(contains_eager('status'))
-            q = q.join(PersonalityStage, Personality).join(HostEnvironment).options(
-                contains_eager('personality_stage.personality.host_environment'))
+            q = q.join(HostLifecycle).options(contains_eager("status"))
+            q = (
+                q.join(PersonalityStage, Personality)
+                .join(HostEnvironment)
+                .options(contains_eager("personality_stage.personality.host_environment"))
+            )
             for host in q.all():
                 self.validate_host(host)
 
@@ -539,7 +586,7 @@ class ChangeManagement(object):
         # Check full depth of fqdn aliases or address_alias!
         def dig_to_real_target(dbfqdn):
             fqdns_to_test = [dbfqdn]
-            fqdns_tested = list()
+            fqdns_tested = []
             final_target = dbfqdn
             while fqdns_to_test:
                 to_test_now = []
@@ -600,8 +647,12 @@ class ChangeManagement(object):
         # Validate clusters
         for q in [q2, q5]:
             q = q.reset_joinpoint()
-            q = q.join(ClusterLifecycle).options(contains_eager('status'))
-            q = q.join(PersonalityStage,Personality).join(HostEnvironment).options(contains_eager('personality_stage.personality.host_environment'))
+            q = q.join(ClusterLifecycle).options(contains_eager("status"))
+            q = (
+                q.join(PersonalityStage, Personality)
+                .join(HostEnvironment)
+                .options(contains_eager("personality_stage.personality.host_environment"))
+            )
             for cluster in q.all():
                 self.validate_cluster(cluster)
 
@@ -609,8 +660,12 @@ class ChangeManagement(object):
         for q in [q3, q4, q6]:
 
             q = q.reset_joinpoint()
-            q = q.join(HostLifecycle).options(contains_eager('status'))
-            q = q.join(PersonalityStage,Personality).join(HostEnvironment).options(contains_eager('personality_stage.personality.host_environment'))
+            q = q.join(HostLifecycle).options(contains_eager("status"))
+            q = (
+                q.join(PersonalityStage, Personality)
+                .join(HostEnvironment)
+                .options(contains_eager("personality_stage.personality.host_environment"))
+            )
             for host in q.all():
                 self.validate_host(host)
 
@@ -650,7 +705,7 @@ class ChangeManagement(object):
             resource_holder: a single resource_holder object
         Returns: None
         """
-        if getattr(resource_holder, 'host_environment', None):
+        if getattr(resource_holder, "host_environment", None):
             self.validate_host_environment(resource_holder.host_environment)
             return
 
@@ -663,7 +718,7 @@ class ChangeManagement(object):
             self.validate_prod_personality(dbobj)
 
     def validate_host_environment(self, host_environment):
-        if host_environment.name == 'prod':
+        if host_environment.name == "prod":
             self.enforce_validation = True
 
     def validate_prod_archetype(self, archtype):
@@ -674,11 +729,11 @@ class ChangeManagement(object):
         else:
             q = session.query(Host)
             q = q.join(HostLifecycle)
-        q = q.options(contains_eager('status'))
+        q = q.options(contains_eager("status"))
         q = q.join(PersonalityStage, Personality)
         q = q.filter_by(archetype=archtype)
         q = q.join(HostEnvironment)
-        q = q.options(contains_eager('personality_stage.personality.host_environment'))
+        q = q.options(contains_eager("personality_stage.personality.host_environment"))
 
         if isinstance(q.first(), Cluster):
             for cluster in q.all():
@@ -693,9 +748,9 @@ class ChangeManagement(object):
         q = session.query(Host)
         q = q.filter_by(operating_system=ostype)
         q = q.join(HostLifecycle)
-        q = q.options(contains_eager('status'))
+        q = q.options(contains_eager("status"))
         q = q.join(PersonalityStage, Personality, HostEnvironment)
-        q = q.options(contains_eager('personality_stage.personality.host_environment'))
+        q = q.options(contains_eager("personality_stage.personality.host_environment"))
 
         for host in q.all():
             self.validate_host(host)
@@ -706,9 +761,9 @@ class ChangeManagement(object):
         q1 = session.query(Cluster)
         q1 = q1.filter(Cluster.services_used.contains(service_instance))
         q1 = q1.join(ClusterLifecycle)
-        q1 = q1.options(contains_eager('status'))
+        q1 = q1.options(contains_eager("status"))
         q1 = q1.join(PersonalityStage, Personality, HostEnvironment)
-        q1 = q1.options(contains_eager('personality_stage.personality.host_environment'))
+        q1 = q1.options(contains_eager("personality_stage.personality.host_environment"))
 
         for cluster in q1.all():
             self.validate_cluster(cluster)
@@ -716,9 +771,9 @@ class ChangeManagement(object):
         q2 = session.query(Host)
         q2 = q2.filter(Host.services_used.contains(service_instance))
         q2 = q2.join(HostLifecycle)
-        q2 = q2.options(contains_eager('status'))
+        q2 = q2.options(contains_eager("status"))
         q2 = q2.join(PersonalityStage, Personality, HostEnvironment)
-        q2 = q2.options(contains_eager('personality_stage.personality.host_environment'))
+        q2 = q2.options(contains_eager("personality_stage.personality.host_environment"))
 
         for host in q2.all():
             self.validate_host(host)
@@ -728,12 +783,12 @@ class ChangeManagement(object):
 
         q1 = session.query(Cluster)
         q1 = q1.join(ClusterLifecycle)
-        q1 = q1.options(contains_eager('status'))
+        q1 = q1.options(contains_eager("status"))
         q1 = q1.join(PersonalityStage)
         q1 = q1.join(PersonalityStage.features)
         q1 = q1.filter_by(feature=feature)
         q1 = q1.join(Personality, HostEnvironment)
-        q1 = q1.options(contains_eager('personality_stage.personality.host_environment'))
+        q1 = q1.options(contains_eager("personality_stage.personality.host_environment"))
 
         for cluster in q1.all():
             self.validate_cluster(cluster)
@@ -743,16 +798,15 @@ class ChangeManagement(object):
         q2 = q2.join(PersonalityStage.features)
         q2 = q2.filter_by(feature=feature)
         q2 = q2.join(Personality, HostEnvironment)
-        q2 = q2.options(contains_eager('personality_stage.personality.host_environment'))
+        q2 = q2.options(contains_eager("personality_stage.personality.host_environment"))
 
         for host in q2.all():
             self.validate_host(host)
 
     def _store_impacted_object_information(self, an_object):
         # noinspection PyStringFormat
-        self.impacted_objects.setdefault(
-            '{0:c}'.format(an_object), set()).add('{0:l}'.format(an_object))
-        if hasattr(an_object, 'effective_owner_grn'):
+        self.impacted_objects.setdefault(f"{an_object:c}", set()).add(f"{an_object:l}")
+        if hasattr(an_object, "effective_owner_grn"):
             eonid = an_object.effective_owner_grn.eon_id
             self.impacted_eonids.add(eonid)
 

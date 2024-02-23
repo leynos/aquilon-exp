@@ -46,7 +46,7 @@ config = Config()
 
 
 def main():
-    print "Calculating sandbox base commits. This may take around 10 minutes."
+    print("Calculating sandbox base commits. This may take around 10 minutes.")
 
     logging.basicConfig(level=logging.WARNING)
     kingdir = config.get("broker", "kingdir")
@@ -90,8 +90,8 @@ def main():
             if min_ahead == 0:
                 break
 
-        print "{0: <40}: {1.name} (ahead {2})".format(sandbox, base_domain,
-                                                      min_ahead)
+        print("{0: <40}: {1.name} (ahead {2})".format(sandbox, base_domain,
+                                                      min_ahead))
 
         base_commits[sandbox.name] = base_commit
 
@@ -106,18 +106,18 @@ def main():
             query = text("""
         ALTER TABLE sandbox ADD base_commit CHARACTER VARYING (40)
 """)
-        print "\nExecuting: %s" % query
+        print("\nExecuting: %s" % query)
         session.execute(query)
         session.commit()
     except DatabaseError:
         # Allow the script to be re-run by not failing if the column already
         # exists. If the column does not exist, then trying to update it will
         # fail anyway.
-        print """
+        print("""
 WARNING: Adding the sandbox.base_commit column has failed. If you're running
 this script for the second time, then that's likely OK, otherwise you should
 verify and correct the schema manually.
-"""
+""")
         session.rollback()
 
     for sandbox in q:
@@ -134,15 +134,15 @@ verify and correct the schema manually.
             query = text("""
         ALTER TABLE sandbox ALTER COLUMN base_commit SET NOT NULL
 """)
-        print "\nExecuting: %s" % query
+        print("\nExecuting: %s" % query)
         session.execute(query)
         session.commit()
     except DatabaseError:
-        print """
+        print("""
 WARNING: Enabling the NOT NULL constraint for sandbox.base_commit column has
 failed. If you're running this script for the second time, then that's likely
 OK, otherwise you should verify and correct the schema manually.
-"""
+""")
         session.rollback()
 
 if __name__ == '__main__':

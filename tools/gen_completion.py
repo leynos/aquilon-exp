@@ -23,15 +23,19 @@ import os
 import sys
 import optparse
 import xml.etree.ElementTree as ET
+import pickle
+
 
 try:
     import ms.version
 except ImportError:
     pass
 else:
-    ms.version.addpkg('Cheetah', '2.4.4')
+    ms.version.addpkg('Cheetah3', '3.2.5-py37')
+    ms.version.addpkg('dill', '0.3.3-ms1')
 
 from Cheetah.Template import Template
+import dill
 
 usage = """%prog [options] template1 [template2 ...]
    or: %prog [options] --all"""
@@ -71,11 +75,13 @@ if __name__ == "__main__":
 
     tree = ET.parse(options.input_filename)
 
+    commands = filter(lambda c: "name" in c.attrib and c.attrib["name"] != "*",
+                      tree.iter("command"))
+
     for template_name in args:
         template = Template(file=os.path.join(options.template_dir,
                                               template_name + ".tmpl"))
         template.tree = tree
-
         output_filename = os.path.join(options.output_dir,
                                        "aq_" + template_name + "_completion.sh")
         output_file = open(output_filename, "w")

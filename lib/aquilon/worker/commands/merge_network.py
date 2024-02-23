@@ -37,7 +37,7 @@ class CommandMergeNetwork(BrokerCommand):
                network_environment, exporter, user, justification, reason, logger, **arguments):
         if netmask:
             # There must me a faster way, but this is the easy one
-            net = IPv4Network(u"127.0.0.0/%s" % netmask)
+            net = IPv4Network("127.0.0.0/%s" % netmask)
             prefixlen = net.prefixlen
 
         dbnet_env = NetworkEnvironment.get_unique_or_default(session,

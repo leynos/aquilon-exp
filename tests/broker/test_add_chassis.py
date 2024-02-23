@@ -26,12 +26,12 @@ from mock_ib_services import ib_expect_del_ptr
 from mock_ib_services import ib_expect_update_a
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
+from .brokertest import TestBrokerCommand
+from .chassistest import VerifyChassisMixin
 from broker.utils import MockHub
-from brokertest import TestBrokerCommand
-from chassistest import VerifyChassisMixin
 
 
 class TestAddChassis(TestBrokerCommand, VerifyChassisMixin):

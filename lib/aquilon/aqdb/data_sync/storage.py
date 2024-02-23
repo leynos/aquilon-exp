@@ -21,7 +21,7 @@ from operator import itemgetter
 import re
 
 try:
-    import cdb
+    import cdblib.compat as cdb
 except ImportError:
     _has_cdb = False
 else:
@@ -74,7 +74,6 @@ class StormapParser(object):
             if not header:
                 continue
 
-            header = header.decode("ascii")
             columns = {name: idx for idx, name in enumerate(header.split('|'))}
             self.header_defs.append(DataBlock(start_index=start_index,
                                               columns=columns))
@@ -94,13 +93,13 @@ class StormapParser(object):
             # Look up the name in the index...
             row_key = self.cdb_file[b"I:pshare:" + name.encode("ascii")]
             # ... and the row containing the data
-            row = self.cdb_file[row_key].decode("ascii")
+            row = self.cdb_file[row_key]
         except KeyError:
             return ShareInfo(server=None, mount=None)
 
         # The key has the line number embedded, which we need to extract to be
         # able to figure out which header defines the structure of this row
-        m = self.row_key_re.match(row_key.decode("ascii"))
+        m = self.row_key_re.match(row_key)
         if not m:
             return ShareInfo(server=None, mount=None)
         row_index = int(m.group(1))

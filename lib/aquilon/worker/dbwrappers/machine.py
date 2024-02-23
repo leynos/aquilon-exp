@@ -31,7 +31,7 @@ def validate_recipe(config, recipe):
 
     # Type conversions not covered by the schema
     if "interfaces" in recipe:
-        for iface, params in recipe["interfaces"].items():
+        for iface, params in list(recipe["interfaces"].items()):
             if "mac" in params:
                 params["mac"] = force_mac("MAC address of " + iface,
                                           params["mac"])
@@ -124,11 +124,11 @@ def create_machine(config, session, logger, machine, dblocation, dbmodel,
             vmholder.holder_object.validate()
 
     if "disks" in recipe:
-        for disk_name, disk_params in recipe["disks"].items():
+        for disk_name, disk_params in list(recipe["disks"].items()):
             add_disk(dbmachine, disk_name, **disk_params)
 
     if "interfaces" in recipe:
-        for iface_name, iface_params in recipe["interfaces"].items():
+        for iface_name, iface_params in list(recipe["interfaces"].items()):
             # Due to locking order, automac handling must come before autopg
             add_interface(config, session, logger, dbmachine, iface_name,
                           **iface_params)

@@ -20,13 +20,13 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
-from eventstest import EventsTestMixin
 from mock_ib_services import ib_expect_del_a
 from mock_ib_services import ib_expect_del_ptr
+from .brokertest import TestBrokerCommand
+from .eventstest import EventsTestMixin
 
 
 class TestDelVirtualHardware(EventsTestMixin, TestBrokerCommand):

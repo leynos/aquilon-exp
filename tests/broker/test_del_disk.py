@@ -20,11 +20,11 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
-from eventstest import EventsTestMixin
+from .brokertest import TestBrokerCommand
+from .eventstest import EventsTestMixin
 
 
 class TestDelDisk(EventsTestMixin, TestBrokerCommand):

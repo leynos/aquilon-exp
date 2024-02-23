@@ -35,4 +35,18 @@ class ArchetypeFormatter(ObjectFormatter):
                                 skeleton.required_services,
                                 indirect_attrs=False)
 
+    def format_json(self, archetype, embedded=True, indirect_attrs=True):
+        details = {
+            "name": archetype.name,
+            "compileable": archetype.is_compileable,
+        }
+        if archetype.cluster_type:
+            details["cluster_type"] = archetype.cluster_type
+        if indirect_attrs:
+            details["required_services"] = []
+            for srv in archetype.required_services:
+                details["required_services"].append(srv.name)
+
+        return details
+
 ObjectFormatter.handlers[Archetype] = ArchetypeFormatter()

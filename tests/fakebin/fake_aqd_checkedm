@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/ms/dist/python/PROJ/core/3.7.9-1/exec/bin/python
 # -*- cpy-indent-level: 4; indent-tabs-mode: nil -*-
 # ex: set expandtab softtabstop=4 shiftwidth=4:
 #
@@ -143,11 +143,11 @@ def main(args):
     except ChangeManagementError as e:
         if cmd.mode.value == CMStrategy.Warn:
             stdout_and_exit(status='Permitted',
-                            msg="{0} {1}".format(str(e), PERMITTED_RESPONSE_MESSAGES["warn_general_fail"]))
+                            msg="{} {}".format(str(e), PERMITTED_RESPONSE_MESSAGES["warn_general_fail"]))
         else:
             stdout_and_exit(status='Failed', msg=str(e))
     except Exception as e:
-        stdout_and_exit(status='Failed', msg="Unexpected failure: {}".format(str(e)))
+        stdout_and_exit(status='Failed', msg=f"Unexpected failure: {e}")
 
 
 def create_parser():
@@ -174,7 +174,7 @@ class ChangeManagementError(Exception):
     pass
 
 
-class CMStrategy(object):
+class CMStrategy:
     """ Enumerations for change-management strategies """
     Warn, Enforce = range(2)
 
@@ -185,19 +185,19 @@ class CMStrategy(object):
         elif self.cmmode == ENFORCE:
             self.value = CMStrategy.Enforce
         else:
-            raise ChangeManagementError("{0} {1}.".format(EXCEPTION_MESSAGES["unknown_mode"], self.cmmode))
+            raise ChangeManagementError("{} {}.".format(EXCEPTION_MESSAGES["unknown_mode"], self.cmmode))
 
     def __str__(self):
         if self.value:
             return self.cmmode
         else:
-            return "impossible-{0}".format(self.value)
+            return f"impossible-{self.value}"
 
     def __eq__(self, v):
         return self.value == v.value
 
 
-class Justification(object):
+class Justification:
     """Parse justification and reason"""
     def __init__(self, justification):
         if not justification:
@@ -254,16 +254,16 @@ class Justification(object):
     def __str__(self):
         ret = []
         if self.tcm:
-            ret.append("tcm={}".format(self.tcm))
+            ret.append(f"tcm={self.tcm}")
         if self.sn:
-            ret.append("sn={}".format(self.sn))
+            ret.append(f"sn={self.sn}")
         if self.emergency:
             ret.append("emergency")
 
         return ",".join(ret)
 
 
-class ChangeManagementDecission(object):
+class ChangeManagementDecission:
     """
     Class makes decission if EDM should be called
     based on target object environment,
@@ -300,7 +300,7 @@ class ChangeManagementDecission(object):
         environment_dict = self.metadata.get("impacted_envs", {})
         for key in environment_dict.keys():
             if key not in self.environment_ranking.keys():
-                raise ChangeManagementError("{0} '{1}'.".format(EXCEPTION_MESSAGES["unknown_env"], key))
+                raise ChangeManagementError("{} '{}'.".format(EXCEPTION_MESSAGES["unknown_env"], key))
         interesting_envs_final = []
         for env, lifecycle_status_list in environment_dict.items():
             if any([status in lifecycle_status_list for status in self.lifecycle_status_edm_check]):

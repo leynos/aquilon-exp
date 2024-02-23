@@ -31,6 +31,37 @@ if LIBDIR not in sys.path:
 import aquilon.aqdb.depends
 from aquilon.config import Config, lookup_file_path
 
+try:
+    import ms.version
+except ImportError:
+    pass
+else:
+    import ms.modulecmd
+
+    ms.modulecmd.load('fsf/libtool/1.5.18')
+    # ms.modulecmd.load('fsf/graphviz/2.38.0')
+    ms.version.addpkg("graphviz", "0.14.2")
+
+    # ms.version.addpkg('pyparsing', '2.3.1')  # pydot relies on pyparsing
+    ms.version.addpkg("pyparsing", "2.4.7")
+    ms.version.addpkg('pydot', '1.4.1')
+    ms.version.addpkg('pygraphviz', '1.5-py37')
+    ms.version.addpkg('pydotplus', '2.0.2')
+    ms.version.addpkg('sklearn', '0.24.2-py37')
+    ms.version.addpkg("numpy", "1.19.3")
+    ms.version.addpkg("scipy", "1.5.2")
+    ms.version.addpkg("joblib", "0.16.0")
+    ms.version.addpkg("setuptools", "45.0.0")
+
+try:
+    import os
+    import ms.modulecmd
+except ImportError:
+    pass
+else:
+    os.environ["PATH"] += os.pathsep+' /ms/dist/fsf/PROJ/graphviz/2.38.0/bin'
+    # os.environ['PATH'] = os.environ['PATH'] + ';' + '/ms/dist/fsf/PROJ/graphviz/2.38.0/bin'
+
 import argparse
 parser = argparse.ArgumentParser(description='generate schema graphs')
 parser.add_argument('--outputdir', '-o', dest='dir', default='.',
@@ -52,7 +83,7 @@ Base.metadata.create_all()
 
 from aquilon.aqdb.utils import schema2dot
 
-
 dot = schema2dot.create_schema_graph(metadata=Base.metadata)
 dot.write(os.path.join(opts.dir, "%s.dot" % opts.prefix))
-dot.write_png(os.path.join(opts.dir, "%s.png" % opts.prefix))
+# dot.write_png(os.path.join(opts.dir, "%s.png" % opts.prefix))
+

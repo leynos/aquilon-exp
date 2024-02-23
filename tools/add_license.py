@@ -147,7 +147,7 @@ def fix_file(filepath):
 
 
 def fix_recursive(start_dir):
-    print >>sys.stderr, "Processing %s" % start_dir
+    print("Processing %s" % start_dir, file=sys.stderr)
     for dirpath, dirnames, filenames in os.walk(start_dir):
         if '.git' in dirnames:
             dirnames.remove('.git')
@@ -160,8 +160,7 @@ def fix_recursive(start_dir):
 
 def main(args):
     if len(args) > 2:
-        print >>sys.stderr, \
-            "Takes only one argument, the root directory to process."
+        print("Takes only one argument, the root directory to process.", file=sys.stderr)
         sys.exit(1)
     if len(args) < 2:
         start_dir = os.path.join(os.path.dirname(os.path.realpath(args[0])),

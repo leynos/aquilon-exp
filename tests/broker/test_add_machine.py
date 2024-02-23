@@ -20,16 +20,16 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
+from .brokertest import TestBrokerCommand
+from .machinetest import MachineTestMixin
+from .networktest import DummyIP
 from broker.utils import MockHub
-from brokertest import TestBrokerCommand
-from machinetest import MachineTestMixin
 from mock_ib_services import ib_expect_add_ptr
 from mock_ib_services import ib_expect_del_ptr
 from mock_ib_services import ib_expect_update_a
-from networktest import DummyIP
 
 
 class TestAddMachine(MachineTestMixin, TestBrokerCommand):

@@ -20,10 +20,10 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 default_vlans = {
     701: {"name": "storage-v701",
@@ -51,7 +51,7 @@ default_vlans = {
 
 class TestAddVlan(TestBrokerCommand):
     def test_100_add_default_vlans(self):
-        for vlan_id, params in default_vlans.items():
+        for vlan_id, params in list(default_vlans.items()):
             self.noouttest(["add_vlan", "--vlan", vlan_id,
                             "--name", params["name"],
                             "--vlan_type", params["type"]])

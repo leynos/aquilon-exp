@@ -33,7 +33,11 @@ class AqStr(sqlalchemy.types.TypeDecorator):
         return str(value).strip().lower()
 
     def process_bind_param(self, value, engine):  # pylint: disable=W0613
+        if isinstance(value, bytes):
+            value = value.decode()
+
         value = self.normalize(value)
+
         if value is None:
             return value
         if len(value) > self.impl.length:

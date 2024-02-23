@@ -182,7 +182,7 @@ class Exporter(object):
         Publish any queued notifications
         """
         self._process_delayed()
-        for handler, actions in self._actions.items():
+        for handler, actions in list(self._actions.items()):
             notificatons = actions['notifications']
             try:
                 handler.publish(notificatons, **self._kwargs)

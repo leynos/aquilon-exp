@@ -73,7 +73,7 @@ def add_interfaces(session):
         count += 1
 
     session.flush()
-    print "Added %d interfaces" % count
+    print("Added %d interfaces" % count)
 
 def add_addresses(session):
     """ Add an AddressAssignment record for every PrimaryNameAssociation """
@@ -91,19 +91,19 @@ def add_addresses(session):
     for pna in pnas:
         hw = pna.hardware_entity
         if len(hw.interfaces) != 1:
-            print "{0} has an unexpected number of interfaces, skipping: " \
-                    "{1}".format(hw, len(hw.interfaces))
+            print("{0} has an unexpected number of interfaces, skipping: " \
+                    "{1}".format(hw, len(hw.interfaces)))
             continue
         iface = hw.interfaces[0]
         if len(iface.vlans[0].addresses):
-            print "{0} already has addresses, skipping".format(iface)
+            print("{0} already has addresses, skipping".format(iface))
             continue
         #print "Adding AddressAssignment record for {0:l}".format(hw)
         iface.vlans[0].addresses.append(pna.dns_record.ip)
         count += 1
 
     session.flush()
-    print "Added %d AddressAssignment records" % count
+    print("Added %d AddressAssignment records" % count)
 
 def main():
     from aquilon.config import Config

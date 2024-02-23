@@ -19,14 +19,14 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
 from mock_ib_services import ib_expect_add_a
 from mock_ib_services import ib_expect_add_ptr
 from mock_ib_services import ib_expect_del_a
 from mock_ib_services import ib_expect_del_ptr
+from .brokertest import TestBrokerCommand
 
 
 class TestNetworkConstraints(TestBrokerCommand):
@@ -103,18 +103,20 @@ class TestNetworkConstraints(TestBrokerCommand):
     def test_200_show_bunker_violations(self):
         command = ["show_bunker_violations"]
         out = self.commandtest(command)
-        self.searchoutput(out,
-                          r"Warning: Rack ut8 is not part of a bunker, but it "
-                          r"uses bunkerized networks:\s*"
-                          r"BUCKET1: server9\.aqd-unittest\.ms\.com/eth0\s*"
-                          r"BUCKET2: aquilon91\.aqd-unittest\.ms\.com/eth0, server9\.aqd-unittest\.ms\.com/eth0",
-                          command)
-        self.searchoutput(out,
-                          r"Warning: Rack ut9 is part of bunker bucket2.ut, but "
-                          r"also has networks from:\s*"
-                          r"\(No bucket\): aquilon61\.aqd-unittest\.ms\.com/eth0\s*"
-                          r"BUCKET1: aquilon62\.aqd-unittest\.ms\.com/eth0",
-                          command)
+        self.searchoutput(
+            out,
+            r"Warning: Rack ut8 is not part of a bunker, but it uses bunkerized networks:\s*"
+            r"BUCKET2: aquilon91\.aqd-unittest\.ms\.com/eth0, server9\.aqd-unittest\.ms\.com/eth0\s*"
+            r"BUCKET1: server9\.aqd-unittest\.ms\.com/eth0\s*",
+            command,
+        )
+        self.searchoutput(
+            out,
+            r"Warning: Rack ut9 is part of bunker bucket2.ut, but also has networks from:\s*"
+            r"\(No bucket\): aquilon61\.aqd-unittest\.ms\.com/eth0\s*"
+            r"BUCKET1: aquilon62\.aqd-unittest\.ms\.com/eth0",
+            command,
+        )
 
     def test_210_show_bunker_violations_management(self):
         command = ["show_bunker_violations", "--management_interfaces"]
@@ -122,8 +124,8 @@ class TestNetworkConstraints(TestBrokerCommand):
         self.searchoutput(out,
                           r"Warning: Rack ut8 is not part of a bunker, but it "
                           r"uses bunkerized networks:\s*"
-                          r"BUCKET1: server9\.aqd-unittest\.ms\.com/eth0\s*"
-                          r"BUCKET2: aquilon91\.aqd-unittest\.ms\.com/eth0, server9\.aqd-unittest\.ms\.com/eth0",
+                          r"BUCKET2: aquilon91\.aqd-unittest\.ms\.com/eth0, server9\.aqd-unittest\.ms\.com/eth0\s*"
+                          r"BUCKET1: server9\.aqd-unittest\.ms\.com/eth0",
                           command)
         self.searchoutput(out,
                           r"Warning: Rack ut9 is part of bunker bucket2.ut, but "

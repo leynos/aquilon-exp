@@ -22,12 +22,12 @@ import re
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from utils import MockHub
+from .utils import MockHub
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 
 class TestCMLogger(TestBrokerCommand):
@@ -50,7 +50,7 @@ class TestCMLogger(TestBrokerCommand):
         command = ["add", "domain", "--domain", "testcmlogger",
                    "--reason", "Test logger"]
         self.justificationmissingtest_warn(command)
-
+   
     def test_120_logger_content(self):
         cmlogfile = self.config.get('broker', 'cmlogfile')
         last_entry = json.loads(self.tail_file(cmlogfile))
@@ -67,7 +67,7 @@ class TestCMLogger(TestBrokerCommand):
         self.assertEqual(last_entry['mode'], 'warn')
         # There should be no impacted EON IDs at this point.
         self.assertEqual(last_entry['impacted_eonids'], [])
-
+    
     def test_200_eon_ids_logged(self):
         mh = MockHub(self)
         mh.add_host()

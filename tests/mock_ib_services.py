@@ -1,20 +1,18 @@
 import json
 import logging
+from http.server import SimpleHTTPRequestHandler
+from socketserver import TCPServer
+from urllib.parse import quote_plus, urlencode, urlparse, urlunparse
 
 from aquilon.exceptions_ import ArgumentError
-from SimpleHTTPServer import SimpleHTTPRequestHandler
-from SocketServer import TCPServer
-from urlparse import urlparse
-from urlparse import urlunparse
-# from urllib.parse import quote_plus
-from urllib import quote_plus  # for py3 use import urllib.parse
-from urllib import urlencode
 
-LOGGER = logging.getLogger('ib-services')
+LOGGER = logging.getLogger("ib-services")
+LOGGER.setLevel(logging.DEBUG)
 PORT = 8900
 
 
-class HTTPMonitor(object):
+class HTTPMonitor:
+
     def __init__(self):
         self.reset()
 
@@ -29,7 +27,7 @@ class HTTPMonitor(object):
 http_monitor = HTTPMonitor()
 
 
-class IBServicesRequestHandler(SimpleHTTPRequestHandler, object):
+class IBServicesRequestHandler(SimpleHTTPRequestHandler):
     def do_DELETE(self):
         self._handle_request()
 
@@ -42,11 +40,14 @@ class IBServicesRequestHandler(SimpleHTTPRequestHandler, object):
     def do_POST(self):
         self._handle_request()
 
+    def log_request(self, code="-", size="-"):
+        """overewrite to not log any request"""
+
     def _handle_request(self):
-        unique_id = self.headers.getheader('X-MS-Unique-ID')
+        unique_id = self.headers.get("X-MS-Unique-ID")
         assert unique_id is not None and len(str(unique_id)) > 0, "Expected X-MS-Unique-ID header"
 
-        content_length = int(self.headers.getheader('content-length', 0))
+        content_length = int(self.headers.get("content-length", 0))
         body = self.rfile.read(content_length)
 
         if http_monitor.expects:
@@ -68,22 +69,25 @@ class IBServicesRequestHandler(SimpleHTTPRequestHandler, object):
                 assert r["payload"] is None, "{} {}: Expected request with no payload, but received:\n '{}'".format(
                     r["method"], r["path"], r["payload"])
 
-            self.send_response(test_case["response"]["code"])
+            self.send_response(code=test_case["response"]["code"])
+            self.end_headers()
         else:
             http_monitor.invoked_without_expected_test = True
-
             # When this happens is because the test suite sent a request for
             # which a corresponding ib_expect call has not been made
-            raise AssertionError("Mock IB server received unexpected request: {} {} {}".format(
-                self.command, self.path, body))
+            msg = f"Mock IB server received unexpected request: {self.command} {self.path} {body}"
+            self.send_response(code=400, message=msg)
+            self.end_headers()
+            raise AssertionError(msg)
 
 
 class IBServicesServer(TCPServer):
     allow_reuse_address = True
 
-def run_server(handler = IBServicesRequestHandler):
+
+def run_server(handler=IBServicesRequestHandler):
     httpd = IBServicesServer(("", PORT), handler)
-    LOGGER.info("Starting ib-services HTTP proxy on port: {0}".format(PORT))
+    LOGGER.info(f"Starting ib-services HTTP proxy on port: {PORT}")
     httpd.serve_forever()
 
 
@@ -100,8 +104,8 @@ def ib_test_case(method, path, payload, response_code, response_body):
         }
     }
 
-eonid = "1156"
 
+eonid = "1156"
 
 def ib_expect_add_ptr(fqdn, ip, ttl=None, response_code=201, response_body="", justification=None, fail=False):
     ip = str(ip)
@@ -205,6 +209,7 @@ def ib_expect_update_a(fqdn, original_ip, new_ip=None,
         payload, response_code, response_body)
     http_monitor.expect(test_case)
 
+
 def ib_expect_add_address(fqdn, ip, reverse_ptr=None, create_ptr=True, ttl=None, response_code=201, response_body="",
                           justification=None, fail=False):
     ip = str(ip)
@@ -224,7 +229,7 @@ def ib_expect_add_address(fqdn, ip, reverse_ptr=None, create_ptr=True, ttl=None,
     if justification is not None:
         payload["cm_token"] = justification
 
-    test_case = ib_test_case("PATCH", "/dns/a_ptr/{}/{}".format(fqdn, ip), payload, response_code, response_body)
+    test_case = ib_test_case("PATCH", f"/dns/a_ptr/{fqdn}/{ip}", payload, response_code, response_body)
     http_monitor.expect(test_case)
 
 
@@ -248,7 +253,7 @@ def ib_expect_update_address(fqdn, original_ip, new_ip=None, reverse_ptr=None,
 
     test_case = ib_test_case(
         "PATCH",
-        "/dns/a_ptr/{}/{}".format(fqdn, original_ip),
+        f"/dns/a_ptr/{fqdn}/{original_ip}",
         payload, response_code, response_body)
     http_monitor.expect(test_case)
 
@@ -258,9 +263,9 @@ def ib_expect_del_address(fqdn, ip, delete_ptr=True, response_code=204, response
     ip = str(ip)
     if fail:
         response_code = 400
-    path = "/dns/a_ptr/{}/{}?delete_ptr={}&eonid={}".format(str(fqdn), ip, str(delete_ptr).lower(), eonid)
+    path = f"/dns/a_ptr/{str(fqdn)}/{ip}?delete_ptr={str(delete_ptr).lower()}&eonid={eonid}"
     if justification is not None:
-        path = path + "&cm_token={}".format(quote_plus(justification))
+        path = path + f"&cm_token={quote_plus(justification)}"
     test_case = ib_test_case(
         "DELETE",
         path,
@@ -286,7 +291,7 @@ def ib_expect_update_alias(fqdn, target=None, ttl=None, response_code=204, respo
         payload["cm_token"] = justification
     test_case = ib_test_case(
         "PATCH",
-        "/dns/aliases/{}".format(fqdn),
+        f"/dns/aliases/{fqdn}",
         payload, response_code, response_body)
     http_monitor.expect(test_case)
 
@@ -294,9 +299,9 @@ def ib_expect_update_alias(fqdn, target=None, ttl=None, response_code=204, respo
 def ib_expect_del_alias(fqdn, response_code=204, response_body="", justification=None, fail=False):
     if fail:
         response_code = 400
-    path = "/dns/aliases/{}?eonid={}".format(fqdn, eonid)
+    path = f"/dns/aliases/{fqdn}?eonid={eonid}"
     if justification is not None:
-        path = path + "&cm_token={}".format(quote_plus(justification))
+        path = path + f"&cm_token={quote_plus(justification)}"
     test_case = ib_test_case(
         "DELETE",
         path,
@@ -319,21 +324,22 @@ def ib_expect_del_range(start_address, end_address, response_code=204, response_
                         fail=False):
     if fail:
         response_code = 400
-    path = "/ranges/{}/{}?eonid={}".format(start_address, end_address, eonid)
+    path = f"/ranges/{start_address}/{end_address}?eonid={eonid}"
     if justification is not None:
-        path = path + "&cm_token={}".format(quote_plus(justification))
+        path = path + f"&cm_token={quote_plus(justification)}"
     test_case = ib_test_case(
         "DELETE",
         path,
         None, response_code, response_body)
     http_monitor.expect(test_case)
 
+
 def ib_expect_show_range(start_address, end_address, response_code=200, response_body="", fail=False):
     if fail:
         response_code = 404
     test_case = ib_test_case(
         "GET",
-        "/ranges/{}/{}".format(start_address, end_address),
+        f"/ranges/{start_address}/{end_address}",
         None, response_code, response_body)
     http_monitor.expect(test_case)
 
@@ -369,12 +375,12 @@ def ib_expect_update_dns_srv_record(old, new, response_code=204, response_body="
     if fail:
         response_code = 400
 
-    required_fields = ("service", "protocol", "domain", "port", "target", "priority", "weight")
+    required_fields = ("service", "protocol", "domain", "port", "target", "weight", "priority",)
     payload = {}
 
     for field in required_fields:
         if old.get(field, None) is None:
-            raise ArgumentError("Required argument '{}' is missing".format(field))
+            raise ArgumentError(f"Required argument '{field}' is missing")
         payload[field] = new[field] if new.get(field, None) else old[field]
 
     if new.get("ttl", None):
@@ -395,7 +401,7 @@ def ib_expect_update_dns_srv_record(old, new, response_code=204, response_body="
     http_monitor.expect(test_case)
 
 
-def ib_expect_del_dns_srv_record(service, protocol, dns_domain, target, port=None, priority=None, weight=None, 
+def ib_expect_del_dns_srv_record(service, protocol, dns_domain, target, port=None, priority=None, weight=None,
                                  response_code=204, response_body="", justification=None, fail=False):
     if fail:
         response_code = 400

@@ -22,7 +22,7 @@ This script is intended to be used primarily by the template unit test. It could
 be extended later if that turns out to be useful.
 """
 
-from __future__ import print_function
+
 
 import argparse
 import sys
@@ -34,7 +34,7 @@ try:
 except ImportError:
     pass
 else:
-    ms.version.addpkg('six', '1.9.0')
+    ms.version.addpkg('six', '1.15.0')
 
 # -- begin path_setup --
 BINDIR = os.path.dirname(os.path.realpath(sys.argv[0]))

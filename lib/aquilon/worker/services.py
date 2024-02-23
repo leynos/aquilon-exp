@@ -173,7 +173,7 @@ class Chooser(object):
     def verify_init(self):
         """This is more of a verify-and-finalize method..."""
         if not self.required_only:
-            for (service, instance) in self.original_service_instances.items():
+            for (service, instance) in list(self.original_service_instances.items()):
                 self.staging_services[service] = [instance]
 
         for parent in self.aligned_parents:
@@ -390,7 +390,7 @@ class Chooser(object):
         if dbservice:
             instance_lists = [self.staging_services[dbservice]]
         else:
-            instance_lists = self.staging_services.values()
+            instance_lists = list(self.staging_services.values())
 
         for instances in instance_lists:
             if len(instances) > 1:
@@ -479,7 +479,7 @@ class Chooser(object):
 
     def finalize_service_instances(self):
         """Fill out the list of chosen services."""
-        for (service, instances) in self.staging_services.items():
+        for (service, instances) in list(self.staging_services.items()):
             if len(instances) < 1:  # pragma: no cover
                 self.error("Internal Error: Attempt to finalize on "
                            "service %s without any candidates." %
@@ -496,11 +496,11 @@ class Chooser(object):
 
     def analyze_changes(self):
         """Determine what changed."""
-        for (service, instance) in self.chosen_services.items():
+        for (service, instance) in list(self.chosen_services.items()):
             if service not in self.original_service_instances or \
                self.original_service_instances[service] != instance:
                 self.instances_bound.add(instance)
-        for (service, instance) in self.original_service_instances.items():
+        for (service, instance) in list(self.original_service_instances.items()):
             if service not in self.chosen_services or \
                self.chosen_services[service] != instance:
                 self.instances_unbound.add(instance)

@@ -61,8 +61,8 @@ class CommandUpdateSrvRecord(BrokerCommand):
                 "protocol": dbsrv_rec.protocol,
                 "domain":   str(dbsrv_rec.fqdn.dns_domain),
                 "target":   str(dbsrv_rec.target),
+                "weight": dbsrv_rec.weight,
                 "priority": dbsrv_rec.priority,
-                "weight":   dbsrv_rec.weight,
                 "port":     dbsrv_rec.port,
             }
             if dbsrv_rec.ttl is not None:
@@ -132,8 +132,8 @@ class CommandUpdateSrvRecord(BrokerCommand):
             "protocol": dbsrv_rec.protocol,
             "domain":   str(dbsrv_rec.fqdn.dns_domain),
             "target":   str(dbsrv_rec.target),
-            "priority": dbsrv_rec.priority,
             "weight":   dbsrv_rec.weight,
+            "priority": dbsrv_rec.priority,
             "port":     dbsrv_rec.port,
         }
         if dbsrv_rec.ttl is not None or old.get("ttl", None) is not None:

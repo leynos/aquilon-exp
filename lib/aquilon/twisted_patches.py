@@ -164,7 +164,6 @@ def updated_application_run(self):
 
     """
     self.preApplication()
-
     if self.logger._syslog:
         self.logger._observer = syslog.SyslogObserver(self._syslogPrefix).emit
     elif self.logger._logfilename == '-':

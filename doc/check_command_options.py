@@ -16,7 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
+
 
 import os
 import sys
@@ -28,7 +28,7 @@ try:
 except ImportError:
     pass
 else:
-    ms.version.addpkg('lxml', '3.2.5')
+    ms.version.addpkg('lxml', '4.5.1-2.9.3')
 
 from lxml import etree
 

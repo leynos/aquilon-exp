@@ -20,12 +20,11 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
-from machinetest import MachineTestMixin
-
+from .brokertest import TestBrokerCommand
+from .machinetest import MachineTestMixin
 from .test_build_clusters import config, host_fqdn, reset_config
 
 class TestDemolishClusters(MachineTestMixin, TestBrokerCommand):
@@ -38,7 +37,7 @@ class TestDemolishClusters(MachineTestMixin, TestBrokerCommand):
 
     def test_100_uncluster(self):
         """ Remove hosts from clusters that were added for the use case """
-        for host, params in config["host"].items():
+        for host, params in list(config["host"].items()):
             self.noouttest(["uncluster", "--cluster", params["cluster"],
                             "--hostname", host_fqdn(host)])
 

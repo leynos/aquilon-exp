@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """ If you can read this you should be documenting """
-from __future__ import with_statement
+
 from datetime   import datetime
 import os
 
@@ -102,7 +102,7 @@ def populate(sess, *args, **kw):
 
                 try:
                     sess.add(a)
-                except Exception,e:
+                except Exception as e:
                     sess.rollback()
                     log.error(str(e))
                     continue
@@ -116,13 +116,13 @@ def populate(sess, *args, **kw):
             vv = Vendor.get_unique(sess, 'virtual')
             vc = Cpu(vendor=vv, name='virtual_cpu', speed=0)
             sess.add_all([a, vc])
-        except Exception, e:
+        except Exception as e:
             sess.rollback()
             log.error(str(e))
 
         try:
             sess.commit()
-        except Exception,e:
+        except Exception as e:
             sess.rollback()
             log.error(str(e))
 

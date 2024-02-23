@@ -25,11 +25,11 @@ from mock_ib_services import ib_expect_del_a
 from mock_ib_services import ib_expect_del_ptr
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
-from netdevtest import VerifyNetworkDeviceMixin
+from .brokertest import TestBrokerCommand
+from .netdevtest import VerifyNetworkDeviceMixin
 
 
 class TestDiscoverNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):

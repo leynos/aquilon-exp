@@ -50,7 +50,7 @@ class CommandDelInterface(BrokerCommand):
 
         if dbinterface.vlans:
             vlans = ", ".join(sorted(iface.name for iface in
-                                     dbinterface.vlans.values()))
+                                     list(dbinterface.vlans.values())))
             raise ArgumentError("{0} is the parent of the following VLAN "
                                 "interfaces, delete them first: "
                                 "{1}.".format(dbinterface, vlans))

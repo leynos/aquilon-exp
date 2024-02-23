@@ -100,13 +100,13 @@ def populate(sess, *args, **kw):
                         disk_type=disk_type, controller_type=controller_type,
                         disk_capacity=disk_capacity, nic_count=nic_count)
                 sess.add(dbms)
-            except Exception,e:
+            except Exception as e:
                 sess.rollback()
-                print 'Creating machine specs: %s' % e
+                print('Creating machine specs: %s' % e)
                 continue
             try:
                 sess.commit()
-            except Exception,e:
+            except Exception as e:
                 sess.rollback()
-                print 'Commiting ',e
+                print('Commiting ',e)
                 continue

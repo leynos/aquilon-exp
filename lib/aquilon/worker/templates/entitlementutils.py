@@ -40,7 +40,7 @@ def flatten_entitlements(lines, dbobj, prefix=''):
     dbenv = getattr(dbobj, 'host_environment', None)
 
     def add(to_type, value, entit, **extra):
-        data = [('value', value)] + extra.items()
+        data = [('value', value)] + list(extra.items())
 
         # If it is for a specific location that does not match
         if isinstance(entit, EntitlementOnLocation) and \
@@ -62,8 +62,8 @@ def flatten_entitlements(lines, dbobj, prefix=''):
         value = entit.eon_id
         add('eon_id', value, entit)
 
-    for entit_type, entit_values in entitlements.items():
-        for k, v in entit_values.items():
+    for entit_type, entit_values in list(entitlements.items()):
+        for k, v in list(entit_values.items()):
             path = '{}system/entitlements/{}/{}'.format(prefix, entit_type, k)
-            for entry in sorted(dict(vv) for vv in v):
+            for entry in (dict(vv) for vv in v):
                 pan_append(lines, path, entry)

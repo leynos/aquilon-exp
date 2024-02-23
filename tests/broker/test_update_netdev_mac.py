@@ -26,10 +26,10 @@ from time import sleep
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 
 # This suite replicates parts of test_poll_network_device testing update_network_device --discovered_macs.
@@ -95,7 +95,7 @@ class TestUpdateNetworkDeviceMac(TestBrokerCommand):
             # We have to add the separator colons
             port_to_mac[port].append(colon_re.sub(r"\1:", mac.lower()))
 
-        for port, addrs in port_to_mac.items():
+        for port, addrs in list(port_to_mac.items()):
             pattern = r"Port: %s\n" % port
             pattern = pattern + "".join(r"\s+MAC: %s,.*\n" % mac
                                         for mac in sorted(addrs))
@@ -150,14 +150,14 @@ class TestUpdateNetworkDeviceMac(TestBrokerCommand):
         command = ["update_network_device", "--network_device",
                    "ut3gd1r01.aqd-unittest.ms.com", "--discovered_macs", data]
         out = self.badrequesttest(command)
-        self.matchoutput(out, "Failed validating u'pattern'", command)
+        self.matchoutput(out, "Failed validating 'pattern'", command)
 
     def testmissingport(self):
         data = json.dumps([("00:11:22:33:44:55",)])
         command = ["update_network_device", "--network_device",
                    "ut3gd1r01.aqd-unittest.ms.com", "--discovered_macs", data]
         out = self.badrequesttest(command)
-        self.matchoutput(out, "Failed validating u'minItems'", command)
+        self.matchoutput(out, "Failed validating 'minItems'", command)
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestUpdateNetworkDeviceMac)

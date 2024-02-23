@@ -20,10 +20,10 @@ import json
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 
 class TestAddRebootSchedule(TestBrokerCommand):
@@ -68,10 +68,10 @@ class TestAddRebootSchedule(TestBrokerCommand):
                          "/host/server1.aqd-unittest.ms.com"
                          "/reboot_schedule/reboot_schedule/config;",
                          command)
-        self.matchoutput(out, "\"name\" = \"reboot_schedule\";", command)
-        self.matchoutput(out, "\"time\" = \"08:00\";", command)
-        self.matchoutput(out, "\"week\" = \"All\"", command)
-        self.matchoutput(out, "\"day\" = \"Sat\"", command)
+        self.matchoutput(out, '"name" = "reboot_schedule";', command)
+        self.matchoutput(out, '"time" = "08:00";', command)
+        self.matchoutput(out, '"week" = "All"', command)
+        self.matchoutput(out, '"day" = "Sat"', command)
 
         command = ["cat", "--reboot_schedule",
                    "--hostname=server1.aqd-unittest.ms.com",
@@ -109,11 +109,11 @@ class TestAddRebootSchedule(TestBrokerCommand):
                 self.assertEqual(resource.reboot_schedule.week, "All")
                 self.assertEqual(resource.reboot_schedule.day, "Sat")
                 self.assertEqual(resource.reboot_schedule.time, "08:00")
-        self.assertTrue(found,
-                        "Reboot schedule not found in the resources. "
-                        "Existing resources: %s" %
-                        ", ".join("%s %s" % (res.type, res.name)
-                                  for res in host.resources))
+        self.assertTrue(
+            found,
+            "Reboot schedule not found in the resources. "
+            "Existing resources: %s" % ", ".join(f"{res.type} {res.name}" for res in host.resources),
+        )
 
     def test_130_add_schedule_no_time(self):
         command = ["add_reboot_schedule", "--week=1,3", "--day=Sat",
@@ -144,10 +144,10 @@ class TestAddRebootSchedule(TestBrokerCommand):
                          "/host/server2.aqd-unittest.ms.com"
                          "/reboot_schedule/reboot_schedule/config;",
                          command)
-        self.matchoutput(out, "\"name\" = \"reboot_schedule\";", command)
-        self.matchoutput(out, "\"time\" = null;", command)
-        self.matchoutput(out, "\"week\" = \"1,3\"", command)
-        self.matchoutput(out, "\"day\" = \"Sat\"", command)
+        self.matchoutput(out, '"name" = "reboot_schedule";', command)
+        self.matchoutput(out, '"time" = null;', command)
+        self.matchoutput(out, '"week" = "1,3"', command)
+        self.matchoutput(out, '"day" = "Sat"', command)
 
     def test_135_show_server2_proto(self):
         command = ["show_host", "--hostname=server2.aqd-unittest.ms.com",
@@ -161,11 +161,11 @@ class TestAddRebootSchedule(TestBrokerCommand):
                 self.assertEqual(resource.reboot_schedule.week, "1,3")
                 self.assertEqual(resource.reboot_schedule.day, "Sat")
                 self.assertEqual(resource.reboot_schedule.time, "")
-        self.assertTrue(found,
-                        "Reboot schedule not found in the resources. "
-                        "Existing resources: %s" %
-                        ", ".join("%s %s" % (res.type, res.name)
-                                  for res in host.resources))
+        self.assertTrue(
+            found,
+            "Reboot schedule not found in the resources. "
+            "Existing resources: %s" % ", ".join(f"{res.type} {res.name}" for res in host.resources),
+        )
 
     def test_200_add_existing(self):
         command = ["add_reboot_schedule",
@@ -221,6 +221,25 @@ class TestAddRebootSchedule(TestBrokerCommand):
         out = self.badrequesttest(command)
         self.matchoutput(out, "Key 'day' contains an invalid value. Valid values are (Sun|Mon|Tue|Wed|Thu|Fri|Sat).", command)
 
-if __name__ == '__main__':
+    def test_300_add_schedule_with_obo_servicesids(self):
+        command = [
+            "add_reboot_schedule",
+            "--week=all",
+            "--day=Sat",
+            "--reason=txid:aa1a76e6-b0b5-11ee-85b8-00505601c099 obo:anotheruser2",
+            "--hostname=server3.aqd-unittest.ms.com",
+        ]
+        self.successtest(command)
+        cmlogfile = self.config.get("broker", "cmlogfile")
+        last_entry = json.loads(self.tail_file(cmlogfile))
+        self.assertEqual(last_entry["requestor"], "anotheruser2")
+        self.assertEqual(last_entry["reason"], "txid:aa1a76e6-b0b5-11ee-85b8-00505601c099 obo:anotheruser2")
+
+    def test_301_make_server3(self):
+        command = ["make", "--hostname=server3.aqd-unittest.ms.com"]
+        self.successtest(command)
+
+
+if __name__ == "__main__":
     suite = unittest.TestLoader().loadTestsFromTestCase(TestAddRebootSchedule)
     unittest.TextTestRunner(verbosity=2).run(suite)

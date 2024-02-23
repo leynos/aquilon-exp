@@ -15,7 +15,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Module for testing aq integration with infoblox endpoints."""
+"""Module for testing aq integration with infoblox a_record_ptr endpoint."""
 
 import unittest
 
@@ -33,13 +33,13 @@ from itertools import chain
 
 from subprocess import PIPE
 from subprocess import Popen
-from urllib import quote
+from urllib.parse import quote
 
 import logging as log
 import time
 
 
-class IBChecker(object):
+class IBChecker:
     def __init__(self, broker_test):
         self.broker_test = broker_test
 
@@ -79,9 +79,9 @@ class IBChecker(object):
         header_value = headers.get(transaction_id_header)
         self.broker_test.assertIsNotNone(header_value)
 
-        self.broker_test.assertRegexpMatches(header_value, r"^[\w-]+$", "Header '{}' contains '{}', seems sane".format(transaction_id_header, header_value))
+        self.broker_test.assertRegexpMatches(header_value, r"^[\w-]+$", f"Header '{transaction_id_header}' contains '{header_value}', seems sane")
 
-class DnsChecker(object):
+class DnsChecker:
 
     def __init__(self, broker_test):
         self.broker_test = broker_test
@@ -99,41 +99,41 @@ class DnsChecker(object):
         # Ideally change this to use a python library after the broker is migrated to python 3.
         command = ['/usr/bin/host'] + args + [dns_server]
         time.sleep(0.3)  # Sometimes the dns server takes that bit longer to return the expected answer
-        return self.shellout(command)
+        return self.shellout(command, text=True)
 
     def a_record(self, fqdn, ip):
-        expected_stdout = "{} has address {}".format(fqdn, ip)
+        expected_stdout = f"{fqdn} has address {ip}"
 
         (p, out, err) = self._run_dns_check([fqdn])
         self.broker_test.assertEmptyErr(err, [fqdn])
         self.broker_test.assertEqual(p.returncode, 0)
         self.broker_test.assertTrue(out.find(expected_stdout) >= 0,
-                                    "STDOUT for %s did not include '%s':\n@@@\n'%s'\n@@@\n" % (fqdn, expected_stdout,
+                                    "STDOUT for {} did not include '{}':\n@@@\n'{}'\n@@@\n".format(fqdn, expected_stdout,
                                                                                                out))
 
     def cname(self, fqdn, target, ips):
-        expected_stdout = "{} is an alias for {}.\n".format(fqdn, target)
+        expected_stdout = f"{fqdn} is an alias for {target}.\n"
 
         (p, out, err) = self._run_dns_check([fqdn])
         self.broker_test.assertEmptyErr(err, [fqdn])
         self.broker_test.assertTrue(out.find(expected_stdout) >= 0,
-                                    "STDOUT for %s did not include '%s':\n@@@\n'%s'\n@@@\n" % (fqdn, expected_stdout,
+                                    "STDOUT for {} did not include '{}':\n@@@\n'{}'\n@@@\n".format(fqdn, expected_stdout,
                                                                                                out))
         for ip in ips:
-            expected_stdout = "{} has address {}\n".format(target, ip)
+            expected_stdout = f"{target} has address {ip}\n"
             self.broker_test.assertTrue(out.find(expected_stdout) >= 0,
-                                        "STDOUT for %s did not include '%s':\n@@@\n'%s'\n@@@\n" % (fqdn,
+                                        "STDOUT for {} did not include '{}':\n@@@\n'{}'\n@@@\n".format(fqdn,
                                                                                                    expected_stdout,
                                                                                                    out))
 
         self.broker_test.assertEqual(p.returncode, 0)
 
     def notfound(self, fqdn):
-        expected_stdout = "Host {} not found:".format(fqdn)
+        expected_stdout = f"Host {fqdn} not found:"
 
         (p, out, err) = self._run_dns_check([fqdn])
         self.broker_test.assertTrue(out.find(expected_stdout) >= 0,
-                                    "STDOUT for %s did not include '%s':\n@@@\n'%s'\n@@@\n" % (fqdn, expected_stdout,
+                                    "STDOUT for {} did not include '{}':\n@@@\n'{}'\n@@@\n".format(fqdn, expected_stdout,
                                                                                                err))
         self.broker_test.assertEmptyErr(err, [fqdn])
         self.broker_test.assertEqual(p.returncode, 1)
@@ -147,12 +147,12 @@ class TestIBEndToEnd(TestBrokerCommand):
     dummy_request_id = "7bbf547c-a1c2-4144-b35f-d93f338d9c86"
 
     def __init__(self, *args, **kwargs):
-        super(TestIBEndToEnd, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.ib_services = IBServices(log, requestid=self.dummy_request_id)
         zone_response = self.ib_services.show_zone(self.test_domain)
 
         if zone_response and not zone_response.ok:
-            self.fail("Required test zone {} does not exist in IB instance.".format(self.test_domain))
+            self.fail(f"Required test zone {self.test_domain} does not exist in IB instance.")
 
     def _clean_ib_services(self):
         response = self.ib_services.show_network(self.test_network)
@@ -164,7 +164,7 @@ class TestIBEndToEnd(TestBrokerCommand):
         #     self.ib_services.delete_zone(fqdn=self.test_domain)
 
     def setUp(self, *args, **kwargs):
-        super(TestIBEndToEnd, self).setUp(*args, **kwargs)
+        super().setUp(*args, **kwargs)
 
         self._clean_ib_services()
         self.ib_services.add_network(network=self.test_network, name="aqd-unittest", side="a", sysloc="np.ny.na",
@@ -174,7 +174,7 @@ class TestIBEndToEnd(TestBrokerCommand):
         # self.ib_services.add_zone(fqdn=self.test_domain, city="ny")
 
     def tearDown(self, *args, **kwargs):
-        super(TestIBEndToEnd, self).tearDown(*args, **kwargs)
+        super().tearDown(*args, **kwargs)
         self._clean_ib_services()
 
     def test_100_aptr_cname(self):
@@ -196,13 +196,13 @@ class TestIBEndToEnd(TestBrokerCommand):
         # Make sure the addresses we are going to create were not left lingering from a previous test run
         self.ib_services.delete_dns_alias(test_alias_fqdn)
         self.ib_services.delete_dns_alias(test_alias2_fqdn)
-        self.ib_services.delete_a(test_a_fqdn, '2.3.4.1')
-        self.ib_services.delete_a(test_a_fqdn, '2.3.4.2')
-        self.ib_services.delete_a(test_a_fqdn, '2.3.4.3')
-        self.ib_services.delete_a(test_ib_a_fqdn, '2.3.4.4')
-        self.ib_services.delete_a(test_ib_a_fqdn, '2.3.4.5')
-        self.ib_services.delete_a(test_ib_a_fqdn2, '2.3.4.4')
-        self.ib_services.delete_a(test_ib_a_fqdn2, '2.3.4.5')
+        self.ib_services.delete_a_ptr(test_a_fqdn, '2.3.4.1')
+        self.ib_services.delete_a_ptr(test_a_fqdn, '2.3.4.2')
+        self.ib_services.delete_a_ptr(test_a_fqdn, '2.3.4.3')
+        self.ib_services.delete_a_ptr(test_ib_a_fqdn, '2.3.4.4')
+        self.ib_services.delete_a_ptr(test_ib_a_fqdn, '2.3.4.5')
+        self.ib_services.delete_a_ptr(test_ib_a_fqdn2, '2.3.4.4')
+        self.ib_services.delete_a_ptr(test_ib_a_fqdn2, '2.3.4.5')
         dns_checker.notfound(test_a_fqdn)
         dns_checker.notfound(test_ib_a_fqdn)
         dns_checker.notfound(test_ib_a_fqdn2)
@@ -239,8 +239,8 @@ class TestIBEndToEnd(TestBrokerCommand):
         self.noouttest(['del_alias', '--fqdn', 'alias.' + self.test_domain])
         dns_checker.notfound('alias.' + self.test_domain)
 
-        # Delete a record in IB (but not in AQ)
-        self.ib_services.delete_a(test_a_fqdn, '2.3.4.2')
+        # Delete a_ptr record in IB (but not in AQ)
+        self.ib_services.delete_a_ptr(test_a_fqdn, '2.3.4.2')
         # Check it is no longer in DNS
         dns_checker.notfound(test_a_fqdn)
         # Update in AQ
@@ -256,7 +256,7 @@ class TestIBEndToEnd(TestBrokerCommand):
         dns_checker.notfound(test_a_fqdn)
 
         # Create a-record in ib
-        response = self.ib_services.add_a(test_ib_a_fqdn, '2.3.4.4')
+        response = self.ib_services.add_a_ptr(test_ib_a_fqdn, '2.3.4.4')
         ib_checker.check_headers(response)
 
         # Check it resolves
@@ -270,7 +270,7 @@ class TestIBEndToEnd(TestBrokerCommand):
         self.dsdb_verify()
 
         # Create a-record in ib
-        self.ib_services.add_a(test_ib_a_fqdn2, '2.3.4.4')
+        self.ib_services.add_a_ptr(test_ib_a_fqdn2, '2.3.4.4')
         # Check it resolves
         dns_checker.a_record(test_ib_a_fqdn2, '2.3.4.4')
         # Create a-record in aq with same fqdn but different ip
@@ -316,7 +316,7 @@ class TestIBEndToEnd(TestBrokerCommand):
         # Final clean up
 
         # delete in ib first
-        self.ib_services.delete_a(test_ib_a_fqdn, "2.3.4.4")
+        self.ib_services.delete_a_ptr(test_ib_a_fqdn, "2.3.4.4")
         self.dsdb_expect_delete('2.3.4.4')
         # and check that deleting in aq succeeds
         self.noouttest(['del_address', '--fqdn', test_ib_a_fqdn] + self.valid_just_tcm)
@@ -326,7 +326,7 @@ class TestIBEndToEnd(TestBrokerCommand):
         self.noouttest(['del_address', '--fqdn', test_ib_a_fqdn2] + self.valid_just_tcm)
         self.dsdb_verify()
         dns_checker.a_record(test_ib_a_fqdn2, '2.3.4.4')
-        self.ib_services.delete_a(test_ib_a_fqdn2, '2.3.4.4')
+        self.ib_services.delete_a_ptr(test_ib_a_fqdn2, '2.3.4.4')
         dns_checker.notfound(test_ib_a_fqdn2)
 
         self.noouttest(['del_network', '--ip', '2.3.4.0'])
@@ -348,8 +348,8 @@ class TestIBEndToEnd(TestBrokerCommand):
         self.ib_services.delete_dynamic_range(start_ip, end_ip)
 
         messages = []
-        for ip in range(int(IPv4Address(start_ip.decode('UTF-8'))),
-                        int(IPv4Address(end_ip.decode('UTF-8'))) + 1):
+        for ip in range(int(IPv4Address(start_ip)),
+                        int(IPv4Address(end_ip)) + 1):
             address = IPv4Address(ip)
             hostname = self.dynname(address, domain=self.test_domain)
             self.dsdb_expect_add(hostname, address)
@@ -372,8 +372,8 @@ class TestIBEndToEnd(TestBrokerCommand):
         command = ['del_dynamic_range',
                    '--clearnetwork', self.test_network_obj['ip']]
         messages = []
-        for ip in range(int(IPv4Address(start_ip.decode('UTF-8'))),
-                        int(IPv4Address(end_ip.decode('UTF-8'))) + 1):
+        for ip in range(int(IPv4Address(start_ip)),
+                        int(IPv4Address(end_ip)) + 1):
             address = IPv4Address(ip)
             messages.append("DSDB: delete_host -ip_address %s" % address)
             self.dsdb_expect_delete(address)
@@ -402,7 +402,7 @@ class TestIBEndToEnd(TestBrokerCommand):
         test_fqdn = "aqd-ib-srv-test01." + self.test_domain
         test_ip = "2.3.4.1"
 
-        self.ib_services.delete_a(test_fqdn, test_ip)
+        self.ib_services.delete_a_ptr(test_fqdn, test_ip)
         self.runcommand(['del_address', '--fqdn', test_fqdn, '--ip', test_ip] + self.valid_just_tcm)
 
         self.dsdb_expect_add(test_fqdn, test_ip)
@@ -419,7 +419,7 @@ class TestIBEndToEnd(TestBrokerCommand):
             'weight': 10,
             'port': 88,
         }
-        command = ["add_srv_record"] + list(chain.from_iterable([("--{}".format(key), args[key]) for key in args]))
+        command = ["add_srv_record"] + list(chain.from_iterable([(f"--{key}", args[key]) for key in args]))
         err = self.statustest(command)
         ib_checker.srv_record_matches(**args)
 
@@ -434,7 +434,7 @@ class TestIBEndToEnd(TestBrokerCommand):
             for key in test:
                 test_args[key] = test[key]
 
-            command = ["update_srv_record"] + list(chain.from_iterable([("--{}".format(key), test_args[key]) for key in test_args]))
+            command = ["update_srv_record"] + list(chain.from_iterable([(f"--{key}", test_args[key]) for key in test_args]))
             err = self.statustest(command)
             ib_checker.srv_record_matches(**test_args)
 

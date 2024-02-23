@@ -29,10 +29,10 @@ from broker.utils import MockHub
 from mock_ib_services import ib_expect_add_alias
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 
 class TestBindServer(TestBrokerCommand):

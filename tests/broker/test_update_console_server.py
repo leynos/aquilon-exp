@@ -20,14 +20,14 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
-from consoleservertest import VerifyConsoleServerMixin
 from mock_ib_services import ib_expect_add_ptr
 from mock_ib_services import ib_expect_del_ptr
 from mock_ib_services import ib_expect_update_a
+from .brokertest import TestBrokerCommand
+from .consoleservertest import VerifyConsoleServerMixin
 
 
 class TestUpdateConsoleServer(TestBrokerCommand, VerifyConsoleServerMixin):

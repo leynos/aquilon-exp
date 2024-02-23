@@ -47,9 +47,8 @@ class CampusDiffStruct(object):
         self.verbose = verbose
         self.data = {}
 
-        building_names = map(lambda x: x[0],
-                             dsdb.dump('buildings_by_campus',
-                                       campus=self.co.name))
+        building_names = [x[0] for x in dsdb.dump('buildings_by_campus',
+                                       campus=self.co.name)]
 
         if len(building_names) < 1:
             msg = "No buildings found for campus '%s'"% (self.co.name)
@@ -75,7 +74,7 @@ class CampusDiffStruct(object):
             if bldg.continent is not None:
                 self.data['continents'].append(bldg.continent)
 
-        for (key, val) in self.data.iteritems():
+        for (key, val) in self.data.items():
             self.data[key] = set(val)
 
 
@@ -85,7 +84,7 @@ class CampusDiffStruct(object):
 
     def _dbg(self, level, msg):
         if self.verbose >= level:
-            print msg
+            print(msg)
 
     def _validate(self):
         if len(self.data['continents']) <= 0:
@@ -129,8 +128,8 @@ class CampusDiffStruct(object):
                 try:
                     self.sess.add(self.co)
                     self.sess.flush()
-                except Exception, e:
-                    print 'ERROR commiting new campus parent: %s'% (e)
+                except Exception as e:
+                    print('ERROR commiting new campus parent: %s'% (e))
                     self.sess.close()
                     return False
 
@@ -144,8 +143,8 @@ class CampusDiffStruct(object):
 
                 try:
                     self.sess.commit()
-                except Exception, e:
-                    print 'rolling back in sync()\n%s'% (e)
+                except Exception as e:
+                    print('rolling back in sync()\n%s'% (e))
                     self.sess.close()
                     return False
 

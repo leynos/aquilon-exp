@@ -44,7 +44,7 @@ clustered_archetypes = ["vmhost"]
 class PersonalityTestMixin(object):
     def setup_personality(self, archetype, name, maps=None, required=None):
         if archetype in default_parameters:
-            for path, value in default_parameters[archetype].items():
+            for path, value in list(default_parameters[archetype].items()):
                 command = ["add_parameter", "--archetype", archetype,
                            "--personality", name,
                            "--path", path, "--value", value]
@@ -57,9 +57,9 @@ class PersonalityTestMixin(object):
                 self.noouttest(command)
 
         if maps:
-            for service, mappings in maps.items():
-                for instance, locations in mappings.items():
-                    for loc_type, loc_names in locations.items():
+            for service, mappings in list(maps.items()):
+                for instance, locations in list(mappings.items()):
+                    for loc_type, loc_names in list(locations.items()):
                         for loc_name in loc_names:
                             self.noouttest(["map_service", "--service", service,
                                             "--instance", instance,

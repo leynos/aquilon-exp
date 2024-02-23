@@ -29,8 +29,8 @@ if __name__ == '__main__':
     utils.import_depends()
 
 from broker.brokertest import TestBrokerCommand
+from .eventstest import EventsTestMixin
 from broker.utils import MockHub
-from eventstest import EventsTestMixin
 
 
 class TestAddAlias(EventsTestMixin, TestBrokerCommand):

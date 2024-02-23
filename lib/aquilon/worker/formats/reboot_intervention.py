@@ -16,31 +16,41 @@
 # limitations under the License.
 """RebootIntervention Resource formatter."""
 
+from aquilon.aqdb.model import RebootIntervention
 from aquilon.worker.formats.formatters import ObjectFormatter
 from aquilon.worker.formats.resource import ResourceFormatter
-from aquilon.aqdb.model import RebootIntervention
 
 
 class RebootInterventionFormatter(ResourceFormatter):
 
     suppress_name = True
 
-    template_json = "reboot_intervention.mako"
-
     def extra_details(self, rs, indent=""):
         details = []
-        details.append(indent + "  Start: {0.start_date}".format(rs))
-        details.append(indent + "  Expiry: {0.expiry_date}".format(rs))
-        details.append(indent + "  Reason: {0.reason}".format(rs))
+        details.append(indent + f"  Start: {rs.start_date}")
+        details.append(indent + f"  Expiry: {rs.expiry_date}")
+        details.append(indent + f"  Reason: {rs.reason}")
         return details
 
     def fill_proto(self, rs, skeleton, embedded=True, indirect_attrs=True):
-        super(RebootInterventionFormatter, self).fill_proto(rs, skeleton)
+        super().fill_proto(rs, skeleton)
         # XXX: The protocol does not have an rsdata field, and even if it
         # did, why would reboot intervention fill it in?  Could use ivdata,
         # not sure if we want a separate rivdata.
         # skeleton.rsdata.start_date = rs.start_date
         # skeleton.rsdata.expiry_date = rs.expiry_date
         # skeleton.rsdata.justification = rs.justification
+
+    def format_json(self, resource, embedded=True, indirect_attrs=True):
+        details = {
+            "host": resource.holder.holder_name,
+            "bound_to": resource.holder.holder_type,
+            "type": resource.resource_type,
+            "start_date": str(resource.start_date),
+            "expiry_date": str(resource.expiry_date),
+        }
+        if resource.reason:
+            details["reason"] = resource.reason.strip()
+        return details
 
 ObjectFormatter.handlers[RebootIntervention] = RebootInterventionFormatter()

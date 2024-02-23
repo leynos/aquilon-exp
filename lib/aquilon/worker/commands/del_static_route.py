@@ -45,9 +45,9 @@ class CommandDelStaticRoute(BrokerCommand):
 
         try:
             if netmask:
-                dest = ip_network(u"%s/%s" % (ip, netmask))
+                dest = ip_network("%s/%s" % (ip, netmask))
             else:
-                dest = ip_network(u"%s/%s" % (ip, prefixlen))
+                dest = ip_network("%s/%s" % (ip, prefixlen))
         except ValueError as err:
             raise ArgumentError(err)
 

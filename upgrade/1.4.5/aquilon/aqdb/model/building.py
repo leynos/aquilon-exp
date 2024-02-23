@@ -54,7 +54,7 @@ def populate(sess, *args, **kw):
     for row in dsdb.dump('building'):
         try:
             p = city[str(row[2])]
-        except KeyError, e:
+        except KeyError as e:
             log.error(str(e))
             continue
 

@@ -39,7 +39,9 @@ class CommandAddEntitlementType(BrokerCommand):
 
         # Enable the user types
         for user_type in set(enable_to_user_type or []):
+            print("user_type", user_type)
             usrtype = UserType.get_unique(session, name=user_type, compel=True)
+            print(UserType.get_unique(session, name=user_type, compel=True))
             dbtype.to_user_types.append(EntitlementTypeUserTypeMap(
                 user_type_id=usrtype.id))
 

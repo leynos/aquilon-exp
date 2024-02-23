@@ -62,6 +62,6 @@ def populate(sess, *args, **kw):
 
     try:
         sess.flush()
-    except Exception, e:
+    except Exception as e:
         sess.rollback()
         raise e

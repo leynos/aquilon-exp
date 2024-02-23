@@ -48,7 +48,7 @@ class CommandPublish(BrokerCommand):
             dbsandbox = Sandbox.get_unique(session, sandbox, compel=True)
         elif branch:
             dbsandbox = Sandbox.get_unique(session, branch, compel=True)
-
+        # print("dbsandbox", dbsandbox)
         if sync and not dbsandbox.is_sync_valid and dbsandbox.trackers:
             # FIXME: Maybe raise an ArgumentError and request that the
             # command run with --nosync?  Maybe provide a --validate flag?
@@ -63,7 +63,6 @@ class CommandPublish(BrokerCommand):
 
         # Most of the logic here is duplicated in deploy
         kingdir = self.config.get("broker", "kingdir")
-
         tmpfile = NamedTemporaryFile()
         tmpfile.write(b64decode(bundle))
         tmpfile.flush()

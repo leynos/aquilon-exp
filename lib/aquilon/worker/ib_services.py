@@ -1,17 +1,17 @@
+import re
 from ipaddress import IPv4Address
+from urllib.parse import quote, urlencode, urlparse, urlunparse
+
 from requests import Session, Timeout
 from requests_kerberos import DISABLED, HTTPKerberosAuth
-import re
-from urllib import quote, urlencode
-from urlparse import urlparse, urlunparse
 
-from aquilon.aqdb.model import ARecord, Machine
+from aquilon.aqdb.model import ARecord
 from aquilon.config import Config
 from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.utils import with_timer
 
 
-class IBServiceGroup(object):
+class IBServiceGroup:
     """This class facilitates rollback of IB commands where needed"""
 
     def __init__(self):
@@ -38,7 +38,7 @@ class IBServiceGroup(object):
             raise e
 
 
-class IBServices(object):
+class IBServices:
     """An interface to the IB Services API, which is an Infoblox wrapper"""
 
     config = Config()
@@ -220,7 +220,7 @@ class IBServices(object):
         payload["create_if_doesnt_exist"] = True
         payload["create_ptr"] = create_ptr
         payload["update_ptr"] = update_ptr
-        url = "/dns/a_ptr/{}/{}".format(name, ip)
+        url = f"/dns/a_ptr/{name}/{ip}"
 
         return self._http_request("PATCH", url, payload)
 
@@ -234,7 +234,7 @@ class IBServices(object):
         }
         if self.justification is not None:
             params["cm_token"] = self.justification
-        url = "/dns/a_ptr/{}/{}".format(str(name), str(ip))
+        url = f"/dns/a_ptr/{str(name)}/{str(ip)}"
         url = self._generate_url_from_params(url, params)
 
         return self._http_request("DELETE", url, ignore_statuses=[404])
@@ -292,7 +292,7 @@ class IBServices(object):
         return hwdata
 
     def bulk_change_a_ptr(self, old_hwdata, new_hwdata):
-        self.log.info("bulk_update_a_ptr(): data before change = {}, data after change = {}".format(old_hwdata, new_hwdata))
+        self.log.info(f"bulk_update_a_ptr(): data before change = {old_hwdata}, data after change = {new_hwdata}")
 
         for fqdn in old_hwdata:
             # Things to delete
@@ -358,8 +358,8 @@ class IBServices(object):
                 self.add_a(fqdn, ip, ttl)
         )
         self.group.add_action(
-            lambda ip=ip:
-                self.delete_ptr(ip),
+            lambda ip=ip: self.delete_ptr(ip),
+                
             lambda fqdn=fqdn if ptr is None else ptr, ip=ip, ttl=ttl:
                 self.add_ptr(fqdn, ip, ttl)
         )
@@ -380,7 +380,7 @@ class IBServices(object):
         params = { "eonid": self.eonid }
         if self.justification is not None:
             params["cm_token"] = self.justification
-        url = "/dns/aliases/{}".format(str(name))
+        url = f"/dns/aliases/{str(name)}"
         url = self._generate_url_from_params(url, params)
 
         return self._http_request("DELETE", url, ignore_statuses=[404])
@@ -394,7 +394,7 @@ class IBServices(object):
             payload["ttl"] = ttl
         if self.justification is not None:
             payload["cm_token"] = self.justification
-        url = "/dns/aliases/{}".format(name)
+        url = f"/dns/aliases/{name}"
 
         return self._http_request("PATCH", url, payload)
 
@@ -417,14 +417,14 @@ class IBServices(object):
         params = { "eonid": self.eonid }
         if self.justification is not None:
             params["cm_token"] = self.justification
-        url = "/ranges/{}/{}".format(start_address, end_address)
+        url = f"/ranges/{start_address}/{end_address}"
         url = self._generate_url_from_params(url, params)
 
         self._http_request("DELETE", url, ignore_statuses=[404])
 
     @with_timer
     def show_dynamic_range(self, start_address, end_address):
-        url = "/ranges/{}/{}".format(str(start_address), str(end_address))
+        url = f"/ranges/{str(start_address)}/{str(end_address)}"
 
         return self._http_request("GET", url)
 
@@ -477,7 +477,7 @@ class IBServices(object):
 
         for field in required_fields:
             if old[field] is None:
-                raise ArgumentError("Required argument '{}' is missing".format(field))
+                raise ArgumentError(f"Required argument '{field}' is missing")
             payload[field] = new[field] if field in new else old[field]
 
         if new.get("ttl", None):
@@ -517,7 +517,7 @@ class IBServices(object):
         return self._http_request("GET", url, ignore_statuses=[404])
 
     def add_network(self, network, name, compartment=None, side=None, sysloc=None):
-        url = "/networks/{}".format(quote(network, safe=''))
+        url = "/networks/{}".format(quote(network, safe=""))
 
         payload = {
             "name": name,
@@ -529,12 +529,12 @@ class IBServices(object):
         self._http_request("POST", url, payload)
 
     def show_network(self, network):
-        url = "/networks/{}".format(quote(network, safe=''))
+        url = "/networks/{}".format(quote(network, safe=""))
 
         return self._http_request("GET", url, ignore_statuses=[404])
 
     def delete_network(self, network):
-        url = "/networks/{}".format(quote(network, safe=''))
+        url = "/networks/{}".format(quote(network, safe=""))
 
         self._http_request("DELETE", url, ignore_statuses=[404])
 
@@ -546,12 +546,12 @@ class IBServices(object):
         self._http_request("POST", url, payload)
 
     def show_zone(self, fqdn):
-        url = "/dns/zones/{}".format(fqdn)
+        url = f"/dns/zones/{fqdn}"
 
         return self._http_request("GET", url, ignore_statuses=[404])
 
     def delete_zone(self, fqdn):
-        url = "/dns/zones/{}".format(fqdn)
+        url = f"/dns/zones/{fqdn}"
         self._http_request("DELETE", url, ignore_statuses=[404])
 
     def _http_request(self, http_cmd, url, data=None, ignore_statuses=[]):
@@ -572,20 +572,20 @@ class IBServices(object):
                 full_url = base_url + url
 
                 try:
-                    log_msg = "Sending request {} {}".format(http_cmd, full_url)
+                    log_msg = f"Sending request {http_cmd} {full_url}"
                     if data:
-                        log_msg += " with data {}".format(data)
+                        log_msg += f" with data {data}"
                     self.log.info(log_msg)
 
                     response = self.session.request(http_cmd, full_url, json=data, timeout=self.timeout,
                                                     headers=headers)
                 except Timeout:
-                    self.log.warning("Infoblox error: request to {} timed out after {}s.".format(full_url, self.timeout))
+                    self.log.warning(f"Infoblox error: request to {full_url} timed out after {self.timeout}s.")
 
                 # There are several possible other exception types.  Not all possibilities are known.
                 # In all cases, the logic depends on another pass through the loop to try any remaining URLs.
                 except Exception as e:
-                    self.log.warning("Infoblox error: request to {} failed with exception {}".format(full_url, e))
+                    self.log.warning(f"Infoblox error: request to {full_url} failed with exception {e}")
 
                 # Stop trying URLs if there was no exception.
                 else:
@@ -603,7 +603,7 @@ class IBServices(object):
                         # Probably a JSON decode error.  Fall back to showing whole body of response.
                         error_msg = response.text
 
-                    msg = self._log_ib_result("Infoblox error: '{}'".format(error_msg), http_cmd, full_url, data, response)
+                    msg = self._log_ib_result(f"Infoblox error: '{error_msg}'", http_cmd, full_url, data, response)
                     raise ProcessException(msg)
             else:
                 raise ProcessException("Infoblox returned errors or no Infoblox servers could be reached, aborting change")
@@ -612,21 +612,21 @@ class IBServices(object):
             if self.transactional:
                 raise e
             else:
-                self.log.warning("{} (but proceeding with change as non-transactional mode is set).".format(e))
+                self.log.warning(f"{e} (but proceeding with change as non-transactional mode is set).")
 
     def _log_ib_result(self, msg, http_cmd, full_url, request_data, response):
-        response_str = "{} {}".format(response.status_code, response.reason)
-        msg += "got {} for {} {}".format(response_str, http_cmd, full_url)
+        response_str = f"{response.status_code} {response.reason}"
+        msg += f"got {response_str} for {http_cmd} {full_url}"
 
         if request_data:
-            msg += " (request body '{}')".format(request_data)
+            msg += f" (request body '{request_data}')"
         if response.text and response.text != "{}":
-            msg += " (response body '{}')".format(response.text)
+            msg += f" (response body '{response.text}')"
         if self.requestid:
-            msg += " (AQD request ID '{}')".format(self.requestid)
+            msg += f" (AQD request ID '{self.requestid}')"
         ib_request_id = response.headers.get(self.transaction_id_header)
         if ib_request_id:
-            msg += " (Infoblox request ID '{}')".format(ib_request_id)
+            msg += f" (Infoblox request ID '{ib_request_id}')"
         self.log.info(msg)
         return msg
 

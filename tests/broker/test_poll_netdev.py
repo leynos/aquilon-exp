@@ -27,10 +27,10 @@ import subprocess
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 
 class TestPollNetworkDevice(TestBrokerCommand):
@@ -49,7 +49,7 @@ class TestPollNetworkDevice(TestBrokerCommand):
         data_injection = (os.path.join(testdir_broker, "..", "aqdb",
                           "inject_network_device_vlan.py"))
         command = [data_injection, '--network_device', full_network_device]
-        for k, v in toBind.iteritems():
+        for k, v in toBind.items():
             command.extend(['--vlan', str(k), str(v)])
         subprocess.check_output(command, env=testenv)
 
@@ -111,7 +111,7 @@ class TestPollNetworkDevice(TestBrokerCommand):
             # We have to add the separator colons
             port_to_mac[port].append(colon_re.sub(r"\1:", mac.lower()))
 
-        for port, addrs in port_to_mac.items():
+        for port, addrs in list(port_to_mac.items()):
             pattern = r"Port: %s\n" % port
             pattern = pattern + "".join(r"\s+MAC: %s,.*\n" % mac
                                         for mac in sorted(addrs))

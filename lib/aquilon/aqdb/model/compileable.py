@@ -24,7 +24,7 @@ from sqlalchemy.orm import relation
 from aquilon.aqdb.model import Branch, Sandbox, PersonalityStage, User
 
 
-class CompileableMixin(object):
+class CompileableMixin:
     @declared_attr
     def branch_id(cls):  # pylint: disable=E0213
         return Column(ForeignKey(Branch.id), nullable=False, index=True)
@@ -63,7 +63,7 @@ class CompileableMixin(object):
     def authored_branch(self):
         if isinstance(self.branch, Sandbox):
             if self.sandbox_author:
-                return "%s/%s" % (self.sandbox_author.name, self.branch.name)
+                return "{}/{}".format(self.sandbox_author.name, self.branch.name)
             else:
                 return "%s [orphaned]" % self.branch.name
         return self.branch.name

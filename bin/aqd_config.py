@@ -19,7 +19,7 @@
 Parse AQD configuration
 """
 
-from __future__ import print_function
+
 
 import argparse
 import sys
@@ -30,7 +30,7 @@ try:
 except ImportError:
     pass
 else:
-    ms.version.addpkg('six', '1.9.0')
+    ms.version.addpkg('six', '1.15.0')
 
 # -- begin path_setup --
 BINDIR = os.path.dirname(os.path.realpath(sys.argv[0]))

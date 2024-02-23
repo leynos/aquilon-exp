@@ -97,7 +97,7 @@ def populate(sess, *args, **kw):
             dbtld = sess.query(Tld).filter_by(type=tld).one()
             f = CfgPath(tld=dbtld,relative_path=relative_path)
             sess.add(f)
-        except Exception, e:
+        except Exception as e:
             msg = str(e) + ' for tld '+ tld
             log.error(msg)
             sess.rollback()

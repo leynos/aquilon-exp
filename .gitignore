@@ -11,3 +11,4 @@ tests/fakebin/user-data/passwd.byname
 tests/aqdtests.log
 etc/aq.conf
 *.swp
+.ruff_cache/

@@ -76,14 +76,18 @@ class Xtn(Base):
             return_code = self.end.return_code
         else:
             return_code = '-'
-
-        msg = [self.start_time.strftime('%Y-%m-%d %H:%M:%S%z'),
-               str(self.username), str(return_code), 'aq', str(self.command)]
+        if self.username == 'nobody':
+            msg = [self.start_time.strftime('%Y-%m-%d %H:%M:%S%z'),
+                   str(self.username), str(return_code), 'aq', str(self.command)]
+        else:
+            msg = [self.start_time.strftime('%Y-%m-%d %H:%M:%S%z'),
+                   self.username.decode() if isinstance(self.username, bytes) else self.username,
+                   str(return_code), 'aq', str(self.command)]
         results = []
         for arg in self.args:
             if arg.name == "__RESULT__":  # pragma: no cover
                 # We no longer generate this form, but it exists in the DB
-                results.append(arg.value)
+                results.append(arg.value.decode())
                 continue
             elif arg.name.startswith("__RESULT__:"):
                 results.append("%s=%s" % (arg.name[11:], arg.value))
@@ -151,7 +155,7 @@ def start_xtn(session, xtn_id, username, command, is_readonly, details, ignore):
     """
     # TODO: one day we should be able to handle non-ASCII characters..
     def sanitized_string(value):
-        return str(value).encode('ascii', 'xmlcharrefreplace')
+        return str(value)
 
     # TODO: (maybe) use sql inserts instead of objects to avoid added overhead?
     # We would be able to exploit executemany() for all the xtn_detail rows

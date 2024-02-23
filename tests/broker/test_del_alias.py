@@ -24,8 +24,8 @@ if __name__ == '__main__':
     import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
-from eventstest import EventsTestMixin
+from .brokertest import TestBrokerCommand
+from .eventstest import EventsTestMixin
 from mock_ib_services import ib_expect_del_alias
 
 

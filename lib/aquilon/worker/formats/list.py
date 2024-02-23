@@ -17,11 +17,10 @@
 """List formatter."""
 
 from operator import attrgetter
-from six import string_types
 
+from sqlalchemy.ext.associationproxy import _AssociationList
 from sqlalchemy.orm.collections import InstrumentedList
 from sqlalchemy.orm.query import Query
-from sqlalchemy.ext.associationproxy import _AssociationList
 
 from aquilon.worker.formats.formatters import ObjectFormatter
 
@@ -52,12 +51,13 @@ class ListFormatter(ObjectFormatter):
 
     def format_json(self, result, embedded=True, indirect_attrs=True):
         if hasattr(self, "template_json"):
-            return ObjectFormatter.format_json(self, result,
-                                              embedded=embedded,
-                                              indirect_attrs=indirect_attrs)
-        return ",\n".join(self.redirect_json(item, embedded=embedded,
-                                           indirect_attrs=indirect_attrs)
-                         for item in result)
+            return ObjectFormatter.format_json(self, result, embedded=embedded, indirect_attrs=indirect_attrs)
+        ret = []
+        for item in result:
+            # TODO: yield instead of return for faster user output
+            # http://jiraeai.ms.com/jira/browse/AQUILONAQD-2118
+            ret.append(self.redirect_json(item, embedded=embedded, indirect_attrs=indirect_attrs))
+        return ret
 
 
 ObjectFormatter.handlers[list] = ListFormatter()
@@ -85,11 +85,11 @@ ObjectFormatter.handlers[StringList] = StringListFormatter()
 
 class StringAttributeList(list):
     def __init__(self, items, attr):
-        if isinstance(attr, string_types):
+        if isinstance(attr, str):
             self.getter = attrgetter(attr)
         else:
             self.getter = attr
-        super(StringAttributeList, self).__init__(items)
+        super().__init__(items)
 
 
 class StringAttributeListFormatter(ListFormatter):

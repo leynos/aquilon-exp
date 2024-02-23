@@ -62,7 +62,7 @@ def get_or_create_chassis(session, logger, model, config, rack, vendor, dbdns_re
             raise ArgumentError("{0} already exists.".format(dbchassis))
     except NoResultFound:
         pass
-    dbchassis = Chassis(label=label, location=dblocation, model=dbmodel,
+    dbchassis = Chassis(location=dblocation, label=label, model=dbmodel,
                         serial_no=serial_no, comments=comments)
     session.add(dbchassis)
     dbchassis.primary_name = dbdns_rec
@@ -347,7 +347,7 @@ def get_hardware(session, compel=True, hostname=None, **kwargs):
     mapper = inspect(HardwareEntity)
 
     dbhw_ent = None
-    for hw_type, submapper in mapper.polymorphic_map.items():
+    for hw_type, submapper in list(mapper.polymorphic_map.items()):
         if hw_type not in kwargs or not kwargs[hw_type]:
             continue
 

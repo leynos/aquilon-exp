@@ -28,8 +28,14 @@ try:
 except ImportError:
     pass
 else:
-    ms.version.addpkg('twisted', '12.0.0')
-    ms.version.addpkg('zope.interface', '4.5.0')
+    ms.version.addpkg('twisted', '21.2.0')
+    ms.version.addpkg('incremental', '16.10.1')
+    ms.version.addpkg('automaton', '1.16.0')
+    ms.version.addpkg('pbr', '5.4.4')
+    ms.version.addpkg('prettytable', '1.0.1')
+    ms.version.addpkg('constantly', '15.1.0')
+    ms.version.addpkg('zope.interface', '4.6.0-py37')
+    ms.version.addpkg("attrs", "19.3.0")
 
 # -- begin path_setup --
 BINDIR = os.path.dirname(os.path.realpath(sys.argv[0]))
@@ -67,7 +73,7 @@ class NotifyProtocol(LineReceiver):
 
             logger.debug("Update queued")
         else:
-            logger.warn("Unknown command: %s", line)
+            logger.warning("Unknown command: %s", line)
 
 
 class NotifyFactory(Factory):

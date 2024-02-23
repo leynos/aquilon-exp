@@ -26,7 +26,23 @@ try:
 except ImportError:
     pass
 else:
-    ms.version.addpkg('ipython', '3.1.0')
+    ms.version.addpkg("backports.shutil-get-terminal-size", "1.0.0")
+    ms.version.addpkg("decorator", "4.4.2")
+    ms.version.addpkg("enum34", "1.1.6")
+    ms.version.addpkg("ipython", "5.8.0")
+    ms.version.addpkg("ipython_genutils", "0.2.0")
+    ms.version.addpkg("pathlib2", "2.3.2")
+    ms.version.addpkg("pexpect", "4.8.0")
+    ms.version.addpkg("pickleshare", "0.7.4")
+    ms.version.addpkg("prompt_toolkit", "1.0.15")
+    ms.version.addpkg("ptyprocess", "0.6.0")
+    ms.version.addpkg("pygments", "2.5.2")
+    ms.version.addpkg("scandir", "1.9.0")
+    ms.version.addpkg("setuptools", "41.0.1")
+    ms.version.addpkg("simplegeneric", "0.8.1")
+    ms.version.addpkg("six", "1.14.0")
+    ms.version.addpkg("traitlets", "4.3.2")
+    ms.version.addpkg("wcwidth", "0.1.9")
 
 # -- begin path_setup --
 BINDIR = os.path.dirname(os.path.realpath(sys.argv[0]))

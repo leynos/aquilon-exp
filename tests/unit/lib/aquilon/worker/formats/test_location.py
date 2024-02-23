@@ -38,12 +38,12 @@ class TestLocationFormatter(unittest.TestCase):
         # If present, the default DNS domain must be included in column 8 (
         # counting from 0).
         mock_location.default_dns_domain = 'a.b.cc'
-        output = formatter.csv_fields(mock_location).next()
+        output = next(formatter.csv_fields(mock_location))
         self.assertEqual('a.b.cc', output[8])
         # If the default DNS domain is not set, column 8 should be None.
         mock_location.default_dns_domain = None
-        output = formatter.csv_fields(mock_location).next()
+        output = next(formatter.csv_fields(mock_location))
         self.assertIs(None, output[8])
         mock_location.default_dns_domain = ''
-        output = formatter.csv_fields(mock_location).next()
+        output = next(formatter.csv_fields(mock_location))
         self.assertIs(None, output[8])

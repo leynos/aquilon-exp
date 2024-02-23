@@ -75,7 +75,7 @@ def test_enum():
     except ValueError:
         pass
 
-    print list(t.select().execute())
+    print(list(t.select().execute()))
 
 if __name__ == '__main__':
     test_enum()

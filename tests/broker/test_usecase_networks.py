@@ -20,16 +20,16 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
 from six import iteritems
 
-from brokertest import TestBrokerCommand
 from mock_ib_services import ib_expect_add_a
 from mock_ib_services import ib_expect_add_ptr
 from mock_ib_services import ib_expect_del_a
 from mock_ib_services import ib_expect_del_ptr
+from .brokertest import TestBrokerCommand
 
 # This test case sets up a network that look like the following:
 #

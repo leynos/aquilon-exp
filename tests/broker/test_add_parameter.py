@@ -134,17 +134,18 @@ class TestAddParameter(VerifyGrnsMixin, PersonalityTestMixin,
         out = self.badrequesttest(command)
         self.searchoutput(out,
                           r'Following required parameters have not been specified:\s*'
+                          r'Parameter Definition: testrequired \[required\]\s*'
+                          r'Archetype: aquilon\s*'
+                          r'Value Type: string\s*'
+                          r'Template: foo\s*'
+                          r'Activation: dispatch\s*'
                           r'Parameter Definition: windows \[required\]\s*'
                           r'Archetype: aquilon\s*'
                           r'Value Type: json\s*'
                           r'Schema: {\s*'
                           r'(^    .*\n)+\s*'
                           r'Template: windows\s*'
-                          r'Activation: dispatch\s*'
-                          r'Parameter Definition: testrequired \[required\]\s*'
-                          r'Archetype: aquilon\s*'
-                          r'Value Type: string\s*'
-                          r'Template: foo',
+                          r'Activation: dispatch\s*',
                           command)
 
     def test_140_add_actions(self):
@@ -196,16 +197,16 @@ class TestAddParameter(VerifyGrnsMixin, PersonalityTestMixin,
                    "--format", "proto"]
         out = self.protobuftest(command, expect=5)
         params = {message.path: message.value for message in out}
-
+        
         self.assertIn('espinfo/function', params)
         self.assertEqual(params['espinfo/function'], 'crash')
-
+        
         self.assertIn('espinfo/class', params)
         self.assertEqual(params['espinfo/class'], 'INFRASTRUCTURE')
-
+        
         self.assertIn('espinfo/users', params)
         self.assertEqual(params['espinfo/users'], 'someusers,otherusers')
-
+        
         self.assertIn('actions', params)
         self.assertEqual(json.loads(params['actions']), {
             "testaction": {

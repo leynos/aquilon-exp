@@ -16,8 +16,8 @@
 # limitations under the License.
 """Resource formatter."""
 
-from aquilon.worker.formats.formatters import ObjectFormatter
 from aquilon.aqdb.model import Resource
+from aquilon.worker.formats.formatters import ObjectFormatter
 
 
 class ResourceFormatter(ObjectFormatter):
@@ -34,13 +34,13 @@ class ResourceFormatter(ObjectFormatter):
         if self.suppress_name:
             details.append(indent + format(resource, "c"))
         else:
-            details.append(indent + "{0:c}: {0.name}".format(resource))
+            details.append(indent + f"{resource:c}: {resource.name}")
 
         if resource.comments:
             details.append(indent + "  Comments: %s" % resource.comments)
 
         if not embedded:
-            details.append(indent + "  Bound to: {0}".format(resource.holder))
+            details.append(indent + f"  Bound to: {resource.holder}")
         details.extend(self.extra_details(resource, indent))
         return "\n".join(details)
 
@@ -48,5 +48,10 @@ class ResourceFormatter(ObjectFormatter):
                    indirect_attrs=True):
         skeleton.name = resource.name
         skeleton.type = resource.resource_type
+
+    def format_json(self, resource, embedded=True, indirect_attrs=True):
+        details = {"name": resource.name, "type": resource.resource_type}
+        return details
+
 
 ObjectFormatter.handlers[Resource] = ResourceFormatter()

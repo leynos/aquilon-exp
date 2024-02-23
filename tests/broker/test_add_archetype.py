@@ -20,10 +20,10 @@
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
+from .brokertest import TestBrokerCommand
 
 archetypes = {
     'aquilon': {
@@ -79,7 +79,7 @@ archetypes = {
 class TestAddArchetype(TestBrokerCommand):
 
     def test_100_add_archetypes(self):
-        for arch, params in archetypes.items():
+        for arch, params in list(archetypes.items()):
             command = ["add_archetype", "--archetype", arch]
             if params.get("compilable", False):
                 command.append("--compilable")
@@ -90,7 +90,7 @@ class TestAddArchetype(TestBrokerCommand):
             self.noouttest(command)
 
     def test_105_show_archetypes(self):
-        for arch, params in archetypes.items():
+        for arch, params in list(archetypes.items()):
             command = ["show_archetype", "--archetype", arch]
             out = self.commandtest(command)
 
@@ -110,7 +110,7 @@ class TestAddArchetype(TestBrokerCommand):
             self.matchclean(out, "Required Service", command)
 
     def test_105_show_archetypes_proto(self):
-        for arch, params in archetypes.items():
+        for arch, params in list(archetypes.items()):
             command = ["show_archetype", "--archetype", arch, "--format", "proto"]
             res = self.protobuftest(command, expect=1)[0]
             self.assertEqual(res.name, arch)

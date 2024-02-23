@@ -22,17 +22,17 @@ from datetime import datetime
 import unittest
 
 if __name__ == "__main__":
-    import utils
+    from . import utils
     utils.import_depends()
 
-from brokertest import TestBrokerCommand
-from notificationtest import VerifyNotificationsMixin
-from personalitytest import PersonalityTestMixin
-from eventstest import EventsTestMixin
 from mock_ib_services import ib_expect_add_a
 from mock_ib_services import ib_expect_add_ptr
 from mock_ib_services import ib_expect_del_a
 from mock_ib_services import ib_expect_del_ptr
+from .brokertest import TestBrokerCommand
+from .notificationtest import VerifyNotificationsMixin
+from .personalitytest import PersonalityTestMixin
+from .eventstest import EventsTestMixin
 
 
 class TestAppliance(VerifyNotificationsMixin, PersonalityTestMixin,

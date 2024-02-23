@@ -56,7 +56,7 @@ def populate(sess, *args, **kw):
         'ny':'Americas',
     }
 
-    if len(sess.query(Hub).all()) < len(_hubs.keys()):
+    if len(sess.query(Hub).all()) < len(list(_hubs.keys())):
         for h in _hubs:
             #FIX ME: don't fix it on id = 1 (breaks in certain conditions)
             a = Hub(name=h, fullname=_hubs[h], parent_id=1)
