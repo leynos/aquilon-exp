@@ -139,7 +139,7 @@ class CommandUpdateServiceAddress(BrokerCommand):
         else:
             if ibs_assign_ptr_to_fqdn:
                 ib_services.group.add_action(
-                    lambda name=ptr_fqdn, ip=old_ip, new_ip=ip: ib_services.update_ptr(name=name, ip=ip, new_name=name))
+                    lambda name=ptr_fqdn, ip=old_ip, new_ip=ip: ib_services.update_ptr(ip=ip, new_name=name))
 
         session.flush()
 

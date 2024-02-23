@@ -111,10 +111,10 @@ class CommandUpdateAddress(BrokerCommand):
                 else:
                     ib_services.group.add_action(
                         lambda ip=old_ip, name=fqdn, reverse_ptr=reverse_ptr, new_ttl=ttl, old_ttl=old_ttl:
-                            ib_services.update_ptr(ip=ip, name=name if reverse_ptr is None else reverse_ptr,
+                            ib_services.update_ptr(ip=ip, new_name=name if reverse_ptr is None else reverse_ptr,
                                                    new_ttl=old_ttl if ttl is None else ttl),
                         lambda ip=old_ip, name=fqdn, reverse_ptr=old_reverse_ptr, ttl=old_ttl:
-                            ib_services.update_ptr(ip=ip, name=name if reverse_ptr is None else reverse_ptr,
+                            ib_services.update_ptr(ip=ip, new_name=name if reverse_ptr is None else reverse_ptr,
                                                    new_ttl=ttl)
                     )
                 for address_alias in dbdns_rec.address_aliases:
@@ -134,11 +134,11 @@ class CommandUpdateAddress(BrokerCommand):
             else:
                 # This is the case where the ip is not changing, either the ttl or reverse_ptr is changing
                 ib_services.group.add_action(
-                    lambda fqdn=fqdn, old_ip=old_ip, ttl=ttl, clear_ttl=clear_ttl:
-                        ib_services.update_ptr(name=old_reverse_ptr, ip=old_ip, new_name=reverse_ptr,
+                    lambda old_ip=old_ip, ttl=ttl, clear_ttl=clear_ttl:
+                        ib_services.update_ptr(ip=old_ip, new_name=reverse_ptr,
                                                new_ttl=-1 if clear_ttl else ttl),
-                    lambda fqdn=fqdn, old_ip=old_ip, ttl=old_ttl, clear_ttl=clear_ttl:
-                        ib_services.update_ptr(name=reverse_ptr, ip=old_ip, new_name=old_reverse_ptr,
+                    lambda old_ip=old_ip, ttl=old_ttl, clear_ttl=clear_ttl:
+                        ib_services.update_ptr(ip=old_ip, new_name=old_reverse_ptr,
                                                new_ttl=-1 if clear_ttl else ttl)
                 )
 

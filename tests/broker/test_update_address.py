@@ -23,7 +23,6 @@ import json
 from mock_ib_services import ib_expect_add_ptr
 from mock_ib_services import ib_expect_del_ptr
 from mock_ib_services import ib_expect_update_a
-from mock_ib_services import ib_expect_update_address
 from mock_ib_services import ib_expect_update_ptr
 
 if __name__ == "__main__":

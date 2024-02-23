@@ -210,79 +210,26 @@ def ib_expect_update_a(fqdn, original_ip, new_ip=None,
     http_monitor.expect(test_case)
 
 
-def ib_expect_add_address(fqdn, ip, reverse_ptr=None, create_ptr=True, ttl=None, response_code=201, response_body="",
-                          justification=None, fail=False):
-    ip = str(ip)
+def ib_expect_add_alias(fqdn, target, ttl=None, response_code=204, response_body="", justification=None, fail=False):
     if fail:
         response_code = 400
-    payload = {
-        "create_ptr": create_ptr,
-        "address": ip,
-        "eonid": eonid,
-        "create_if_doesnt_exist": True,
-        "update_ptr": False,
-    }
+    payload = {"eonid": eonid, "name": fqdn, "target": target}
     if ttl:
         payload["ttl"] = ttl
-    if reverse_ptr:
-        payload["assign_ptr_to_fqdn"] = reverse_ptr
     if justification is not None:
         payload["cm_token"] = justification
-
-    test_case = ib_test_case("PATCH", f"/dns/a_ptr/{fqdn}/{ip}", payload, response_code, response_body)
-    http_monitor.expect(test_case)
-
-
-def ib_expect_update_address(fqdn, original_ip, new_ip=None, reverse_ptr=None,
-                             new_ttl=None, response_code=204, response_body="", update_ptr=True,
-                             create_ptr=False, justification=None, fail=False):
-    original_ip = str(original_ip)
-    if fail:
-        response_code = 400
-    payload = {"create_if_doesnt_exist": True, "eonid": eonid}
-    if new_ip:
-        payload["address"] = str(new_ip)
-    if reverse_ptr is not None:
-        payload["assign_ptr_to_fqdn"] = reverse_ptr
-    payload["create_ptr"] = create_ptr
-    payload["update_ptr"] = update_ptr
-    if new_ttl:
-        payload["ttl"] = new_ttl
-    if justification is not None:
-        payload["cm_token"] = justification
-
     test_case = ib_test_case(
-        "PATCH",
-        f"/dns/a_ptr/{fqdn}/{original_ip}",
+        "POST",
+        "/dns/aliases/",
         payload, response_code, response_body)
     http_monitor.expect(test_case)
-
-
-def ib_expect_del_address(fqdn, ip, delete_ptr=True, response_code=204, response_body="", justification=None,
-                          fail=False):
-    ip = str(ip)
-    if fail:
-        response_code = 400
-    path = f"/dns/a_ptr/{str(fqdn)}/{ip}?delete_ptr={str(delete_ptr).lower()}&eonid={eonid}"
-    if justification is not None:
-        path = path + f"&cm_token={quote_plus(justification)}"
-    test_case = ib_test_case(
-        "DELETE",
-        path,
-        None, response_code, response_body)
-    http_monitor.expect(test_case)
-
-
-def ib_expect_add_alias(fqdn, target, ttl=None, response_code=204, response_body="", justification=None, fail=False):
-    return ib_expect_update_alias(fqdn, target=target, ttl=ttl, response_code=response_code,
-                                  response_body=response_body, justification=justification, fail=fail)
 
 
 def ib_expect_update_alias(fqdn, target=None, ttl=None, response_code=204, response_body="", justification=None,
                            fail=False):
     if fail:
         response_code = 400
-    payload = {"eonid": eonid, "create_if_doesnt_exist": True}
+    payload = {"eonid": eonid}
     if target:
         payload["target"] = target
     if ttl:

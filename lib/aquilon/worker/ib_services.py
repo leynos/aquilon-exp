@@ -106,11 +106,12 @@ class IBServices:
         if (self.justification is not None):
             payload["cm_token"] = self.justification
         r = self._http_request("POST", "/dns/a_ptr/ptr", payload, ignore_statuses=[409])
-        if r and r.status_code == 409:
-            self.update_ptr(name, ip, new_ttl=ttl)
+        if r is not None and r.status_code == 409:
+            return self.update_ptr(ip, new_ttl=ttl)
+        return r
 
     @with_timer
-    def update_ptr(self, name, ip, new_name=None, new_ttl=None):
+    def update_ptr(self, ip, new_name=None, new_ttl=None):
         if not self._assert_ip(ip):
             return
         if new_name is None and new_ttl is None:
@@ -126,11 +127,10 @@ class IBServices:
 
         url = "/dns/a_ptr/ptr/{}".format(str(ip))
         r = self._http_request("PATCH", url, payload, ignore_statuses=[404])
-        if r and r.status_code == 404:
+        if r is not None and r.status_code == 404:
             if new_name is None:
-                payload['name'] = str(name)
-            else:
-                payload['name'] = str(new_name)
+                raise ArgumentError("Required argument 'new_name is missing")
+            payload['name'] = str(new_name)
             return self._http_request("POST", "/dns/a_ptr/ptr", payload)
         else:
             return r
@@ -159,7 +159,7 @@ class IBServices:
         if (self.justification is not None):
             payload["cm_token"] = self.justification
         r = self._http_request("POST", "/dns/a_ptr/a", payload, ignore_statuses=[409])
-        if r and r.status_code == 409:
+        if r is not None and r.status_code == 409:
             r = self.update_a(name, ip, new_ttl=ttl)
         return r
 
@@ -180,9 +180,11 @@ class IBServices:
 
         url = "/dns/a_ptr/a/{}/{}".format(str(name), str(ip))
         r = self._http_request("PATCH", url, payload, ignore_statuses=[404])
-        if r and r.status_code == 404:
+        if r is not None and r.status_code == 404:
+            if new_ip is None:
+                raise ArgumentError(f"Required argument '{new_ip}' is missing")
             payload['name'] = str(name)
-            payload['address'] = str(ip)
+            payload['address'] = str(new_ip)
             return self._http_request("POST", "/dns/a_ptr/a", payload)
         else:
             return r
@@ -200,55 +202,6 @@ class IBServices:
         url = self._generate_url_from_params(url, params)
 
         return self._http_request("DELETE", url, ignore_statuses=[404])
-
-    @with_timer
-    def add_a_ptr(self, name, ip, assign_ptr_to_fqdn=None, ttl=None, create_ptr=True):
-        return self.update_a_ptr(name, ip,
-            new_ip=ip, # We have to specify this again to force creation.
-            assign_ptr_to_fqdn=assign_ptr_to_fqdn,
-            ttl=ttl,
-            create_ptr=create_ptr,
-            update_ptr=False,
-        )
-
-    @with_timer
-    def update_a_ptr(self, name, ip, new_ip=None, assign_ptr_to_fqdn=None, ttl=None, update_ptr=True, create_ptr=False):
-        if not self._assert_ip(ip):
-            return
-
-        payload = self._build_a_ptr_payload(None, new_ip, assign_ptr_to_fqdn, ttl)
-        payload["create_if_doesnt_exist"] = True
-        payload["create_ptr"] = create_ptr
-        payload["update_ptr"] = update_ptr
-        url = f"/dns/a_ptr/{name}/{ip}"
-
-        return self._http_request("PATCH", url, payload)
-
-    @with_timer
-    def delete_a_ptr(self, name, ip, delete_ptr=True):
-        if not self._assert_ip(ip):
-            return
-        params = {
-            "delete_ptr": str(delete_ptr).lower(),
-            "eonid":      self.eonid,
-        }
-        if self.justification is not None:
-            params["cm_token"] = self.justification
-        url = f"/dns/a_ptr/{str(name)}/{str(ip)}"
-        url = self._generate_url_from_params(url, params)
-
-        return self._http_request("DELETE", url, ignore_statuses=[404])
-
-    @with_timer
-    def show_a_ptr(self, name, ip):
-        params = {
-            "name":    str(name),
-            "address": str(ip),
-        }
-        url = "/dns/a_ptr"
-        url = self._generate_url_from_params(url, params)
-
-        return self._http_request("GET", url)
 
     def snapshot_hw_a_records(self, dbhw_ent):
         hwdata = {}
@@ -343,9 +296,9 @@ class IBServices:
             self.log.info("update_ptr({} {} {} {} {} {})".format(fqdn, old_ip, new_ptr, new_ttl, old_ptr, old_ttl))
             self.group.add_action(
                 lambda fqdn=fqdn, ip=old_ip, ptr=fqdn if new_ptr is None else new_ptr, ttl=new_ttl:
-                    self.update_ptr(fqdn, ip, new_name=new_ptr, new_ttl=new_ttl),
+                    self.update_ptr(ip, new_name=new_ptr, new_ttl=new_ttl),
                 lambda fqdn=fqdn, ip=old_ip, ptr=fqdn if old_ptr is None else old_ptr, ttl=old_ttl:
-                    self.update_ptr(fqdn, ip, new_name=ptr, new_ttl=ttl)
+                    self.update_ptr(ip, new_name=ptr, new_ttl=ttl)
             )
 
     def _delete_a_ptr_from_hwdata(self, fqdn, old_hwdata, new_hwdata):
@@ -367,13 +320,18 @@ class IBServices:
 
     @with_timer
     def add_dns_alias(self, name, target, ttl=None):
-        args = {
-            "new_target": target,
-        }
-        if ttl:
-            args["ttl"] = ttl
+        payload = {"eonid": self.eonid, "name": name, "target": target}
+        if ttl is not None:
+            payload["ttl"] = ttl
+        if self.justification is not None:
+            payload["cm_token"] = self.justification
+        url = f"/dns/aliases/"
 
-        return self.update_dns_alias(name, **args)
+        r = self._http_request("POST", url, payload, ignore_statuses=[409])
+        if r is not None and r.status_code == 409:
+            return self.update_dns_alias(name, new_target=target, ttl=ttl)
+        else:
+            return r
 
     @with_timer
     def delete_dns_alias(self, name):
@@ -387,7 +345,7 @@ class IBServices:
 
     @with_timer
     def update_dns_alias(self, name, new_target=None, ttl=None):
-        payload = {"eonid": self.eonid, "create_if_doesnt_exist": True}
+        payload = {"eonid": self.eonid}
         if new_target is not None:
             payload["target"] = new_target
         if ttl is not None:
@@ -396,7 +354,15 @@ class IBServices:
             payload["cm_token"] = self.justification
         url = f"/dns/aliases/{name}"
 
-        return self._http_request("PATCH", url, payload)
+        r = self._http_request("PATCH", url, payload, ignore_statuses=[404])
+        if r is not None and r.status_code == 404:
+            if new_target is None:
+                raise ArgumentError(f"Required argument '{new_target}' is missing")
+            payload['name'] = str(name)
+            r = self._http_request("POST", "/dns/aliases/", payload)
+            return r
+        else:
+            return r
 
     @with_timer
     def add_dynamic_range(self, name, start_address, end_address):
@@ -525,6 +491,8 @@ class IBServices:
             "side": side,
             "sysloc": sysloc,
         }
+        if self.eonid:
+            payload["eonid"] = self.eonid
 
         self._http_request("POST", url, payload)
 

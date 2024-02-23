@@ -264,10 +264,10 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
         ip      = str(self.net["unknown1"].usable[44])
         ip_hsrp = str(self.net["unknown1"].usable[42])
 
-        ib_expect_del_a(fqdn_hsrp_pre, ip_hsrp)
-        ib_expect_del_ptr(ip_hsrp)
         ib_expect_del_a(fqdn_pre, ip)
         ib_expect_del_ptr(ip)
+        ib_expect_del_a(fqdn_hsrp_pre, ip_hsrp)
+        ib_expect_del_ptr(ip_hsrp)
         ib_expect_add_a(fqdn_post, ip)
         ib_expect_add_ptr(fqdn_post, ip)
         ib_expect_add_a(fqdn_hsrp_post, ip_hsrp)

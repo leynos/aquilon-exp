@@ -256,10 +256,10 @@ class CommandAddServiceAddress(BrokerCommand):
         else:
             if ibs_assign_ptr_to_fqdn is not None:
                 ib_services.group.add_action(
-                    lambda name=ibs_name, ip=ip, new_name=ibs_assign_ptr_to_fqdn:
-                        ib_services.update_ptr(ip=ip, name=name, new_name=new_name),
-                    lambda name=ibs_name, ip=ip, new_name=ibs_rb_assign_ptr_to_fqdn:
-                        ib_services.update_ptr(ip=ip, name=ibs_name, new_name=ibs_rb_assign_ptr_to_fqdn))
+                    lambda ip=ip, new_name=ibs_assign_ptr_to_fqdn:
+                        ib_services.update_ptr(ip=ip, new_name=new_name),
+                    lambda ip=ip, new_name=ibs_rb_assign_ptr_to_fqdn:
+                        ib_services.update_ptr(ip=ip, new_name=new_name))
 
         session.flush()
 
