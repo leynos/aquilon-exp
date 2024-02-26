@@ -66,3 +66,4 @@ else:
     ms.version.addpkg("kerberos", "1.3.1-1.16")
     ms.version.addpkg("cffi", "1.15.1")
     ms.version.addpkg("orjson", "3.6.3-py37")
+    ms.version.addpkg("krb5", "0.4.0")  # Required by HTTPKerberosAuth used in infoblox integration
