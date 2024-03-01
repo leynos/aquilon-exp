@@ -51,10 +51,10 @@ class CommandUpdateAddress(BrokerCommand):
         cm.validate()
 
         # Save state before making change, mostly for possible rollbacks
+        ib_rollback_args = dbdns_rec.get_infoblox_args()
         old_ip = dbdns_rec.ip
         old_comments = dbdns_rec.comments
         old_reverse_ptr = dbdns_rec.reverse_ptr
-        old_ttl = dbdns_rec.ttl
         fqdn = str(dbdns_rec.fqdn)
 
         if ip:
@@ -89,58 +89,18 @@ class CommandUpdateAddress(BrokerCommand):
 
         ib_services = IBServices(logger, justification=justification, **arguments)
         if ip or reverse_ptr or clear_ttl or ttl:
-            ib_services.group.add_action(
-                lambda fqdn=fqdn, new_ip=ip, reverse_ptr=reverse_ptr, clear_ttl=clear_ttl, ttl=ttl:
-                    ib_services.update_a(name=fqdn, ip=old_ip, new_ip=new_ip, new_ttl=-1 if clear_ttl else ttl),
-                lambda fqdn=fqdn, new_ip=ip, old_ip=old_ip, old_reverse_ptr=old_reverse_ptr, old_ttl=old_ttl:
-                    ib_services.update_a(name=fqdn, ip=new_ip if new_ip else old_ip, new_ip=old_ip if new_ip else None,
-                                         new_ttl=old_ttl)
-            )
+            ib_services.update_a_ptr(dbdns_rec, ib_rollback_args)
             if ip:
-                if str(ip) != str(old_ip):
-                    ib_services.group.add_action(
-                        lambda ip=old_ip: ib_services.delete_ptr(ip=ip),
-                        lambda name=fqdn, reverse_ptr=reverse_ptr, ip=old_ip, ttl=old_ttl:
-                            ib_services.add_ptr(name=name if reverse_ptr is None else reverse_ptr, ip=ip, ttl=ttl)
-                    )
-                    ib_services.group.add_action(
-                        lambda name=fqdn, reverse_ptr=old_reverse_ptr, ip=ip, ttl=ttl:
-                            ib_services.add_ptr(name=name if reverse_ptr is None else reverse_ptr, ip=ip, ttl=ttl),
-                        lambda ip=ip: ib_services.delete_ptr(ip=ip)
-                    )
-                else:
-                    ib_services.group.add_action(
-                        lambda ip=old_ip, name=fqdn, reverse_ptr=reverse_ptr, new_ttl=ttl, old_ttl=old_ttl:
-                            ib_services.update_ptr(ip=ip, new_name=name if reverse_ptr is None else reverse_ptr,
-                                                   new_ttl=old_ttl if ttl is None else ttl),
-                        lambda ip=old_ip, name=fqdn, reverse_ptr=old_reverse_ptr, ttl=old_ttl:
-                            ib_services.update_ptr(ip=ip, new_name=name if reverse_ptr is None else reverse_ptr,
-                                                   new_ttl=ttl)
-                    )
                 for address_alias in dbdns_rec.address_aliases:
-                    alias_fqdn = str(address_alias.fqdn)
                     alias_target = str(address_alias.target)
+                    original_address_alias_args = address_alias.get_infoblox_args()
+                    original_address_alias_args["ip"] = ib_rollback_args["ip"]
                     if alias_target == fqdn:
                         # For address alias we just update the A record of ALIAS_FQDN
                         # we don't touch the PTR record, ie, we want the PTR record to keep pointing to the
                         # address alias target, and not the address alias itself.
-                        ib_services.group.add_action(
-                            lambda fqdn=alias_fqdn, new_ip=ip, old_ip=old_ip, ttl=ttl, clear_ttl=clear_ttl:
-                                ib_services.update_a(name=fqdn, ip=old_ip, new_ip=new_ip,
-                                                     new_ttl=-1 if clear_ttl else ttl),
-                            lambda fqdn=alias_fqdn, new_ip=ip, old_ip=old_ip, new_ttl=ttl, clear_ttl=clear_ttl:
-                                ib_services.update_a(name=fqdn, ip=new_ip, new_ip=old_ip, new_ttl=old_ttl)
-                        )
-            else:
-                # This is the case where the ip is not changing, either the ttl or reverse_ptr is changing
-                ib_services.group.add_action(
-                    lambda old_ip=old_ip, ttl=ttl, clear_ttl=clear_ttl:
-                        ib_services.update_ptr(ip=old_ip, new_name=reverse_ptr,
-                                               new_ttl=-1 if clear_ttl else ttl),
-                    lambda old_ip=old_ip, ttl=old_ttl, clear_ttl=clear_ttl:
-                        ib_services.update_ptr(ip=old_ip, new_name=old_reverse_ptr,
-                                               new_ttl=-1 if clear_ttl else ttl)
-                )
+                        # ib_services.update_a_ptr knows not to touch the ptr in this case
+                        ib_services.update_a_ptr(address_alias, original_address_alias_args)
 
 
         dsdb_runner = None

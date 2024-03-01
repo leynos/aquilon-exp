@@ -194,10 +194,7 @@ class CommandAddServiceAddress(BrokerCommand):
                                                 exporter=exporter,
                                                 require_grn=False)
         ip = dbdns_rec.ip
-        ibs_name = str(dbdns_rec.fqdn)
-        ibs_assign_ptr_to_fqdn = None
-        ibs_rb_assign_ptr_to_fqdn = None
-        ibs_rollback_args = {'name': str(dbdns_rec.fqdn), 'ip': ip}
+        ib_rollback_args = dbdns_rec.get_infoblox_args() if not newly_created else None
 
         if map_to_primary and map_to_shared_name:
             raise ArgumentError("Cannot use --map_to_primary and "
@@ -206,20 +203,14 @@ class CommandAddServiceAddress(BrokerCommand):
             # if the holder is a resource-group that has a SharedServiceName
             # resource, then set the PTR record as the SharedServiceName's FQDN
             if sibling_ssn:
-                if not newly_created:
-                    ibs_rb_assign_ptr_to_fqdn = None if dbdns_rec.reverse_ptr is None else str(dbdns_rec.reverse_ptr)
                 dbdns_rec.reverse_ptr = sibling_ssn.fqdn
-                ibs_assign_ptr_to_fqdn = str(dbdns_rec.reverse_ptr)
             else:
                 raise ArgumentError("--map_to_shared_name specified, but no "
                                     "shared service name in {0:l}".
                                     format(holder))
         elif map_to_primary:
             if isinstance(toplevel_holder, Host):
-                if not newly_created:
-                    ibs_rb_assign_ptr_to_fqdn = None if dbdns_rec.reverse_ptr is None else str(dbdns_rec.reverse_ptr)
                 dbdns_rec.reverse_ptr = toplevel_holder.hardware_entity.primary_name.fqdn
-                ibs_assign_ptr_to_fqdn = str(dbdns_rec.reverse_ptr)
             else:
                 raise ArgumentError("The --map_to_primary option works only "
                                     "for host-based service addresses or "
@@ -246,20 +237,9 @@ class CommandAddServiceAddress(BrokerCommand):
 
         ib_services = IBServices(logger, justification=justification, **kwargs)
         if newly_created:
-            ib_services.group.add_action(
-                lambda name=ibs_name, ip=ip: ib_services.add_a(name=name, ip=ip),
-                lambda name=ibs_name, ip=ip: ib_services.delete_a(name=name, ip=ip))
-            ib_services.group.add_action(
-                lambda name=ibs_name if ibs_assign_ptr_to_fqdn is None else ibs_assign_ptr_to_fqdn, ip=ip:
-                    ib_services.add_ptr(name=name, ip=ip),
-                lambda ip=ip: ib_services.delete_ptr(ip=ip))
+            ib_services.add_a_ptr(dbdns_rec)
         else:
-            if ibs_assign_ptr_to_fqdn is not None:
-                ib_services.group.add_action(
-                    lambda ip=ip, new_name=ibs_assign_ptr_to_fqdn:
-                        ib_services.update_ptr(ip=ip, new_name=new_name),
-                    lambda ip=ip, new_name=ibs_rb_assign_ptr_to_fqdn:
-                        ib_services.update_ptr(ip=ip, new_name=new_name))
+            ib_services.update_a_ptr(dbdns_rec, ib_rollback_args)
 
         session.flush()
 
@@ -271,13 +251,7 @@ class CommandAddServiceAddress(BrokerCommand):
                               dbtargetfqdn=dbdns_rec.fqdn,
                               ttl=None, grn=None, eon_id=None,
                               comments=None, exporter=exporter,
-                              flush_session=True, sync_ib=False)
-            ib_services.group.add_action(
-                lambda name=str(sibling_ssn.fqdn), ip=dbdns_rec.ip: ib_services.add_a(name, ip),
-                lambda name=str(sibling_ssn.fqdn), ip=dbdns_rec.ip: ib_services.delete_a(name, ip))
-            ib_services.group.add_action(
-                lambda name=str(sibling_ssn.fqdn), ip=dbdns_rec.ip: ib_services.add_ptr(name, ip),
-                lambda ip=dbdns_rec.ip: ib_services.delete_ptr(ip))
+                              flush_session=True, ib_services=ib_services)
 
         plenaries.add(holder.holder_object)
         plenaries.add(dbsrv)

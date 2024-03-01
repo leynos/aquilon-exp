@@ -36,9 +36,8 @@ class TestDelServiceAddressSNAliases(TestBrokerCommand):
         ip = self.net['np_bucket2_vip'].usable[2]
         self.dsdb_expect_delete(ip)
         ib_expect_del_a("utvcs1pn1.aqd-unittest.ms.com", str(ip))
-        ib_expect_del_ptr(str(ip))
         ib_expect_del_a("utvcs1sa1.aqd-unittest.ms.com", str(ip))
-        ib_expect_del_ptr(str(ip))  # humnn, odd, we shouldn't have to delete the same ptr record twice
+        ib_expect_del_ptr(str(ip))
         command = ['del_service_address', '--resourcegroup=utvcs1ifset',
                    '--name=utvcs1sa1']
         self.successtest(command)

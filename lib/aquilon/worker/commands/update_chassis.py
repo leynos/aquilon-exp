@@ -67,7 +67,9 @@ class CommandUpdateChassis(BrokerCommand):
         if serial is not None:
             dbchassis.serial_no = serial
 
-        old_ip = dbchassis.primary_name.ip if type(dbchassis.primary_name) == ARecord else None
+        ib_rollback_args = None
+        if type(dbchassis.primary_name) == ARecord:
+            ib_rollback_args = dbchassis.primary_name.get_infoblox_args()
         if ip:
             update_primary_ip(session, logger, dbchassis, ip)
 
@@ -92,32 +94,11 @@ class CommandUpdateChassis(BrokerCommand):
         ib_services = IBServices(logger, justification=justification, **arguments)
         if ib_services.feature_enabled("chassis") and ip:
             try:
-                # If no existing IP, we must now create one.
-                if old_ip:
-                    ib_services.group.add_action(
-                        lambda name=str(dbchassis.primary_name.fqdn), old_ip=old_ip, new_ip=ip:
-                            ib_services.update_a(name, old_ip, new_ip),
-                        lambda name=str(dbchassis.primary_name.fqdn), old_ip=old_ip, new_ip=ip:
-                            ib_services.update_a(name, ip, old_ip)
-                    )
-                    ib_services.group.add_action(
-                        lambda old_ip=old_ip: ib_services.delete_ptr(old_ip),
-                        lambda name=str(dbchassis.primary_name.fqdn), old_ip=old_ip: ib_services.add_ptr(name, old_ip)
-                    )
-                    ib_services.group.add_action(
-                        lambda name=str(dbchassis.primary_name.fqdn), ip=ip: ib_services.add_ptr(name, ip),
-                        lambda ip=ip: ib_services.delete_ptr(ip)
-                    )
+                if ib_rollback_args is not None:
+                    ib_services.update_a_ptr(dbchassis.primary_name, ib_rollback_args)
                 else:
-                    ib_services.group.add_action(
-                        lambda name=str(dbchassis.primary_name.fqdn), ip=ip: ib_services.add_a(name, ip),
-                        lambda name=str(dbchassis.primary_name.fqdn), ip=ip: ib_services.del_a(name, ip)
-                    )
-
-                    ib_services.group.add_action(
-                        lambda name=str(dbchassis.primary_name.fqdn), ip=ip: ib_services.add_ptr(name, ip),
-                        lambda ip=ip: ib_services.delete_ptr(ip)
-                    )
+                    # If no existing IP, we must now create one.
+                    ib_services.add_a_ptr(dbchassis.primary_name)
 
                 ib_services.group.commit_or_rollback()
             except ProcessException as e:

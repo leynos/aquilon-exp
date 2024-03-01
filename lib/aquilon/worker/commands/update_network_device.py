@@ -116,7 +116,7 @@ class CommandUpdateNetworkDevice(BrokerCommand):
             NetworkDevice.check_type(type)
             dbnetdev.switch_type = type
 
-        old_ip = dbnetdev.primary_name.ip
+        ib_rollback_args = dbnetdev.primary_name.get_infoblox_args()
         if ip:
             update_primary_ip(session, logger, dbnetdev, ip)
 
@@ -154,20 +154,7 @@ class CommandUpdateNetworkDevice(BrokerCommand):
 
             ib_services = IBServices(logger, justification=justification, **arguments)
             if ip and ib_services.feature_enabled("network_device"):
-                ib_services.group.add_action(
-                    lambda fqdn=str(dbnetdev.primary_name.fqdn), ip=old_ip, new_ip=ip:
-                        ib_services.update_a(fqdn, ip, new_ip=new_ip),
-                    lambda fqdn=str(dbnetdev.primary_name.fqdn), ip=ip, new_ip=old_ip:
-                        ib_services.update_a(fqdn, ip, new_ip=new_ip)
-                )
-                ib_services.group.add_action(
-                    lambda ip=old_ip: ib_services.delete_ptr(ip),
-                    lambda fqdn=str(dbnetdev.primary_name.fqdn), ip=old_ip: ib_services.add_ptr(fqdn, ip)
-                )
-                ib_services.group.add_action(
-                    lambda fqdn=str(dbnetdev.primary_name.fqdn), ip=ip: ib_services.add_ptr(fqdn, ip),
-                    lambda ip=ip: ib_services.delete_ptr(ip)
-                )
+                ib_services.update_a_ptr(dbnetdev.primary_name, ib_rollback_args)
                 try:
                     ib_services.group.commit_or_rollback()
                 except ProcessException as e:

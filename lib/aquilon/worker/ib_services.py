@@ -80,19 +80,62 @@ class IBServices:
         parse = urlparse(url)._replace(query=urlencode(params))
         return urlunparse(parse)
 
-    def _build_a_ptr_payload(self, name, ip, assign_ptr_to_fqdn, ttl):
-        payload = { "eonid": self.eonid }
-        if (self.justification is not None):
-            payload["cm_token"] = self.justification
-        if name:
-            payload["name"] = str(name)
-        if ip:
-            payload["address"] = str(ip)
-        if assign_ptr_to_fqdn:
-            payload["assign_ptr_to_fqdn"] = assign_ptr_to_fqdn
-        if ttl:
-            payload["ttl"] = ttl
-        return payload
+    def add_a_ptr(self, dbdns_rec):
+        args = dbdns_rec.get_infoblox_args()
+        self.group.add_action(
+            lambda: self.add_a(name=args["name"], ip=args["ip"], ttl=args["ttl"]),
+            lambda: self.delete_a(name=args["name"], ip=args["ip"]),
+        )
+
+        if args["reverse_ptr"] is not None:
+            self.group.add_action(
+                lambda: self.add_ptr(name=args["reverse_ptr"], ip=args["ip"], ttl=args["ttl"]),
+                lambda: self.add_ptr(ip=args["ip"]),
+            )
+
+    def update_a_ptr(self, dbdns_rec, _from):
+        _to = dbdns_rec.get_infoblox_args()
+
+        if _from["name"] != _to["name"]:
+            raise ProcessException("Updating name of a-record not implemented")
+
+        if _from["ip"] != _to["ip"] or _from["ttl"] != _to["ttl"]:
+            self.group.add_action(
+                lambda: self.update_a(name=_from["name"], ip=_from["ip"], new_ip=_to["ip"], new_ttl=_to["ttl"]),
+                lambda: self.update_a(name=_to["name"], ip=_to["ip"], new_ip=_from["ip"], new_ttl=_from["ttl"]),
+            )
+
+        if _from["reverse_ptr"] is not None:
+            # then check if the ip changed, in which case the reverse ptr needs to be deleted and re-created
+            if _from["ip"] != _to["ip"]:
+                self.group.add_action(
+                    lambda: self.delete_ptr(ip=_from["ip"]),
+                    lambda: self.add_ptr(name=_from["reverse_ptr"], ip=_from["ip"], ttl=_from["ttl"]),
+                )
+                self.group.add_action(
+                    lambda: self.add_ptr(name=_to["reverse_ptr"], ip=_to["ip"], ttl=_to["ttl"]),
+                    lambda: self.delete_ptr(ip=_to["ip"]),
+                )
+            else:
+                # else if the ip didn't change, the reverse_ptr and/or ttl might need updating
+                if _from["reverse_ptr"] != _to["reverse_ptr"] or _from["ttl"] != _to["ttl"]:
+                    self.group.add_action(
+                        lambda: self.update_ptr(ip=_to["ip"], new_name=_to["reverse_ptr"], new_ttl=_to["ttl"]),
+                        lambda: self.update_ptr(ip=_to["ip"], new_name=_from["reverse_ptr"], new_ttl=_from["ttl"]),
+                    )
+
+    def delete_a_ptr(self, dbdns_rec):
+        args = dbdns_rec.get_infoblox_args()
+        self.group.add_action(
+            lambda name=args["name"], ip=args["ip"]: self.delete_a(name=name, ip=ip),
+            lambda name=args["name"], ip=args["ip"], ttl=args["ttl"]: self.add_a(name=name, ip=ip, ttl=ttl)
+        )
+
+        if args["reverse_ptr"] is not None:
+            self.group.add_action(
+                lambda ip=args["ip"]: self.delete_ptr(ip=ip),
+                lambda name=args["reverse_ptr"], ip=args["reverse_ptr"], ttl=args["ttl"]: self.add_ptr(name=name, ip=ip, ttl=ttl)
+            )
 
     @with_timer
     def add_ptr(self, name, ip, ttl=None):
@@ -265,14 +308,14 @@ class IBServices:
         ip, new_ptr, new_ttl = (new_hwdata[fqdn][key] for key in ["ip", "ptr", "ttl"])
 
         self.group.add_action(
-            lambda fqdn=fqdn, ip=ip, ttl=new_ttl:
+            lambda fqdn=fqdn, ip=ip, ttl=-1 if new_ttl is None else new_ttl:
                 self.add_a(fqdn, ip, ttl),
             lambda fqdn=fqdn, ip=ip:
                 self.delete_a(fqdn, ip)
         )
 
         self.group.add_action(
-            lambda fqdn=fqdn if new_ptr is None else new_ptr, ip=ip, ttl=new_ttl:
+            lambda fqdn=fqdn if new_ptr is None else new_ptr, ip=ip, ttl=-1 if new_ttl is None else new_ttl:
                 self.add_ptr(fqdn, ip, ttl),
             lambda ip=ip:
                 self.delete_ptr(ip)
@@ -288,16 +331,16 @@ class IBServices:
         if old_ttl != new_ttl:
             self.log.info("update_a({} {} {} {})".format(fqdn, old_ip, old_ttl, new_ttl))
             self.group.add_action(
-                lambda fqdn=fqdn, ip=old_ip, ttl=new_ttl: self.update_a(fqdn, ip, new_ttl=ttl),
-                lambda fqdn=fqdn, ip=old_ip, ttl=old_ttl: self.update_a(fqdn, ip, new_ttl=ttl)
+                lambda fqdn=fqdn, ip=old_ip, ttl=-1 if new_ttl is None else new_ttl: self.update_a(fqdn, ip, new_ttl=ttl),
+                lambda fqdn=fqdn, ip=old_ip, ttl=-1 if new_ttl is None else old_ttl: self.update_a(fqdn, ip, new_ttl=ttl)
             )
 
         if old_ptr != new_ptr or old_ttl != new_ttl:
             self.log.info("update_ptr({} {} {} {} {} {})".format(fqdn, old_ip, new_ptr, new_ttl, old_ptr, old_ttl))
             self.group.add_action(
-                lambda fqdn=fqdn, ip=old_ip, ptr=fqdn if new_ptr is None else new_ptr, ttl=new_ttl:
-                    self.update_ptr(ip, new_name=new_ptr, new_ttl=new_ttl),
-                lambda fqdn=fqdn, ip=old_ip, ptr=fqdn if old_ptr is None else old_ptr, ttl=old_ttl:
+                lambda fqdn=fqdn, ip=old_ip, ptr=fqdn if new_ptr is None else new_ptr, ttl=-1 if new_ttl is None else new_ttl:
+                    self.update_ptr(ip, new_name=new_ptr, new_ttl=ttl),
+                lambda fqdn=fqdn, ip=old_ip, ptr=fqdn if old_ptr is None else old_ptr, ttl=-1 if old_ttl is None else old_ttl:
                     self.update_ptr(ip, new_name=ptr, new_ttl=ttl)
             )
 
@@ -318,9 +361,31 @@ class IBServices:
         )
         self.log.info("delete_a_ptr({}, {}), rollback add_a_ptr({}, {}, {}, {})".format(fqdn, ip, fqdn, ip, ptr, ttl))
 
+    def add_dns_alias(self, dbdns_rec):
+        args = dbdns_rec.get_infoblox_args()
+        self.group.add_action(
+            lambda name=args["name"], target=args["target"], ttl=args["ttl"]: self._add_dns_alias(name=name, target=target, ttl=ttl),
+            lambda name=args["name"]: self._delete_dns_alias(name=name),
+        )
+
+    def delete_dns_alias(self, dbdns_rec):
+        args = dbdns_rec.get_infoblox_args()
+        self.group.add_action(
+            lambda name=args["name"]: self._delete_dns_alias(name=name),
+            lambda name=args["name"], target=args["target"], ttl=args["ttl"]: self._add_dns_alias(name=name, target=target, ttl=ttl),
+        )
+
+    def update_dns_alias(self, dbdns_rec, _from):
+        _to = dbdns_rec.get_infoblox_args()
+        self.group.add_action(
+            lambda name=_to["name"], new_target=_to["target"], new_ttl=_to["ttl"]: self._update_dns_alias(name=name, new_target=new_target, ttl=new_ttl),
+            lambda name=_to["name"], new_target=_from["target"], new_ttl=_from["ttl"]: self._update_dns_alias(name=name, new_target=new_target, ttl=new_ttl),
+        )
+
+
     @with_timer
-    def add_dns_alias(self, name, target, ttl=None):
-        payload = {"eonid": self.eonid, "name": name, "target": target}
+    def _add_dns_alias(self, name, target, ttl=None):
+        payload = {"eonid": self.eonid, "name": str(name), "target": str(target)}
         if ttl is not None:
             payload["ttl"] = ttl
         if self.justification is not None:
@@ -334,7 +399,7 @@ class IBServices:
             return r
 
     @with_timer
-    def delete_dns_alias(self, name):
+    def _delete_dns_alias(self, name):
         params = { "eonid": self.eonid }
         if self.justification is not None:
             params["cm_token"] = self.justification
@@ -344,20 +409,20 @@ class IBServices:
         return self._http_request("DELETE", url, ignore_statuses=[404])
 
     @with_timer
-    def update_dns_alias(self, name, new_target=None, ttl=None):
+    def _update_dns_alias(self, name, new_target=None, ttl=None):
         payload = {"eonid": self.eonid}
         if new_target is not None:
-            payload["target"] = new_target
+            payload["target"] = str(new_target)
         if ttl is not None:
             payload["ttl"] = ttl
         if self.justification is not None:
             payload["cm_token"] = self.justification
-        url = f"/dns/aliases/{name}"
+        url = "/dns/aliases/{}".format(str(name))
 
         r = self._http_request("PATCH", url, payload, ignore_statuses=[404])
         if r is not None and r.status_code == 404:
             if new_target is None:
-                raise ArgumentError(f"Required argument '{new_target}' is missing")
+                raise ArgumentError("Required argument 'new_target' is missing")
             payload['name'] = str(name)
             r = self._http_request("POST", "/dns/aliases/", payload)
             return r
@@ -548,12 +613,12 @@ class IBServices:
                     response = self.session.request(http_cmd, full_url, json=data, timeout=self.timeout,
                                                     headers=headers)
                 except Timeout:
-                    self.log.warning(f"Infoblox error: request to {full_url} timed out after {self.timeout}s.")
+                    self.log.warning(f"Infoblox timeout error: request to {full_url} timed out after {self.timeout}s.")
 
                 # There are several possible other exception types.  Not all possibilities are known.
                 # In all cases, the logic depends on another pass through the loop to try any remaining URLs.
                 except Exception as e:
-                    self.log.warning(f"Infoblox error: request to {full_url} failed with exception {e}")
+                    self.log.warning(f"Infoblox request exception error: request to {full_url} failed with exception {e}")
 
                 # Stop trying URLs if there was no exception.
                 else:
@@ -571,7 +636,7 @@ class IBServices:
                         # Probably a JSON decode error.  Fall back to showing whole body of response.
                         error_msg = response.text
 
-                    msg = self._log_ib_result(f"Infoblox error: '{error_msg}'", http_cmd, full_url, data, response)
+                    msg = self._log_ib_result(f"Infoblox response exception error: '{error_msg}'", http_cmd, full_url, data, response)
                     raise ProcessException(msg)
             else:
                 raise ProcessException("Infoblox returned errors or no Infoblox servers could be reached, aborting change")

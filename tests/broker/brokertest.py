@@ -414,7 +414,7 @@ class TestBrokerCommand(unittest.TestCase):
 
     def iberrortest(self, command, **kwargs):
         err = self.badrequesttest(command, expected_code=5, **kwargs)
-        self.matchoutput(err, "Infoblox error", command)
+        self.matchoutput(err, "Infoblox response exception error", command)
 
     def unauthorizedtest(self, command, auth=False, msgcheck=True, **kwargs):
         (p, out, err) = self.runcommand(command, auth=auth, **kwargs)

@@ -61,8 +61,7 @@ class CommandUpdateServiceAddress(BrokerCommand):
         dsdb_runner = DSDBRunner(logger=logger)
 
         toplevel_holder = holder.toplevel_holder_object
-        old_ip = dbsrv.dns_record.ip
-        ibs_assign_ptr_to_fqdn = None
+        ib_rollback_args = dbsrv.dns_record.get_infoblox_args()
         old_comments = dbsrv.comments
 
         if interfaces is not None:
@@ -94,10 +93,8 @@ class CommandUpdateServiceAddress(BrokerCommand):
                                     "for host-based service addresses.")
             if map_to_primary:
                 dbsrv.dns_record.reverse_ptr = toplevel_holder.hardware_entity.primary_name.fqdn
-                ibs_assign_ptr_to_fqdn = str(dbsrv.dns_record.reverse_ptr)
             else:
                 dbsrv.dns_record.reverse_ptr = None
-                ibs_assign_ptr_to_fqdn = None
 
         if map_to_shared_name:
             # if the holder is a resource-group that has a SharedServiceName
@@ -114,44 +111,25 @@ class CommandUpdateServiceAddress(BrokerCommand):
 
             if sibling_ssn:
                 dbsrv.dns_record.reverse_ptr = sibling_ssn.fqdn
-                ibs_assign_ptr_to_fqdn = str(sibling_ssn.fqdn)
             else:
                 raise ArgumentError("--map_to_shared_name specified, but no "
                                     "shared service name")
 
+        session.flush()
+
         ib_services = IBServices(logger, justification=justification, **arguments)
 
-        ptr_fqdn = str(dbsrv.dns_record.fqdn) if ibs_assign_ptr_to_fqdn is None else ibs_assign_ptr_to_fqdn
-        if ip:
-            ib_services.group.add_action(
-                lambda name=str(dbsrv.dns_record.fqdn), ip=old_ip, new_ip=ip: ib_services.update_a(name=name, ip=ip,
-                                                                                                   new_ip=new_ip),
-                lambda name=str(dbsrv.dns_record.fqdn), ip=ip, new_ip=old_ip: ib_services.update_a(name=name, ip=ip,
-                                                                                                   new_ip=new_ip))
-
-            ib_services.group.add_action(
-                lambda ip=old_ip: ib_services.delete_ptr(ip),
-                lambda name=ptr_fqdn, ip=old_ip: ib_services.add_ptr(name, ip))
-
-            ib_services.group.add_action(
-                lambda name=ptr_fqdn, ip=ip: ib_services.add_ptr(name=name, ip=ip),
-                lambda ip=ip: ib_services.del_ptr(ip=ip))
-        else:
-            if ibs_assign_ptr_to_fqdn:
-                ib_services.group.add_action(
-                    lambda name=ptr_fqdn, ip=old_ip, new_ip=ip: ib_services.update_ptr(ip=ip, new_name=name))
-
-        session.flush()
+        ib_services.update_a_ptr(dbsrv.dns_record, ib_rollback_args)
 
         with plenaries.get_key():
             plenaries.stash()
             try:
                 plenaries.write(locked=True)
-                if ((dbsrv.ip != old_ip or dbsrv.comments != old_comments) and
+                if ((dbsrv.ip != ib_rollback_args["ip"] or dbsrv.comments != old_comments) and
                         dbsrv.dns_record.network.is_internal):
                     dsdb_runner.update_host_details(dbsrv.dns_record.fqdn,
                                                     new_ip=dbsrv.ip,
-                                                    old_ip=old_ip,
+                                                    old_ip=ib_rollback_args["ip"],
                                                     new_comments=dbsrv.comments,
                                                     old_comments=old_comments)
                     dsdb_runner.commit_or_rollback()

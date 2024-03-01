@@ -91,6 +91,14 @@ class AddressAlias(DnsRecordTargetMixin, DnsRecord):
 
         super(AddressAlias, self).__init__(fqdn=fqdn, **kwargs)
 
+    def get_infoblox_args(self):
+        return {
+            'name': self.fqdn,
+            'ip': self.target_ip,
+            'ttl': -1 if self.ttl is None else self.ttl,
+            'reverse_ptr': None  # AddressAliases never have a PTR
+        }
+
 # Most addresses will not have aliases. This bulk loadable property allows the
 # formatter to avoid querying the alias table for every displayed DNS record
 # See http://www.sqlalchemy.org/trac/ticket/2139 about why we need the .alias()

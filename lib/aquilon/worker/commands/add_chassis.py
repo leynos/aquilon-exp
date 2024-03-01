@@ -66,15 +66,8 @@ class CommandAddChassis(BrokerCommand):
 
         ib_services = IBServices(logger, **arguments)
         if ib_services.feature_enabled("chassis") and ip:
+            ib_services.add_a_ptr(dbdns_rec)
             try:
-                ib_services.group.add_action(
-                    lambda name=str(dbchassis.primary_name.fqdn), ip=ip: ib_services.add_a(name, ip=ip),
-                    lambda name=str(dbchassis.primary_name.fqdn), ip=ip: ib_services.delete_a(name, ip=ip)
-                )
-                ib_services.group.add_action(
-                    lambda name=str(dbchassis.primary_name.fqdn), ip=ip: ib_services.add_ptr(name, ip=ip),
-                    lambda name=str(dbchassis.primary_name.fqdn), ip=ip: ib_services.delete_ptr(name, ip=ip)
-                )
                 ib_services.group.commit_or_rollback()
             except ProcessException as e:
                 dsdb_runner.rollback()

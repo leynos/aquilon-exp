@@ -624,7 +624,7 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         self.matchoutput(out, "Owned by GRN: grn:/ms/ei/aquilon/unittest", command)
         self.matchclean(out, "Reverse", command)
 
-    def test_900_add_address_ib(self):
+    def test_900_ib_add_address(self):
         mh = MockHub(self)
 
         mh.add_dns_domain('test-infoblox.cc', restricted=False)
@@ -643,7 +643,7 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         mh.delete_address("add-address-test.test-infoblox.cc", "10.25.0.2")
         mh.delete()
 
-    def test_910_address_with_alias(self):
+    def test_910_ib_address_with_alias(self):
         # This test checks that when we update an address which has address alias
         # both the address and address alias records are updated in infoblox
         # It also checks that if anything fails, the expected rollback commands will execute

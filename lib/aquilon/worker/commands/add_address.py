@@ -72,17 +72,8 @@ class CommandAddAddress(BrokerCommand):
 
             ib_services = IBServices(logger, justification=justification, **arguments)
             if ib_services.feature_enabled("address"):
+                ib_services.add_a_ptr(dbdns_rec)
                 try:
-                    ib_services.group.add_action(
-                        lambda name=str(dbdns_rec.fqdn), ip=ip, ttl=ttl: ib_services.add_a(name=name, ip=ip, ttl=ttl),
-                        lambda name=str(dbdns_rec.fqdn), ip=ip: ib_services.delete_a(name=name, ip=ip)
-                    )
-                    if not reverse_ptr:
-                        reverse_ptr = dbdns_rec.fqdn
-                    ib_services.group.add_action(
-                        lambda name=str(reverse_ptr), ip=ip, ttl=ttl: ib_services.add_ptr(name=name, ip=ip, ttl=ttl),
-                        lambda name=str(reverse_ptr), ip=ip: ib_services.delete_ptr(name=name, ip=ip)
-                    )
                     ib_services.group.commit_or_rollback()
                 except ProcessException as e:
                     if dsdb_runner:

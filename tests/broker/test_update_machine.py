@@ -529,8 +529,8 @@ class TestUpdateMachine(EventsTestMixin, TestBrokerCommand):
         self.dsdb_expect_update(swap_fqdn, iface="eth0", ip=swap_ip)
         self.dsdb_expect_update(fqdn, ip=old_ip)
 
-        ib_expect_update_a(fqdn, old_ip, new_ip=temp_ip)
-        ib_expect_del_ptr(old_ip)
+        ib_expect_update_a(fqdn, swap_ip, new_ip=temp_ip)
+        ib_expect_del_ptr(swap_ip)
         ib_expect_add_ptr(fqdn, temp_ip)
 
         ib_expect_update_a(swap_fqdn, old_ip, new_ip=swap_ip)
@@ -564,8 +564,8 @@ class TestUpdateMachine(EventsTestMixin, TestBrokerCommand):
         self.dsdb_expect_update(swap_fqdn, iface="eth0", ip=swap_ip)
         self.dsdb_expect_update(fqdn, ip=old_ip)
 
-        ib_expect_update_a(fqdn, old_ip, new_ip=temp_ip)
-        ib_expect_del_ptr(old_ip)
+        ib_expect_update_a(fqdn, swap_ip, new_ip=temp_ip)
+        ib_expect_del_ptr(swap_ip)
         ib_expect_add_ptr(fqdn, temp_ip)
 
         ib_expect_update_a(swap_fqdn, old_ip, new_ip=swap_ip)

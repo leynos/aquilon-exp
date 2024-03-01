@@ -471,11 +471,9 @@ class TestUsecaseNetworks(TestBrokerCommand):
             if network.nettype == 'management':
                 continue
             fqdn = '-'.join(network.name.split('_')[1:] + ['gateway']) + '.' + config['domain']
-            ib_expect_del_a(fqdn, str(network[1]))
-            ib_expect_del_ptr(str(network[1]))
             command = ["del_router_address", "--fqdn", fqdn]
             self.noouttest(command)
-            self.ib_verify()
+        self.ib_verify(empty=True)
 
     def test_805_del_hsrp(self):
         if 'skip_delete' in flags:

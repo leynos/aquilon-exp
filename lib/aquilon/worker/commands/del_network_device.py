@@ -71,14 +71,7 @@ class CommandDelNetworkDevice(BrokerCommand):
 
             ib_services = IBServices(logger, justification=justification, **arguments)
             if dbdns_rec and ib_services.feature_enabled("network_device"):
-                ib_services.group.add_action(
-                    lambda fqdn=str(dbdns_rec.fqdn), ip=dbdns_rec.ip: ib_services.delete_a(fqdn, ip),
-                    lambda fqdn=str(dbdns_rec.fqdn), ip=dbdns_rec.ip: ib_services.add_a(fqdn, ip)
-                )
-                ib_services.group.add_action(
-                    lambda ip=dbdns_rec.ip: ib_services.delete_ptr(ip),
-                    lambda fqdn=str(dbdns_rec.fqdn), ip=dbdns_rec.ip: ib_services.add_ptr(fqdn, ip)
-                )
+                ib_services.delete_a_ptr(dbdns_rec)
                 try:
                     ib_services.group.commit_or_rollback()
                 except ProcessException as e:

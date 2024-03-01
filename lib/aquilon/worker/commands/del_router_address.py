@@ -59,6 +59,7 @@ class CommandDelRouterAddress(BrokerCommand):
             raise NotFoundException("IP address {0} is not a router on "
                                     "{1:l}.".format(ip, dbnetwork))
 
+        ib_services = IBServices(logger, justification=justification, **arguments)
         # Only remove the DNS record if its not assinged to an interface,
         # or is a service address.  (This would be easier if service
         # address were not split from assignments)
@@ -66,6 +67,7 @@ class CommandDelRouterAddress(BrokerCommand):
             if dns_rec.is_unused:
                 delete_dns_record(dns_rec, verify_assignments=True,
                                   exporter=exporter)
+                ib_services.delete_a_ptr(dns_rec)
 
         dbnetwork.routers.remove(dbrouter)
         session.flush()
@@ -74,25 +76,5 @@ class CommandDelRouterAddress(BrokerCommand):
         plenaries.add(dbnetwork)
 
         with plenaries.transaction():
-            ib_services = IBServices(logger, justification=justification, **arguments)
             if ib_services.feature_enabled("router_address"):
-                # If FQDN not passed then look it up from the DNS records associated with the router
-                if not fqdn:
-                    for r in dbrouter.dns_records:
-                        if r.ip == ip:
-                            fqdn = r.fqdn
-                if not fqdn:
-                    logger.debug("Unable to determine FQDN from IP {} and can not remove A/PTR from Infoblox"
-                                 .format(ip))
-                else:
-                    try:
-                        ib_services.group.add_action(
-                            lambda fqdn=fqdn, ip=ip: ib_services.delete_a(name=fqdn, ip=ip),
-                            lambda fqdn=fqdn, ip=ip: ib_services.add_a(name=fqdn, ip=ip)
-                        )
-                        ib_services.group.add_action(
-                            lambda ip=ip: ib_services.delete_ptr(ip=ip)
-                        )
-                        ib_services.group.commit_or_rollback()
-                    except ProcessException as e:
-                        raise e
+                ib_services.group.commit_or_rollback()

@@ -54,11 +54,8 @@ class IBServicesRequestHandler(SimpleHTTPRequestHandler):
             test_case = http_monitor.expects.pop(0)
             r = test_case["request"]
 
-            assert r["method"] == self.command, "Expected request {} {} {}, got {} {} {}".format(
-                r["method"], r["path"], r["payload"], self.command, self.path, body)
-
-            assert r["path"] == self.path, "Expected {} request {} {}, got {} {}".format(
-                r["method"], r["path"], r["payload"], self.path, body)
+            assert r["method"] == self.command and r["path"] == self.path, "Expected request:\n{} {} {}\ngot:\n{} {} {}\n".format(
+                    r["method"], r["path"], r["payload"], self.command, self.path, body)
 
             if body:
                 expected_body = json.dumps(r["payload"], sort_keys=True)
@@ -107,7 +104,7 @@ def ib_test_case(method, path, payload, response_code, response_body):
 
 eonid = "1156"
 
-def ib_expect_add_ptr(fqdn, ip, ttl=None, response_code=201, response_body="", justification=None, fail=False):
+def ib_expect_add_ptr(fqdn, ip, ttl=-1, response_code=201, response_body="", justification=None, fail=False):
     ip = str(ip)
     if fail:
         response_code = 400
@@ -116,7 +113,7 @@ def ib_expect_add_ptr(fqdn, ip, ttl=None, response_code=201, response_body="", j
         "address": ip,
         "eonid": eonid,
     }
-    if ttl:
+    if ttl is not None:
         payload["ttl"] = ttl
     if justification is not None:
         payload["cm_token"] = justification
@@ -139,7 +136,7 @@ def ib_expect_del_ptr(ip, response_code=204, response_body="", justification=Non
     http_monitor.expect(test_case)
 
 
-def ib_expect_update_ptr(ip, new_fqdn, new_ttl=None, response_code=201, response_body="", justification=None,
+def ib_expect_update_ptr(ip, new_fqdn, new_ttl=-1, response_code=201, response_body="", justification=None,
                          fail=False):
     ip = str(ip)
     if fail:
@@ -148,7 +145,7 @@ def ib_expect_update_ptr(ip, new_fqdn, new_ttl=None, response_code=201, response
         "name": new_fqdn,
         "eonid": eonid,
     }
-    if new_ttl:
+    if new_ttl is not None:
         payload["ttl"] = new_ttl
     if justification is not None:
         payload["cm_token"] = justification
@@ -157,7 +154,7 @@ def ib_expect_update_ptr(ip, new_fqdn, new_ttl=None, response_code=201, response
     http_monitor.expect(test_case)
 
 
-def ib_expect_add_a(fqdn, ip, ttl=None, response_code=201, response_body="", justification=None, fail=False):
+def ib_expect_add_a(fqdn, ip, ttl=-1, response_code=201, response_body="", justification=None, fail=False):
     ip = str(ip)
     if fail:
         response_code = 400
@@ -166,7 +163,7 @@ def ib_expect_add_a(fqdn, ip, ttl=None, response_code=201, response_body="", jus
         "address": ip,
         "eonid": eonid,
     }
-    if ttl:
+    if ttl is not None:
         payload["ttl"] = ttl
     if justification is not None:
         payload["cm_token"] = justification
@@ -190,7 +187,7 @@ def ib_expect_del_a(fqdn, ip, response_code=204, response_body="", justification
 
 
 def ib_expect_update_a(fqdn, original_ip, new_ip=None,
-                       new_ttl=None, response_code=204, response_body="",
+                       new_ttl=-1, response_code=204, response_body="",
                        justification=None, fail=False):
     original_ip = str(original_ip)
     if fail:
@@ -198,7 +195,7 @@ def ib_expect_update_a(fqdn, original_ip, new_ip=None,
     payload = {"eonid": eonid}
     if new_ip:
         payload["address"] = str(new_ip)
-    if new_ttl:
+    if new_ttl is not None:
         payload["ttl"] = new_ttl
     if justification is not None:
         payload["cm_token"] = justification
@@ -210,11 +207,11 @@ def ib_expect_update_a(fqdn, original_ip, new_ip=None,
     http_monitor.expect(test_case)
 
 
-def ib_expect_add_alias(fqdn, target, ttl=None, response_code=204, response_body="", justification=None, fail=False):
+def ib_expect_add_alias(fqdn, target, ttl=-1, response_code=204, response_body="", justification=None, fail=False):
     if fail:
         response_code = 400
     payload = {"eonid": eonid, "name": fqdn, "target": target}
-    if ttl:
+    if ttl is not None:
         payload["ttl"] = ttl
     if justification is not None:
         payload["cm_token"] = justification
@@ -225,14 +222,14 @@ def ib_expect_add_alias(fqdn, target, ttl=None, response_code=204, response_body
     http_monitor.expect(test_case)
 
 
-def ib_expect_update_alias(fqdn, target=None, ttl=None, response_code=204, response_body="", justification=None,
+def ib_expect_update_alias(fqdn, target=None, ttl=-1, response_code=204, response_body="", justification=None,
                            fail=False):
     if fail:
         response_code = 400
     payload = {"eonid": eonid}
     if target:
         payload["target"] = target
-    if ttl:
+    if ttl is not None:
         payload["ttl"] = ttl
     if justification is not None:
         payload["cm_token"] = justification

@@ -84,7 +84,6 @@ class TestAddServiceAddressSNAliases(TestBrokerCommand):
         ib_expect_add_a(service_addr, str(ip))
         ib_expect_add_ptr("utvcs1pn1.aqd-unittest.ms.com", str(ip))
         ib_expect_add_a("utvcs1pn1.aqd-unittest.ms.com", str(ip))
-        ib_expect_add_ptr("utvcs1pn1.aqd-unittest.ms.com", str(ip))
         self.dsdb_expect_add(service_addr, ip)
         command = ['add_service_address', '--resourcegroup=utvcs1ifset',
                    '--name=utvcs1sa1', '--service_address', service_addr,

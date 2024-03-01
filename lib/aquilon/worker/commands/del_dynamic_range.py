@@ -95,17 +95,8 @@ class CommandDelDynamicRange(BrokerCommand):
             fqdn = str(stub.fqdn)
             dsdb_runner.delete_host_details(fqdn, stub.ip)
 
-            ip = str(stub.ip)
-
             # We do this in all cases, whatever the range_class value.
-            ib_services.group.add_action(
-                lambda fqdn=fqdn, ip=ip: ib_services.delete_a(fqdn, ip),
-                lambda fqdn=fqdn, ip=ip: ib_services.add_a(fqdn, ip)
-            )
-            ib_services.group.add_action(
-                lambda ip=ip: ib_services.delete_ptr(ip),
-                lambda fqdn=fqdn, ip=ip: ib_services.add_ptr(fqdn, ip)
-            )
+            ib_services.delete_a_ptr(stub)
 
         prefix = str(dbstubs[0]).split("-", 1)
         startip = str(dbstubs[0].ip)

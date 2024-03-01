@@ -68,7 +68,8 @@ class CommandDelAlias(BrokerCommand):
         if ib_services.feature_enabled("alias"):
             try:
                 if ib_services.assert_dns_environment(dbdns_rec.fqdn.dns_environment.name):
-                    ib_services.delete_dns_alias(str(dbdns_rec))
+                    ib_services.delete_dns_alias(dbdns_rec)
+                    ib_services.group.commit_or_rollback()
             except ProcessException as e:
                 if dsdb_runner:
                     dsdb_runner.rollback()

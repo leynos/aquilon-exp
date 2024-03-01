@@ -50,7 +50,7 @@ class CommandUpdateConsoleServer(BrokerCommand):
         if serial is not None:
             dbcons.serial_no = serial
 
-        old_ip = dbcons.primary_name.ip
+        rollback_infoblox_args = dbcons.primary_name.get_infoblox_args()
         if ip:
             update_primary_ip(session, logger, dbcons, ip)
 
@@ -69,21 +69,8 @@ class CommandUpdateConsoleServer(BrokerCommand):
 
         ib_services = IBServices(logger, justification=justification, **arguments)
         if ip and ib_services.feature_enabled("console_server"):
+            ib_services.update_a_ptr(dbcons.primary_name, rollback_infoblox_args)
             try:
-                ib_services.group.add_action(
-                    lambda name=str(dbcons.primary_name.fqdn), old_ip=old_ip, new_ip=ip:
-                        ib_services.update_a(name=name, ip=old_ip, new_ip=new_ip),
-                    lambda name=str(dbcons.primary_name.fqdn), old_ip=ip, new_ip=old_ip:
-                        ib_services.update_a(name=name, ip=old_ip, new_ip=new_ip)
-                )
-                ib_services.group.add_action(
-                    lambda ip=old_ip: ib_services.delete_ptr(ip),
-                    lambda name=str(dbcons.primary_name.fqdn), ip=old_ip: ib_services.add_ptr(name=name, ip=ip)
-                )
-                ib_services.group.add_action(
-                    lambda name=str(dbcons.primary_name.fqdn), ip=ip: ib_services.add_ptr(name=name, ip=ip),
-                    lambda ip=ip: ib_services.delete_ptr(ip)
-                )
                 ib_services.group.commit_or_rollback()
             except ProcessException as e:
                 dsdb_runner.rollback()

@@ -421,7 +421,7 @@ class TestAddServiceAddress(TestBrokerCommand):
                               'building ut.  Please specify --dns_domain.',
                          command)
 
-    def test_800_infoblox_host_sa(self):
+    def test_800_ib_host_sa(self):
         mh = MockHub(self)
         mh.add_dns_domain('test-infoblox.cc', restricted=False)
         mh.add_network()
@@ -448,6 +448,7 @@ class TestAddServiceAddress(TestBrokerCommand):
 
         ib_expect_update_ptr(ip="10.25.0.1", new_fqdn=hname)
         command = ['update_service_address', '--name', 'test-service', '--hostname', hname, '--map_to_primary']
+
         self.noouttest(command)
         self.ib_verify()
         self.dsdb_verify(empty=True)
@@ -466,7 +467,7 @@ class TestAddServiceAddress(TestBrokerCommand):
         self.dsdb_expect_update("sa.test-infoblox.cc", ip="10.25.0.2")
         ib_expect_update_a(fqdn="sa.test-infoblox.cc", original_ip="10.25.0.1", new_ip="10.25.0.2")
         ib_expect_del_ptr(ip="10.25.0.1")
-        ib_expect_add_ptr(fqdn="sa.test-infoblox.cc", ip="10.25.0.2")
+        ib_expect_add_ptr(fqdn=hname, ip="10.25.0.2")
         self.noouttest(command)
         self.dsdb_verify()
 
@@ -493,7 +494,7 @@ class TestAddServiceAddress(TestBrokerCommand):
 
         mh.delete()
 
-    def test_810_infoblox_resourcegroup_sa(self):
+    def test_810_ib_resourcegroup_sa(self):
         mh = MockHub(self)
         mh.add_dns_domain('test-infoblox.cc', restricted=False)
         mh.add_network()
@@ -507,7 +508,6 @@ class TestAddServiceAddress(TestBrokerCommand):
         self.dsdb_expect_delete("10.25.0.1")
         self.dsdb_expect_add("sa.test-infoblox.cc", "10.25.0.1")
         ib_expect_add_a("resource-group-shared-name.test-infoblox.cc", "10.25.0.1")
-        ib_expect_add_ptr("resource-group-shared-name.test-infoblox.cc", "10.25.0.1")
         command = ['add_service_address', '--name', 'test-service', '--service_address', 'sa.test-infoblox.cc',
                    '--resourcegroup', 'test-resource-group']
         self.noouttest(command)
@@ -536,6 +536,7 @@ class TestAddServiceAddress(TestBrokerCommand):
                    '--ip', '10.25.0.2', '--map_to_shared']
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         # Test that when we send 2 IB requests and the first one succeeds but the second one fails,
         # the first one is rolled back
@@ -549,9 +550,7 @@ class TestAddServiceAddress(TestBrokerCommand):
 
         self.dsdb_expect_delete("10.25.0.2")
         ib_expect_del_a("resource-group-shared-name.test-infoblox.cc", "10.25.0.2")
-        ib_expect_del_ptr("10.25.0.2")
         ib_expect_del_a("sa.test-infoblox.cc", "10.25.0.2", fail=True)
-        ib_expect_add_ptr("sa.test-infoblox.cc", "10.25.0.2", ttl=100)
         ib_expect_add_a("resource-group-shared-name.test-infoblox.cc", "10.25.0.2", ttl=100)  # Expect IB rollback
         self.dsdb_expect_add("sa.test-infoblox.cc", "10.25.0.2")  # Expect DSDB rollback
         command = ['del_service_address', '--name', 'test-service', '--resourcegroup', 'test-resource-group']
@@ -560,9 +559,8 @@ class TestAddServiceAddress(TestBrokerCommand):
 
         self.dsdb_expect_delete("10.25.0.2")
         ib_expect_del_a("resource-group-shared-name.test-infoblox.cc", "10.25.0.2")
-        ib_expect_del_ptr("10.25.0.2")
         ib_expect_del_a("sa.test-infoblox.cc", "10.25.0.2")
-        ib_expect_del_ptr("10.25.0.2")  # This is odd, why are we trying to delete the PTR twice ?
+        ib_expect_del_ptr("10.25.0.2")
         command = ['del_service_address', '--name', 'test-service', '--resourcegroup', 'test-resource-group']
         self.noouttest(command)
         self.dsdb_verify()

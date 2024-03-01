@@ -255,7 +255,7 @@ class MockHub:
         if fqdn == self.default_dns_domain:
             self.default_dns_domain = None
 
-    def add_address(self, fqdn, ip, ttl=None, reverse_ptr=None, comments=None, dns_environment="internal",
+    def add_address(self, fqdn, ip, ttl=-1, reverse_ptr=None, comments=None, dns_environment="internal",
                     fail_dsdb=False, fail_ib=False, create_ptr=True):
 
         if dns_environment == "internal":
@@ -271,7 +271,7 @@ class MockHub:
         command = ["add_address", "--fqdn", fqdn,
                    "--ip", ip,
                    "--grn", self.grn]
-        if ttl is not None:
+        if ttl is not None and ttl != -1:
             command.extend(["--ttl", ttl])
         if dns_environment is not None:
             command.extend(["--dns_environment", dns_environment])
@@ -288,7 +288,7 @@ class MockHub:
         self._engine.dsdb_verify(True if fail_ib or dns_environment != "internal" else False)
         self._engine.ib_verify(True if fail_dsdb else False)
 
-    def update_address(self, fqdn, original_ip, new_ip=None, new_ttl=None, reverse_ptr=None, dns_environment="internal",
+    def update_address(self, fqdn, original_ip, new_ip=None, new_ttl=-1, reverse_ptr=None, dns_environment="internal",
                        comments=None, grn=None, fail_dsdb=False, fail_ib=False):
 
         self._engine.dsdb_expect_update(fqdn, iface=None, ip=new_ip,
@@ -307,7 +307,7 @@ class MockHub:
             command.extend(["--dns_environment", dns_environment])
         if new_ip is not None:
             command.extend(["--ip", new_ip])
-        if new_ttl is not None:
+        if new_ttl is not None and new_ttl != -1:
             command.extend(["--ttl", new_ttl])
         if reverse_ptr is not None:
             command.extend(["--reverse_ptr", reverse_ptr])
@@ -409,12 +409,12 @@ class MockHub:
 
         del self.shared_service_names[sharedservicename]
 
-    def add_alias(self, fqdn, target, ttl=None):
+    def add_alias(self, fqdn, target, ttl=-1):
         ib_expect_add_alias(fqdn, target, ttl=ttl)
         command = ["add_alias", "--fqdn", fqdn,
                    "--target", target,
                    "--grn", self.grn]
-        if ttl is not None:
+        if ttl is not None and ttl != -1:
             command.append("--ttl")
             command.append(ttl)
         self._engine.noouttest(command)

@@ -43,7 +43,6 @@ from aquilon.aqdb.model.dns_domain import parse_fqdn
 from aquilon.aqdb.model.network import get_net_id_from_ip
 from aquilon.worker.dbwrappers.grn import lookup_grn
 from aquilon.worker.dbwrappers.interface import check_ip_restrictions
-from aquilon.worker.ib_services import IBServices
 
 from sqlalchemy.orm import (
     joinedload,
@@ -530,7 +529,7 @@ def set_reverse_ptr(session, logger, dbdns_rec, reverse_ptr):
 
 def add_address_alias(session, logger, config, dbsrcfqdn, dbtargetfqdn,
                       ttl, grn, eon_id, comments, exporter=None,
-                      flush_session=False, sync_ib=True, justification=None, **arguments):
+                      flush_session=False, ib_services=None, **arguments):
     """Add an address-alias record (from source and target FQDN DB objects).
 
     Does not allow the addition of an address-alias into 'ms.com' in the
@@ -579,11 +578,10 @@ def add_address_alias(session, logger, config, dbsrcfqdn, dbtargetfqdn,
     # create only an A-record in Infoblox.
     # PTR record is not required as it has already been created when the target (which is in fact another A-record)
     # was created.
-    ib_services = IBServices(logger, justification=justification, **arguments)
-    if ib_services.feature_enabled("address_alias") and sync_ib:
+    if ib_services.feature_enabled("address_alias"):
         if ib_services.assert_dns_environment(dbsrcfqdn.dns_environment.name) and \
                 ib_services.assert_dns_environment(dbtargetfqdn.dns_environment.name):
-            ib_services.add_a(dbsrcfqdn.fqdn, dbaa.target_ip, ttl=ttl)
+            ib_services.add_a_ptr(dbaa)
 
     if exporter:
         other_recs = [dr for dr in dbsrcfqdn.dns_records
