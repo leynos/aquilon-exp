@@ -37,8 +37,6 @@ from functools import wraps
 import jsonschema
 
 from io import StringIO, BytesIO
-# TODO Will be removed in next PR
-# from six.moves import cStringIO as StringIO  # pylint: disable=F0401
 from six import text_type
 
 from aquilon.exceptions_ import (ArgumentError, AquilonError,
@@ -309,7 +307,6 @@ def write_file(filename, content, mode=None, compress=None,
     """
     if compress == 'gzip':
         config = Config()
-        # buffer = StringIO() TODO Will be removed in next PR
         buffer = BytesIO()
         compress = config.getint('broker', 'gzip_level')
         zipper = gzip.GzipFile(filename, 'w', compress, buffer)
