@@ -357,7 +357,8 @@ class BrokerCommand:
                 com_kwargs[k] = v
 
         user = request.getPrincipal()
-        request.status.create_description(user=user, command=self.command,
+        request.status.create_description(user=user.decode() if isinstance(user, bytes) else user,
+                                          command=self.command,
                                           kwargs=com_kwargs,
                                           ignored=_IGNORED_AUDIT_ARGS)
         logger = request.logger
