@@ -161,7 +161,18 @@ class TestBrokerCommand(unittest.TestCase):
     def tearDown(self):
         if not os.environ.get("AQD_UNITTEST_FAILFAST"):
             return
-        if not all(sys.exc_info()):
+
+        if hasattr(self._outcome, 'errors'):
+            # Python 3.4 - 3.10  (These two methods have no side effects)
+            result = self.defaultTestResult()
+            self._feedErrorsToResult(result, self._outcome.errors)
+        else:
+            # Python 3.11+
+            result = self._outcome.result
+
+        test_succeeded = all(test != self for test, text in result.errors + result.failures)
+
+        if test_succeeded:
             copy_sqldb(self.config, target='SNAPSHOT')
 
     def template_name(self, *template, **args):
