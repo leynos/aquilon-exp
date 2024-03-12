@@ -90,18 +90,6 @@ class CommandUpdateAddress(BrokerCommand):
         ib_services = IBServices(logger, justification=justification, **arguments)
         if ip or reverse_ptr or clear_ttl or ttl:
             ib_services.update_a_ptr(dbdns_rec, ib_rollback_args)
-            if ip:
-                for address_alias in dbdns_rec.address_aliases:
-                    alias_target = str(address_alias.target)
-                    original_address_alias_args = address_alias.get_infoblox_args()
-                    original_address_alias_args["ip"] = ib_rollback_args["ip"]
-                    if alias_target == fqdn:
-                        # For address alias we just update the A record of ALIAS_FQDN
-                        # we don't touch the PTR record, ie, we want the PTR record to keep pointing to the
-                        # address alias target, and not the address alias itself.
-                        # ib_services.update_a_ptr knows not to touch the ptr in this case
-                        ib_services.update_a_ptr(address_alias, original_address_alias_args)
-
 
         dsdb_runner = None
         if dbdns_env.is_default and (dbdns_rec.ip != old_ip or dbdns_rec.comments != old_comments):
@@ -112,10 +100,10 @@ class CommandUpdateAddress(BrokerCommand):
                                             old_comments=old_comments)
             dsdb_runner.commit_or_rollback()
 
-            if ib_services.feature_enabled("address"):
-                try:
-                    ib_services.group.commit_or_rollback()
-                except ProcessException as e:
-                    if dsdb_runner:
-                        dsdb_runner.rollback()
-                    raise e
+        if ib_services.feature_enabled("address"):
+            try:
+                ib_services.group.commit_or_rollback()
+            except ProcessException as e:
+                if dsdb_runner:
+                    dsdb_runner.rollback()
+                raise e

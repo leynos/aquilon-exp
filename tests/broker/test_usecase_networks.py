@@ -216,6 +216,7 @@ class TestUsecaseNetworks(TestBrokerCommand):
         self.noouttest(["add", "dns_domain",
                         "--dns_domain", config['domain']] + self.valid_just_tcm)
         self.dsdb_verify()
+        # no ib_verify because domains are not synced to ib
 
     def test_100_add_6509_model(self):
         if 'skip_prereq' in flags:
@@ -338,17 +339,19 @@ class TestUsecaseNetworks(TestBrokerCommand):
 
         for network in net_list[:5]:
             fqdn = '-'.join(network.name.split('_')[1:] + ['gateway']) + '.' + config['domain']
-            ib_expect_add_a(fqdn, str(network[1]))
-            ib_expect_add_ptr(fqdn, str(network[1]))
+            #ib_expect_add_a(fqdn, str(network[1]))
+            #ib_expect_add_ptr(fqdn, str(network[1]))
             command = ["add_router_address", "--fqdn", fqdn]
             self.noouttest(command)
+            self.ib_verify(empty=True)  # No ib requests because the fqdn/ip assigned as a router address already existed
 
         for network in net_list[5:10]:
             fqdn = '-'.join(network.name.split('_')[1:] + ['gateway']) + '.' + config['domain']
-            ib_expect_add_a(fqdn, str(network[1]))
-            ib_expect_add_ptr(fqdn, str(network[1]))
+            #ib_expect_add_a(fqdn, str(network[1]))
+            #ib_expect_add_ptr(fqdn, str(network[1]))
             command = ["add_router_address", "--ip", network[1]]
             self.noouttest(command)
+            self.ib_verify(empty=True)  # No ib requests because the fqdn/ip assigned as a router address already existed
 
         for network in net_list[10:]:
             fqdn = '-'.join(network.name.split('_')[1:] + ['gateway']) + '.' + config['domain']
@@ -356,6 +359,7 @@ class TestUsecaseNetworks(TestBrokerCommand):
             ib_expect_add_ptr(fqdn, str(network[1]))
             command = ["add_router_address", "--fqdn", fqdn, "--ip", network[1]]
             self.noouttest(command)
+            self.ib_verify()
 
     ########## TESTING STAGE ##########
 
@@ -576,6 +580,7 @@ class TestUsecaseNetworks(TestBrokerCommand):
         command = "del dns_domain --dns_domain %s" % config['domain']
         self.noouttest(command.split(" "))
         self.dsdb_verify()
+        # no ib_verify because domains are not synced to ib
 
 
 if __name__ == '__main__':

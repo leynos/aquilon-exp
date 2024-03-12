@@ -55,6 +55,7 @@ class TestAddRouterAddress(TestBrokerCommand):
                          "{0} is already used as the primary name of switch "
                          "ut3gd1r04.".format(primary_name),
                          command)
+        self.ib_verify(empty=True)
 
     def test_105_show_router(self):
         net = self.net["ut10_eth1"]
@@ -105,6 +106,7 @@ class TestAddRouterAddress(TestBrokerCommand):
                 ib_expect_add_ptr(rtr, str(ip))
                 command = ["add", "router", "address", "--ip", ip, "--fqdn", rtr]
                 self.noouttest(command)
+        self.ib_verify()
 
     def test_125_show_zebra0_proto(self):
         net = self.net["zebra_eth0"]
@@ -133,13 +135,11 @@ class TestAddRouterAddress(TestBrokerCommand):
         # Test a different address assignment convention: router addresses are
         # at the end, not at the beginning
         hostname = "gw1.excx.aqd-unittest.ms.com"
-        ib_expect_add_a(hostname, str(net[-2]))
-        ib_expect_add_ptr(hostname, str(net[-2]))
         command = ["add", "router", "address", "--ip", net[-2],
                    "--fqdn", hostname,
                    "--network_environment", "excx"]
         self.noouttest(command)
-        self.ib_verify()
+        self.ib_verify(empty=True)  # no ib requests expected because fqdn is not in the internal dns environment
 
     def test_145_show_excx(self):
         command = ["show", "router", "address", "--network_environment", "excx", "--all"]
@@ -152,13 +152,11 @@ class TestAddRouterAddress(TestBrokerCommand):
     def test_150_add_utcolo(self):
         net = self.net["unknown1"]
         hostname = "gw1.utcolo.aqd-unittest.ms.com"
-        ib_expect_add_a(hostname, str(net[2]))
-        ib_expect_add_ptr(hostname, str(net[2]))
         command = ["add", "router", "address", "--ip", net[2],
                    "--fqdn", "gw1.utcolo.aqd-unittest.ms.com",
                    "--network_environment", "utcolo"]
         self.noouttest(command)
-        self.ib_verify()
+        self.ib_verify(empty=True)  # no ib requests expected because fqdn is not in the internal dns environment
 
     def test_200_add_router_again(self):
         net = self.net["ut10_eth1"]
@@ -169,6 +167,7 @@ class TestAddRouterAddress(TestBrokerCommand):
         self.matchoutput(out, "IP address {} is already in use by DNS "
                               "record ut3gd1r04-v109-hsrp.aqd-unittest.ms.com.".format(net.gateway),
                          command)
+        self.ib_verify(empty=True)  # no ib requests expected because input validation failed
 
     def test_200_can_add_non_router_host_space_ips_as_router_addresses(self):
         # This addresses AQUILON-6321 where unixops requested the removal of
@@ -263,9 +262,9 @@ class TestAddRouterAddress(TestBrokerCommand):
         ib_expect_del_a("router-address.test-infoblox.cc", "10.25.0.1")
         ib_expect_del_ptr("10.25.0.1")
         self.noouttest(command)
-        self.dsdb_verify(empty=True)
-
+        self.dsdb_verify(empty=True)  # No dsdb requests because router addresses are not synced with dsdb
         self.ib_verify()
+
         mh.delete()
 
 if __name__ == '__main__':

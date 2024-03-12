@@ -147,7 +147,10 @@ class TestDelHost(VerifyNotificationsMixin, MachineTestMixin,
     def test_150_del_aurora_default_os(self):
         command = "del host --hostname test-aurora-default-os.ms.com --quiet"
         self.noouttest(command.split(" "))
+
+        # Aurora hosts are not sent to either DSDB/IB
         self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
     def test_151_verify_del_aurora_default_os(self):
         command = "show host --hostname test-aurora-default-os.ms.com"
@@ -157,8 +160,7 @@ class TestDelHost(VerifyNotificationsMixin, MachineTestMixin,
         fqdn = "test-windows-default-os.msad.ms.com"
         ip = self.net["tor_net_0"].usable[5]
         self.dsdb_expect_delete(ip)
-        ib_expect_del_a(fqdn, ip)
-        ib_expect_del_ptr(ip)
+        ib_expect_del_ptr(ip)  #  msad.ms.com is a restricted domain, only ptr updated in IB
         command = "del host --hostname {} --quiet".format(fqdn)
         self.noouttest(command.split(" "))
         self.dsdb_verify()
@@ -222,7 +224,6 @@ class TestDelHost(VerifyNotificationsMixin, MachineTestMixin,
             machine = mh.hosts[host]['machine']
             net = mh.networks[mh.machines[machine]['network']]['net']
             ip = net.usable[mh.machines[machine]['net_index']]
-            ib_expect_del_a(host, ip)
             ib_expect_del_ptr(ip)
             self.dsdb_expect_delete(ip=ip)
             self.successtest(['del_host', '--hostname', host])

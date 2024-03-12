@@ -154,6 +154,7 @@ class TestAddAquilonHost(EventsTestMixin, TestBrokerCommand):
                    "--interface", "eth1", "--fqdn", fqdn]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)
 
     def test_132_add_unittest20_rollback(self):
         "Test rollback when IB Services call fails"

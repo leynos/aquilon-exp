@@ -534,19 +534,21 @@ class TestAddNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
         self.dsdb_expect_add("network-device.test-infoblox.cc", "10.25.0.1", interface="gi0", fail=True)
         self.dsdberrortest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because dsdb failed
 
         self.dsdb_expect_add("network-device.test-infoblox.cc", "10.25.0.1", interface="gi0")
         ib_expect_add_a("network-device.test-infoblox.cc", "10.25.0.1", fail=True)
         self.dsdb_expect_delete("10.25.0.1")
         self.iberrortest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         self.dsdb_expect_add("network-device.test-infoblox.cc", "10.25.0.1", interface="gi0")
         ib_expect_add_a("network-device.test-infoblox.cc", "10.25.0.1")
         ib_expect_add_ptr("network-device.test-infoblox.cc", "10.25.0.1")
         self.noouttest(command)
         self.dsdb_verify()
-
+        self.ib_verify()
 
 
         command = ["update_network_device", "--network_device", "network-device.test-infoblox.cc", "--ip", "10.25.0.2"]
@@ -554,12 +556,14 @@ class TestAddNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
         self.dsdb_expect_update("network-device.test-infoblox.cc", ip="10.25.0.2", iface="gi0", fail=True)
         self.dsdberrortest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because dsdb failed
 
         self.dsdb_expect_update("network-device.test-infoblox.cc", ip="10.25.0.2", iface="gi0")
         ib_expect_update_a("network-device.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2", fail=True)
         self.dsdb_expect_update("network-device.test-infoblox.cc", ip="10.25.0.1", iface="gi0")
         self.iberrortest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         self.dsdb_expect_update("network-device.test-infoblox.cc", ip="10.25.0.2", iface="gi0")
         ib_expect_update_a("network-device.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2")
@@ -567,18 +571,21 @@ class TestAddNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
         ib_expect_add_ptr("network-device.test-infoblox.cc", "10.25.0.2")
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         command = ["update_network_device", "--network_device", "network-device.test-infoblox.cc",
                    "--comments", "Test no request to IB"]
         self.dsdb_expect_update("network-device.test-infoblox.cc", iface="gi0", comments="Test no request to IB")
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because only comments changed
 
         command = ['del_network_device', '--network_device', 'network-device.test-infoblox.cc']
 
         self.dsdb_expect_delete("10.25.0.2", fail=True)
         self.dsdberrortest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because dsdb failed
 
         self.dsdb_expect_delete("10.25.0.2")
         ib_expect_del_a("network-device.test-infoblox.cc", "10.25.0.2", fail=True)
@@ -586,14 +593,15 @@ class TestAddNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
                              comments="Test no request to IB")
         self.iberrortest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         self.dsdb_expect_delete("10.25.0.2")
         ib_expect_del_a("network-device.test-infoblox.cc", "10.25.0.2")
         ib_expect_del_ptr("10.25.0.2")
         self.noouttest(command)
         self.dsdb_verify()
-
         self.ib_verify()
+
         mh.delete()
 
 if __name__ == '__main__':

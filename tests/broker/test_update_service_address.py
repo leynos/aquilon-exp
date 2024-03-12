@@ -36,6 +36,7 @@ class TestUpdateServiceAddress(TestBrokerCommand):
         self.noouttest(["update_service_address",
                         "--hostname", "unittest20.aqd-unittest.ms.com",
                         "--name", "hostname", "--interfaces", "eth0"])
+        self.ib_verify(empty=True)
 
     def test_101_verify_eth1_removed(self):
         ip = self.net["zebra_vip"].usable[2]
@@ -57,6 +58,7 @@ class TestUpdateServiceAddress(TestBrokerCommand):
         self.noouttest(["update_service_address",
                         "--hostname", "unittest20.aqd-unittest.ms.com",
                         "--name", "hostname", "--interfaces", "eth1"])
+        self.ib_verify(empty=True)
 
     def test_103_verify_change(self):
         ip = self.net["zebra_vip"].usable[2]
@@ -78,6 +80,7 @@ class TestUpdateServiceAddress(TestBrokerCommand):
         self.noouttest(["update_service_address",
                         "--hostname", "unittest20.aqd-unittest.ms.com",
                         "--name", "hostname", "--interfaces", "eth0, eth1"])
+        self.ib_verify(empty=True)
 
     def test_105_verify_both(self):
         ip = self.net["zebra_vip"].usable[2]
@@ -177,7 +180,7 @@ class TestUpdateServiceAddress(TestBrokerCommand):
 
 
     def test_300_update_ext_service_address(self):
-        # check that updating external service addresses do not invoke DSDB
+        # check that updating external service addresses do not invoke DSDB/IB
         fqdn = "unittest20.aqd-unittest.ms.com"
         command = ["update_service_address", "--ip", "192.168.5.26",
                    "--hostname", fqdn,
@@ -185,6 +188,7 @@ class TestUpdateServiceAddress(TestBrokerCommand):
                    "--network_environment", "excx"]
         self.noouttest(command)
         self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
 
 if __name__ == '__main__':

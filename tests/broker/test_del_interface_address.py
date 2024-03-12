@@ -139,8 +139,9 @@ class TestDelInterfaceAddress(TestBrokerCommand):
                    "--interface", "eth1", "--ip", ip,
                    "--network_environment", "utcolo"]
         self.noouttest(command)
-        # External addresses should not affect DSDB
+        # External addresses should not affect DSDB/IB
         self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
         ip = net[5]
         command = ["del", "interface", "address",
@@ -148,8 +149,9 @@ class TestDelInterfaceAddress(TestBrokerCommand):
                    "--interface", "eth2", "--ip", ip,
                    "--network_environment", "utcolo"]
         self.noouttest(command)
-        # External addresses should not affect DSDB
+        # External addresses should not affect DSDB/IB
         self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
     def test_220_delunittest26(self):
         ip = self.net["routing1"].usable[0]
@@ -219,24 +221,22 @@ class TestDelInterfaceAddress(TestBrokerCommand):
 
     def test_260_delauroraextraip(self):
         ip = self.net["tor_net_0"].usable[6]
-        # TODO, This data is not going to dsdb, maybe because it's an aurora host?  Should this data go to IB ?
-        ib_expect_del_a("test-aurora-default-os-v0.ms.com", str(ip))
-        ib_expect_del_ptr(str(ip))
         command = ["del_interface_address", "--interface", "eth0", "--ip", ip,
                    "--machine", "test-aurora-default-os.ms.com"]
         out = self.statustest(command)
         self.matchoutput(out, "WARNING: removing IP %s from AQDB and *not* "
                          "changing DSDB." % ip, command)
         self.dsdb_verify(empty=True)
-        self.ib_verify()
+        self.ib_verify(empty=True)
 
     def test_270_delunittest20eth2(self):
         command = ["del_interface_address", "--machine", "ut3c5n2",
                    "--interface", "eth2", "--network_environment", "excx",
                    "--ip", "192.168.5.24"]
         self.statustest(command)
-        # External IP addresses should not be removed from DSDB
+        # External IP addresses should not be removed from DSDB/IB
         self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestDelInterfaceAddress)

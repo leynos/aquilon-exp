@@ -92,8 +92,9 @@ class CommandDelAddress(BrokerCommand):
         ip = dbaddress.ip
         old_fqdn = str(dbaddress.fqdn)
         old_comments = dbaddress.comments
+        ib_services = IBServices(logger, justification=justification, **arguments)
         delete_dns_record(dbaddress, verify_assignments=True,
-                          exporter=exporter)
+                          exporter=exporter, ib_services=ib_services)
         session.flush()
 
         dsdb_runner = None
@@ -103,12 +104,10 @@ class CommandDelAddress(BrokerCommand):
                                             comments=old_comments)
             dsdb_runner.commit_or_rollback()
 
-            ib_services = IBServices(logger, justification=justification, **arguments)
-            if ib_services.feature_enabled("address"):
-                ib_services.delete_a_ptr(dbaddress)
-                try:
-                    ib_services.group.commit_or_rollback()
-                except ProcessException as e:
-                    if dsdb_runner:
-                        dsdb_runner.rollback()
-                    raise e
+        if ib_services.feature_enabled("address"):
+            try:
+                ib_services.group.commit_or_rollback()
+            except ProcessException as e:
+                if dsdb_runner:
+                    dsdb_runner.rollback()
+                raise e

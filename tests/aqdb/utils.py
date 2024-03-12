@@ -19,7 +19,7 @@
 
 import os
 import sys
-from subprocess import call
+from subprocess import run
 
 
 def load_classpath():
@@ -58,8 +58,8 @@ def copy_sqldb(config, target='DB', test=None):
         else:
             dump = config.get('unittest', 'last_success_db_snapshot')
         if target == 'DB':
-            call(["/bin/cp", "-a", dump, work_db_file])
+            run(["/bin/cp", "-a", dump, work_db_file])
         elif target =='SNAPSHOT':
-            call(["/bin/cp", "-a", work_db_file, dump])
+            run(["/bin/cp", "-a", work_db_file, dump])
         else:
             raise AttributeError('Target should either be a DB or a snapshot')

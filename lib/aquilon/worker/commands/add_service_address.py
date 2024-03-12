@@ -239,6 +239,8 @@ class CommandAddServiceAddress(BrokerCommand):
         if newly_created:
             ib_services.add_a_ptr(dbdns_rec)
         else:
+            # When a service address is created using an address previously created with `aq add address`
+            # and either `--map_to_primary` or `--map_to_shared` are used, the PTR of that address needs updating
             ib_services.update_a_ptr(dbdns_rec, ib_rollback_args)
 
         session.flush()
@@ -274,7 +276,7 @@ class CommandAddServiceAddress(BrokerCommand):
 
             dsdb_runner.commit_or_rollback("Could not add host to DSDB")
 
-            if ib_services.feature_enabled("service_address") and dbdns_rec.fqdn.dns_environment.is_default:
+            if ib_services.feature_enabled("service_address"):
                 try:
                     ib_services.group.commit_or_rollback()
                 except ProcessException as e:

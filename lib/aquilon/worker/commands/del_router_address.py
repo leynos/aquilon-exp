@@ -67,7 +67,7 @@ class CommandDelRouterAddress(BrokerCommand):
             if dns_rec.is_unused:
                 delete_dns_record(dns_rec, verify_assignments=True,
                                   exporter=exporter)
-                ib_services.delete_a_ptr(dns_rec)
+                ib_services.del_a_ptr(dns_rec)
 
         dbnetwork.routers.remove(dbrouter)
         session.flush()

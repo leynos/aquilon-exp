@@ -137,6 +137,7 @@ class TestUsecaseAnycast(MachineTestMixin, TestBrokerCommand):
                        "--name", anycast['sa_name']]
             self.statustest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_701_verify_service_address(self):
         command = ["show_address", "--fqdn", anycast['sa_fqdn']]

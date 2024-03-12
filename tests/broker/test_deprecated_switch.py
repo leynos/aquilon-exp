@@ -82,6 +82,7 @@ class TestDeprecatedSwitch(TestBrokerCommand):
         err = self.statustest(command)
         self.matchoutput(err, "The --switch option is deprecated.", command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  #  No requests sent to IB because no FQDN/IP change
 
     def test_300_show_switch(self):
         command = ["show_switch", "--switch", self.fqdn_pri]

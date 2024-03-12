@@ -157,16 +157,16 @@ def update_interface_bindings(session, logger, dbmachine, autoip,
             new_ip = generate_ip(session, logger, dbinterface, autoip=True,
                                  network_environment=old_net.network_environment)
             for dbdns_rec in addr.dns_records:
+                ib_rollback_args = dbdns_rec.get_infoblox_args()
                 dbdns_rec.network = new_net
                 dbdns_rec.ip = new_ip
+                ib_services.update_a_ptr(dbdns_rec, ib_rollback_args)
 
-            ib_rollback_args = addr.get_infoblox_args()
             addr.ip = new_ip
             addr.network = new_net
             logger.info("Changed {0:l} IP address from {1!s} to {2!s}."
                         .format(dbinterface, ib_rollback_args["ip"], new_ip))
 
-            ib_services.update_a_ptr(addr, ib_rollback_args)
 
         dbinterface.check_pg_consistency(logger=logger)
 

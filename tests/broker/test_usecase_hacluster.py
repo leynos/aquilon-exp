@@ -427,7 +427,6 @@ class TestUsecaseHACluster(TestBrokerCommand):
 
         command = ["search", "dns", "--fqdn", "hashared.aqd-unittest.ms.com"]
         self.notfoundtest(command)
-        # self.dsdb_verify()
 
     def test_330_hacl1g2(self):
         self.noouttest(["del", "resourcegroup", "--resourcegroup", "hacl1g2",

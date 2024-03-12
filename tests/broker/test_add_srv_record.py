@@ -51,8 +51,6 @@ class TestAddSrvRecord(TestBrokerCommand):
         self.ib_verify()
 
     def test_120_add_kerberos2_dup(self):
-        ib_expect_add_dns_srv_record("kerberos", "tcp", "aqd-unittest.ms.com", "arecord15.aqd-unittest.ms.com", 88, 10,
-                                     20, justification=self.valid_justification)
         command = ["add", "srv", "record", "--service", "kerberos",
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com",
                    "--target", "arecord15.aqd-unittest.ms.com",
@@ -371,15 +369,14 @@ class TestAddSrvRecord(TestBrokerCommand):
         self.matchoutput(out, "Port: 8080", command)
 
     def test_700_add_with_dns_env(self):
-        ib_expect_add_dns_srv_record("collab", "tls", "aqd-unittest.ms.com", "addralias1.aqd-unittest-ut-env.ms.com",
-                                     8080, 0, 0, justification=self.valid_justification)
+
         command = ["add", "srv", "record", "--service", "collab",
                    "--protocol", "tls", "--dns_domain", "aqd-unittest.ms.com",
                    "--target", "addralias1.aqd-unittest-ut-env.ms.com",
                    "--port", 8080, "--priority", 0, "--weight", 0,
                    "--dns_environment", "ut-env"] + self.valid_just_tcm
         self.noouttest(command)
-        self.ib_verify()
+        self.ib_verify(empty=True)  # No requests sent to IB because the srv record has a non-default dns environment
 
     def test_710_show_with_dns_env(self):
         command = ["show", "srv", "record", "--service", "collab",

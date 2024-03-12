@@ -23,6 +23,7 @@ from mock_ib_services import ib_expect_add_a
 from mock_ib_services import ib_expect_add_ptr
 from mock_ib_services import ib_expect_del_a
 from mock_ib_services import ib_expect_del_ptr
+from mock_ib_services import ib_expect_update_a
 
 if __name__ == "__main__":
     from . import utils
@@ -153,6 +154,19 @@ class TestDiscoverNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
         self.dsdb_expect_add("swsync-vlan500.aqd-unittest.ms.com", ip5,
                              "vlan500", comments="T1 T2",
                              primary="swsync.aqd-unittest.ms.com")
+
+        ib_expect_update_a("swsync-vlan100.aqd-unittest.ms.com", "4.2.20.6", new_ip="4.2.20.9")
+        ib_expect_del_ptr("4.2.20.6")
+        ib_expect_add_ptr("swsync-vlan100.aqd-unittest.ms.com", "4.2.20.9")
+        ib_expect_del_a("swsync-vlan300.aqd-unittest.ms.com", "4.2.20.8")
+        ib_expect_del_ptr("4.2.20.8")
+        ib_expect_add_a("swsync-vlan100-hsrp.aqd-unittest.ms.com", "4.2.20.6")
+        ib_expect_add_ptr("swsync-vlan100-hsrp.aqd-unittest.ms.com", "4.2.20.6")
+        ib_expect_add_a("swsync-vlan310.aqd-unittest.ms.com", "4.2.20.8")
+        ib_expect_add_ptr("swsync-vlan310.aqd-unittest.ms.com", "4.2.20.8")
+        ib_expect_add_a("swsync-vlan500.aqd-unittest.ms.com", "4.2.20.10")
+        ib_expect_add_ptr("swsync-vlan500.aqd-unittest.ms.com", "4.2.20.10")
+
         command = ["update", "network_device", "--network_device", "swsync", "--discover"]
         out, err = self.successtest(command)
         self.matchoutput(err,
@@ -163,6 +177,7 @@ class TestDiscoverNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
         self.matchoutput(err, "You should run 'qip-set-router %s'." % ip1,
                          command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_300_verify(self):
         ip = self.net["switch_sync"].usable[0]
@@ -242,6 +257,7 @@ class TestDiscoverNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
         self.noouttest(["del", "interface", "address", "--network_device", "swsync",
                         "--interface", "vlan500", "--ip", ip5])
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_410_del_swsync(self):
         ip = self.net["switch_sync"].usable[0]

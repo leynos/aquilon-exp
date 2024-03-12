@@ -27,12 +27,15 @@ from difflib import unified_diff
 from subprocess import Popen, PIPE
 from textwrap import dedent
 
+from aq_test_client import AqTestClient
 from aquilon.config import Config, lookup_file_path
 from lxml import etree
 from google.protobuf.message import DecodeError
+from aqddnsdomains_pb2 import DNSRecordData
 
 from .networktest import DummyNetworks
 from mock_ib_services import http_monitor
+from mock_ib_services import get_ib_dns, get_aq_dns_data
 
 from aqdb.utils import copy_sqldb
 
@@ -54,6 +57,7 @@ logger = logging.getLogger(__name__)
 
 class TestBrokerCommand(unittest.TestCase):
 
+    aq = None
     config = None
     scratchdir = None
     dsdb_coverage_dir = None
@@ -81,6 +85,7 @@ class TestBrokerCommand(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls.aq = AqTestClient()
         cls.config = Config()
         cls.net = DummyNetworks(cls.config)
 
@@ -161,7 +166,19 @@ class TestBrokerCommand(unittest.TestCase):
     def tearDown(self):
         if not os.environ.get("AQD_UNITTEST_FAILFAST"):
             return
-        if not all(sys.exc_info()):
+
+        if hasattr(self._outcome, 'errors'):
+            # Python 3.4 - 3.10  (These two methods have no side effects)
+            result = self.defaultTestResult()
+            self._feedErrorsToResult(result, self._outcome.errors)
+        else:
+            # Python 3.11+
+            result = self._outcome.result
+
+        test_succeeded = all(test != self for test, text in result.errors + result.failures)
+
+        if test_succeeded:
+            self.ib_verify_http_monitor(empty=True)
             copy_sqldb(self.config, target='SNAPSHOT')
 
     def template_name(self, *template, **args):
@@ -252,60 +269,8 @@ class TestBrokerCommand(unittest.TestCase):
         self.assertTrue(bool(line.strip()), "Last line is empty")
         return line
 
-    msversion_dev_re = re.compile(r'WARNING:msversion:Loading \S* from dev\n')
-
-    def runcommand(self, command, auth=True, **kwargs):
-        aq = os.path.join(self.config.get("broker", "srcdir"), "bin", "aq.py")
-        if auth:
-            port = self.config.get("broker", "kncport")
-        else:
-            port = self.config.get("broker", "openport")
-        if isinstance(command, list):
-            args = [str(cmd) for cmd in command]
-        else:
-            args = [command]
-        args.insert(0, sys.executable)
-        args.insert(1, aq)
-        if "--aqport" not in args:
-            args.append("--aqport")
-            args.append(port)
-        if auth:
-            args.append("--aqservice")
-            args.append(self.config.get("broker", "service"))
-        else:
-            args.append("--noauth")
-        if "env" in kwargs:
-            # Make sure that kerberos tickets are still present if the
-            # environment is being overridden...
-            env = {}
-            for (key, value) in list(kwargs["env"].items()):
-                env[key] = value
-            for (key, value) in list(os.environ.items()):
-                if key.find("KRB") == 0 and key not in env:
-                    env[key] = value
-            if 'USER' not in env:
-                env['USER'] = os.environ.get('USER', '')
-            kwargs["env"] = env
-
-        LOGGER.debug("Running command {}".format(args))
-        p = Popen(args, stdout=PIPE, stderr=PIPE, text=False, **kwargs)
-        out, err = p.communicate()
-        if err:
-            LOGGER.debug(err)
-        err = self.msversion_dev_re.sub('', err.decode())
-
-        # Lock messages are pretty common...
-        err = err.replace('Client status messages disabled, retries exceeded.\n', '')
-
-        try:
-            return p, out.decode(), err
-        except (DecodeError, UnicodeDecodeError):
-            return p, out.decode("ISO-8859-1"), err
-        except Exception as e:
-            return p, str(out), err
-
     def successtest(self, command, **kwargs):
-        (p, out, err) = self.runcommand(command, **kwargs)
+        (p, out, err) = self.aq.runcommand(command, **kwargs)
         self.assertEqual(p.returncode, 0,
                          "Non-zero return code for %s, "
                          "STDOUT:\n@@@\n'%s'\n@@@\n"
@@ -319,7 +284,7 @@ class TestBrokerCommand(unittest.TestCase):
         return err
 
     def failuretest(self, command, returncode, **kwargs):
-        (p, out, err) = self.runcommand(command, **kwargs)
+        (p, out, err) = self.aq.runcommand(command, **kwargs)
         self.assertEqual(p.returncode, returncode,
                          "Non-%s return code %s for %s, "
                          "STDOUT:\n@@@\n'%s'\n@@@\n"
@@ -339,7 +304,7 @@ class TestBrokerCommand(unittest.TestCase):
         self.assertEmptyStream("STDOUT", contents, command)
 
     def commandtest(self, command, exclude_err_str=None, **kwargs):
-        (p, out, err) = self.runcommand(command, **kwargs)
+        (p, out, err) = self.aq.runcommand(command, **kwargs)
         if exclude_err_str:
             err = err.replace(exclude_err_str, '')
         self.assertEmptyErr(err, command)
@@ -356,7 +321,7 @@ class TestBrokerCommand(unittest.TestCase):
                          % (command, out))
 
     def ignoreoutputtest(self, command, **kwargs):
-        (p, out, err) = self.runcommand(command, **kwargs)
+        (p, out, err) = self.aq.runcommand(command, **kwargs)
         # Ignore out/err unless we get a non-zero return code, then log it.
         self.assertEqual(p.returncode, 0,
                          "Non-zero return code for %s, "
@@ -368,7 +333,7 @@ class TestBrokerCommand(unittest.TestCase):
     # Right now, commands are not implemented consistently.  When that is
     # addressed, this unit test should be updated.
     def notfoundtest(self, command, **kwargs):
-        (p, out, err) = self.runcommand(command, **kwargs)
+        (p, out, err) = self.aq.runcommand(command, **kwargs)
         if p.returncode == 0:
             self.assertEqual(err, "",
                              "STDERR for %s was not empty:\n@@@\n'%s'\n@@@\n" %
@@ -392,7 +357,7 @@ class TestBrokerCommand(unittest.TestCase):
         return err
 
     def badrequesttest(self, command, ignoreout=False, expected_code=4, **kwargs):
-        (p, out, err) = self.runcommand(command, **kwargs)
+        (p, out, err) = self.aq.runcommand(command, **kwargs)
         self.assertEqual(p.returncode, expected_code,
                          "Return code for %s was %d instead of %d"
                          "\nSTDOUT:\n@@@\n'%s'\n@@@"
@@ -417,7 +382,7 @@ class TestBrokerCommand(unittest.TestCase):
         self.matchoutput(err, "Infoblox response exception error", command)
 
     def unauthorizedtest(self, command, auth=False, msgcheck=True, **kwargs):
-        (p, out, err) = self.runcommand(command, auth=auth, **kwargs)
+        (p, out, err) = self.aq.runcommand(command, auth=auth, **kwargs)
         self.assertEqual(p.returncode, 4,
                          "Return code for %s was %d instead of %d"
                          "\nSTDOUT:\n@@@\n'%s'\n@@@"
@@ -436,7 +401,7 @@ class TestBrokerCommand(unittest.TestCase):
         return err
 
     def internalerrortest(self, command, **kwargs):
-        (p, out, err) = self.runcommand(command, **kwargs)
+        (p, out, err) = self.aq.runcommand(command, **kwargs)
         self.assertEqual(p.returncode, 5,
                          "Return code for %s was %d instead of %d"
                          "\nSTDOUT:\n@@@\n'%s'\n@@@"
@@ -452,7 +417,7 @@ class TestBrokerCommand(unittest.TestCase):
         return err
 
     def unimplementederrortest(self, command, **kwargs):
-        (p, out, err) = self.runcommand(command, **kwargs)
+        (p, out, err) = self.aq.runcommand(command, **kwargs)
         self.assertEqual(p.returncode, 5,
                          "Return code for %s was %d instead of %d"
                          "\nSTDOUT:\n@@@\n'%s'\n@@@"
@@ -468,7 +433,7 @@ class TestBrokerCommand(unittest.TestCase):
         return err
 
     def deprecatednotimplementederrortest(self, command, **kwargs):
-        (p, out, err) = self.runcommand(command, **kwargs)
+        (p, out, err) = self.aq.runcommand(command, **kwargs)
         err_splited = err.splitlines()
         self.assertEqual(p.returncode, 5,
                          "Return code for %s was %d instead of %d"
@@ -490,7 +455,7 @@ class TestBrokerCommand(unittest.TestCase):
 
     # Test for conflicting or invalid aq client options.
     def badoptiontest(self, command, exit_code=2, **kwargs):
-        (p, out, err) = self.runcommand(command, **kwargs)
+        (p, out, err) = self.aq.runcommand(command, **kwargs)
         self.assertEqual(p.returncode, exit_code,
                          "Return code for %s was %d instead of %d"
                          "\nSTDOUT:\n@@@\n'%s'\n@@@"
@@ -648,9 +613,8 @@ class TestBrokerCommand(unittest.TestCase):
                             "No %s listed in %s protobuf message\n" %
                             (attr, listclass))
         else:
-            self.assertEqual(received, expect,
-                             "%d %s expected, got %d\n" %
-                             (expect, attr, received))
+            if expect >= 0:
+                self.assertEqual(received, expect, "%d %s expected, got %d\n" % (expect, attr, received))
         return getattr(protolist, attr)
 
     def protobuftest(self, command, expect=None, **kwargs):
@@ -1018,10 +982,34 @@ class TestBrokerCommand(unittest.TestCase):
     def dynname(ip, domain="aqd-unittest.ms.com"):
         return "dynamic-{}.{}".format(str(ip).replace(".", "-"), domain)
 
-    def ib_verify(self, empty=False):
+    def ib_verify_http_monitor(self, empty=False):
         if empty and http_monitor.invoked_without_expected_test:
             self.fail("ib-services invoked when no HTTP requests were expected")
         if http_monitor.expects:
             self.fail("Expected HTTP requests to ib-services have not been consumed:\n{}".format(
                 "\n".join([str(payload) for payload in http_monitor.expects])
             ))
+
+    def ib_verify(self, empty=False):
+        self.ib_verify_http_monitor(empty)
+
+        # Check that infoblox dns data matches aq dns data
+        aq_dns = get_aq_dns_data()
+        ib_dns = get_ib_dns()
+        if not ib_dns:
+            return
+
+        aq_dns_sorted = sorted(list(aq_dns.records), key=lambda d: d.fqdn)
+        ib_dns_sorted = sorted(list(ib_dns.dns_data.records), key=lambda d: d.fqdn)
+
+        if (str(aq_dns_sorted) != str(ib_dns_sorted)):
+            ib_dns_dump_file = "/tmp/ib_dns.txt"
+            aq_dns_dump_file = "/tmp/aq_dns.txt"
+            f=open(ib_dns_dump_file, "w")
+            f.write(str(ib_dns_sorted))
+            f.close()
+            f=open(aq_dns_dump_file, "w")
+            f.write(str(aq_dns_sorted))
+            f.close()
+            self.fail("aq dns and ib dns are different.  For detailed differences, run:\n\tdiff -u {} {}\n".format(
+                aq_dns_dump_file, ib_dns_dump_file))

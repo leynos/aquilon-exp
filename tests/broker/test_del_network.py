@@ -19,6 +19,9 @@
 
 import unittest
 
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
+
 if __name__ == "__main__":
     from . import utils
     utils.import_depends()
@@ -34,11 +37,27 @@ class TestDelNetwork(TestBrokerCommand):
         self.noouttest(command)
 
     def test_200_delnetwork(self):
+        # Expect deletion of the network routers
+        ib_expect_del_a("ut3gd1r01-v110-hsrp.aqd-unittest.ms.com", "4.2.12.2")
+        ib_expect_del_ptr("4.2.12.2")
+        ib_expect_del_a("ut3gd1r02-v109-hsrp.aqd-unittest.ms.com", "4.2.12.65")
+        ib_expect_del_ptr("4.2.12.65")
+        ib_expect_del_a("ut3gd1r02-v110-hsrp.aqd-unittest.ms.com", "4.2.12.66")
+        ib_expect_del_ptr("4.2.12.66")
+        ib_expect_del_a("utvplsgw.aqd-unittest.ms.com", "4.2.13.1")
+        ib_expect_del_ptr("4.2.13.1")
+        ib_expect_del_a("npvplsgw.aqd-unittest.ms.com", "4.2.13.2")
+        ib_expect_del_ptr("4.2.13.2")
+        ib_expect_del_a("ut3gd1r01-v111-hsrp.aqd-unittest.ms.com", "4.2.21.3")
+        ib_expect_del_ptr("4.2.21.3")
         for network in self.net:
             if not network.autocreate:
                 continue
+
             command = ["del_network", "--ip=%s" % network.ip]
             self.noouttest(command)
+        self.dsdb_verify(empty=True)  # TODO, this looks like a bug in the DSDB integration, should DSDB also know about router deletion ?
+        self.ib_verify()
 
     def test_220_delnetworkdup(self):
         ip = "192.168.10.0"

@@ -53,7 +53,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql import or_
 
 
-def delete_dns_record(dbdns_rec, locked=False, verify_assignments=False, exporter=None):
+def delete_dns_record(dbdns_rec, locked=False, verify_assignments=False, exporter=None, ib_services=None):
     """
     Delete a DNS record
 
@@ -117,6 +117,9 @@ def delete_dns_record(dbdns_rec, locked=False, verify_assignments=False, exporte
     # Delete the DNS record
     session.delete(dbdns_rec)
     session.flush()
+
+    if ib_services is not None:
+        ib_services.del_a_ptr(dbdns_rec)
 
     # Delete the FQDN if it is orphaned
     q = session.query(DnsRecord)
@@ -183,7 +186,7 @@ def grab_address(session, fqdn, ip, network_environment=None,
                  allow_restricted_domain=False, allow_multi=False,
                  allow_reserved=False, allow_shared=False, relaxed=False,
                  preclude=False, exporter=None, router=False, grn=None,
-                 require_grn=True):
+                 require_grn=True, ib_services=None):
     """
     Take ownership of an address.
 
@@ -314,6 +317,13 @@ def grab_address(session, fqdn, ip, network_environment=None,
                 existing_record = convert_reserved_to_arecord(session,
                                                               dbdns_rec,
                                                               dbnetwork, ip)
+                f=open("/tmp/l", "a")
+                import traceback
+                from pprint import pprint
+                traceback.print_stack(file=f)
+                pprint(existing_record, stream=f)
+                f.close()
+                raise Exception("in the grab_address case where we convert reservedname")
                 newly_created = True
             else:
                 # Exclude aliases etc.
@@ -326,6 +336,8 @@ def grab_address(session, fqdn, ip, network_environment=None,
                                       require_grn=require_grn)
             session.add(existing_record)
             newly_created = True
+            if ib_services is not None:
+                ib_services.add_a_ptr(existing_record)
 
         if exporter:
             if new_fqdn:

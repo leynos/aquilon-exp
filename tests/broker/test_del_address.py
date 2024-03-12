@@ -21,6 +21,7 @@ import unittest
 
 from mock_ib_services import ib_expect_del_a
 from mock_ib_services import ib_expect_del_ptr
+from mock_ib_services import ib_expect_update_ptr
 
 if __name__ == "__main__":
     from . import utils
@@ -32,10 +33,11 @@ from .brokertest import TestBrokerCommand
 class TestDelAddress(TestBrokerCommand):
 
     def testbasic(self):
-        self.dsdb_expect_delete(self.net["unknown0"].usable[13])
-        ib_expect_del_a("arecord13.aqd-unittest.ms.com", self.net["unknown0"].usable[13],
-                        justification=self.valid_justification)
-        ib_expect_del_ptr(self.net["unknown0"].usable[13], justification=self.valid_justification)
+        ip = self.net["unknown0"].usable[13]
+        self.dsdb_expect_delete(ip)
+        ib_expect_del_a("arecord13.aqd-unittest.ms.com", ip, justification=self.valid_justification)
+        ib_expect_del_ptr(ip, justification=self.valid_justification)
+        ib_expect_update_ptr("4.2.1.19", new_fqdn="arecord14.aqd-unittest.ms.com", justification=self.valid_justification)
         command = ["del_address", "--ip=%s" % self.net["unknown0"].usable[13]] + self.valid_just_tcm
         self.noouttest(command)
         self.dsdb_verify()
@@ -146,14 +148,13 @@ class TestDelAddress(TestBrokerCommand):
         command = ["del", "address", "--ip", ip,
                    "--network_environment", "cardenv"] + self.valid_just_tcm
         self.noouttest(command)
-        # External IP addresses should not be added to DSDB
+        # External IP addresses should not be added to DSDB/IB
         self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
         command = ["show_address", "--fqdn", fqdn,
                    "--network_environment", "cardenv"]
         self.notfoundtest(command)
-        self.dsdb_verify(empty=True)
-        self.ib_verify(empty=True)
 
     def test_delreservedreverse(self):
         self.dsdb_expect_delete(self.net["unknown0"].usable[32])
@@ -181,8 +182,9 @@ class TestDelAddress(TestBrokerCommand):
         command = ["del", "address", "--fqdn", fqdn,
                    "--network_environment", "cardenv"] + self.valid_just_tcm
         self.noouttest(command)
-        # External IP addresses should not be added to DSDB
+        # External IP addresses should not be added to DSDB/IB
         self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
         command = ["show_address", "--fqdn=%s" % fqdn]
         self.notfoundtest(command)
@@ -240,6 +242,7 @@ class TestDelAddress(TestBrokerCommand):
                    "--dns_environment", dns_env] + self.valid_just_tcm
         self.noouttest(command)
         self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
         command = ["show", "address", "--fqdn", fqdn,
                    "--dns_environment", dns_env]

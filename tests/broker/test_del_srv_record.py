@@ -137,13 +137,11 @@ class TestDelSrvRecord(TestBrokerCommand):
         self.notfoundtest(command)
 
     def test_320_del_with_dns_env(self):
-        ib_expect_del_dns_srv_record("collab", "tls", "aqd-unittest.ms.com", "addralias1.aqd-unittest-ut-env.ms.com",
-                                     8080, 0, 0, justification=self.valid_justification)
         command = ["del", "srv", "record", "--service", "collab",
                    "--protocol", "tls", "--dns_domain", "aqd-unittest.ms.com",
                    "--dns_environment", "ut-env"] + self.valid_just_tcm
         self.noouttest(command)
-        self.ib_verify()
+        self.ib_verify(empty=True)  # No ib requests because dns_environment is not internal
 
     def test_325_verify_del_with_dns_env(self):
         command = ["show", "srv", "record", "--service", "collab",

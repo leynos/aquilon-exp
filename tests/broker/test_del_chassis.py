@@ -30,13 +30,14 @@ from .brokertest import TestBrokerCommand
 
 class TestDelChassis(TestBrokerCommand):
     def test_100_del_ut3c5_used(self):
-        self.dsdb_expect_delete(self.net["unknown0"].usable[6])
         command = "del chassis --chassis ut3c5.aqd-unittest.ms.com"
         out = self.badrequesttest(command.split(" "))
         self.matchoutput(out, "Chassis ut3c5.aqd-unittest.ms.com is "
                               "still in use by 3 machines or network devices. "
                               "Use --clear_slots if you really want to delete it.",
                          command.split(" "))
+        self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
     def test_101_del_ut3c5(self):
         ip = self.net["unknown0"].usable[6]

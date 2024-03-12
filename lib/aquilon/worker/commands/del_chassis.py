@@ -44,6 +44,8 @@ class CommandDelChassis(BrokerCommand):
                                 "--clear_slots if you really want to delete "
                                 "it.".format(dbchassis, len(dbchassis.not_empty_slots)))
 
+        ib_services = IBServices(logger, **arguments)
+        ib_services.del_hardware_entity(dbchassis)
         # Order matters here
         dbdns_rec = dbchassis.primary_name
         session.delete(dbchassis)
@@ -54,11 +56,7 @@ class CommandDelChassis(BrokerCommand):
 
         dsdb_runner.commit_or_rollback("Could not remove chassis from DSDB")
 
-        # chassis may not hve a primary interface assigned
-        ip = dbchassis.primary_name.ip if type(dbchassis.primary_name) == ARecord else None
-        ib_services = IBServices(logger, **arguments)
-        if ib_services.feature_enabled("chassis") and ip:
-            ib_services.delete_a_ptr(dbchassis.primary_name)
+        if ib_services.feature_enabled("chassis"):
             try:
                 ib_services.group.commit_or_rollback()
             except ProcessException as e:

@@ -95,6 +95,7 @@ class TestUpdateNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
                    "--comments", "LANWAN"]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because only comments changed
 
     def test_115_verify_ut3gd1r05(self):
         self.verifynetdev("ut3gd1r05.aqd-unittest.ms.com", "hp", "uttorswitch",
@@ -114,6 +115,7 @@ class TestUpdateNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
                           switch_type='tor',
                           ip=ip, mac=mac, interface="xge49")
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because no FQDN/IP change
         self.check_plenary_contents('network_device', 'americas', 'ut', 'ut3gd1r06',
                                     contains=str(mac))
 
@@ -128,6 +130,7 @@ class TestUpdateNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
                    "--ip", newip]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_125_verify_ut3gd1r06(self):
         self.verifynetdev("ut3gd1r06.aqd-unittest.ms.com", "generic",

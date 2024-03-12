@@ -379,13 +379,15 @@ class TestUpdateBuilding(PersonalityTestMixin, MachineTestMixin,
     def test_161_set_up_cluster_resource_service_addr(self):
         ip = self.net["zebra_vip"].usable[10]
         fqdn = "zebra4.aqd-unittest.ms.com"
-        # TODO, this is sending requests to dsdb, should it be sending requests to ib too ?
+        # For some reason we send delete and re-create the same address in dsdb
+        # not sure why.  but that is the reason why we are sending requests to dsdb but not ib.
         self.dsdb_expect_delete(ip)
         self.dsdb_expect_add(fqdn, ip)
         command = ["add", "service", "address", "--cluster", "campus-test", "--service_address",
                    fqdn, "--name", "test-cluster-service"] + self.valid_just_sn
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)
 
     def test_165_set_up_cluster_resourcegroup(self):
         ip = self.net["zebra_vip"].usable[11]
@@ -407,11 +409,11 @@ class TestUpdateBuilding(PersonalityTestMixin, MachineTestMixin,
         fqdn = "zebra5.aqd-unittest.ms.com"
         self.dsdb_expect_delete(ip)
         self.dsdb_expect_add(fqdn, ip)
-        # TODO, should I expect requests to IB too ?
         command = ["add", "service", "address", "--resourcegroup", "test-resource-group", "--service_address",
                    fqdn, "--name", "test-cluster-res-service"] + self.valid_just_sn
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)
 
     def test_170_set_up_host_resourcegroup(self):
         ip = self.net["zebra_vip"].usable[12]
@@ -431,13 +433,13 @@ class TestUpdateBuilding(PersonalityTestMixin, MachineTestMixin,
     def test_171_set_up_host_resourcegroup_serv_addr(self):
         ip = self.net["zebra_vip"].usable[12]
         fqdn = "zebra6.aqd-unittest.ms.com"
-        # TODO, should i expect IB requests here ?
         self.dsdb_expect_delete(ip)
         self.dsdb_expect_add(fqdn, ip)
         command = ["add_service_address", "--resourcegroup", "test-host-resgr", "--name", "test-service-host",
                    "--service_address", "zebra6.aqd-unittest.ms.com"] + self.valid_just_sn
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)
 
     def test_175_show_prod_resources(self):
         command = "show network --network zebra_vip"
@@ -512,7 +514,7 @@ class TestUpdateBuilding(PersonalityTestMixin, MachineTestMixin,
         command = "del service address --resourcegroup test-host-resgr --name test-service-host"
         self.noouttest(command.split(" "))
         self.dsdb_verify()
-        #self.ib_verify()
+        self.ib_verify()
 
     def test_212_clean_up_service_addresses(self):
         ip = self.net["zebra_vip"].usable[11]
@@ -523,7 +525,7 @@ class TestUpdateBuilding(PersonalityTestMixin, MachineTestMixin,
                    "--name", "test-cluster-res-service"] + self.valid_just_sn
         self.noouttest(command)
         self.dsdb_verify()
-        #self.ib_verify()
+        self.ib_verify()
 
     def test_213_clean_up_service_addresses(self):
         ip = self.net["zebra_vip"].usable[10]
@@ -534,7 +536,7 @@ class TestUpdateBuilding(PersonalityTestMixin, MachineTestMixin,
                    "test-cluster-service"] + self.valid_just_sn
         self.noouttest(command)
         self.dsdb_verify()
-        #self.ib_verify()
+        self.ib_verify()
 
 
 if __name__ == '__main__':

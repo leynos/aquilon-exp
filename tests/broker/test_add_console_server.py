@@ -147,6 +147,7 @@ class TestAddConsoleServer(TestBrokerCommand, VerifyConsoleServerMixin):
                    "--rack", rack_name, "--model", "generic_cs", "--label", "cslabel"]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         # Add a second console server with same label and check error message
         command = ["add", "console_server", "--console_server", "cs2.test-console-server.cc", "--ip", "10.25.0.2",
@@ -161,6 +162,7 @@ class TestAddConsoleServer(TestBrokerCommand, VerifyConsoleServerMixin):
         command = ["del", "console_server", "--console_server", "cs1.test-console-server.cc"]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
         self.noouttest(["del_model", "--model", "generic_cs", "--vendor", "generic"])
         mh.delete()
 
@@ -181,30 +183,35 @@ class TestAddConsoleServer(TestBrokerCommand, VerifyConsoleServerMixin):
         self.dsdb_expect_add(console_server, "10.25.0.1", interface="mgmt", fail=True)
         self.dsdberrortest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No ib requests expected because dsdb failed
 
         self.dsdb_expect_add(console_server, "10.25.0.1", interface="mgmt")
         ib_expect_add_a(console_server, "10.25.0.1", fail=True)
         self.dsdb_expect_delete("10.25.0.1")  # Check dsdb rollback when ib fails
         self.iberrortest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         self.dsdb_expect_add(console_server, "10.25.0.1", interface="mgmt")
         ib_expect_add_a(console_server, "10.25.0.1")
         ib_expect_add_ptr(console_server, "10.25.0.1")
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         command = ['update_console_server', "--console_server", console_server, "--ip", "10.25.0.2"]
 
         self.dsdb_expect_update(console_server, iface="mgmt", ip="10.25.0.2", fail=True)
         self.dsdberrortest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No ib requests expected because dsdb failed
 
         self.dsdb_expect_update(console_server, iface="mgmt", ip="10.25.0.2")
         ib_expect_update_a(console_server, "10.25.0.1", new_ip="10.25.0.2", fail=True)
         self.dsdb_expect_update(console_server, iface="mgmt", ip="10.25.0.1")  # Check dsdb rollback when ib fails
         self.iberrortest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         self.dsdb_expect_update(console_server, iface="mgmt", ip="10.25.0.2")
         ib_expect_update_a(console_server, "10.25.0.1", new_ip="10.25.0.2")
@@ -212,6 +219,7 @@ class TestAddConsoleServer(TestBrokerCommand, VerifyConsoleServerMixin):
         ib_expect_add_ptr(console_server, "10.25.0.2")
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         command = ['update_console_server', "--console_server", console_server,
                    "--comments", "Test that updating comments does not send a request to IB"]
@@ -219,12 +227,14 @@ class TestAddConsoleServer(TestBrokerCommand, VerifyConsoleServerMixin):
                                 comments="Test that updating comments does not send a request to IB")
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No ib requests expected because this was just updating a comment
 
         command = ['del_console_server', "--console_server", console_server]
 
         self.dsdb_expect_delete("10.25.0.2", fail=True)
         self.dsdberrortest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No ib requests expected because dsdb failed
 
         self.dsdb_expect_delete("10.25.0.2")
         ib_expect_del_a(console_server, "10.25.0.2", fail=True)
@@ -232,13 +242,13 @@ class TestAddConsoleServer(TestBrokerCommand, VerifyConsoleServerMixin):
                              comments="Test that updating comments does not send a request to IB")
         self.iberrortest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         self.dsdb_expect_delete("10.25.0.2")
         ib_expect_del_a(console_server, "10.25.0.2")
         ib_expect_del_ptr("10.25.0.2")
         self.noouttest(command)
         self.dsdb_verify()
-
         self.ib_verify()
 
         self.noouttest(['del_model', '--model', 'console_server_model', '--vendor', 'generic'])

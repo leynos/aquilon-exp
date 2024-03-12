@@ -760,6 +760,7 @@ class TestAddVirtualHardware(EventsTestMixin, TestBrokerCommand):
         # city
         self.matchoutput(out, "ivirt17.aqd-unittest.ms.com", command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_275_verify_add_host(self):
         # This test also verifies the --autoip allocation logic

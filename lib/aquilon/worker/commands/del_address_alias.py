@@ -75,7 +75,8 @@ class CommandDelAddressAlias(BrokerCommand):
                 for dns_rec in rrs:
                     if ib_services.assert_dns_environment(dns_rec.fqdn.dns_environment.name) and \
                             ib_services.assert_dns_environment(dns_rec.target.dns_environment.name):
-                        ib_services.delete_a(str(dns_rec), dns_rec.target_ip)
+                        ib_services.del_a_ptr(dns_rec)
+                        ib_services.group.commit_or_rollback()
             except ProcessException as e:
                 raise e
 

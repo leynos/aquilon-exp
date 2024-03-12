@@ -33,7 +33,7 @@ class TestClientFailure(TestBrokerCommand):
 
     def testinvalidaqhost(self):
         command = "status --aqhost=invalidhost"
-        (p, out, err) = self.runcommand(command.split(" "))
+        (p, out, err) = self.aq.runcommand(command.split(" "))
         self.assertIn("remotedisconnected", err.lower())
         self.assertEqual(out, "",
                          "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n"
@@ -50,7 +50,7 @@ class TestClientFailure(TestBrokerCommand):
         short, domain = hostname.split('.', 1)
 
         command = ["status", "--aqport", port]
-        (p, out, err) = self.runcommand(command)
+        (p, out, err) = self.aq.runcommand(command)
         # This might be either 'Connection refused.' or 'Connection timed out.'.
         # There may also be variations in the output, like using the short or
         # full hostname.
@@ -88,7 +88,7 @@ class TestClientFailure(TestBrokerCommand):
 
     def testunknowncommand(self):
         command = "command-does-not-exist"
-        (p, out, err) = self.runcommand(command)
+        (p, out, err) = self.aq.runcommand(command)
         self.matchoutput(err, "Available commands are:", command)
         self.matchoutput(err, "Command command-does-not-exist is not known!",
                          command)

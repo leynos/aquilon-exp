@@ -99,6 +99,7 @@ class TestAddDynamicRange(TestBrokerCommand):
         for message in messages:
             self.matchoutput(err, message, command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_105_verify_range(self):
         command = "search_dns --record_type=dynamic_stub"
@@ -262,6 +263,7 @@ class TestAddDynamicRange(TestBrokerCommand):
         for message in messages:
             self.matchoutput(err, message, command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_121_verify_fillnetwork(self):
         # Check that the network has only dynamic entries
@@ -344,6 +346,7 @@ class TestAddDynamicRange(TestBrokerCommand):
                    "--dns_domain", "aqd-unittest.ms.com"] + self.valid_just_tcm
         out = self.badrequesttest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # TODO, this seems wrong, why are requests being made to DSDB but not IB ?
         self.matchoutput(out, "Could not add addresses to DSDB", command)
 
     def test_200_different_networks(self):

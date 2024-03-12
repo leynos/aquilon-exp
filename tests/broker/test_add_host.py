@@ -324,6 +324,9 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
                         "--hostname", "test-aurora-default-os.ms.com",
                         "--ip", ip, "--domain", "unittest", "--machine",
                         "ut8s02p4"])
+        #  Aurora hosts are not sent to either DSDB/IB
+        self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
     def test_141_verify_aurora_default_os(self):
         command = "show host --hostname test-aurora-default-os.ms.com"
@@ -337,7 +340,6 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
     def test_145_add_windows_default_os(self):
         ip = self.net["tor_net_0"].usable[5]
         fqdn = "test-windows-default-os.msad.ms.com"
-        ib_expect_add_a(fqdn, ip)
         ib_expect_add_ptr(fqdn, ip)
         self.dsdb_expect_add(fqdn, ip,
                              "eth0", self.net["tor_net_0"].usable[5].mac)

@@ -52,6 +52,9 @@ class CommandDelNetworkDevice(BrokerCommand):
         plenaries.add(dbnetdev, cls=PlenarySwitchData)
         plenaries.add(dbnetdev)
 
+        ib_services = IBServices(logger, justification=justification, **arguments)
+        ib_services.del_hardware_entity(dbnetdev)
+
         remove_host(logger, dbnetdev, plenaries)
 
         dbdns_rec = dbnetdev.primary_name
@@ -69,9 +72,7 @@ class CommandDelNetworkDevice(BrokerCommand):
             dsdb_runner.update_host(None, oldinfo)
             dsdb_runner.commit_or_rollback("Could not remove network device from DSDB")
 
-            ib_services = IBServices(logger, justification=justification, **arguments)
-            if dbdns_rec and ib_services.feature_enabled("network_device"):
-                ib_services.delete_a_ptr(dbdns_rec)
+            if ib_services.feature_enabled("network_device"):
                 try:
                     ib_services.group.commit_or_rollback()
                 except ProcessException as e:

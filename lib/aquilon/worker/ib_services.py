@@ -5,11 +5,12 @@ from urllib.parse import quote, urlencode, urlparse, urlunparse
 from requests import Session, Timeout
 from requests_kerberos import DISABLED, HTTPKerberosAuth
 
-from aquilon.aqdb.model import ARecord
+from aquilon.aqdb.model import Alias, ARecord, DnsRecord, Fqdn, HardwareEntity, SrvRecord
 from aquilon.config import Config
 from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.utils import with_timer
 
+xstr = lambda s: None if s is None else str(s)
 
 class IBServiceGroup:
     """This class facilitates rollback of IB commands where needed"""
@@ -76,85 +77,161 @@ class IBServices:
     def assert_dns_environment(self, environment):
         return environment == "internal"
 
+    def _assert_dns_environment(self, fqdn):
+        assert(isinstance(fqdn, Fqdn))
+        return fqdn.dns_environment.is_default
+
+    def _assert_archetype(self, dbdns_rec):
+        # TODO, what happens if someone runs `aq add address` (which syncs the address to infoblox), then assigns that address to an aurora host.
+        #  Do we need to delete the address from infoblox at that point ?  Does it matter ?
+        assert(isinstance(dbdns_rec, DnsRecord))
+        return dbdns_rec.hardware_entity is None or dbdns_rec.hardware_entity.host is None or dbdns_rec.hardware_entity.host.archetype.name != "aurora"  # TODO, not sure archetype name should be hardcoded here.
+
+    def _wants_infoblox_sync(self, dbdns_rec):
+        assert(isinstance(dbdns_rec, DnsRecord))
+        return self._assert_dns_environment(dbdns_rec.fqdn) and self._assert_archetype(dbdns_rec)
+
     def _generate_url_from_params(self, url, params):
         parse = urlparse(url)._replace(query=urlencode(params))
         return urlunparse(parse)
 
-    def add_a_ptr(self, dbdns_rec):
-        args = dbdns_rec.get_infoblox_args()
-        self.group.add_action(
-            lambda: self.add_a(name=args["name"], ip=args["ip"], ttl=args["ttl"]),
-            lambda: self.delete_a(name=args["name"], ip=args["ip"]),
-        )
 
-        if args["reverse_ptr"] is not None:
+    def add_a_ptr(self, dbdns_rec):
+        if not self._wants_infoblox_sync(dbdns_rec):
+            return
+
+        args = dbdns_rec.get_infoblox_args()
+
+
+        if not dbdns_rec.fqdn.dns_domain.restricted:
             self.group.add_action(
-                lambda: self.add_ptr(name=args["reverse_ptr"], ip=args["ip"], ttl=args["ttl"]),
-                lambda: self.add_ptr(ip=args["ip"]),
+                lambda name=str(args["name"]), ip=str(args["ip"]), ttl=int(args["ttl"]): self._add_a(name=name, ip=ip, ttl=ttl),
+                lambda name=str(args["name"]), ip=str(args["ip"]): self._del_a(name=name, ip=ip),
             )
 
+            if args["reverse_ptr"] is not None:
+                self.group.add_action(
+                    lambda name=str(args["reverse_ptr"]), ip=str(args["ip"]), ttl=int(args["ttl"]): self._add_ptr(name=name, ip=ip, ttl=ttl),
+                    lambda ip=str(args["ip"]): self._del_ptr(ip=ip),
+                )
+
     def update_a_ptr(self, dbdns_rec, _from):
+        if not self._wants_infoblox_sync(dbdns_rec):
+            return
+
         _to = dbdns_rec.get_infoblox_args()
 
         if _from["name"] != _to["name"]:
             raise ProcessException("Updating name of a-record not implemented")
 
         if _from["ip"] != _to["ip"] or _from["ttl"] != _to["ttl"]:
-            self.group.add_action(
-                lambda: self.update_a(name=_from["name"], ip=_from["ip"], new_ip=_to["ip"], new_ttl=_to["ttl"]),
-                lambda: self.update_a(name=_to["name"], ip=_to["ip"], new_ip=_from["ip"], new_ttl=_from["ttl"]),
-            )
+            if self._assert_dns_environment(_from["name"]):
+                self.group.add_action(
+                    lambda name=str(_from["name"]), ip=str(_from["ip"]), new_ip=str(_to["ip"]), new_ttl=int(_to["ttl"]): self._update_a(name=name, ip=ip, new_ip=new_ip, new_ttl=new_ttl),
+                    lambda name=str(_to["name"]), ip=str(_to["ip"]), new_ip=str(_from["ip"]), new_ttl=int(_from["ttl"]): self._update_a(name=name, ip=ip, new_ip=new_ip, new_ttl=new_ttl),
+                )
 
+            for r in dbdns_rec.address_aliases:
+                if self._assert_dns_environment(r.fqdn):
+                    self.group.add_action(
+                        lambda name=str(r.fqdn), ip=str(_from["ip"]), new_ip=str(_to["ip"]), new_ttl=int(_to["ttl"]): self._update_a(name=name, ip=ip, new_ip=new_ip, new_ttl=new_ttl),
+                        lambda name=str(r.fqdn), ip=str(_to["ip"]), new_ip=str(_from["ip"]), new_ttl=int(_from["ttl"]): self._update_a(name=name, ip=ip, new_ip=new_ip, new_ttl=new_ttl),
+                    )
+
+        #TODO, this is a bit complicated, need to check different permutations of dns env
+        # _from.fqdn internal _to.fqdn internal # update as is
+        # _from.fqdn internal _to.fqdn external # delete the _from PTR record from IB
+        # _from.fqdn external _to.fqdn internal # add the _to PTR  record to IB
+        # _from.fqdn external _to.fqdn external # Don't update anything
         if _from["reverse_ptr"] is not None:
             # then check if the ip changed, in which case the reverse ptr needs to be deleted and re-created
             if _from["ip"] != _to["ip"]:
                 self.group.add_action(
-                    lambda: self.delete_ptr(ip=_from["ip"]),
-                    lambda: self.add_ptr(name=_from["reverse_ptr"], ip=_from["ip"], ttl=_from["ttl"]),
+                    lambda ip=str(_from["ip"]): self._del_ptr(ip=ip),
+                    lambda name=str(_from["reverse_ptr"]), ip=str(_from["ip"]), ttl=int(_from["ttl"]): self._add_ptr(name=name, ip=ip, ttl=ttl),
                 )
                 self.group.add_action(
-                    lambda: self.add_ptr(name=_to["reverse_ptr"], ip=_to["ip"], ttl=_to["ttl"]),
-                    lambda: self.delete_ptr(ip=_to["ip"]),
+                    lambda name=str(_to["reverse_ptr"]), ip=str(_to["ip"]), ttl=int(_to["ttl"]): self._add_ptr(name=name, ip=ip, ttl=ttl),
+                    lambda ip=str(_to["ip"]): self._del_ptr(ip=ip),
                 )
             else:
                 # else if the ip didn't change, the reverse_ptr and/or ttl might need updating
                 if _from["reverse_ptr"] != _to["reverse_ptr"] or _from["ttl"] != _to["ttl"]:
                     self.group.add_action(
-                        lambda: self.update_ptr(ip=_to["ip"], new_name=_to["reverse_ptr"], new_ttl=_to["ttl"]),
-                        lambda: self.update_ptr(ip=_to["ip"], new_name=_from["reverse_ptr"], new_ttl=_from["ttl"]),
+                        lambda ip=str(_to["ip"]), new_name=xstr(_to["reverse_ptr"]), new_ttl=int(_to["ttl"]): self._update_ptr(ip=ip, new_name=new_name, new_ttl=new_ttl),
+                        lambda ip=str(_to["ip"]), new_name=str(_from["reverse_ptr"]), new_ttl=int(_from["ttl"]): self._update_ptr(ip=ip, new_name=new_name, new_ttl=new_ttl),
                     )
 
-    def delete_a_ptr(self, dbdns_rec):
-        args = dbdns_rec.get_infoblox_args()
-        self.group.add_action(
-            lambda name=args["name"], ip=args["ip"]: self.delete_a(name=name, ip=ip),
-            lambda name=args["name"], ip=args["ip"], ttl=args["ttl"]: self.add_a(name=name, ip=ip, ttl=ttl)
-        )
+    def del_a_ptr(self, dbdns_rec):
+        if not self._wants_infoblox_sync(dbdns_rec):
+            return
 
-        if args["reverse_ptr"] is not None:
+        args = dbdns_rec.get_infoblox_args()
+
+        if not dbdns_rec.fqdn.dns_domain.restricted:
             self.group.add_action(
-                lambda ip=args["ip"]: self.delete_ptr(ip=ip),
-                lambda name=args["reverse_ptr"], ip=args["reverse_ptr"], ttl=args["ttl"]: self.add_ptr(name=name, ip=ip, ttl=ttl)
+                lambda name=str(args["name"]), ip=str(args["ip"]): self._del_a(name=name, ip=ip),
+                lambda name=str(args["name"]), ip=str(args["ip"]), ttl=int(args["ttl"]): self._add_a(name=name, ip=ip, ttl=ttl)
             )
 
+        if args["reverse_ptr"] is not None and self._assert_dns_environment(args["reverse_ptr"]):
+            self.group.add_action(
+                lambda ip=str(args["ip"]): self._del_ptr(ip=ip),
+                lambda name=str(args["reverse_ptr"]), ip=str(args["reverse_ptr"]), ttl=int(args["ttl"]): self._add_ptr(name=name, ip=ip, ttl=ttl)
+            )
+
+            if not dbdns_rec.fqdn.dns_domain.restricted:
+                # Update any PTR records that point to the A record being deleted
+                for reverse_entry in dbdns_rec.fqdn.reverse_entries:
+                    ib_rollback = reverse_entry.get_infoblox_args()
+
+                    self.group.add_action(
+                        lambda ip=str(reverse_entry.ip), new_name=str(reverse_entry.fqdn), new_ttl=-1 if reverse_entry.ttl is None else reverse_entry.ttl: self._update_ptr(ip=ip, new_name=new_name, new_ttl=new_ttl),
+                        lambda ip=str(reverse_entry.ip), new_name=str(dbdns_rec.fqdn), new_ttl=-1 if dbdns_rec.ttl is None else dbdns_rec.ttl: self._update_ptr(ip=ip, new_name=new_name, new_ttl=new_ttl),
+                    )
+
+    def add_hardware_entity(self, dbhw_ent):
+        assert(isinstance(dbhw_ent, HardwareEntity))
+
+        for address in dbhw_ent.all_addresses():
+            for rec in address.dns_records:
+                self.add_a_ptr(rec)
+
+    def del_hardware_entity(self, dbhw_ent):
+        assert(isinstance(dbhw_ent, HardwareEntity))
+
+        for address in dbhw_ent.all_addresses():
+            for rec in address.dns_records:
+                self.del_a_ptr(rec)
+
     @with_timer
-    def add_ptr(self, name, ip, ttl=None):
+    def _add_ptr(self, name, ip, ttl=None):
+        assert(isinstance(name, str))
+        assert(isinstance(ip, str))
+        if ttl is not None:
+            assert(isinstance(ttl, int))
         if not self._assert_ip(ip):
             return
         if not name:
             raise ArgumentError("Required argument 'name' is missing")
-        payload = {"eonid": self.eonid, "name": str(name), "address": str(ip)}
-        if ttl is not None:
+        payload = {"eonid": self.eonid, "name": name, "address": ip}
+        if ttl is not None and ttl != -1:
             payload['ttl'] = ttl
         if (self.justification is not None):
             payload["cm_token"] = self.justification
         r = self._http_request("POST", "/dns/a_ptr/ptr", payload, ignore_statuses=[409])
         if r is not None and r.status_code == 409:
-            return self.update_ptr(ip, new_ttl=ttl)
+            return self._update_ptr(ip, new_name=name, new_ttl=ttl)
         return r
 
     @with_timer
-    def update_ptr(self, ip, new_name=None, new_ttl=None):
+    def _update_ptr(self, ip, new_name, new_ttl=None):
+        assert(isinstance(ip, str))
+        if new_name is None:
+            raise ArgumentError("new_name parameter is required")
+        assert(isinstance(new_name, str))
+        if new_ttl is not None:
+            assert(isinstance(new_ttl, int))
         if not self._assert_ip(ip):
             return
         if new_name is None and new_ttl is None:
@@ -164,22 +241,26 @@ class IBServices:
         if (self.justification is not None):
             payload["cm_token"] = self.justification
         if new_name is not None:
-            payload['name'] = str(new_name)
+            payload['name'] = new_name
         if new_ttl is not None:
             payload['ttl'] = new_ttl
 
-        url = "/dns/a_ptr/ptr/{}".format(str(ip))
+        url = "/dns/a_ptr/ptr/{}".format(ip)
         r = self._http_request("PATCH", url, payload, ignore_statuses=[404])
         if r is not None and r.status_code == 404:
             if new_name is None:
                 raise ArgumentError("Required argument 'new_name is missing")
-            payload['name'] = str(new_name)
+            payload['name'] = new_name
+            if payload.get('ttl'):
+                if payload['ttl'] == -1:
+                    del payload['ttl']
             return self._http_request("POST", "/dns/a_ptr/ptr", payload)
         else:
             return r
 
     @with_timer
-    def delete_ptr(self, ip):
+    def _del_ptr(self, ip):
+        assert(isinstance(ip, str))
         if not self._assert_ip(ip):
             return
         params = {
@@ -187,27 +268,38 @@ class IBServices:
         }
         if self.justification is not None:
             params["cm_token"] = self.justification
-        url = "/dns/a_ptr/ptr/{}".format(str(ip))
+        url = "/dns/a_ptr/ptr/{}".format(ip)
         url = self._generate_url_from_params(url, params)
 
         return self._http_request("DELETE", url, ignore_statuses=[404])
 
     @with_timer
-    def add_a(self, name, ip, ttl=None):
+    def _add_a(self, name, ip, ttl=None):
+        assert(isinstance(name, str))
+        assert(isinstance(ip, str))
+        if ttl is not None:
+            assert(isinstance(ttl, int))
         if not self._assert_ip(ip):
             return
-        payload = {"eonid": self.eonid, "name": str(name), "address": str(ip)}
-        if ttl is not None:
+        payload = {"eonid": self.eonid, "name": name, "address": ip}
+        if ttl is not None and ttl != -1:
             payload['ttl'] = ttl
         if (self.justification is not None):
             payload["cm_token"] = self.justification
         r = self._http_request("POST", "/dns/a_ptr/a", payload, ignore_statuses=[409])
         if r is not None and r.status_code == 409:
-            r = self.update_a(name, ip, new_ttl=ttl)
+            r = self._update_a(name, ip, new_ip=ip, new_ttl=ttl)
         return r
 
     @with_timer
-    def update_a(self, name, ip, new_ip=None, new_ttl=None):
+    def _update_a(self, name, ip, new_ip, new_ttl=None):
+        assert(isinstance(name, str))
+        assert(isinstance(ip, str))
+        if new_ip is None:
+            raise ArgumentException("Required parameter ip missing")
+        assert(isinstance(new_ip, str))
+        if new_ttl is not None:
+            assert(isinstance(new_ttl, int))
         if not self._assert_ip(ip):
             return
         if new_ip is None and new_ttl is None:
@@ -217,23 +309,28 @@ class IBServices:
         if (self.justification is not None):
             payload["cm_token"] = self.justification
         if new_ip is not None:
-            payload['address'] = str(new_ip)
+            payload['address'] = new_ip
         if new_ttl is not None:
             payload['ttl'] = new_ttl
 
-        url = "/dns/a_ptr/a/{}/{}".format(str(name), str(ip))
+        url = "/dns/a_ptr/a/{}/{}".format(name, ip)
         r = self._http_request("PATCH", url, payload, ignore_statuses=[404])
         if r is not None and r.status_code == 404:
             if new_ip is None:
                 raise ArgumentError(f"Required argument '{new_ip}' is missing")
-            payload['name'] = str(name)
-            payload['address'] = str(new_ip)
+            payload['name'] = name
+            payload['address'] = new_ip
+            if payload.get('ttl'):
+                if payload['ttl'] == -1:
+                    del payload['ttl']
             return self._http_request("POST", "/dns/a_ptr/a", payload)
         else:
             return r
 
     @with_timer
-    def delete_a(self, name, ip):
+    def _del_a(self, name, ip):
+        assert(isinstance(name, str))
+        assert(isinstance(ip, str))
         if not self._assert_ip(ip):
             return
         params = {
@@ -241,7 +338,7 @@ class IBServices:
         }
         if self.justification is not None:
             params["cm_token"] = self.justification
-        url = "/dns/a_ptr/a/{}/{}".format(str(name), str(ip))
+        url = "/dns/a_ptr/a/{}/{}".format(name, ip)
         url = self._generate_url_from_params(url, params)
 
         return self._http_request("DELETE", url, ignore_statuses=[404])
@@ -259,7 +356,10 @@ class IBServices:
             if not isinstance(addr.ip, IPv4Address):
                 continue
 
-            dns_record = addr.dns_records[0]
+            dns_record = addr.dns_records[0] #  TODO odd, can there be more than one dns record ?
+
+            if not self._assert_archetype(dns_record):
+                continue
 
             if not isinstance(dns_record, ARecord):
                 continue
@@ -271,6 +371,8 @@ class IBServices:
                 "ip":  str(addr.ip),
                 "ptr": ptr,
                 "ttl": dns_record.ttl,
+                "restricted_dns_domain": dns_record.fqdn.dns_domain.restricted,
+                "default_dns_environment": dns_record.fqdn.dns_environment.is_default,
             }
 
         # The primary address of Zebra hosts needs extra care. Here, we cheat a
@@ -279,16 +381,21 @@ class IBServices:
         if (dbhw_ent.primary_ip and str(dbhw_ent.primary_name.fqdn) not in hwdata):
             ptr = str(dbhw_ent.primary_name.reverse_ptr) if dbhw_ent.primary_name.reverse_ptr else None
 
-            hwdata[str(dbhw_ent.primary_name)] = {
+            hwdata[str(dbhw_ent.primary_name.fqdn)] = {
                 "ip":  str(dbhw_ent.primary_ip),
                 "ptr": ptr,
                 "ttl": dbhw_ent.primary_name.ttl,
+                "restricted_dns_domain": dbhw_ent.primary_name.fqdn.dns_domain.restricted,
+                "default_dns_environment": dbhw_ent.primary_name.fqdn.dns_environment.is_default,
             }
 
         return hwdata
 
     def bulk_change_a_ptr(self, old_hwdata, new_hwdata):
-        self.log.info(f"bulk_update_a_ptr(): data before change = {old_hwdata}, data after change = {new_hwdata}")
+        self.log.debug(f"bulk_change_a_ptr(): data before change = {old_hwdata}, data after change = {new_hwdata}")
+
+        # TODO don't send data if it's an aurora host and if it's a restricted domain, send only PTR records
+        # I think these tests can be done in the snapshot function where we have the db objects
 
         for fqdn in old_hwdata:
             # Things to delete
@@ -297,6 +404,7 @@ class IBServices:
 
             # Things to update
             elif old_hwdata[fqdn] != new_hwdata[fqdn]:
+                #TODO, if fqdn belongs to an ARecord that is a target of an AddressAlias, all the AddressAliases need updating too
                 self._update_a_ptr_from_hwdata(fqdn, old_hwdata, new_hwdata)
 
         # Things to add
@@ -305,88 +413,111 @@ class IBServices:
                 self._add_a_ptr_from_hwdata(fqdn, old_hwdata, new_hwdata)
 
     def _add_a_ptr_from_hwdata(self, fqdn, old_hwdata, new_hwdata):
-        ip, new_ptr, new_ttl = (new_hwdata[fqdn][key] for key in ["ip", "ptr", "ttl"])
+        ip, new_ptr, new_ttl, restricted_dns_domain, default_dns_environment = (new_hwdata[fqdn][key] for key in ["ip", "ptr", "ttl", "restricted_dns_domain", "default_dns_environment"])
 
-        self.group.add_action(
-            lambda fqdn=fqdn, ip=ip, ttl=-1 if new_ttl is None else new_ttl:
-                self.add_a(fqdn, ip, ttl),
-            lambda fqdn=fqdn, ip=ip:
-                self.delete_a(fqdn, ip)
-        )
+        if default_dns_environment:
+            if not restricted_dns_domain:
+                self.group.add_action(
+                    lambda fqdn=fqdn, ip=ip, ttl=-1 if new_ttl is None else new_ttl:
+                        self._add_a(fqdn, ip, ttl),
+                    lambda fqdn=fqdn, ip=ip:
+                        self._del_a(fqdn, ip)
+                )
 
-        self.group.add_action(
-            lambda fqdn=fqdn if new_ptr is None else new_ptr, ip=ip, ttl=-1 if new_ttl is None else new_ttl:
-                self.add_ptr(fqdn, ip, ttl),
-            lambda ip=ip:
-                self.delete_ptr(ip)
-        )
-        self.log.info("add_a_ptr({}, {}, {}, {}), rollback delete_a_ptr({}, {})".format(fqdn, ip, new_ttl, new_ptr,
-                                                                                        fqdn, ip))
+            self.group.add_action(
+                lambda fqdn=fqdn if new_ptr is None else new_ptr, ip=ip, ttl=-1 if new_ttl is None else new_ttl:
+                    self._add_ptr(fqdn, ip, ttl),
+                lambda ip=ip:
+                    self._del_ptr(ip)
+            )
 
     def _update_a_ptr_from_hwdata(self, fqdn, old_hwdata, new_hwdata):
-        self.log.info("_update_a_ptr_from_hwdata(): old {}, new {}".format(old_hwdata, new_hwdata))
-        old_ip, old_ptr, old_ttl = (old_hwdata[fqdn][key] for key in ["ip", "ptr", "ttl"])
-        new_ip, new_ptr, new_ttl = (new_hwdata[fqdn][key] for key in ["ip", "ptr", "ttl"])
+        old_ip, old_ptr, old_ttl, old_restricted_dns_domain, old_default_dns_environment = (old_hwdata[fqdn][key] for key in ["ip", "ptr", "ttl", "restricted_dns_domain", "default_dns_environment"])
+        new_ip, new_ptr, new_ttl, new_restricted_dns_domain, new_default_dns_environment = (new_hwdata[fqdn][key] for key in ["ip", "ptr", "ttl", "restricted_dns_domain", "default_dns_environment"])
 
-        if old_ttl != new_ttl:
-            self.log.info("update_a({} {} {} {})".format(fqdn, old_ip, old_ttl, new_ttl))
-            self.group.add_action(
-                lambda fqdn=fqdn, ip=old_ip, ttl=-1 if new_ttl is None else new_ttl: self.update_a(fqdn, ip, new_ttl=ttl),
-                lambda fqdn=fqdn, ip=old_ip, ttl=-1 if new_ttl is None else old_ttl: self.update_a(fqdn, ip, new_ttl=ttl)
-            )
+        if old_default_dns_environment:
+            if not old_restricted_dns_domain:
+                if old_ip != new_ip or old_ttl != new_ttl:
+                        self.group.add_action(
+                            lambda name=fqdn, ip=old_ip, new_ip=new_ip, ttl=-1 if new_ttl is None else new_ttl: self._update_a(name=name, ip=ip, new_ip=new_ip, new_ttl=ttl),
+                            lambda name=fqdn, ip=new_ip, new_ip=old_ip, ttl=-1 if old_ttl is None else old_ttl: self._update_a(name=name, ip=ip, new_ip=new_ip, new_ttl=ttl),
+                        )
 
-        if old_ptr != new_ptr or old_ttl != new_ttl:
-            self.log.info("update_ptr({} {} {} {} {} {})".format(fqdn, old_ip, new_ptr, new_ttl, old_ptr, old_ttl))
-            self.group.add_action(
-                lambda fqdn=fqdn, ip=old_ip, ptr=fqdn if new_ptr is None else new_ptr, ttl=-1 if new_ttl is None else new_ttl:
-                    self.update_ptr(ip, new_name=new_ptr, new_ttl=ttl),
-                lambda fqdn=fqdn, ip=old_ip, ptr=fqdn if old_ptr is None else old_ptr, ttl=-1 if old_ttl is None else old_ttl:
-                    self.update_ptr(ip, new_name=ptr, new_ttl=ttl)
-            )
+            if old_ip != new_ip:
+                self.group.add_action(
+                    lambda ip=old_ip: self._del_ptr(ip),
+                    lambda name=fqdn, ip=old_ip, ttl=old_ttl: self._add_ptr(name, ip, ttl=-1 if ttl is None else ttl)
+                )
+                self.group.add_action(
+                    lambda name=fqdn, ip=new_ip, ttl=new_ttl: self._add_ptr(name, ip, ttl=-1 if ttl is None else ttl),
+                    lambda ip=new_ip: self._del_ptr(ip),
+                )
+            else:
+                if old_ptr != new_ptr or old_ttl != new_ttl:
+                    self.group.add_action(
+                        lambda ip=old_ip:
+                            self._update_ptr(ip, new_name=fqdn if new_ptr is None else new_ptr, new_ttl=-1 if new_ttl is None else new_ttl),
+                        lambda ip=old_ip:
+                            self._update_ptr(ip, new_name=fqdn if old_ptr is None else old_ptr, new_ttl=-1 if old_ttl is None else old_ttl)
+                    )
 
     def _delete_a_ptr_from_hwdata(self, fqdn, old_hwdata, new_hwdata):
-        ip, ptr, ttl = (old_hwdata[fqdn][key] for key in ["ip", "ptr", "ttl"])
+        ip, ptr, ttl, restricted_dns_domain, default_dns_environment = (old_hwdata[fqdn][key] for key in ["ip", "ptr", "ttl", "restricted_dns_domain", "default_dns_environment"])
 
-        self.group.add_action(
-            lambda fqdn=fqdn, ip=ip:
-                self.delete_a(fqdn, ip),
-            lambda fqdn=fqdn, ip=ip, ttl=ttl:
-                self.add_a(fqdn, ip, ttl)
-        )
-        self.group.add_action(
-            lambda ip=ip: self.delete_ptr(ip),
-                
-            lambda fqdn=fqdn if ptr is None else ptr, ip=ip, ttl=ttl:
-                self.add_ptr(fqdn, ip, ttl)
-        )
-        self.log.info("delete_a_ptr({}, {}), rollback add_a_ptr({}, {}, {}, {})".format(fqdn, ip, fqdn, ip, ptr, ttl))
+        if default_dns_environment:
+            if not restricted_dns_domain:
+                self.group.add_action(
+                    lambda fqdn=fqdn, ip=ip:
+                        self._del_a(fqdn, ip),
+                    lambda fqdn=fqdn, ip=ip, ttl=ttl:
+                        self._add_a(fqdn, ip, ttl)
+                )
+            self.group.add_action(
+                lambda ip=ip: self._del_ptr(ip),
+                lambda fqdn=fqdn if ptr is None else ptr, ip=ip, ttl=ttl:
+                    self._add_ptr(fqdn, ip, ttl)
+            )
 
     def add_dns_alias(self, dbdns_rec):
+        assert(isinstance(dbdns_rec, Alias))
+        if not self._wants_infoblox_sync(dbdns_rec):
+            return
         args = dbdns_rec.get_infoblox_args()
         self.group.add_action(
-            lambda name=args["name"], target=args["target"], ttl=args["ttl"]: self._add_dns_alias(name=name, target=target, ttl=ttl),
-            lambda name=args["name"]: self._delete_dns_alias(name=name),
+            lambda name=str(args["name"]), target=str(args["target"]), ttl=int(args["ttl"]): self._add_dns_alias(name=name, target=target, ttl=ttl),
+            lambda name=str(args["name"]): self._del_dns_alias(name=name),
         )
 
-    def delete_dns_alias(self, dbdns_rec):
+    def del_dns_alias(self, dbdns_rec):
+        assert(isinstance(dbdns_rec, Alias))
+        if not self._wants_infoblox_sync(dbdns_rec):
+            return
+
         args = dbdns_rec.get_infoblox_args()
         self.group.add_action(
-            lambda name=args["name"]: self._delete_dns_alias(name=name),
-            lambda name=args["name"], target=args["target"], ttl=args["ttl"]: self._add_dns_alias(name=name, target=target, ttl=ttl),
+            lambda name=str(args["name"]): self._del_dns_alias(name=name),
+            lambda name=str(args["name"]), target=str(args["target"]), ttl=int(args["ttl"]): self._add_dns_alias(name=name, target=target, ttl=ttl),
         )
 
     def update_dns_alias(self, dbdns_rec, _from):
+        assert(isinstance(dbdns_rec, Alias))
+        if not self._wants_infoblox_sync(dbdns_rec):
+            return
         _to = dbdns_rec.get_infoblox_args()
         self.group.add_action(
-            lambda name=_to["name"], new_target=_to["target"], new_ttl=_to["ttl"]: self._update_dns_alias(name=name, new_target=new_target, ttl=new_ttl),
-            lambda name=_to["name"], new_target=_from["target"], new_ttl=_from["ttl"]: self._update_dns_alias(name=name, new_target=new_target, ttl=new_ttl),
+            lambda name=str(_to["name"]), new_target=str(_to["target"]), new_ttl=int(_to["ttl"]): self._update_dns_alias(name=name, new_target=new_target, ttl=new_ttl),
+            lambda name=str(_to["name"]), new_target=str(_from["target"]), new_ttl=int(_from["ttl"]): self._update_dns_alias(name=name, new_target=new_target, ttl=new_ttl),
         )
 
 
     @with_timer
     def _add_dns_alias(self, name, target, ttl=None):
-        payload = {"eonid": self.eonid, "name": str(name), "target": str(target)}
+        assert(isinstance(name, str))
+        assert(isinstance(target, str))
         if ttl is not None:
+            assert(isinstance(ttl, int))
+        payload = {"eonid": self.eonid, "name": name, "target": target}
+        if ttl is not None and ttl != -1:
             payload["ttl"] = ttl
         if self.justification is not None:
             payload["cm_token"] = self.justification
@@ -394,36 +525,45 @@ class IBServices:
 
         r = self._http_request("POST", url, payload, ignore_statuses=[409])
         if r is not None and r.status_code == 409:
-            return self.update_dns_alias(name, new_target=target, ttl=ttl)
+            return self._update_dns_alias(name, new_target=target, ttl=ttl)
         else:
             return r
 
     @with_timer
-    def _delete_dns_alias(self, name):
+    def _del_dns_alias(self, name):
+        assert(isinstance(name, str))
         params = { "eonid": self.eonid }
         if self.justification is not None:
             params["cm_token"] = self.justification
-        url = f"/dns/aliases/{str(name)}"
+        url = f"/dns/aliases/{name}"
         url = self._generate_url_from_params(url, params)
 
         return self._http_request("DELETE", url, ignore_statuses=[404])
 
     @with_timer
     def _update_dns_alias(self, name, new_target=None, ttl=None):
+        assert(isinstance(name, str))
+        if new_target is not None:
+            assert(isinstance(new_target, str))
+        if ttl is not None:
+            assert(isinstance(ttl, int))
         payload = {"eonid": self.eonid}
         if new_target is not None:
-            payload["target"] = str(new_target)
+            payload["target"] = new_target
         if ttl is not None:
             payload["ttl"] = ttl
         if self.justification is not None:
             payload["cm_token"] = self.justification
-        url = "/dns/aliases/{}".format(str(name))
+        url = "/dns/aliases/{}".format(name)
 
         r = self._http_request("PATCH", url, payload, ignore_statuses=[404])
         if r is not None and r.status_code == 404:
             if new_target is None:
                 raise ArgumentError("Required argument 'new_target' is missing")
-            payload['name'] = str(name)
+            payload['name'] = name
+            if payload.get('ttl'):
+                if payload['ttl'] == -1:
+                    del payload['ttl']
             r = self._http_request("POST", "/dns/aliases/", payload)
             return r
         else:
@@ -459,8 +599,30 @@ class IBServices:
 
         return self._http_request("GET", url)
 
+    def add_dns_srv_record(self, r):
+        assert(isinstance(r, SrvRecord))
+
+        if not self._assert_dns_environment(r.fqdn):
+            return
+
+        self.group.add_action(
+            lambda service=r.service, protocol=r.protocol, dns_domain=str(r.fqdn.dns_domain), target=str(r.target.fqdn), port=r.port, priority=r.priority, weight=r.weight, ttl=r.ttl:
+                self._add_dns_srv_record(service, protocol, dns_domain, target, port, priority, weight, ttl),
+            lambda service=r.service, protocol=r.protocol, dns_domain=str(r.fqdn.dns_domain), target=str(r.target.fqdn), port=r.port, priority=r.priority, weight=r.weight:
+                self._del_dns_srv_record(service, protocol, dns_domain, target, port, priority, weight),
+        )
+
     @with_timer
-    def add_dns_srv_record(self, service, protocol, dns_domain, target, port, priority, weight, ttl=None):
+    def _add_dns_srv_record(self, service, protocol, dns_domain, target, port, priority, weight, ttl=None):
+        assert(isinstance(service, str))
+        assert(isinstance(protocol, str))
+        assert(isinstance(dns_domain, str))
+        assert(isinstance(target, str))
+        assert(isinstance(port, int))
+        assert(isinstance(priority, int))
+        assert(isinstance(weight, int))
+        if ttl is not None:
+            assert(isinstance(ttl, int))
         url = "/dns/srv"
         payload = {
             "eonid":    self.eonid,
@@ -481,8 +643,28 @@ class IBServices:
 
         return self._http_request("POST", url, payload, ignore_statuses=[409])
 
+    def del_dns_srv_record(self, r):
+        assert(isinstance(r, SrvRecord))
+
+        if not self._assert_dns_environment(r.fqdn):
+            return
+
+        self.group.add_action(
+            lambda service=r.service, protocol=r.protocol, dns_domain=str(r.fqdn.dns_domain), target=str(r.target.fqdn), port=r.port, priority=r.priority, weight=r.weight:
+                self._del_dns_srv_record(service, protocol, dns_domain, target, port, priority, weight),
+            lambda service=r.service, protocol=r.protocol, dns_domain=str(r.fqdn.dns_domain), target=str(r.target.fqdn), port=r.port, priority=r.priority, weight=r.weight, ttl=r.ttl:
+                self._add_dns_srv_record(service, protocol, dns_domain, target, port, priority, weight, ttl),
+        )
+
     @with_timer
-    def del_dns_srv_record(self, service, protocol, dns_domain, target, port, priority, weight):
+    def _del_dns_srv_record(self, service, protocol, dns_domain, target, port, priority, weight):
+        assert(isinstance(service, str))
+        assert(isinstance(protocol, str))
+        assert(isinstance(dns_domain, str))
+        assert(isinstance(target, str))
+        assert(isinstance(port, int))
+        assert(isinstance(priority, int))
+        assert(isinstance(weight, int))
         options = {
             "eonid":    self.eonid,
             "service":  service,
@@ -501,14 +683,35 @@ class IBServices:
 
         return self._http_request("DELETE", url, ignore_statuses=[404])
 
+    def update_dns_srv_record(self, s, old):
+        assert(isinstance(s, SrvRecord))
+        if not self._wants_infoblox_sync(s):
+            return
+
+        new = s.get_infoblox_args()
+
+        new["domain"] = str(new["domain"])
+        new["target"] = str(new["target"])
+
+        old["domain"] = str(old["domain"])
+        old["target"] = str(old["target"])
+
+        if old == new:
+            return
+
+        self.group.add_action(
+            lambda old=old, new=new: self._update_dns_srv_record(old, new),
+            lambda old=new, new=old: self._update_dns_srv_record(old, new),
+        )
+
     @with_timer
-    def update_dns_srv_record(self, old, new):
+    def _update_dns_srv_record(self, old, new):
         required_fields = ("service", "protocol", "domain", "port", "target", "priority", "weight")
         payload = {}
 
         for field in required_fields:
             if old[field] is None:
-                raise ArgumentError(f"Required argument '{field}' is missing")
+                raise ArgumentError("Required argument '{}' is missing".format(field))
             payload[field] = new[field] if field in new else old[field]
 
         if new.get("ttl", None):
@@ -546,46 +749,6 @@ class IBServices:
         url = self._generate_url_from_params("/dns/srv", params)
 
         return self._http_request("GET", url, ignore_statuses=[404])
-
-    def add_network(self, network, name, compartment=None, side=None, sysloc=None):
-        url = "/networks/{}".format(quote(network, safe=""))
-
-        payload = {
-            "name": name,
-            "compartment": compartment,
-            "side": side,
-            "sysloc": sysloc,
-        }
-        if self.eonid:
-            payload["eonid"] = self.eonid
-
-        self._http_request("POST", url, payload)
-
-    def show_network(self, network):
-        url = "/networks/{}".format(quote(network, safe=""))
-
-        return self._http_request("GET", url, ignore_statuses=[404])
-
-    def delete_network(self, network):
-        url = "/networks/{}".format(quote(network, safe=""))
-
-        self._http_request("DELETE", url, ignore_statuses=[404])
-
-    def add_zone(self, fqdn, city=None):
-        url = "/dns/zones/"
-        payload = {"fqdn": fqdn, "city": city, "eonid": self.eonid}
-        if self.justification is not None:
-            payload["cm_token"] = self.justification
-        self._http_request("POST", url, payload)
-
-    def show_zone(self, fqdn):
-        url = f"/dns/zones/{fqdn}"
-
-        return self._http_request("GET", url, ignore_statuses=[404])
-
-    def delete_zone(self, fqdn):
-        url = f"/dns/zones/{fqdn}"
-        self._http_request("DELETE", url, ignore_statuses=[404])
 
     def _http_request(self, http_cmd, url, data=None, ignore_statuses=[]):
         if not self.enabled:

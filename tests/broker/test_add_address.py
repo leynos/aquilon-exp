@@ -467,8 +467,9 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
                    "--network_environment", "cardenv",
                    "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_tcm
         self.noouttest(command)
-        # External IP addresses should not be added to DSDB
+        # External IP addresses should not be added to DSDB/IB
         self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
         command = ["show_address", "--fqdn=%s" % fqdn,
                    "--network_environment", "cardenv"]
@@ -495,8 +496,9 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
                    "--fqdn", fqdn, "--network_environment", "cardenv",
                    "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_tcm
         self.noouttest(command)
-        # External IP addresses should not be added to DSDB
+        # External IP addresses should not be added to DSDB/IB
         self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
         command = ["show_address", "--fqdn=%s" % fqdn,
                    "--network_environment", "cardenv"]
@@ -658,6 +660,7 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
                    "--target", "address.test-infoblox.cc"] + self.valid_just_tcm
         ib_expect_add_a("address-alias.test-infoblox.cc", "10.25.0.1", justification=self.valid_justification)
         self.noouttest(command)
+        self.ib_verify()
         # setup - end
 
         command = ["update_address", "--fqdn", "address.test-infoblox.cc",
@@ -667,6 +670,7 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         self.dsdb_expect_update("address.test-infoblox.cc", ip="10.25.0.2", fail=True)
         self.dsdberrortest(command)
         self.dsdb_verify()
+        self.ib_verify()
         # test case when dsdb fails - end
 
         # test case when first ib update_a request fails
@@ -676,44 +680,42 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         self.dsdb_expect_update("address.test-infoblox.cc", ip="10.25.0.1")  # Rollback dsdb call
         self.iberrortest(command)
         self.dsdb_verify()
+        self.ib_verify()
         # test case when first ib request fails - end
 
         # test case when second ib update_a request fails
         self.dsdb_expect_update("address.test-infoblox.cc", ip="10.25.0.2")
-        ib_expect_update_a("address.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2",
-                           justification=self.valid_justification)
+        ib_expect_update_a("address.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2", justification=self.valid_justification)
+        ib_expect_update_a("address-alias.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2", justification=self.valid_justification)
         ib_expect_del_ptr("10.25.0.1", justification=self.valid_justification)
-        ib_expect_add_ptr(fqdn="address.test-infoblox.cc", ip="10.25.0.2", justification=self.valid_justification)
+        ib_expect_add_ptr(fqdn="address.test-infoblox.cc", ip="10.25.0.2", fail=True, justification=self.valid_justification)
 
-        ib_expect_update_a("address-alias.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2", fail=True,
-                           justification=self.valid_justification)
         self.dsdb_expect_update("address.test-infoblox.cc", ip="10.25.0.1")   # Rollback dsdb call
-        ib_expect_del_ptr("10.25.0.2", justification=self.valid_justification)  # Rollback first ib call
-        ib_expect_add_ptr(fqdn="address.test-infoblox.cc", ip="10.25.0.1",
-                          justification=self.valid_justification)  # Rollback first ib call
-        ib_expect_update_a("address.test-infoblox.cc", "10.25.0.2", new_ip="10.25.0.1",
-                           justification=self.valid_justification)  # Rollback first ib call
+        ib_expect_add_ptr(fqdn="address.test-infoblox.cc", ip="10.25.0.1", justification=self.valid_justification)  # Rollback ib call
+        ib_expect_update_a("address-alias.test-infoblox.cc", "10.25.0.2", new_ip="10.25.0.1", justification=self.valid_justification)
+        ib_expect_update_a("address.test-infoblox.cc", "10.25.0.2", new_ip="10.25.0.1", justification=self.valid_justification)  # Rollback ib call
         self.iberrortest(command)
         self.dsdb_verify()
+        self.ib_verify()
         # test case when second ib request fails - end
 
         # test case when neither dsdb nor ib fail
         self.dsdb_expect_update("address.test-infoblox.cc", ip="10.25.0.2")
-        ib_expect_update_a("address.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2",
-                           justification=self.valid_justification)
+        ib_expect_update_a("address.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2", justification=self.valid_justification)
+        ib_expect_update_a("address-alias.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2", justification=self.valid_justification)
         ib_expect_del_ptr("10.25.0.1", justification=self.valid_justification)
         ib_expect_add_ptr(fqdn="address.test-infoblox.cc", ip="10.25.0.2", justification=self.valid_justification)
-        ib_expect_update_a("address-alias.test-infoblox.cc", "10.25.0.1", new_ip="10.25.0.2",
-                           justification=self.valid_justification)
         self.noouttest(command)
         mh.addresses["address.test-infoblox.cc", "internal"] = {"ip": "10.25.0.2"}
         self.dsdb_verify()
+        self.ib_verify()
         # test case when neither dsdb nor ib fail - end
 
         # cleanup
         command = ["del_address_alias", "--fqdn", "address-alias.test-infoblox.cc"] + self.valid_just_tcm
         ib_expect_del_a("address-alias.test-infoblox.cc", "10.25.0.2", justification=self.valid_justification)
         self.noouttest(command)
+        self.ib_verify()
 
         mh.delete()
 

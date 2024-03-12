@@ -253,16 +253,15 @@ class TestAddInterfaceAddress(TestBrokerCommand):
         fqdn = "unittest25-e1.utcolo.aqd-unittest.ms.com"
         net = self.net["unknown1"]
         ip = net[4]
-        ib_expect_add_a(fqdn, str(ip))
-        ib_expect_add_ptr(fqdn, str(ip))
+
         command = ["add", "interface", "address", "--machine", "ut3c5n7",
                    "--interface", "eth1", "--ip", ip,
                    "--fqdn", fqdn,
                    "--network_environment", "utcolo"]
         self.statustest(command)
-        # External IP addresses should not be added to DSDB
+        # External IP addresses should not be added to DSDB/IB
         self.dsdb_verify(empty=True)
-        self.ib_verify()
+        self.ib_verify(empty=True)
 
     def test_290_verifyunittest25utcolo(self):
         command = ["show", "address", "--dns_environment", "ut-env",
@@ -275,16 +274,14 @@ class TestAddInterfaceAddress(TestBrokerCommand):
     def test_300_addunittest25utcolo2(self):
         net = self.net["unknown1"]
         hostname = "unittest25-e2.utcolo.aqd-unittest.ms.com"
-        ib_expect_add_a(hostname, "4.2.1.69")  # --ipfromip net.ip returns this value
-        ib_expect_add_ptr(hostname, "4.2.1.69")
         command = ["add", "interface", "address", "--machine", "ut3c5n7",
                    "--interface", "eth2", "--ipfromip", net.ip,
                    "--fqdn", hostname,
                    "--network_environment", "utcolo"]
         self.statustest(command)
-        # External IP addresses should not be added to DSDB
+        # External IP addresses should not be added to DSDB/IB
         self.dsdb_verify(empty=True)
-        self.ib_verify()
+        self.ib_verify(empty=True)
 
     def test_310_addunittest25utcolo3(self):
         net = self.net["unknown1"]
@@ -480,12 +477,10 @@ class TestAddInterfaceAddress(TestBrokerCommand):
         # has been created
         ip = self.net["tor_net_0"].usable[6]
         fqdn = "test-aurora-default-os-v0.ms.com"
-        ib_expect_add_a(fqdn, str(ip))
-        ib_expect_add_ptr("test-aurora-default-os.ms.com", str(ip))
         self.noouttest(["add_interface_address", "--machine", "ut8s02p4",
                         "--interface", "eth0", "--label", "v0", "--ip", ip,
                         "--fqdn", fqdn])
-        self.ib_verify()
+        self.ib_verify(empty=True)  # aurora hosts are not expected to be sent to infoblox
 
     def test_440_verifyauroraextraip(self):
         ip1 = self.net["tor_net_0"].usable[4]
@@ -511,41 +506,47 @@ class TestAddInterfaceAddress(TestBrokerCommand):
         self.dsdb_expect_add("gi0.test-infoblox.cc", "10.25.0.1", interface="gi0", fail=True)
         self.dsdberrortest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because dsdb failed
 
         self.dsdb_expect_add("gi0.test-infoblox.cc", "10.25.0.1", interface="gi0")
         ib_expect_add_a("gi0.test-infoblox.cc", "10.25.0.1", fail=True)
         self.dsdb_expect_delete("10.25.0.1")
         self.iberrortest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         self.dsdb_expect_add("gi0.test-infoblox.cc", "10.25.0.1", interface="gi0")
         ib_expect_add_a("gi0.test-infoblox.cc", "10.25.0.1")
         ib_expect_add_ptr("gi0.test-infoblox.cc", "10.25.0.1")
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         command = ["del_interface_address", "--hostname", hname, "--interface", "gi0", "--ip", "10.25.0.1"]
 
         self.dsdb_expect_delete("10.25.0.1", fail=True)
         self.dsdberrortest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because dsdb failed
 
         self.dsdb_expect_delete("10.25.0.1")
         ib_expect_del_a("gi0.test-infoblox.cc", "10.25.0.1", fail=True)
         self.dsdb_expect_add("gi0.test-infoblox.cc", "10.25.0.1", interface="gi0")
         self.iberrortest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         self.dsdb_expect_delete("10.25.0.1")
         ib_expect_del_a("gi0.test-infoblox.cc", "10.25.0.1")
         ib_expect_del_ptr("10.25.0.1")
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         command = ["del_interface", "--interface", "gi0"]
         self.noouttest(command)
-
         self.ib_verify()
+
         mh.delete()
 
     def test_910_ib_interface_address_map_to_primary(self):
@@ -564,41 +565,47 @@ class TestAddInterfaceAddress(TestBrokerCommand):
         self.dsdb_expect_add("gi0.test-infoblox.cc", "10.25.0.1", interface="gi0", primary=hname, fail=True)
         self.dsdberrortest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because dsdb failed
 
         self.dsdb_expect_add("gi0.test-infoblox.cc", "10.25.0.1", interface="gi0", primary=hname)
         ib_expect_add_a("gi0.test-infoblox.cc", "10.25.0.1", fail=True)
         self.dsdb_expect_delete("10.25.0.1")
         self.iberrortest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         self.dsdb_expect_add("gi0.test-infoblox.cc", "10.25.0.1", interface="gi0", primary=hname)
         ib_expect_add_a("gi0.test-infoblox.cc", "10.25.0.1")
         ib_expect_add_ptr(hname, "10.25.0.1")
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         command = ["del_interface_address", "--hostname", hname, "--interface", "gi0", "--ip", "10.25.0.1"]
 
         self.dsdb_expect_delete("10.25.0.1", fail=True)
         self.dsdberrortest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because dsdb failed
 
         self.dsdb_expect_delete("10.25.0.1")
         ib_expect_del_a("gi0.test-infoblox.cc", "10.25.0.1", fail=True)
         self.dsdb_expect_add("gi0.test-infoblox.cc", "10.25.0.1", interface="gi0", primary=hname)
         self.iberrortest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         self.dsdb_expect_delete("10.25.0.1")
         ib_expect_del_a("gi0.test-infoblox.cc", "10.25.0.1")
         ib_expect_del_ptr("10.25.0.1")
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         command = ["del_interface", "--interface", "gi0"]
         self.noouttest(command)
-
         self.ib_verify()
+
         mh.delete()
 
 if __name__ == '__main__':

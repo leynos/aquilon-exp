@@ -66,7 +66,7 @@ class CommandDelConsoleServer(BrokerCommand):
 
             ib_services = IBServices(logger, justification=justification, **arguments)
             if ib_services.feature_enabled("console_server"):
-                ib_services.delete_a_ptr(dbcons.primary_name)
+                ib_services.del_a_ptr(dbcons.primary_name)
                 try:
                     ib_services.group.commit_or_rollback()
                 except ProcessException as e:

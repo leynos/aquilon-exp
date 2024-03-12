@@ -444,10 +444,10 @@ class TestAddAddressAlias(TestBrokerCommand):
                        '--ttl', 100,
                        '--dns_environment', dns_environment] + self.valid_just_tcm
             if dns_environment == 'internal':
-                ib_expect_update_a("address-alias-fqdn.test-infoblox.cc", "10.25.0.1", new_ttl=100,
+                ib_expect_update_a("address-alias-fqdn.test-infoblox.cc", "10.25.0.1", new_ttl=100, new_ip="10.25.0.1",
                                    justification=self.valid_justification, fail=True)
                 self.iberrortest(command)
-                ib_expect_update_a("address-alias-fqdn.test-infoblox.cc", "10.25.0.1", new_ttl=100,
+                ib_expect_update_a("address-alias-fqdn.test-infoblox.cc", "10.25.0.1", new_ttl=100, new_ip="10.25.0.1",
                                    justification=self.valid_justification)
             self.noouttest(command)
 

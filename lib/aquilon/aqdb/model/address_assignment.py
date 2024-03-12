@@ -118,14 +118,6 @@ class AddressAssignment(Base):
     def is_shared(self):
         return False
 
-    def get_infoblox_args(self):
-        return {
-            'name': self.interface.hardware_entity.primary_name.fqdn,
-            'ip': self.ip,
-            'ttl': -1,
-            'reverse_ptr': self.interface.hardware_entity.primary_name.fqdn,
-        }
-
     def __init__(self, label=None, network=None, **kwargs):
         if not label:
             label = ""

@@ -395,6 +395,7 @@ class MachineTestMixin(EventsTestMixin):
                              "--fqdn", fqdn])
 
         self.dsdb_verify()
+        self.ib_verify()
 
         if manager_iface:
             command = ["add_manager", "--hostname", hostname,
@@ -407,8 +408,8 @@ class MachineTestMixin(EventsTestMixin):
                                  manager_iface, manager_ip.mac)
             self.noouttest(command)
             self.dsdb_verify()
+            self.ib_verify()
 
-        self.ib_verify()
         show_cmd, show_out = self.verify_show_machine(machine, interfaces,
                                                       zebra=zebra, **kwargs)
         self.matchoutput(show_out, "Primary Name: %s [%s]" % (hostname, ip),
@@ -446,6 +447,7 @@ class MachineTestMixin(EventsTestMixin):
                     self.statustest(["del_interface_address", "--machine", machine,
                                      "--interface", nic_name, "--ip", nic_ip])
                 self.dsdb_verify()
+                self.ib_verify()
 
         self.dsdb_expect_delete(ip)
         if justification:

@@ -43,10 +43,11 @@ class CommandAddConsoleServer(BrokerCommand):
 
         dblocation = get_location(session, compel=True, **arguments)
 
+        ib_services = IBServices(logger, justification=justification, **arguments)
         dbdns_rec, _ = grab_address(session, console_server, ip,
                                     allow_restricted_domain=True,
                                     allow_reserved=True, preclude=True,
-                                    require_grn=False)
+                                    require_grn=False, ib_services=ib_services)
         if not label:
             label = dbdns_rec.fqdn.name
             try:
@@ -67,24 +68,19 @@ class CommandAddConsoleServer(BrokerCommand):
         dbinterface = get_or_create_interface(session, dbcons,
                                               name=interface, mac=mac,
                                               interface_type="oa")
-        if ip:
-            dbnetwork = get_net_id_from_ip(session, ip)
-            check_ip_restrictions(dbnetwork, ip)
-            assign_address(dbinterface, ip, dbnetwork)
+        dbnetwork = get_net_id_from_ip(session, ip)
+        check_ip_restrictions(dbnetwork, ip)
+        assign_address(dbinterface, ip, dbnetwork)
 
         session.flush()
 
-        if ip:
-            dsdb_runner = DSDBRunner(logger=logger)
-            dsdb_runner.update_host(dbcons, None)
-            dsdb_runner.commit_or_rollback("Could not add console server to DSDB")
+        dsdb_runner = DSDBRunner(logger=logger)
+        dsdb_runner.update_host(dbcons, None)
+        dsdb_runner.commit_or_rollback("Could not add console server to DSDB")
 
-            # Oddly the code above assumes ip is optional but it's a required field.
-            ib_services = IBServices(logger, justification=justification, **arguments)
-            if ib_services.feature_enabled("console_server"):
-                ib_services.add_a_ptr(dbcons.primary_name)
-                try:
-                    ib_services.group.commit_or_rollback()
-                except ProcessException as e:
-                    dsdb_runner.rollback()
-                    raise e
+        if ib_services.feature_enabled("console_server"):
+            try:
+                ib_services.group.commit_or_rollback()
+            except ProcessException as e:
+                dsdb_runner.rollback()
+                raise e

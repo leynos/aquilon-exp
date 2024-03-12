@@ -118,7 +118,6 @@ class CommandUpdateServiceAddress(BrokerCommand):
         session.flush()
 
         ib_services = IBServices(logger, justification=justification, **arguments)
-
         ib_services.update_a_ptr(dbsrv.dns_record, ib_rollback_args)
 
         with plenaries.get_key():
@@ -137,7 +136,7 @@ class CommandUpdateServiceAddress(BrokerCommand):
                     # either `ip` or `comments` have changed and the
                     # dns record network is internal
 
-                    if ib_services.feature_enabled("service_address") and dbsrv.dns_record.fqdn.dns_environment.is_default:
+                    if ib_services.feature_enabled("service_address"):
                         try:
                             ib_services.group.commit_or_rollback()
                         except ProcessException as e:
@@ -150,7 +149,7 @@ class CommandUpdateServiceAddress(BrokerCommand):
         # this is necessary if for instance someone calls
         # `aq update service address --map_to_primary` or any other such
         # combination that does not trigger the commit_or_rollback call above
-        if ib_services.feature_enabled("service_address") and dbsrv.dns_record.fqdn.dns_environment.is_default:
+        if ib_services.feature_enabled("service_address"):
             ib_services.group.commit_or_rollback()
 
         return

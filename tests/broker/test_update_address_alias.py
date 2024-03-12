@@ -85,6 +85,7 @@ class TestUpdateAddressAlias(TestBrokerCommand):
                    "--comments", "New other address alias comments"] \
                   + self.valid_just_sn
         self.noouttest(command)
+        self.ib_verify(empty=True)
 
     def test_140_verify_update_to_change_comment(self):
         command = ["search", "dns", "--fullinfo",
@@ -118,6 +119,7 @@ class TestUpdateAddressAlias(TestBrokerCommand):
                    "--target", "arecord14.aqd-unittest.ms.com",
                    "--comments", ""] + self.valid_just_sn
         self.noouttest(command)
+        self.ib_verify(empty=True)
 
     def test_160_verify_update_to_no_comment(self):
         command = ["search", "dns", "--fullinfo",
@@ -153,11 +155,13 @@ class TestUpdateAddressAlias(TestBrokerCommand):
         self.assertEqual(json.loads(out), expected)
 
     def test_170_update_to_no_ttl(self):
+        ib_expect_update_a("addralias1.aqd-unittest.ms.com", "4.2.1.19", new_ttl=-1, justification=self.just_sn)
         command = ["update", "address", "alias",
                    "--fqdn", "addralias1.aqd-unittest.ms.com",
                    "--target", "arecord14.aqd-unittest.ms.com",
                    "--clear_ttl"] + self.valid_just_sn
         self.noouttest(command)
+        self.ib_verify()
 
     def test_175_verify_update_to_no_ttl(self):
         command = ["search", "dns", "--fullinfo",
@@ -208,6 +212,7 @@ class TestUpdateAddressAlias(TestBrokerCommand):
                    "--grn", "grn:/ms/ei/aquilon/unittest"] \
                   + self.valid_just_sn
         self.noouttest(command)
+        self.ib_verify(empty=True)
 
     def test_305_verify_grn(self):
         command = ["search", "dns", "--fullinfo",
@@ -231,6 +236,7 @@ class TestUpdateAddressAlias(TestBrokerCommand):
                    "--fqdn", "addralias3.aqd-unittest.ms.com",
                    "--clear_grn"] + self.valid_just_sn
         self.noouttest(command)
+        self.ib_verify(empty=True)
 
     def test_315_verify_clear_grn(self):
         command = ["search", "dns", "--fullinfo",
@@ -250,23 +256,20 @@ class TestUpdateAddressAlias(TestBrokerCommand):
                    "--fqdn", "addralias3.aqd-unittest.ms.com",
                    "--eon_id", "2"] + self.valid_just_sn
         self.noouttest(command)
+        self.ib_verify(empty=True)
 
     def test_325_verify_eon_id(self):
         command = ["search", "dns", "--fullinfo",
                    "--fqdn", "addralias3.aqd-unittest.ms.com",
                    "--target", "arecord13.aqd-unittest.ms.com"]
         out = self.commandtest(command)
-        self.matchoutput(out,
-                         "Owned by GRN: grn:/ms/ei/aquilon/aqd",
-                         command)
+        self.matchoutput(out, "Owned by GRN: grn:/ms/ei/aquilon/aqd", command)
 
         command = ["search", "dns", "--fullinfo",
                    "--fqdn", "addralias3.aqd-unittest.ms.com",
                    "--target", "arecord14.aqd-unittest.ms.com"]
         out = self.commandtest(command)
-        self.matchoutput(out,
-                         "Owned by GRN: grn:/ms/ei/aquilon/aqd",
-                         command)
+        self.matchoutput(out, "Owned by GRN: grn:/ms/ei/aquilon/aqd", command)
 
     def test_330_update_grn_with_target(self):
         command = ["update", "address", "alias",
@@ -274,9 +277,8 @@ class TestUpdateAddressAlias(TestBrokerCommand):
                    "--target", "arecord14.aqd-unittest.ms.com",
                    "--eon_id", "2"] + self.valid_just_sn
         out = self.badoptiontest(command)
-        self.matchoutput(out,
-                         "Option or option group eon_id conflicts with target",
-                         command)
+        self.matchoutput(out, "Option or option group eon_id conflicts with target", command)
+        self.ib_verify(empty=True)
 
 
 if __name__ == '__main__':

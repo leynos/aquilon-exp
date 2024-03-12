@@ -254,18 +254,21 @@ class TestAddChassis(TestBrokerCommand, VerifyChassisMixin):
         self.dsdb_expect_add(chassis, "10.25.0.1", interface="oa", fail=True)
         self.dsdberrortest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because dsdb fails
 
         self.dsdb_expect_add(chassis, "10.25.0.1", interface="oa")
         ib_expect_add_a(chassis, "10.25.0.1", fail=True)
         self.dsdb_expect_delete("10.25.0.1")
         self.iberrortest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         self.dsdb_expect_add(chassis, "10.25.0.1", interface="oa")
         ib_expect_add_a(chassis, "10.25.0.1")
         ib_expect_add_ptr(chassis, "10.25.0.1")
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         # Test case when updating from one ip to a different ip
         command = ['update_chassis', '--chassis', chassis, '--ip', '10.25.0.2']
@@ -273,12 +276,14 @@ class TestAddChassis(TestBrokerCommand, VerifyChassisMixin):
         self.dsdb_expect_update(chassis, ip="10.25.0.2", iface="oa", fail=True)
         self.dsdberrortest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because dsdb fails
 
         self.dsdb_expect_update(chassis, ip="10.25.0.2", iface="oa")
         ib_expect_update_a(chassis, "10.25.0.1", new_ip="10.25.0.2", fail=True)
         self.dsdb_expect_update(chassis, ip="10.25.0.1", iface="oa")
         self.iberrortest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         self.dsdb_expect_update(chassis, ip="10.25.0.2", iface="oa")
         ib_expect_update_a(chassis, "10.25.0.1", new_ip="10.25.0.2")
@@ -286,25 +291,28 @@ class TestAddChassis(TestBrokerCommand, VerifyChassisMixin):
         ib_expect_add_ptr(chassis, "10.25.0.2")
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         command = ['del_chassis', "--chassis", chassis]
 
         self.dsdb_expect_delete("10.25.0.2", fail=True)
         self.dsdberrortest(command)
         self.dsdb_verify()
-        self.ib_verify(empty=True)
+        self.ib_verify(empty=True)  # No ib requests because dsdb fails
 
         self.dsdb_expect_delete("10.25.0.2")
         ib_expect_del_a(chassis, "10.25.0.2", fail=True)
         self.dsdb_expect_add(chassis, "10.25.0.2", interface="oa")
         self.iberrortest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         self.dsdb_expect_delete("10.25.0.2")
         ib_expect_del_a(chassis, "10.25.0.2")
         ib_expect_del_ptr("10.25.0.2")
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         command = ['add_chassis', "--chassis", chassis, "--rack", rack, "--model", "c-class", "--ip", "10.25.0.1"]
 
@@ -320,6 +328,7 @@ class TestAddChassis(TestBrokerCommand, VerifyChassisMixin):
         self.dsdb_expect_delete("10.25.0.1")
         self.iberrortest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         # test case when both dsdb and ib succeed
         self.dsdb_expect_add(chassis, "10.25.0.1", interface="oa")
@@ -327,6 +336,7 @@ class TestAddChassis(TestBrokerCommand, VerifyChassisMixin):
         ib_expect_add_ptr(chassis, "10.25.0.1")
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         # test case when chassis is updated without changing ip
         command = ['update_chassis', "--chassis", chassis, "--comments", "check no IB requests when IP is unchanged"]
@@ -339,7 +349,6 @@ class TestAddChassis(TestBrokerCommand, VerifyChassisMixin):
         ib_expect_del_ptr("10.25.0.1")
         self.noouttest(command)
         self.dsdb_verify()
-
         self.ib_verify()
 
         mh.delete()

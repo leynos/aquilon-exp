@@ -383,6 +383,7 @@ class TestAddInterface(EventsTestMixin, TestBrokerCommand):
                    "--chassis", "ut3c5.aqd-unittest.ms.com"]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests expected because neither FQDN nor IP is being updated
 
     def testaddinterfaceut3c5again(self):
         ip = self.net["unknown0"].usable[-1]

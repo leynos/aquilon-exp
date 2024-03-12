@@ -47,8 +47,9 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
                    "--machine", "ut3c5n10", "--mac", mac,
                    "--comments", "New interface comments"]
         out = self.badrequesttest(command)
-        self.dsdb_verify()
         self.matchoutput(out, "DSDB update failed", command)
+        self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because dsdb failed
 
         out = self.commandtest(["show", "host", "--hostname", self.badhost])
         self.matchoutput(out, "Interface: eth0 %s" % oldmac, command)
@@ -61,6 +62,7 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
                         "--machine", "ut3c5n10", "--mac", mac,
                         "--comments", "New interface comments"])
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because only comments changed
 
     def test_110_update_ut3c5n10_eth0_ip_bad(self):
         oldip = self.net["unknown0"].usable[0]
@@ -70,6 +72,7 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
 
         out = self.badrequesttest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because dsdb failed
         self.matchoutput(out, "Could not update machine in DSDB", command)
 
         out = self.commandtest(["show", "host", "--hostname", self.badhost])
@@ -179,6 +182,7 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
                    "--mac", mac]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because only comments changed
 
     def test_130_update_switch1(self):
         mac = self.net["ut_net_mgmt"].usable[1].mac
@@ -189,6 +193,7 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
                    "--mac", mac, "--network_device=ut3gd1r06.aqd-unittest.ms.com"]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because only comments changed
         self.check_plenary_contents('network_device', 'americas', 'ut', 'ut3gd1r06',
                                     contains=['xge49', str(mac)])
 
@@ -204,6 +209,7 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
                    "--network_device=ut3gd1r06.aqd-unittest.ms.com"]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because only comments changed
 
     def test_130_update_switch3(self):
         # This is not the primary interface, therefore updating the comments
@@ -217,6 +223,7 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
                    "--network_device=ut3gd1r04.aqd-unittest.ms.com"]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because only comments changed
 
     def test_130_update_chassis(self):
         mac = self.net["unknown0"].usable[24].mac
@@ -227,6 +234,7 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
                    "--comments", "New chassis interface comments"]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because only comments changed
 
     def test_140_fliproute1(self):
         command = ["update", "interface", "--interface", "eth0",
@@ -326,6 +334,7 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
                                 new_iface="eth1")
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because only interface name changed
 
     def test_173_verify_rename(self):
         command = ["cat", "--data", "--hostname", "ivirt11.aqd-unittest.ms.com"]

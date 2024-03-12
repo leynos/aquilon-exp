@@ -90,14 +90,14 @@ class CommandDelServiceAddress(BrokerCommand):
                         continue
 
                     delete_dns_record(rr, exporter=exporter)
-                    ib_services.delete_a_ptr(rr)
+                    ib_services.del_a_ptr(rr)
                     break
 
             # TODO:
             # When the domain is restricted, delete_dns_records deletes not only dbdns_rec.fqdn
             # but also dbdns_rec.target and dbdns_rec.reverse_ptr so do i need to do that in ib too ?
             delete_dns_record(dbdns_rec, exporter=exporter)
-            ib_services.delete_a_ptr(dbdns_rec)
+            ib_services.del_a_ptr(dbdns_rec)
 
         session.flush()
 

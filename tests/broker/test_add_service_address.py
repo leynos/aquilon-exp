@@ -222,15 +222,13 @@ class TestAddServiceAddress(TestBrokerCommand):
     def test_605_addunittest20eth2addr(self):
         fqdn = "unittest20-e2.aqd-unittest.ms.com"
         ip = "192.168.5.24"
-        ib_expect_add_a(fqdn, ip)
-        ib_expect_add_ptr(fqdn, ip)
         command = ["add_interface_address", "--machine", "ut3c5n2",
                    "--interface", "eth2", "--network_environment", "excx",
                    "--fqdn", fqdn, "--ip", ip]
         self.statustest(command)
-        # External IP addresses should not be added to DSDB
-        self.dsdb_verify(empty=True)#
-        self.ib_verify()
+        # External IP addresses should not be added to DSDB/IB
+        self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
     def test_610_add_extserviceaddress(self):
         # check that adding an external service address does not invoke DSDB
@@ -244,8 +242,9 @@ class TestAddServiceAddress(TestBrokerCommand):
                          "Host unittest20.aqd-unittest.ms.com is missing the "
                          "following required services",
                          command)
-        # External IP service addresses should not be added to DSDB
+        # External IP service addresses should not be added to DSDB/IB
         self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
     def test_620_add_service_address_ipfromtype_vip_setup(self):
         ip = self.net["np_bucket2_vip"].network_address
@@ -271,7 +270,9 @@ class TestAddServiceAddress(TestBrokerCommand):
         command = ["add", "service", "address", "--hostname", "aquilon67.aqd-unittest.ms.com",
                    "--service_address", service_addr, "--name", "test", "--ipfromtype", "vip"]
         self.successtest(command)
+        self.dsdb_verify()
         self.ib_verify()
+
         command = ["show", "service", "address", "--name", "test",
                    "--hostname", "aquilon67.aqd-unittest.ms.com"]
         out = self.commandtest(command)
@@ -280,7 +281,6 @@ class TestAddServiceAddress(TestBrokerCommand):
                          command)
         self.matchoutput(out, "Address: testaddress.ms.com [{}]".format(ip),
                          command)
-        self.dsdb_verify()
 
     def test_630_add_service_address_ipfromtype_localvip_setup(self):
         ip1 = self.net["ut_bucket2_localvip"].network_address
@@ -396,6 +396,7 @@ class TestAddServiceAddress(TestBrokerCommand):
         self.successtest(command)
         self.dsdb_verify()
         self.ib_verify()
+
         ib_expect_del_a("testlocalvipaddress.ms.com", str(ip2))
         ib_expect_del_ptr(str(ip2))
         self.dsdb_expect_delete(ip2)
@@ -435,12 +436,14 @@ class TestAddServiceAddress(TestBrokerCommand):
         self.dsdb_expect_delete("10.25.0.1", fail=True)
         self.dsdberrortest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No requests sent to IB because dsdb failed
 
         # test case when dsdb succeeds
         self.dsdb_expect_delete("10.25.0.1")
         self.dsdb_expect_add("sa.test-infoblox.cc", "10.25.0.1")
         self.noouttest(command)
-        self.dsdb_verify()
+        self.dsdb_verify()  # TODO, these requests should not have to be sent to dsdb because they had already been sent when the address was created
+        self.ib_verify(empty=True)  # No requests sent to IB because we are using a previously created address
 
         command = ['update_service_address', '--name', 'test-service', '--hostname', hname, '--map_to_primary']
         ib_expect_update_ptr(ip="10.25.0.1", new_fqdn=hname, fail=True)
@@ -450,19 +453,21 @@ class TestAddServiceAddress(TestBrokerCommand):
         command = ['update_service_address', '--name', 'test-service', '--hostname', hname, '--map_to_primary']
 
         self.noouttest(command)
+        self.dsdb_verify(empty=True)  # TODO, not sure if this is right, only the PTR is being updated, does it need to be synced with dsdb ?
         self.ib_verify()
-        self.dsdb_verify(empty=True)
 
         self.dsdb_expect_update("sa.test-infoblox.cc", ip="10.25.0.2", fail=True)
         command = ['update_service_address', '--name', 'test-service', '--hostname', hname, '--ip', '10.25.0.2']
         self.dsdberrortest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No requests sent to IB because dsdb failed
 
         self.dsdb_expect_update("sa.test-infoblox.cc", ip="10.25.0.2")
         ib_expect_update_a(fqdn="sa.test-infoblox.cc", original_ip="10.25.0.1", new_ip="10.25.0.2", fail=True)
         self.dsdb_expect_update("sa.test-infoblox.cc", ip="10.25.0.1")  # Expect dsdb rollback because infoblox fails
         self.iberrortest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         self.dsdb_expect_update("sa.test-infoblox.cc", ip="10.25.0.2")
         ib_expect_update_a(fqdn="sa.test-infoblox.cc", original_ip="10.25.0.1", new_ip="10.25.0.2")
@@ -470,12 +475,14 @@ class TestAddServiceAddress(TestBrokerCommand):
         ib_expect_add_ptr(fqdn=hname, ip="10.25.0.2")
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         command = ['del_service_address', '--name', 'test-service', '--hostname', hname]
 
         self.dsdb_expect_delete("10.25.0.2", fail=True)
         self.dsdberrortest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No requests sent to IB because dsdb failed
 
         self.dsdb_expect_delete("10.25.0.2")
         ib_expect_del_a("sa.test-infoblox.cc", "10.25.0.2", fail=True)
@@ -493,6 +500,7 @@ class TestAddServiceAddress(TestBrokerCommand):
         del mh.addresses['sa.test-infoblox.cc', 'internal']
 
         mh.delete()
+
 
     def test_810_ib_resourcegroup_sa(self):
         mh = MockHub(self)
@@ -519,6 +527,7 @@ class TestAddServiceAddress(TestBrokerCommand):
                    '--ip', '10.25.0.2', '--map_to_shared']
         self.dsdberrortest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No requests sent to IB because dsdb failed
 
         self.dsdb_expect_update("sa.test-infoblox.cc", ip="10.25.0.2")
         ib_expect_update_a(fqdn="sa.test-infoblox.cc", original_ip="10.25.0.1", new_ip="10.25.0.2", fail=True)
@@ -527,9 +536,11 @@ class TestAddServiceAddress(TestBrokerCommand):
                    '--ip', '10.25.0.2', '--map_to_shared']
         self.iberrortest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         self.dsdb_expect_update("sa.test-infoblox.cc", ip="10.25.0.2")
         ib_expect_update_a(fqdn="sa.test-infoblox.cc", original_ip="10.25.0.1", new_ip="10.25.0.2")
+        ib_expect_update_a(fqdn="resource-group-shared-name.test-infoblox.cc", original_ip="10.25.0.1", new_ip="10.25.0.2")
         ib_expect_del_ptr(ip="10.25.0.1")
         ib_expect_add_ptr(fqdn="resource-group-shared-name.test-infoblox.cc", ip="10.25.0.2")
         command = ['update_service_address', '--name', 'test-service', '--resourcegroup', 'test-resource-group',
@@ -544,7 +555,7 @@ class TestAddServiceAddress(TestBrokerCommand):
         #  Set a TTL on the address_alias to test that when the rollback happens, the TTL is retained
         command = ['update_address_alias',
                    '--fqdn', 'resource-group-shared-name.test-infoblox.cc', '--ttl', 100] + self.valid_just_tcm
-        ib_expect_update_a('resource-group-shared-name.test-infoblox.cc', '10.25.0.2', new_ttl=100,
+        ib_expect_update_a('resource-group-shared-name.test-infoblox.cc', new_ip='10.25.0.2', original_ip='10.25.0.2', new_ttl=100,
                            justification=self.valid_justification)
         self.noouttest(command)
 
@@ -556,6 +567,7 @@ class TestAddServiceAddress(TestBrokerCommand):
         command = ['del_service_address', '--name', 'test-service', '--resourcegroup', 'test-resource-group']
         self.iberrortest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
         self.dsdb_expect_delete("10.25.0.2")
         ib_expect_del_a("resource-group-shared-name.test-infoblox.cc", "10.25.0.2")
@@ -569,6 +581,74 @@ class TestAddServiceAddress(TestBrokerCommand):
 
         mh.delete()
 
+    # Check that if we create a service address using a previously created address and `--map_to_shared`
+    # the PTR of the previously created address is updated
+    def test_815_ib_resourcegroup_sa_map_on_create(self):
+        mh = MockHub(self)
+        mh.add_dns_domain('test-infoblox.cc', restricted=False)
+        mh.add_network()
+
+        hname = mh.add_host()
+        mh.add_address("sa.test-infoblox.cc", "10.25.0.1")
+        mh.add_resource_group("test-resource-group", hname)
+        mh.add_shared_service_name("shared-service-name", "test-resource-group",
+                                   "resource-group-shared-name.test-infoblox.cc", True)
+
+        self.dsdb_expect_delete("10.25.0.1")
+        self.dsdb_expect_add("sa.test-infoblox.cc", "10.25.0.1")
+        ib_expect_update_ptr(ip="10.25.0.1", new_fqdn="resource-group-shared-name.test-infoblox.cc")
+        ib_expect_add_a("resource-group-shared-name.test-infoblox.cc", "10.25.0.1")
+        command = ['add_service_address', '--name', 'test-service', '--service_address', 'sa.test-infoblox.cc',
+                   '--resourcegroup', 'test-resource-group', '--map_to_shared']
+        self.noouttest(command)
+        self.dsdb_verify()
+        self.ib_verify()
+
+        self.dsdb_expect_delete("10.25.0.1")
+        ib_expect_del_a("resource-group-shared-name.test-infoblox.cc", "10.25.0.1")
+        ib_expect_del_a("sa.test-infoblox.cc", "10.25.0.1")
+        ib_expect_del_ptr("10.25.0.1")
+        command = ['del_service_address', '--name', 'test-service', '--resourcegroup', 'test-resource-group']
+        self.noouttest(command)
+        self.dsdb_verify()
+        self.ib_verify()
+        del mh.addresses['sa.test-infoblox.cc', 'internal']
+
+        mh.delete()
+
+    # This is the same test as test_815_ib_resourcegroup_sa_map_on_create but we are just checking that if the
+    # --map_to_shared option is not passed to `aq add service address`, the update_ptr infoblox call is not made
+    def test_820_ib_resourcegroup_sa_nomapping(self):
+        mh = MockHub(self)
+        mh.add_dns_domain('test-infoblox.cc', restricted=False)
+        mh.add_network()
+
+        hname = mh.add_host()
+        mh.add_address("sa.test-infoblox.cc", "10.25.0.1")
+        mh.add_resource_group("test-resource-group", hname)
+        mh.add_shared_service_name("shared-service-name", "test-resource-group",
+                                   "resource-group-shared-name.test-infoblox.cc", True)
+
+        self.dsdb_expect_delete("10.25.0.1")
+        self.dsdb_expect_add("sa.test-infoblox.cc", "10.25.0.1")
+        ib_expect_add_a("resource-group-shared-name.test-infoblox.cc", "10.25.0.1")
+        command = ['add_service_address', '--name', 'test-service', '--service_address', 'sa.test-infoblox.cc',
+                   '--resourcegroup', 'test-resource-group']
+        self.noouttest(command)
+        self.dsdb_verify()
+        self.ib_verify()
+
+        self.dsdb_expect_delete("10.25.0.1")
+        ib_expect_del_a("resource-group-shared-name.test-infoblox.cc", "10.25.0.1")
+        ib_expect_del_a("sa.test-infoblox.cc", "10.25.0.1")
+        ib_expect_del_ptr("10.25.0.1")
+        command = ['del_service_address', '--name', 'test-service', '--resourcegroup', 'test-resource-group']
+        self.noouttest(command)
+        self.dsdb_verify()
+        self.ib_verify()
+        del mh.addresses['sa.test-infoblox.cc', 'internal']
+
+        mh.delete()
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestAddServiceAddress)
