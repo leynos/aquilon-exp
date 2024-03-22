@@ -18,7 +18,6 @@
 """Module for testing parameter support for features."""
 
 import json
-
 import unittest
 
 if __name__ == "__main__":
@@ -64,6 +63,25 @@ class TestAddParameterFeature(TestBrokerCommand):
                           r'testlist: \[\s*"hardware1",\s*"hardware2"\s*\]',
                           command)
 
+    def test_105_show_hw_params_json(self):
+        command = [
+            "show_parameter",
+            "--personality",
+            "compileserver",
+            "--archetype",
+            "aquilon",
+            "--format",
+            "json",
+        ]
+        out = self.commandtest(command)
+        results = json.loads(out)
+        self.assertIsInstance(results, list)
+        self.matchoutput(
+            [x["value"]["testdefault"] for x in results if x["name"] == "bios_setup"][0],
+            "hardware_feature",
+            command,
+        )
+
     def test_105_show_hw_params_proto(self):
         command = ["show_parameter", "--personality", "compileserver",
                    "--archetype", "aquilon", "--format", "proto"]
@@ -73,19 +91,22 @@ class TestAddParameterFeature(TestBrokerCommand):
         for param in params:
             param_values[param.path] = param.value
 
-        self.assertEqual(set(param_values.keys()),
-                         set(["espinfo/class",
-                              "espinfo/function",
-                              "espinfo/users",
-                              "features/hardware/bios_setup/testdefault",
-                              "features/hardware/bios_setup/testlist",
-                              "windows/windows",
-                             ]))
+        self.assertEqual(
+            set(param_values.keys()),
+            {
+                "espinfo/class",
+                "espinfo/function",
+                "espinfo/users",
+                "features/hardware/bios_setup/testdefault",
+                "features/hardware/bios_setup/testlist",
+                "windows/windows",
+            },
+        )
 
-        self.assertEqual(param_values['features/hardware/bios_setup/testlist'],
-                         'hardware1,hardware2')
-        self.assertEqual(param_values['features/hardware/bios_setup/testdefault'],
-                         'hardware_feature')
+        self.assertEqual(param_values["features/hardware/bios_setup/testlist"],
+                         "hardware1,hardware2")
+        self.assertEqual(param_values["features/hardware/bios_setup/testdefault"],
+                         "hardware_feature")
 
     def test_105_cat_hw_params(self):
         command = ["cat", "--hostname", "unittest02.one-nyp.ms.com", "--data"]
@@ -109,17 +130,17 @@ class TestAddParameterFeature(TestBrokerCommand):
         out = self.commandtest(command)
 
         self.searchoutput(out,
-                          r'Differences for Features:\s*'
-                          r'missing Features in Personality aquilon/utpers-dev@current:\s*'
-                          r'bios_setup\s*',
+                          r"Differences for Features:\s*"
+                          r"missing Features in Personality aquilon/utpers-dev@current:\s*"
+                          r"bios_setup\s*",
                           command)
 
         self.searchoutput(out,
-                          r'Differences for Parameters for hardware feature bios_setup:\s*'
-                          r'missing Parameters for hardware feature bios_setup in Personality aquilon/utpers-dev@current:\s*'
-                          r'//testdefault\s*'
-                          r'//testlist/0\s*'
-                          r'//testlist/1\s*',
+                          r"Differences for Parameters for hardware feature bios_setup:\s*"
+                          r"missing Parameters for hardware feature bios_setup in Personality aquilon/utpers-dev@current:\s*"
+                          r"//testdefault\s*"
+                          r"//testlist/0\s*"
+                          r"//testlist/1\s*",
                           command)
 
     def test_110_add_iface_params(self):
@@ -151,21 +172,24 @@ class TestAddParameterFeature(TestBrokerCommand):
         for param in params:
             param_values[param.path] = param.value
 
-        self.assertEqual(set(param_values.keys()),
-                         set(["espinfo/class",
-                              "espinfo/function",
-                              "espinfo/users",
-                              "features/hardware/bios_setup/testdefault",
-                              "features/hardware/bios_setup/testlist",
-                              "features/interface/src_route/testdefault",
-                              "features/interface/src_route/testlist",
-                              "windows/windows",
-                             ]))
+        self.assertEqual(
+            set(param_values.keys()),
+            {
+                "espinfo/class",
+                "espinfo/function",
+                "espinfo/users",
+                "features/hardware/bios_setup/testdefault",
+                "features/hardware/bios_setup/testlist",
+                "features/interface/src_route/testdefault",
+                "features/interface/src_route/testlist",
+                "windows/windows",
+            },
+        )
 
-        self.assertEqual(param_values['features/interface/src_route/testlist'],
-                         'iface1,iface2')
-        self.assertEqual(param_values['features/interface/src_route/testdefault'],
-                         'interface_feature')
+        self.assertEqual(param_values["features/interface/src_route/testlist"],
+                         "iface1,iface2")
+        self.assertEqual(param_values["features/interface/src_route/testdefault"],
+                         "interface_feature")
 
     def test_115_cat_iface_params(self):
         command = ["cat", "--hostname", "unittest21.aqd-unittest.ms.com", "--data"]
@@ -188,17 +212,17 @@ class TestAddParameterFeature(TestBrokerCommand):
                    "--personality", "compileserver", "--other", "utpers-dev"]
         out = self.commandtest(command)
         self.searchoutput(out,
-                          r'Differences for Features:\s*'
-                          r'missing Features in Personality aquilon/utpers-dev@current:\s*'
-                          r'bios_setup\s*'
-                          r'src_route\s*',
+                          r"Differences for Features:\s*"
+                          r"missing Features in Personality aquilon/utpers-dev@current:\s*"
+                          r"bios_setup\s*"
+                          r"src_route\s*",
                           command)
         self.searchoutput(out,
-                          r'Differences for Parameters for interface feature src_route:\s*'
-                          r'missing Parameters for interface feature src_route in Personality aquilon/utpers-dev@current:\s*'
-                          r'//testdefault\s*'
-                          r'//testlist/0\s*'
-                          r'//testlist/1\s*',
+                          r"Differences for Parameters for interface feature src_route:\s*"
+                          r"missing Parameters for interface feature src_route in Personality aquilon/utpers-dev@current:\s*"
+                          r"//testdefault\s*"
+                          r"//testlist/0\s*"
+                          r"//testlist/1\s*",
                           command)
 
     def test_120_verify_host_feature_defaults(self):
@@ -260,35 +284,38 @@ class TestAddParameterFeature(TestBrokerCommand):
         for param in params:
             param_values[param.path] = param.value
 
-        self.assertEqual(set(param_values.keys()),
-                         set(["espinfo/class",
-                              "espinfo/function",
-                              "espinfo/users",
-                              "features/pre_host/testboolean",
-                              "features/pre_host/testdefault",
-                              "features/pre_host/testint",
-                              "features/pre_host/testjson",
-                              "features/pre_host/testlist",
-                              "features/pre_host/teststring",
-                              "windows/windows",
-                             ]))
+        self.assertEqual(
+            set(param_values.keys()),
+            {
+                "espinfo/class",
+                "espinfo/function",
+                "espinfo/users",
+                "features/pre_host/testboolean",
+                "features/pre_host/testdefault",
+                "features/pre_host/testint",
+                "features/pre_host/testjson",
+                "features/pre_host/testlist",
+                "features/pre_host/teststring",
+                "windows/windows",
+            },
+        )
 
-        self.assertEqual(param_values['features/pre_host/testboolean'],
-                         'False')
-        self.assertEqual(param_values['features/pre_host/teststring'],
-                         'override')
-        self.assertEqual(param_values['features/pre_host/testint'],
-                         '0')
+        self.assertEqual(param_values["features/pre_host/testboolean"],
+                         "False")
+        self.assertEqual(param_values["features/pre_host/teststring"],
+                         "override")
+        self.assertEqual(param_values["features/pre_host/testint"],
+                         "0")
 
         # The order of the keys is not deterministic, so we cannot do
         # string-wise comparison here
-        self.assertEqual(json.loads(param_values['features/pre_host/testjson']),
+        self.assertEqual(json.loads(param_values["features/pre_host/testjson"]),
                          json.loads('{"key": "other_key", "values": [1, 2, 3]}'))
 
-        self.assertEqual(param_values['features/pre_host/testlist'],
-                         'host1,host2')
-        self.assertEqual(param_values['features/pre_host/testdefault'],
-                         'host_feature')
+        self.assertEqual(param_values["features/pre_host/testlist"],
+                         "host1,host2")
+        self.assertEqual(param_values["features/pre_host/testdefault"],
+                         "host_feature")
 
     def test_135_verify_cat_host_feature(self):
         command = ["cat", "--personality", "inventory"]
@@ -310,14 +337,14 @@ class TestAddParameterFeature(TestBrokerCommand):
         command = ["validate_parameter", "--personality", "inventory"]
         out = self.badrequesttest(command)
         self.searchoutput(out,
-                          r'Following required parameters have not been specified:\s*',
+                          r"Following required parameters have not been specified:\s*",
                           command)
         self.searchoutput(out,
-                          r'Feature Binding: pre_host\s*'
-                          r'Parameter Definition: testrequired \[required\]\s*'
-                          r'Feature: pre_host\s*'
-                          r'Type: host\s*'
-                          r'Value Type: string\s*',
+                          r"Feature Binding: pre_host\s*"
+                          r"Parameter Definition: testrequired \[required\]\s*"
+                          r"Feature: pre_host\s*"
+                          r"Type: host\s*"
+                          r"Value Type: string\s*",
                           command)
 
     def test_135_verify_diff(self):
@@ -326,25 +353,25 @@ class TestAddParameterFeature(TestBrokerCommand):
 
         out = self.commandtest(command)
         self.searchoutput(out,
-                          r'Differences for Parameters for host feature pre_host:\s*'
-                          r'missing Parameters for host feature pre_host in Personality aquilon/utpers-dev@current:\s*'
-                          r'//testboolean\s*'
-                          r'//testdefault\s*'
-                          r'//testint\s*'
-                          r'//testjson/key\s*'
-                          r'//testjson/values/0\s*'
-                          r'//testjson/values/1\s*'
-                          r'//testjson/values/2\s*'
-                          r'//testlist/0\s*'
-                          r'//testlist/1\s*'
-                          r'//teststring\s*',
+                          r"Differences for Parameters for host feature pre_host:\s*"
+                          r"missing Parameters for host feature pre_host in Personality aquilon/utpers-dev@current:\s*"
+                          r"//testboolean\s*"
+                          r"//testdefault\s*"
+                          r"//testint\s*"
+                          r"//testjson/key\s*"
+                          r"//testjson/values/0\s*"
+                          r"//testjson/values/1\s*"
+                          r"//testjson/values/2\s*"
+                          r"//testlist/0\s*"
+                          r"//testlist/1\s*"
+                          r"//teststring\s*",
                           command)
 
     def test_140_add_same_feature_name_parameter(self):
         for type in ["host", "hardware", "interface"]:
             self.statustest(["add_parameter", "--personality", "inventory",
                              "--feature", "shinynew", "--type", type,
-                             "--path", "car", "--value", 'bmw' + type])
+                             "--path", "car", "--value", "bmw" + type])
 
     def test_620_verify_same_feature_name_parameter(self):
         command = ["show_parameter", "--personality", "inventory"]
@@ -420,20 +447,24 @@ class TestAddParameterFeature(TestBrokerCommand):
         command = ["validate_parameter", "--personality", "compileserver"]
         out = self.badrequesttest(command)
 
-        self.searchoutput(out,
-                          r'Feature Binding: bios_setup\s*'
-                          r'Parameter Definition: testrequired \[required\]\s*'
-                          r'Feature: bios_setup\s*'
-                          r'Type: hardware\s*'
-                          r'Value Type: string\s*',
-                          command)
-        self.searchoutput(out,
-                          r'Feature Binding: src_route\s*'
-                          r'Parameter Definition: testrequired \[required\]\s*'
-                          r'Feature: src_route\s*'
-                          r'Type: interface\s*'
-                          r'Value Type: string\s*',
-                          command)
+        self.searchoutput(
+            out,
+            r"Feature Binding: bios_setup\s*"
+            r"Parameter Definition: testrequired \[required\]\s*"
+            r"Feature: bios_setup\s*"
+            r"Type: hardware\s*"
+            r"Value Type: string\s*",
+            command,
+        )
+        self.searchoutput(
+            out,
+            r"Feature Binding: src_route\s*"
+            r"Parameter Definition: testrequired \[required\]\s*"
+            r"Feature: src_route\s*"
+            r"Type: interface\s*"
+            r"Value Type: string\s*",
+            command,
+        )
 
     def test_310_search_parameter(self):
         command = ["search_parameter", "--feature", "pre_host",
@@ -449,6 +480,6 @@ class TestAddParameterFeature(TestBrokerCommand):
 """,
                            command)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     suite = unittest.TestLoader().loadTestsFromTestCase(TestAddParameterFeature)
     unittest.TextTestRunner(verbosity=2).run(suite)

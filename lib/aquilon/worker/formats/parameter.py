@@ -18,8 +18,7 @@
 
 import json
 
-from aquilon.aqdb.model import (Parameter, PersonalityParameter,
-                                ArchetypeParamDef)
+from aquilon.aqdb.model import ArchetypeParamDef, Parameter, PersonalityParameter
 from aquilon.worker.formats.formatters import ObjectFormatter
 from aquilon.worker.formats.list import ListFormatter
 
@@ -42,12 +41,26 @@ class ParameterFormatter(ObjectFormatter):
         if isinstance(param.param_def_holder, ArchetypeParamDef):
             details.append("Template: %s" % param.param_def_holder.template)
         else:
-            details.append("{0:c}: {0.name}"
-                           .format(param.param_def_holder.feature))
+            details.append(
+                f"{param.param_def_holder.feature:c}: {param.param_def_holder.feature.name}"
+            )
 
         for key in sorted(param.value):
             details.extend(indented_value(indent + "  ", key, param.value[key]))
         return "\n".join(details)
+
+    def format_json(self, param, embedded=True, indirect_attrs=True):
+        details = {
+            "name": (
+                str(param.param_def_holder.template)
+                if isinstance(param.param_def_holder, ArchetypeParamDef)
+                else str(param.param_def_holder.feature.name)
+            ),
+            "value": param.value,
+            "type": param.param_def_holder.type,
+        }
+        return details
+
 
 ObjectFormatter.handlers[Parameter] = ParameterFormatter()
 ObjectFormatter.handlers[PersonalityParameter] = ParameterFormatter()
@@ -58,15 +71,15 @@ class PersonalityProtoParameter(list):
 
 
 class ParameterProtoFormatter(ListFormatter):
-    def format_proto(self, params, container, embedded=True,
-                     indirect_attrs=True):
+    def format_proto(self, params, container, embedded=True, indirect_attrs=True):
         for path, param_def, value in params:
             skeleton = container.add()
             skeleton.path = path
-            if param_def.value_type == 'json':
+            if param_def.value_type == "json":
                 skeleton.value = json.dumps(value)
             else:
                 skeleton.value = str(value)
+
 
 ObjectFormatter.handlers[PersonalityProtoParameter] = ParameterProtoFormatter()
 
@@ -75,7 +88,7 @@ class DiffData(dict):
     def __init__(self, myobj, other_obj, diff):
         self.myobj = myobj
         self.other_obj = other_obj
-        super(DiffData, self).__init__(diff)
+        super().__init__(diff)
 
 
 class DiffFormatter(ObjectFormatter):
@@ -95,31 +108,29 @@ class DiffFormatter(ObjectFormatter):
 
             missing = sorted(otherkeys - intersect)
             if missing:
-                details.append(indent + "  missing {0} in {1}:"
-                               .format(key, diff.myobj))
+                details.append(indent + f"  missing {key} in {diff.myobj}:")
                 for pp in missing:
-                    details.append(indent + "    {0}".format(pp))
+                    details.append(indent + f"    {pp}")
 
             missing_other = sorted(mykeys - intersect)
             if missing_other:
-                details.append(indent + "  missing {0} in {1}:"
-                               .format(key, diff.other_obj))
+                details.append(indent + f"  missing {key} in {diff.other_obj}:")
                 for pp in missing_other:
-                    details.append(indent + "    {0}".format(pp))
+                    details.append(indent + f"    {pp}")
 
-            different_value = list()
+            different_value = []
             for pp in intersect:
                 if mydata[pp] != otherdata[pp]:
-                    different_value.append("{0} value={1}, othervalue={2}".
-                                           format(pp, mydata[pp], otherdata[pp]))
+                    different_value.append(
+                        f"{pp} value={mydata[pp]}, othervalue={otherdata[pp]}"
+                    )
             if different_value:
-                details.append(indent + "  matching {0} with different values:"
-                               .format(key))
+                details.append(indent + f"  matching {key} with different values:")
                 for pp in sorted(different_value):
-                    details.append(indent + "    {0}".format(pp))
+                    details.append(indent + f"    {pp}")
 
             if details:
-                ret.append("Differences for {0}:".format(key))
+                ret.append(f"Differences for {key}:")
                 ret.extend(details)
 
         return "\n".join(ret)
@@ -128,7 +139,7 @@ class DiffFormatter(ObjectFormatter):
 ObjectFormatter.handlers[DiffData] = DiffFormatter()
 
 
-class SimpleParameterList(object):
+class SimpleParameterList:
     def __init__(self, path, params):
         self.path = path
         self.params = params
@@ -145,14 +156,18 @@ class SimpleParameterListFormatter(ListFormatter):
             else:
                 description = "Host"
 
-            details.append(indent + "{0} {1:c}: {1.name} {2:c}: {2.name}"
-                           .format(description, dbstage.personality,
-                                   dbstage.archetype))
+            details.append(
+                indent
+                + "{0} {1:c}: {1.name} {2:c}: {2.name}".format(
+                    description, dbstage.personality, dbstage.archetype
+                )
+            )
 
             if dbstage.staged:
-                details.append(indent + "  Stage: {0.name}".format(dbstage))
+                details.append(indent + f"  Stage: {dbstage.name}")
 
             details.extend(indented_value(indent + "  ", path, value))
         return "\n".join(details)
+
 
 ObjectFormatter.handlers[SimpleParameterList] = SimpleParameterListFormatter()

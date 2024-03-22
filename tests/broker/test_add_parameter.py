@@ -18,7 +18,6 @@
 """Module for testing the add parameter command."""
 
 import json
-
 import unittest
 
 if __name__ == "__main__":
@@ -30,17 +29,17 @@ from broker.grntest import VerifyGrnsMixin
 from broker.personalitytest import PersonalityTestMixin
 
 test_metric = {
-    '_20003': {
-        'active': False,
-        'class': 'system.swapUsed',
-        'descr': 'Swap space used [%]',
-        'latestonly': False,
-        'name': 'SwapUsed',
-        'period': 300,
-        'smooth': {
-            'maxdiff': 3.0,
-            'maxtime': 3600,
-            'typeString': False
+    "_20003": {
+        "active": False,
+        "class": "system.swapUsed",
+        "descr": "Swap space used [%]",
+        "latestonly": False,
+        "name": "SwapUsed",
+        "period": 300,
+        "smooth": {
+            "maxdiff": 3.0,
+            "maxtime": 3600,
+            "typeString": False
         }
     }
 }
@@ -51,7 +50,7 @@ class TestAddParameter(VerifyGrnsMixin, PersonalityTestMixin,
                        TestBrokerCommand):
 
     def check_match(self, out, expected, command):
-        out = ' '.join(out.split())
+        out = " ".join(out.split())
         self.matchoutput(out, expected, command)
 
     def test_100_no_params_yet(self):
@@ -91,6 +90,35 @@ class TestAddParameter(VerifyGrnsMixin, PersonalityTestMixin,
         out = self.commandtest(command)
         self.matchoutput(out, "espinfo", command)
 
+    def test_115_show_basic_setup_json(self):
+        command = [
+            "show_parameter",
+            "--personality",
+            "utpers-dev",
+            "--archetype",
+            "aquilon",
+            "--personality_stage",
+            "next",
+            "--format",
+            "json",
+        ]
+        out = self.commandtest(command)
+        results = json.loads(out)
+        self.assertIsInstance(results, list)
+        self.matchoutput(
+            [x["value"]["function"] for x in results if x["name"] == "espinfo"][0],
+            "crash",
+            command,
+        )
+        self.matchoutput(
+            [x["value"]["class"] for x in results if x["name"] == "espinfo"][0],
+            "INFRASTRUCTURE",
+            command,
+        )
+        self.matchoutput(
+            [x["type"] for x in results if x["name"] == "espinfo"][0], "archetype", command
+        )
+
     def test_115_diff_stages(self):
         command = ["show_diff", "--personality", "utpers-dev", "--archetype", "aquilon",
                    "--personality_stage", "next", "--other_stage", "current"]
@@ -121,7 +149,7 @@ class TestAddParameter(VerifyGrnsMixin, PersonalityTestMixin,
                    "--archetype", "aquilon", "--param_tmpl", "espinfo"]
         out = self.commandtest(command)
         self.matchoutput(out,
-                         'structure template personality/utpers-dev/espinfo;',
+                         "structure template personality/utpers-dev/espinfo;",
                          command)
         self.matchoutput(out, '"function" = "crash";', command)
         self.matchoutput(out, '"class" = "INFRASTRUCTURE";', command)
@@ -133,19 +161,19 @@ class TestAddParameter(VerifyGrnsMixin, PersonalityTestMixin,
         command = ["validate_parameter", "--personality", "utpers-dev"]
         out = self.badrequesttest(command)
         self.searchoutput(out,
-                          r'Following required parameters have not been specified:\s*'
-                          r'Parameter Definition: testrequired \[required\]\s*'
-                          r'Archetype: aquilon\s*'
-                          r'Value Type: string\s*'
-                          r'Template: foo\s*'
-                          r'Activation: dispatch\s*'
-                          r'Parameter Definition: windows \[required\]\s*'
-                          r'Archetype: aquilon\s*'
-                          r'Value Type: json\s*'
-                          r'Schema: {\s*'
-                          r'(^    .*\n)+\s*'
-                          r'Template: windows\s*'
-                          r'Activation: dispatch\s*',
+                          r"Following required parameters have not been specified:\s*"
+                          r"Parameter Definition: testrequired \[required\]\s*"
+                          r"Archetype: aquilon\s*"
+                          r"Value Type: string\s*"
+                          r"Template: foo\s*"
+                          r"Activation: dispatch\s*"
+                          r"Parameter Definition: windows \[required\]\s*"
+                          r"Archetype: aquilon\s*"
+                          r"Value Type: json\s*"
+                          r"Schema: {\s*"
+                          r"(^    .*\n)+\s*"
+                          r"Template: windows\s*"
+                          r"Activation: dispatch\s*",
                           command)
 
     def test_140_add_actions(self):
@@ -197,18 +225,18 @@ class TestAddParameter(VerifyGrnsMixin, PersonalityTestMixin,
                    "--format", "proto"]
         out = self.protobuftest(command, expect=5)
         params = {message.path: message.value for message in out}
-        
-        self.assertIn('espinfo/function', params)
-        self.assertEqual(params['espinfo/function'], 'crash')
-        
-        self.assertIn('espinfo/class', params)
-        self.assertEqual(params['espinfo/class'], 'INFRASTRUCTURE')
-        
-        self.assertIn('espinfo/users', params)
-        self.assertEqual(params['espinfo/users'], 'someusers,otherusers')
-        
-        self.assertIn('actions', params)
-        self.assertEqual(json.loads(params['actions']), {
+
+        self.assertIn("espinfo/function", params)
+        self.assertEqual(params["espinfo/function"], "crash")
+
+        self.assertIn("espinfo/class", params)
+        self.assertEqual(params["espinfo/class"], "INFRASTRUCTURE")
+
+        self.assertIn("espinfo/users", params)
+        self.assertEqual(params["espinfo/users"], "someusers,otherusers")
+
+        self.assertIn("actions", params)
+        self.assertEqual(json.loads(params["actions"]), {
             "testaction": {
                 "command": "/bin/testaction",
                 "user": "user1"
@@ -220,8 +248,8 @@ class TestAddParameter(VerifyGrnsMixin, PersonalityTestMixin,
             }
         })
 
-        self.assertIn('monitoring/metric', params)
-        self.assertEqual(json.loads(params['monitoring/metric']), test_metric)
+        self.assertIn("monitoring/metric", params)
+        self.assertEqual(json.loads(params["monitoring/metric"]), test_metric)
 
     def test_145_cat_actions(self):
         command = ["cat", "--personality", "utpers-dev", "--archetype", "aquilon",
@@ -352,39 +380,39 @@ class TestAddParameter(VerifyGrnsMixin, PersonalityTestMixin,
 
         out = self.commandtest(cmd)
         self.searchoutput(out,
-                          r'Differences for Parameters for template actions:\s*'
-                          r'missing Parameters for template actions in Personality aquilon/utpers-prod:\s*'
-                          r'//testaction/command\s*'
-                          r'//testaction/user\s*'
-                          r'//testaction2/command\s*'
-                          r'//testaction2/timeout\s*'
-                          r'//testaction2/user\s*',
+                          r"Differences for Parameters for template actions:\s*"
+                          r"missing Parameters for template actions in Personality aquilon/utpers-prod:\s*"
+                          r"//testaction/command\s*"
+                          r"//testaction/user\s*"
+                          r"//testaction2/command\s*"
+                          r"//testaction2/timeout\s*"
+                          r"//testaction2/user\s*",
                           cmd)
         self.searchoutput(out,
-                          r'Differences for Parameters for template espinfo:\s*'
-                          r'missing Parameters for template espinfo in Personality aquilon/utpers-prod:\s*'
-                          r'//users/1\s*'
-                          r'matching Parameters for template espinfo with different values:\s*'
-                          r'//function value=crash, othervalue=development\s*'
-                          r'//users/0 value=someusers, othervalue=IT / TECHNOLOGY',
+                          r"Differences for Parameters for template espinfo:\s*"
+                          r"missing Parameters for template espinfo in Personality aquilon/utpers-prod:\s*"
+                          r"//users/1\s*"
+                          r"matching Parameters for template espinfo with different values:\s*"
+                          r"//function value=crash, othervalue=development\s*"
+                          r"//users/0 value=someusers, othervalue=IT / TECHNOLOGY",
                           cmd)
         self.searchoutput(out,
-                          r'Differences for Parameters for template foo:\s*'
-                          r'missing Parameters for template foo in Personality aquilon/utpers-prod:\s*'
-                          r'//testrequired\s*',
+                          r"Differences for Parameters for template foo:\s*"
+                          r"missing Parameters for template foo in Personality aquilon/utpers-prod:\s*"
+                          r"//testrequired\s*",
                           cmd)
         self.searchoutput(out,
-                          r'Differences for Parameters for template monitoring:\s*'
-                          r'missing Parameters for template monitoring in Personality aquilon/utpers-prod:\s*'
-                          r'//metric/_20003/active\s*'
-                          r'//metric/_20003/class\s*'
-                          r'//metric/_20003/descr\s*'
-                          r'//metric/_20003/latestonly\s*'
-                          r'//metric/_20003/name\s*'
-                          r'//metric/_20003/period\s*'
-                          r'//metric/_20003/smooth/maxdiff\s*'
-                          r'//metric/_20003/smooth/maxtime\s*'
-                          r'//metric/_20003/smooth/typeString\s*',
+                          r"Differences for Parameters for template monitoring:\s*"
+                          r"missing Parameters for template monitoring in Personality aquilon/utpers-prod:\s*"
+                          r"//metric/_20003/active\s*"
+                          r"//metric/_20003/class\s*"
+                          r"//metric/_20003/descr\s*"
+                          r"//metric/_20003/latestonly\s*"
+                          r"//metric/_20003/name\s*"
+                          r"//metric/_20003/period\s*"
+                          r"//metric/_20003/smooth/maxdiff\s*"
+                          r"//metric/_20003/smooth/maxtime\s*"
+                          r"//metric/_20003/smooth/typeString\s*",
                           cmd)
 
     def test_310_search_parameter_espinfo(self):
@@ -425,6 +453,6 @@ class TestAddParameter(VerifyGrnsMixin, PersonalityTestMixin,
                           r'"testaction2": {\s*"command": "/bin/testaction2",\s*"timeout": 100,\s*"user": "user2"\s*}\s*}',
                           cmd)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     suite = unittest.TestLoader().loadTestsFromTestCase(TestAddParameter)
     unittest.TextTestRunner(verbosity=2).run(suite)
