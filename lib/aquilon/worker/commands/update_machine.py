@@ -157,7 +157,7 @@ def update_interface_bindings(session, logger, dbmachine, autoip,
             new_ip = generate_ip(session, logger, dbinterface, autoip=True,
                                  network_environment=old_net.network_environment)
             for dbdns_rec in addr.dns_records:
-                ib_rollback_args = dbdns_rec.get_infoblox_args()
+                ib_rollback_args = dbdns_rec.get_dns_args()
                 dbdns_rec.network = new_net
                 dbdns_rec.ip = new_ip
                 ib_services.update_a_ptr(dbdns_rec, ib_rollback_args)
@@ -478,7 +478,7 @@ class CommandUpdateMachine(BrokerCommand):
             dsdb_runner.update_host_details(swap_addr.fqdn,
                                             old_ip=swap_addr.ip,
                                             new_ip=temp_ip)
-            ib_rollback_args = swap_addr.get_infoblox_args()
+            ib_rollback_args = swap_addr.get_dns_args()
             update_address(session, swap_addr, temp_ip, swap_addr.network)
             session.flush()
 
@@ -492,12 +492,12 @@ class CommandUpdateMachine(BrokerCommand):
                     si = srv.service_instance
                     plenaries.add(si, cls=PlenaryServiceInstanceToplevel)
 
-            ib_rollback_args = dbmachine.primary_name.get_infoblox_args() if dbmachine.primary_name is not None else None
+            ib_rollback_args = dbmachine.primary_name.get_dns_args() if dbmachine.primary_name is not None else None
             update_primary_ip(session, logger, dbmachine, target_ip)
             ib_services.update_a_ptr(dbmachine.primary_name, ib_rollback_args)
 
         if swap_ip:
-            ib_rollback_args = swap_addr.get_infoblox_args()
+            ib_rollback_args = swap_addr.get_dns_args()
             update_address(session, swap_addr, old_ip, swap_addr.network)
             ib_services.update_a_ptr(swap_addr, ib_rollback_args)
 

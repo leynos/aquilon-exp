@@ -115,7 +115,7 @@ class ARecord(DnsRecord):
                              (self.fqdn.dns_environment, value.dns_environment))
         return value
 
-    def get_infoblox_args(self):
+    def get_dns_args(self):
         return {
             'name': self.fqdn,
             'ip': self.ip,

@@ -118,7 +118,7 @@ class CommandUpdateNetworkDevice(BrokerCommand):
             NetworkDevice.check_type(type)
             dbnetdev.switch_type = type
 
-        ib_rollback_args = dbnetdev.primary_name.get_infoblox_args()
+        ib_rollback_args = dbnetdev.primary_name.get_dns_args()
         if ip:
             update_primary_ip(session, logger, dbnetdev, ip)
 

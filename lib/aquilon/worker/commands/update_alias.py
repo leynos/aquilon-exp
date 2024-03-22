@@ -56,7 +56,7 @@ class CommandUpdateAlias(BrokerCommand):
         cm.consider(dbalias.target)
         cm.validate()
 
-        ib_rollback_args = dbalias.get_infoblox_args()
+        ib_rollback_args = dbalias.get_dns_args()
         old_target_fqdn = str(dbalias.target.fqdn)
         old_comments = dbalias.comments
 

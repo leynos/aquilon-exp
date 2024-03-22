@@ -122,15 +122,6 @@ class DNSData():
     def _delete_item(self, rrtype, fqdn, target=None, priority=None, weight=None, port=None):
         (item_to_remove, rdata_to_remove) = self._find_item(rrtype, fqdn, target, priority, weight, port)
 
-        from pprint import pprint
-        if False and rrtype == DNSRecordData.DNSRecordType.PTR:
-            f=open("/tmp/l", "a")
-            pprint(self.dns_data.records, stream=f)
-            pprint(item_to_remove, stream=f)
-            pprint(len(item_to_remove.rdata), stream=f)
-            pprint(rdata_to_remove, stream=f)
-            f.close()
-
         if rdata_to_remove is not None:
             if len(item_to_remove.rdata) == 1:
                 self.dns_data.records.remove(item_to_remove)
@@ -439,15 +430,7 @@ def get_aq_dns_data():
 def run_server(handler=IBServicesRequestHandler):
 
     global ib_dns
-
     ib_dns = DNSData(init=get_aq_dns_data())
-
-    from pprint import pprint
-    #f=open("/tmp/l", "a")
-    #f.write("init dns_data\n")
-    #pprint(ib_dns.dns_data.records, stream=f)
-    #f.close()
-
 
     httpd = IBServicesServer(("", PORT), handler)
     LOGGER.info(f"Starting ib-services HTTP proxy on port: {PORT}")

@@ -91,7 +91,7 @@ class AddressAlias(DnsRecordTargetMixin, DnsRecord):
 
         super(AddressAlias, self).__init__(fqdn=fqdn, **kwargs)
 
-    def get_infoblox_args(self):
+    def get_dns_args(self):
         return {
             'name': self.fqdn,
             'ip': self.target_ip,

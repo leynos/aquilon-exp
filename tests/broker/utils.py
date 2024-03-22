@@ -414,7 +414,7 @@ class MockHub:
 
         del self.shared_service_names[sharedservicename]
 
-    def add_alias(self, fqdn, target, ttl=-1):
+    def add_alias(self, fqdn, target, ttl=None):
         ib_expect_add_alias(fqdn, target, ttl=ttl)
         command = ["add_alias", "--fqdn", fqdn,
                    "--target", target,

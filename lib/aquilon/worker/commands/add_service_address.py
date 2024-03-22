@@ -194,7 +194,7 @@ class CommandAddServiceAddress(BrokerCommand):
                                                 exporter=exporter,
                                                 require_grn=False)
         ip = dbdns_rec.ip
-        ib_rollback_args = dbdns_rec.get_infoblox_args() if not newly_created else None
+        ib_rollback_args = dbdns_rec.get_dns_args() if not newly_created else None
 
         if map_to_primary and map_to_shared_name:
             raise ArgumentError("Cannot use --map_to_primary and "

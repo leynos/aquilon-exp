@@ -100,7 +100,7 @@ class IBServices:
         if not self._wants_infoblox_sync(dbdns_rec):
             return
 
-        args = dbdns_rec.get_infoblox_args()
+        args = dbdns_rec.get_dns_args()
 
 
         if not dbdns_rec.fqdn.dns_domain.restricted:
@@ -119,7 +119,7 @@ class IBServices:
         if not self._wants_infoblox_sync(dbdns_rec):
             return
 
-        _to = dbdns_rec.get_infoblox_args()
+        _to = dbdns_rec.get_dns_args()
 
         if _from["name"] != _to["name"]:
             raise ProcessException("Updating name of a-record not implemented")
@@ -166,7 +166,7 @@ class IBServices:
         if not self._wants_infoblox_sync(dbdns_rec):
             return
 
-        args = dbdns_rec.get_infoblox_args()
+        args = dbdns_rec.get_dns_args()
 
         if not dbdns_rec.fqdn.dns_domain.restricted:
             self.group.add_action(
@@ -183,7 +183,7 @@ class IBServices:
             if not dbdns_rec.fqdn.dns_domain.restricted:
                 # Update any PTR records that point to the A record being deleted
                 for reverse_entry in dbdns_rec.fqdn.reverse_entries:
-                    ib_rollback = reverse_entry.get_infoblox_args()
+                    ib_rollback = reverse_entry.get_dns_args()
 
                     self.group.add_action(
                         lambda ip=str(reverse_entry.ip), new_name=str(reverse_entry.fqdn), new_ttl=-1 if reverse_entry.ttl is None else reverse_entry.ttl: self._update_ptr(ip=ip, new_name=new_name, new_ttl=new_ttl),
@@ -482,7 +482,7 @@ class IBServices:
         assert(isinstance(dbdns_rec, Alias))
         if not self._wants_infoblox_sync(dbdns_rec):
             return
-        args = dbdns_rec.get_infoblox_args()
+        args = dbdns_rec.get_dns_args()
         self.group.add_action(
             lambda name=str(args["name"]), target=str(args["target"]), ttl=int(args["ttl"]): self._add_dns_alias(name=name, target=target, ttl=ttl),
             lambda name=str(args["name"]): self._del_dns_alias(name=name),
@@ -493,7 +493,7 @@ class IBServices:
         if not self._wants_infoblox_sync(dbdns_rec):
             return
 
-        args = dbdns_rec.get_infoblox_args()
+        args = dbdns_rec.get_dns_args()
         self.group.add_action(
             lambda name=str(args["name"]): self._del_dns_alias(name=name),
             lambda name=str(args["name"]), target=str(args["target"]), ttl=int(args["ttl"]): self._add_dns_alias(name=name, target=target, ttl=ttl),
@@ -503,7 +503,7 @@ class IBServices:
         assert(isinstance(dbdns_rec, Alias))
         if not self._wants_infoblox_sync(dbdns_rec):
             return
-        _to = dbdns_rec.get_infoblox_args()
+        _to = dbdns_rec.get_dns_args()
         self.group.add_action(
             lambda name=str(_to["name"]), new_target=str(_to["target"]), new_ttl=int(_to["ttl"]): self._update_dns_alias(name=name, new_target=new_target, ttl=new_ttl),
             lambda name=str(_to["name"]), new_target=str(_from["target"]), new_ttl=int(_from["ttl"]): self._update_dns_alias(name=name, new_target=new_target, ttl=new_ttl),
@@ -688,7 +688,7 @@ class IBServices:
         if not self._wants_infoblox_sync(s):
             return
 
-        new = s.get_infoblox_args()
+        new = s.get_dns_args()
 
         new["domain"] = str(new["domain"])
         new["target"] = str(new["target"])

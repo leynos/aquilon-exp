@@ -138,7 +138,7 @@ class SrvRecord(DnsRecordTargetMixin, DnsRecord):
         super(SrvRecord, self).__init__(fqdn=fqdn, priority=priority, weight=weight,
                                         port=port, **kwargs)
 
-    def get_infoblox_args(self):
+    def get_dns_args(self):
 
         return {
             'service': self.service,

@@ -66,7 +66,7 @@ class Alias(DnsRecordTargetMixin, DnsRecord):
             tlist.extend(tgt.get_alias_targets())
         return tlist
 
-    def get_infoblox_args(self):
+    def get_dns_args(self):
         return {
             'name': self.fqdn,
             'target': self.target.fqdn,

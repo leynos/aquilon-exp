@@ -69,7 +69,7 @@ class CommandUpdateChassis(BrokerCommand):
 
         ib_rollback_args = None
         if type(dbchassis.primary_name) == ARecord:
-            ib_rollback_args = dbchassis.primary_name.get_infoblox_args()
+            ib_rollback_args = dbchassis.primary_name.get_dns_args()
         if ip:
             update_primary_ip(session, logger, dbchassis, ip)
 

@@ -69,7 +69,7 @@ class CommandUpdateSrvRecord(BrokerCommand):
         for dbsrv_rec in dbdns_records:
             cm.consider(dbsrv_rec.fqdn)
 
-            ib_rollback_args = dbsrv_rec.get_infoblox_args()
+            ib_rollback_args = dbsrv_rec.get_dns_args()
             if priority:
                 dbsrv_rec.priority = priority
             if weight:

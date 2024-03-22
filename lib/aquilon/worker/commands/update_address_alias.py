@@ -67,7 +67,7 @@ class CommandUpdateAddressAlias(BrokerCommand):
         for dbaddr_alias in dbdns_records:
             cm.consider(dbaddr_alias.target)
 
-            ib_rollback = dbaddr_alias.get_infoblox_args()
+            ib_rollback = dbaddr_alias.get_dns_args()
             if ttl is not None:
                 dbaddr_alias.ttl = ttl
             elif clear_ttl:

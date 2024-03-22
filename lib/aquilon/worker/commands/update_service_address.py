@@ -61,7 +61,7 @@ class CommandUpdateServiceAddress(BrokerCommand):
         dsdb_runner = DSDBRunner(logger=logger)
 
         toplevel_holder = holder.toplevel_holder_object
-        ib_rollback_args = dbsrv.dns_record.get_infoblox_args()
+        ib_rollback_args = dbsrv.dns_record.get_dns_args()
         old_comments = dbsrv.comments
 
         if interfaces is not None:

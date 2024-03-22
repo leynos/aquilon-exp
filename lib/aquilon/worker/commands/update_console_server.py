@@ -50,7 +50,7 @@ class CommandUpdateConsoleServer(BrokerCommand):
         if serial is not None:
             dbcons.serial_no = serial
 
-        rollback_infoblox_args = dbcons.primary_name.get_infoblox_args()
+        rollback_infoblox_args = dbcons.primary_name.get_dns_args()
         if ip:
             update_primary_ip(session, logger, dbcons, ip)
 

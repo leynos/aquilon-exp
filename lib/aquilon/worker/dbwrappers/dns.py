@@ -317,13 +317,6 @@ def grab_address(session, fqdn, ip, network_environment=None,
                 existing_record = convert_reserved_to_arecord(session,
                                                               dbdns_rec,
                                                               dbnetwork, ip)
-                f=open("/tmp/l", "a")
-                import traceback
-                from pprint import pprint
-                traceback.print_stack(file=f)
-                pprint(existing_record, stream=f)
-                f.close()
-                raise Exception("in the grab_address case where we convert reservedname")
                 newly_created = True
             else:
                 # Exclude aliases etc.

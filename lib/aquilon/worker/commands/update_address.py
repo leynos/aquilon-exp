@@ -51,7 +51,7 @@ class CommandUpdateAddress(BrokerCommand):
         cm.validate()
 
         # Save state before making change, mostly for possible rollbacks
-        ib_rollback_args = dbdns_rec.get_infoblox_args()
+        ib_rollback_args = dbdns_rec.get_dns_args()
         old_ip = dbdns_rec.ip
         old_comments = dbdns_rec.comments
         old_reverse_ptr = dbdns_rec.reverse_ptr
