@@ -21,6 +21,7 @@ class IBServiceGroup:
         self.functions.append((action, rollback))
         return self
 
+    @with_timer
     def commit_or_rollback(self):
         rollbacks = []
         try:

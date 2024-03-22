@@ -412,6 +412,6 @@ def with_timer(f):
             raise e
         finally:
             end = time.time()
-            LOGGER.info("%r took %2.4f sec" %(f.__name__, end-start))
+            LOGGER.info("%r took %2.4f sec" % (f.__qualname__, end - start))
         return result
     return wrapper
