@@ -526,6 +526,7 @@ class DSDBRunner(metaclass=DSDBEnabledMeta):
             dsdb_client_action = getattr(self.dsdbclient, method)
             dsdb_client_action(**attributes)
 
+    @with_timer
     def commit_or_rollback(self, error_msg=None, verbose=False):
         try:
             self.commit(verbose=verbose)
