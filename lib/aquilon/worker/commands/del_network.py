@@ -19,6 +19,7 @@ from aquilon.exceptions_ import ArgumentError
 from aquilon.aqdb.model import DnsDomain, Network, NetworkEnvironment
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import delete_dns_record
+from aquilon.worker.ib_services import IBServices
 
 
 class CommandDelNetwork(BrokerCommand):
@@ -27,7 +28,7 @@ class CommandDelNetwork(BrokerCommand):
     required_parameters = ["ip"]
 
     def render(self, session, plenaries, dbuser, ip,
-               network_environment, exporter, **_):
+               network_environment, exporter, user, justification, reason, logger, **arguments):
         dbnet_env = NetworkEnvironment.get_unique_or_default(session,
                                                              network_environment)
         self.az.check_network_environment(dbuser, dbnet_env)
@@ -44,9 +45,10 @@ class CommandDelNetwork(BrokerCommand):
         dbnetwork.lock_row()
 
         # Delete the routers so they don't trigger the checks below
+        ib_services = IBServices(logger, justification=justification, **arguments)
         for dbrouter in dbnetwork.routers:
             for dns_rec in dbrouter.dns_records:
-                delete_dns_record(dns_rec, locked=True, exporter=exporter)
+                delete_dns_record(dns_rec, locked=True, exporter=exporter, ib_services=ib_services)
         dbnetwork.routers = []
         session.flush()
 
@@ -60,4 +62,5 @@ class CommandDelNetwork(BrokerCommand):
         session.delete(dbnetwork)
         session.flush()
         plenaries.write()
+        ib_services.group.commit_or_rollback()
         return

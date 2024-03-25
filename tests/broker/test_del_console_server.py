@@ -23,8 +23,9 @@ if __name__ == "__main__":
     from . import utils
     utils.import_depends()
 
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
 from .brokertest import TestBrokerCommand
-from mock_ib_services import ib_expect_del_address
 
 
 class TestDelConsoleServer(TestBrokerCommand):
@@ -39,7 +40,8 @@ class TestDelConsoleServer(TestBrokerCommand):
 
     def test_101_del_utcs01(self):
         ip = self.net["unknown2"].usable[1]
-        ib_expect_del_address("utcs01.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_a("utcs01.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         self.dsdb_expect_delete(ip)
         command = "del console_server --console_server utcs01.aqd-unittest.ms.com --clear_ports"
         self.noouttest(command.split(" "))
@@ -63,7 +65,8 @@ class TestDelConsoleServer(TestBrokerCommand):
         for i in range(2, 8):
             fqdn = "ut9csa%d.aqd-unittest.ms.com" % i
             ip = self.net["ut9_conservers"].usable[i]
-            ib_expect_del_address(fqdn, str(ip))
+            ib_expect_del_a(fqdn, str(ip))
+            ib_expect_del_ptr(str(ip))
             self.dsdb_expect_delete(ip)
             command = "del console_server --console_server " + fqdn
             self.noouttest(command.split(" "))

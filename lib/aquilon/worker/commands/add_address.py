@@ -72,8 +72,9 @@ class CommandAddAddress(BrokerCommand):
 
             ib_services = IBServices(logger, justification=justification, **arguments)
             if ib_services.feature_enabled("address"):
+                ib_services.add_a_ptr(dbdns_rec)
                 try:
-                    ib_services.add_a_ptr(str(dbdns_rec.fqdn), ip, reverse_ptr, ttl)
+                    ib_services.group.commit_or_rollback()
                 except ProcessException as e:
                     if dsdb_runner:
                         dsdb_runner.rollback()

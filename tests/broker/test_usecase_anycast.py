@@ -19,8 +19,10 @@
 
 import unittest
 
-from mock_ib_services import ib_expect_add_address
-from mock_ib_services import ib_expect_del_address
+from mock_ib_services import ib_expect_add_a
+from mock_ib_services import ib_expect_add_ptr
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
 
 if __name__ == "__main__":
     from . import utils
@@ -71,7 +73,8 @@ class TestUsecaseAnycast(MachineTestMixin, TestBrokerCommand):
 
     def test_300_add_service_address(self):
         self.dsdb_expect_add(anycast['sa_fqdn'], anycast['sa_ip'](self))
-        ib_expect_add_address(anycast['sa_fqdn'], str(anycast['sa_ip'](self)))
+        ib_expect_add_a(anycast['sa_fqdn'], str(anycast['sa_ip'](self)))
+        ib_expect_add_ptr(anycast['sa_fqdn'], str(anycast['sa_ip'](self)))
         for server in anycast['servers']:
             command = ["add", "service", "address",
                        "--hostname", server,
@@ -126,13 +129,15 @@ class TestUsecaseAnycast(MachineTestMixin, TestBrokerCommand):
 
     def test_700_del_service_address(self):
         self.dsdb_expect_delete(anycast['sa_ip'](self))
-        ib_expect_del_address("anycast.aqd-unittest.ms.com", str(anycast['sa_ip'](self)))
+        ib_expect_del_a("anycast.aqd-unittest.ms.com", str(anycast['sa_ip'](self)))
+        ib_expect_del_ptr(str(anycast['sa_ip'](self)))
         for server in anycast['servers']:
             command = ["del", "service", "address",
                        "--hostname", server,
                        "--name", anycast['sa_name']]
             self.statustest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_701_verify_service_address(self):
         command = ["show_address", "--fqdn", anycast['sa_fqdn']]

@@ -102,7 +102,8 @@ class CommandAddSrvRecord(BrokerCommand):
 
         ib_services = IBServices(logger, justification=justification, **arguments)
         if ib_services.feature_enabled("srv_record"):
-            ib_services.add_dns_srv_record(service, protocol, dbdns_domain, target, port, priority, weight, ttl)
+            ib_services.add_dns_srv_record(dbsrv_rec)
+            ib_services.group.commit_or_rollback()
 
         session.flush()
 

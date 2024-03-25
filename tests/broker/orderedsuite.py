@@ -432,7 +432,7 @@ class BrokerTestSuite(unittest.TestSuite):
 
 class BrokerIntegrationTestSuite(BrokerTestSuite):
     test_start = [TestBrokerStart, TestPing, TestStatus, TestIBServicesStart]
-    test_restart = [TestBrokerReStart, TestPing, TestStatus, TestIBServicesStart]
+    test_restart = [TestBrokerReStart, TestIBServicesStart]
     test_list = [TestAddRole, TestPermission,
                  TestAddDnsDomain, TestAddDnsEnvironment,
                  TestAddUserType, TestAddUser, TestShowPermission,

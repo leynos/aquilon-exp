@@ -90,16 +90,14 @@ class CommandDelServiceAddress(BrokerCommand):
                         continue
 
                     delete_dns_record(rr, exporter=exporter)
-                    ib_services.group.add_action(
-                        lambda: ib_services.delete_a_ptr(str(rr.fqdn), rr.target_ip),
-                        lambda: ib_services.add_a_ptr(str(rr.fqdn), rr.target_ip, ttl=rr.ttl)
-                    )
+                    ib_services.del_a_ptr(rr)
                     break
 
             # TODO:
             # When the domain is restricted, delete_dns_records deletes not only dbdns_rec.fqdn
             # but also dbdns_rec.target and dbdns_rec.reverse_ptr so do i need to do that in ib too ?
             delete_dns_record(dbdns_rec, exporter=exporter)
+            ib_services.del_a_ptr(dbdns_rec)
 
         session.flush()
 
@@ -107,7 +105,6 @@ class CommandDelServiceAddress(BrokerCommand):
             if (not dbdns_rec.service_addresses and
                     dbdns_rec.network.is_internal):
                 dsdb_runner.delete_host_details(old_fqdn, old_ip)
-                ib_services.group.add_action(lambda: ib_services.delete_a_ptr(old_fqdn, old_ip))
             dsdb_runner.commit_or_rollback("Could not delete host from DSDB")
 
             if ib_services.feature_enabled("service_address") and dbdns_rec.fqdn.dns_environment.is_default:

@@ -23,9 +23,11 @@ if __name__ == "__main__":
     from . import utils
     utils.import_depends()
 
+from mock_ib_services import ib_expect_add_ptr
+from mock_ib_services import ib_expect_del_ptr
+from mock_ib_services import ib_expect_update_a
 from .brokertest import TestBrokerCommand
 from .eventstest import EventsTestMixin
-from mock_ib_services import ib_expect_update_address
 
 
 class TestUpdateMachine(EventsTestMixin, TestBrokerCommand):
@@ -527,9 +529,23 @@ class TestUpdateMachine(EventsTestMixin, TestBrokerCommand):
         self.dsdb_expect_update(swap_fqdn, iface="eth0", ip=swap_ip)
         self.dsdb_expect_update(fqdn, ip=old_ip)
 
-        ib_expect_update_address(fqdn, old_ip, new_ip=temp_ip)
-        ib_expect_update_address(swap_fqdn, old_ip, new_ip=swap_ip)
-        ib_expect_update_address(fqdn, temp_ip, new_ip=old_ip)
+        ib_expect_update_a(fqdn, swap_ip, new_ip=temp_ip)
+        ib_expect_update_a("addralias1.aqd-unittest.ms.com", swap_ip, new_ip=temp_ip)
+        ib_expect_update_a("addralias3.aqd-unittest.ms.com", swap_ip, new_ip=temp_ip)
+        ib_expect_update_a("addralias4.aqd-unittest.ms.com", swap_ip, new_ip=temp_ip)
+        ib_expect_del_ptr(swap_ip)
+        ib_expect_add_ptr(fqdn, temp_ip)
+
+        ib_expect_update_a(swap_fqdn, old_ip, new_ip=swap_ip)
+        ib_expect_del_ptr(old_ip)
+        ib_expect_add_ptr(swap_fqdn, swap_ip)
+
+        ib_expect_update_a(fqdn, temp_ip, new_ip=old_ip)
+        ib_expect_update_a("addralias1.aqd-unittest.ms.com", temp_ip, new_ip=old_ip)
+        ib_expect_update_a("addralias3.aqd-unittest.ms.com", temp_ip, new_ip=old_ip)
+        ib_expect_update_a("addralias4.aqd-unittest.ms.com", temp_ip, new_ip=old_ip)
+        ib_expect_del_ptr(temp_ip)
+        ib_expect_add_ptr(fqdn, old_ip)
 
         command = ["update_machine", "--machine", "ut3c5n10", "--swap_ip", swap_ip]
         self.noouttest(command)
@@ -554,9 +570,24 @@ class TestUpdateMachine(EventsTestMixin, TestBrokerCommand):
         self.dsdb_expect_update(swap_fqdn, iface="eth0", ip=swap_ip)
         self.dsdb_expect_update(fqdn, ip=old_ip)
 
-        ib_expect_update_address(fqdn, old_ip, new_ip=temp_ip)
-        ib_expect_update_address(swap_fqdn, old_ip, new_ip=swap_ip)
-        ib_expect_update_address(fqdn, temp_ip, new_ip=old_ip)
+        ib_expect_update_a(fqdn, swap_ip, new_ip=temp_ip)
+        ib_expect_update_a("addralias1.aqd-unittest.ms.com", swap_ip, new_ip=temp_ip)
+        ib_expect_update_a("addralias3.aqd-unittest.ms.com", swap_ip, new_ip=temp_ip)
+        ib_expect_update_a("addralias4.aqd-unittest.ms.com", swap_ip, new_ip=temp_ip)
+        ib_expect_del_ptr(swap_ip)
+        ib_expect_add_ptr(fqdn, temp_ip)
+
+        ib_expect_update_a(swap_fqdn, old_ip, new_ip=swap_ip)
+        ib_expect_del_ptr(old_ip)
+        ib_expect_add_ptr(swap_fqdn, swap_ip)
+
+        ib_expect_update_a(fqdn, temp_ip, new_ip=old_ip)
+        ib_expect_update_a("addralias1.aqd-unittest.ms.com", temp_ip, new_ip=old_ip)
+        ib_expect_update_a("addralias3.aqd-unittest.ms.com", temp_ip, new_ip=old_ip)
+        ib_expect_update_a("addralias4.aqd-unittest.ms.com", temp_ip, new_ip=old_ip)
+        ib_expect_del_ptr(temp_ip)
+        ib_expect_add_ptr(fqdn, old_ip)
+
 
         command = ["update_machine", "--machine", "ut3c5n10", "--swap_ip", swap_ip]
         self.noouttest(command)
@@ -667,10 +698,11 @@ class TestUpdateMachine(EventsTestMixin, TestBrokerCommand):
         old_ip = self.net["tor_net_0"].usable[4]
         new_ip = self.net["tor_net_0"].usable[7]
         fqdn = "test-aurora-default-os.ms.com"
-        ib_expect_update_address(fqdn, old_ip, new_ip=new_ip, justification=self.just_sn)
         command = ["update", "machine", "--hostname", fqdn, "--ip", new_ip] + self.valid_just_sn
         self.noouttest(command)
-        self.ib_verify()
+        # No requests sent to DSDB/IB because it's an aurora host
+        self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
     def test_2050_verify_aurora_host_machine(self):
         ip = self.net["tor_net_0"].usable[7]
@@ -682,10 +714,11 @@ class TestUpdateMachine(EventsTestMixin, TestBrokerCommand):
         old_ip = self.net["tor_net_0"].usable[7]
         new_ip = self.net["tor_net_0"].usable[4]
         fqdn = "test-aurora-default-os.ms.com"
-        ib_expect_update_address(fqdn, old_ip, new_ip=new_ip, justification=self.just_sn)
         command = ["update", "machine", "--hostname", fqdn, "--ip", new_ip] + self.valid_just_sn
         self.noouttest(command)
-        self.ib_verify()
+        # No requests sent to DSDB/IB because it's an aurora host
+        self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
     # These tests would be nice, but twisted just ignores the permission
     # on the files since we're still the owner.  Which is good, but means

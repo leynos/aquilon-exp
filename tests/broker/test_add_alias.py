@@ -82,8 +82,8 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
                          "-comments Some alias comments")
         self.noouttest(cmd)
         self.dsdb_verify()
-        self.events_verify()
         self.ib_verify()
+        self.events_verify()
 
     def test_120_conflict_a_record(self):
         cmd = ['add', 'alias', '--fqdn', 'arecord14.aqd-unittest.ms.com',
@@ -218,7 +218,7 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
                          "no-dsdb.restrict.aqd-unittest.ms.com, but ",
                          cmd)
         self.dsdb_verify(empty=True)
-        self.ib_verify()
+        self.ib_verify()  # TODO, this seems wrong, sending request to ib but not dsdb ?
 
     def test_400_verify_alias2host(self):
         cmd = "show alias --fqdn alias2host.aqd-unittest.ms.com"

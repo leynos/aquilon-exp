@@ -23,21 +23,24 @@ if __name__ == "__main__":
     from . import utils
     utils.import_depends()
 
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
 from .brokertest import TestBrokerCommand
-from mock_ib_services import ib_expect_del_address
 
 
 class TestDelRouterAddress(TestBrokerCommand):
 
     def test_100_del_router_by_ip(self):
         net = self.net["ut10_eth1"]
-        ib_expect_del_address("ut3gd1r04-v109-hsrp.aqd-unittest.ms.com", str(net.gateway))
+        ib_expect_del_a("ut3gd1r04-v109-hsrp.aqd-unittest.ms.com", str(net.gateway))
+        ib_expect_del_ptr(str(net.gateway))
         command = ["del", "router", "address", "--ip", net.gateway]
         self.noouttest(command)
         self.ib_verify()
 
     def test_110_del_router_by_name(self):
-        ib_expect_del_address("ut3gd1r01-v109-hsrp.aqd-unittest.ms.com", "4.2.12.1")
+        ib_expect_del_a("ut3gd1r01-v109-hsrp.aqd-unittest.ms.com", "4.2.12.1")
+        ib_expect_del_ptr("4.2.12.1")
         command = ["del", "router", "address",
                    "--fqdn", "ut3gd1r01-v109-hsrp.aqd-unittest.ms.com"]
         self.noouttest(command)
@@ -45,21 +48,21 @@ class TestDelRouterAddress(TestBrokerCommand):
 
     def test_120_del_excx(self):
         net = list(self.net["unknown0"].subnets())[0]
-        # TODO: should this only send to IB when network_environment is internal ?
-        ib_expect_del_address("gw1.excx.aqd-unittest.ms.com", str(net[-2]))
         command = ["del", "router", "address", "--ip", net[-2],
                    "--network_environment", "excx"]
         self.noouttest(command)
-        self.ib_verify()
+        #  No requests to DSDB/IB because network_environment is not internal
+        self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
     def test_130_del_utcolo(self):
         net = self.net["unknown1"]
-        # TODO: should this only send to IB when network_environment is internal ?
-        ib_expect_del_address("gw1.utcolo.aqd-unittest.ms.com", str(net[2]))
         command = ["del", "router", "address", "--ip", net[2],
                    "--network_environment", "utcolo"]
         self.noouttest(command)
-        self.ib_verify()
+        #  No requests to DSDB/IB because network_environment is not internal
+        self.dsdb_verify(empty=True)
+        self.ib_verify(empty=True)
 
     def test_200_del_missing_router(self):
         net = self.net["unknown0"]
@@ -72,6 +75,7 @@ class TestDelRouterAddress(TestBrokerCommand):
         ip = self.net["tor_net_12"][1]
         command = ["del", "router", "address", "--ip", ip]
         out = self.noouttest(command)
+        self.ib_verify(empty=True)
 
     def test_300_verify_all(self):
         command = ["show", "router", "address", "--all"]

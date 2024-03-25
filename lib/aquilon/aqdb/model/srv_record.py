@@ -137,3 +137,16 @@ class SrvRecord(DnsRecordTargetMixin, DnsRecord):
 
         super(SrvRecord, self).__init__(fqdn=fqdn, priority=priority, weight=weight,
                                         port=port, **kwargs)
+
+    def get_dns_args(self):
+
+        return {
+            'service': self.service,
+            'protocol': self.protocol,
+            'domain': self.fqdn.dns_domain,
+            'target': self.target.fqdn,
+            'weight': self.weight,
+            'priority': self.priority,
+            'port': self.port,
+            'ttl': self.ttl,
+        }

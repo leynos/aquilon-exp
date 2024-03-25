@@ -150,7 +150,7 @@ class TestAddDnsDomain(TestBrokerCommand):
         hostname = self.config.get('unittest', 'hostname')
         _, _, domain = hostname.partition('.')
         # If the local host is under .ms.com, then we don't want to add it again
-        p, _, _ = self.runcommand(["show", "dns", "domain",
+        p, _, _ = self.aq.runcommand(["show", "dns", "domain",
                                    "--dns_domain", domain])
         if domain and p.returncode == 4:
             self.dsdb_expect("add_dns_domain -domain_name %s -comments " % domain)
@@ -169,6 +169,7 @@ class TestAddDnsDomain(TestBrokerCommand):
         self.dsdb_expect("delete_dns_domain -domain_name %s" % dns_domain)
         self.statustest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # TODO, when a domain changes to restricted, should we remove the records from IB ?
 
         mh.delete()
 
@@ -184,6 +185,7 @@ class TestAddDnsDomain(TestBrokerCommand):
             "add_dns_domain -domain_name %s -comments " % dns_domain)
         self.statustest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # TODO, when a domain changes to unrestricted, should we add the records to IB ?
 
         mh.delete()
 

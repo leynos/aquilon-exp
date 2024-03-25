@@ -198,15 +198,14 @@ class CommandAddInterfaceAddress(BrokerCommand):
                 dsdb_runner.update_host(dbhw_ent, oldinfo)
                 dsdb_runner.commit_or_rollback("Could not add host to DSDB")
 
-            ib_services = IBServices(logger, justification=justification, **kwargs)
-            if newly_created and ib_services.feature_enabled("interface_address"):
-                try:
-                    ib_services.add_a_ptr(
-                        fqdn, ip,
-                        assign_ptr_to_fqdn=None if dbdns_rec.reverse_ptr is None else str(dbdns_rec.reverse_ptr))
-                except ProcessException as e:
-                    dsdb_runner.rollback()
-                    raise e
+        ib_services = IBServices(logger, justification=justification, **kwargs)
+        if newly_created and ib_services.feature_enabled("interface_address") and (dbhw_ent.host is None or dbhw_ent.host.archetype.name != "aurora"):
+            ib_services.add_a_ptr(dbdns_rec)
+            try:
+                ib_services.group.commit_or_rollback()
+            except ProcessException as e:
+                dsdb_runner.rollback()
+                raise e
 
         for name, value in audit_results:
             self.audit_result(session, name, value, **kwargs)

@@ -56,6 +56,7 @@ class CommandUpdateAlias(BrokerCommand):
         cm.consider(dbalias.target)
         cm.validate()
 
+        ib_rollback_args = dbalias.get_dns_args()
         old_target_fqdn = str(dbalias.target.fqdn)
         old_comments = dbalias.comments
 
@@ -151,10 +152,8 @@ class CommandUpdateAlias(BrokerCommand):
 
                     #  Not all update commands require an update in IB, ie, changing the grn doesn't
                     if (clear_ttl or ttl or old_target is not None):
-                        ib_services.update_dns_alias(
-                            str(dbalias.fqdn),
-                            new_target=str(dbalias.target),
-                            ttl=-1 if clear_ttl else ttl)
+                        ib_services.update_dns_alias(dbalias, ib_rollback_args)
+                        ib_services.group.commit_or_rollback()
             except ProcessException as e:
                 if dsdb_runner:
                     dsdb_runner.rollback()

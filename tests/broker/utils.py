@@ -22,17 +22,17 @@ import random
 import re
 import string
 
-from mock_ib_services import (
-    ib_expect_add_address,
-    ib_expect_add_alias,
-    ib_expect_add_dns_srv_record,
-    ib_expect_del_address,
-    ib_expect_del_alias,
-    ib_expect_update_address,
-)
-
 from broker.brokertest import TestBrokerCommand
 from broker.machinetest import MachineTestMixin
+from mock_ib_services import ib_expect_add_a
+from mock_ib_services import ib_expect_add_alias
+from mock_ib_services import ib_expect_add_dns_srv_record
+from mock_ib_services import ib_expect_add_ptr
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_alias
+from mock_ib_services import ib_expect_del_dns_srv_record
+from mock_ib_services import ib_expect_del_ptr
+from mock_ib_services import ib_expect_update_a
 
 
 def import_depends():
@@ -148,7 +148,7 @@ class MockHub:
         self.desks = []
         self.machines = {}
         self.hosts = {}
-        self.dns_domains = []
+        self.dns_domains = {}
         self.networks = {}
         self.addresses = {}
         self.resource_groups = {}
@@ -229,7 +229,7 @@ class MockHub:
         return f"{prefix}{next_available}.{dns_domain}"
 
     def add_dns_domain(self, fqdn, restricted=True):
-        if fqdn in self.dns_domains:
+        if fqdn in list(self.dns_domains.keys()):
             raise ValueError(f"DNS domain {fqdn} already exists.")
         command = ["add_dns_domain", "--dns_domain", fqdn,
                    "--justification", "tcm=123456789"]
@@ -242,16 +242,19 @@ class MockHub:
         self._engine.noouttest(command)
         if restricted:
             self._engine.dsdb_verify(empty=True)
+            # no ib_verify because domains are not synced to ib
         else:
             self._engine.dsdb_verify()
-        self.dns_domains.append(fqdn)
+            # no ib_verify because domains are not synced to ib
+        self.dns_domains[fqdn] = {'restricted': restricted}
         return fqdn
 
     def delete_dns_domain(self, fqdn):
         self._engine.dsdb_expect(f"delete_dns_domain -domain_name {fqdn}")
         self._engine.noouttest(["del_dns_domain", "--dns_domain", fqdn])
         self._engine.dsdb_verify()
-        self.dns_domains.remove(fqdn)
+        # no ib_verify because domains are not synced to ib
+        del self.dns_domains[fqdn]
         if fqdn == self.default_dns_domain:
             self.default_dns_domain = None
 
@@ -264,13 +267,16 @@ class MockHub:
                 self._engine.dsdb_expect_delete(ip)
 
             if not fail_dsdb:
-                ib_expect_add_address(fqdn, ip, reverse_ptr=reverse_ptr, ttl=ttl, create_ptr=create_ptr, fail=fail_ib,
-                                      justification=self._engine.valid_justification)
+                ib_expect_add_a(fqdn, ip, ttl=ttl, fail=fail_ib, justification=self._engine.valid_justification)
+                if not fail_ib:
+                    ib_expect_add_ptr(fqdn if reverse_ptr is None else reverse_ptr, ip, ttl=ttl, fail=fail_ib, justification=self._engine.valid_justification)
 
         command = ["add_address", "--fqdn", fqdn,
                    "--ip", ip,
                    "--grn", self.grn]
-        if ttl is not None:
+        if reverse_ptr is not None:
+            command.extend(["--reverse_ptr", reverse_ptr])
+        if ttl is not None and ttl != -1:
             command.extend(["--ttl", ttl])
         if dns_environment is not None:
             command.extend(["--dns_environment", dns_environment])
@@ -285,9 +291,9 @@ class MockHub:
             self.addresses[fqdn, dns_environment] = {"ip": ip}
 
         self._engine.dsdb_verify(True if fail_ib or dns_environment != "internal" else False)
-        self._engine.ib_verify(True if fail_dsdb else False)
+        self._engine.ib_verify(True if fail_dsdb or dns_environment != "internal" else False)
 
-    def update_address(self, fqdn, original_ip, new_ip=None, new_ttl=None, reverse_ptr=None, dns_environment="internal",
+    def update_address(self, fqdn, original_ip, new_ip=None, new_ttl=-1, reverse_ptr=None, dns_environment="internal",
                        comments=None, grn=None, fail_dsdb=False, fail_ib=False):
 
         self._engine.dsdb_expect_update(fqdn, iface=None, ip=new_ip,
@@ -295,14 +301,18 @@ class MockHub:
         if fail_ib:
             self._engine.dsdb_expect_update(fqdn, ip=original_ip)
         if not fail_dsdb:
-            ib_expect_update_address(fqdn, original_ip, new_ip=new_ip, reverse_ptr=reverse_ptr,
-                                     new_ttl=new_ttl, fail=fail_ib, justification=self._engine.valid_justification)
+            ib_expect_update_a(fqdn, original_ip, new_ip=new_ip, new_ttl=new_ttl, fail=fail_ib,
+                               justification=self._engine.valid_justification)
+            if not fail_ib:
+                ib_expect_del_ptr(original_ip, justification=self._engine.valid_justification)
+                ib_expect_add_ptr(fqdn=fqdn, ip=new_ip, ttl=new_ttl, justification=self._engine.valid_justification)
+
         command = ["update_address", "--fqdn", fqdn]
         if dns_environment is not None:
             command.extend(["--dns_environment", dns_environment])
         if new_ip is not None:
             command.extend(["--ip", new_ip])
-        if new_ttl is not None:
+        if new_ttl is not None and new_ttl != -1:
             command.extend(["--ttl", new_ttl])
         if reverse_ptr is not None:
             command.extend(["--reverse_ptr", reverse_ptr])
@@ -338,7 +348,9 @@ class MockHub:
             if fail_ib:
                 self._engine.dsdb_expect_add(fqdn, ip)
             if not fail_dsdb:
-                ib_expect_del_address(fqdn, ip, fail=fail_ib, justification=self._engine.valid_justification)
+                ib_expect_del_a(fqdn, ip, fail=fail_ib, justification=self._engine.valid_justification)
+                if not fail_ib:
+                    ib_expect_del_ptr(ip, fail=fail_ib, justification=self._engine.valid_justification)
 
         command = ["del_address", "--fqdn", fqdn, "--ip", ip]
         if dns_environment is not None:
@@ -354,7 +366,7 @@ class MockHub:
             del self.addresses[fqdn, dns_environment]
 
         self._engine.dsdb_verify(False if dns_environment == "internal" else True)
-        self._engine.ib_verify()
+        self._engine.ib_verify(False if dns_environment == "internal" else True)
 
     def add_resource_group(self, resourcegroup, hostname):
         if resourcegroup in self.resource_groups:
@@ -407,7 +419,7 @@ class MockHub:
         command = ["add_alias", "--fqdn", fqdn,
                    "--target", target,
                    "--grn", self.grn]
-        if ttl is not None:
+        if ttl is not None and ttl != -1:
             command.append("--ttl")
             command.append(ttl)
         self._engine.noouttest(command)
@@ -591,7 +603,7 @@ class MockHub:
                                                    "--format", "csv"])
                 ips.append(out.split(",")[3])
         else:
-            hosts = self.hosts.keys()
+            hosts = list(self.hosts.keys())
             ips = []
             for host in self.hosts:
                 machine = self.hosts[host]["machine"]
@@ -600,7 +612,10 @@ class MockHub:
         for i in range(len(hosts)):
             self._engine.successtest(["change_status", "--hostname", list(hosts)[i],
                                       "--buildstatus", "decommissioned"])
-            ib_expect_del_address(list(hosts)[i], ips[i])
+            _, _, host_dns_domain = hosts[i].partition('.')
+            if not self.dns_domains[host_dns_domain]['restricted']:
+                ib_expect_del_a(hosts[i], ips[i])
+            ib_expect_del_ptr(ips[i])
             self._engine.dsdb_expect_delete(ip=ips[i])
             self._engine.successtest(["del_host", "--hostname", list(hosts)[i]])
             self._engine.dsdb_verify()
@@ -671,6 +686,7 @@ class MockHub:
             self._engine.dsdb_expect(f"delete_building_aq -building {building}")
             self._engine.successtest(["del_building", "--building", building])
             self._engine.dsdb_verify()
+            # no ib_verify because buildings are not synced to ib
         if verify:
             self._verify_deletion_with_show_all("building", self.buildings)
         self.buildings = []
@@ -681,6 +697,7 @@ class MockHub:
             self._engine.successtest(["del_city", "--city", city,
                                      "--force_if_orphaned"])
             self._engine.dsdb_verify()
+            # no ib_verify because cities are not synced to ib
         if verify:
             self._verify_deletion_with_show_all("city", self.cities)
         self.cities = []
@@ -859,11 +876,12 @@ class MockHub:
         for fqdn, dns_environment in address_copy.keys():
             self.delete_address(fqdn, self.addresses[fqdn, dns_environment]["ip"], dns_environment=dns_environment)
         # Delete DNS domains.
-        for dns_domain in self.dns_domains[:]:
+        dns_domain_list = list(self.dns_domains.keys())
+        for dns_domain in dns_domain_list:
             self.delete_dns_domain(dns_domain)
         if verify:
             self._verify_deletion_with_show_all(
-                "dns_domain", self.dns_domains, 0)
+                "dns_domain", dns_domain_list, 0)
         # Delete networks.
         for net in list(self.networks):
             self.delete_network(net)
@@ -992,6 +1010,7 @@ class MockHub:
                                 "--timezone", "Europe/Warsaw",
                                 "--country", country])
         self._engine.dsdb_verify()
+        # no ib_verify because cities are not synced to ib
         self.cities.append(name)
         return name
 
@@ -1015,6 +1034,7 @@ class MockHub:
                                 "--address", f"{address}",
                                 "--city", city])
         self._engine.dsdb_verify()
+        # no ib_verify because buildings are not synced to ib
         self.buildings.append(name)
         return name
 
@@ -1221,7 +1241,9 @@ class MockHub:
             command.extend(["--buildstatus", build_status])
         command.extend(extra_arguments or [])
         self._engine.dsdb_expect_add(hostname, ip, "eth0", mac)
-        ib_expect_add_address(hostname, ip)
+        if not self.dns_domains[dns_domain]['restricted']:
+            ib_expect_add_a(hostname, ip)
+        ib_expect_add_ptr(hostname, ip)
         self._engine.successtest(command)
         self._engine.dsdb_verify()
         self._engine.ib_verify()

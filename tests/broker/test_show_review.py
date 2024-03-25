@@ -39,7 +39,7 @@ class TestShowReview(TestBrokerCommand):
         command = "show_review"
         help_command = ["show_review", "--help"]
         help_output = self.commandtest(help_command)
-        p, out, err = self.runcommand(command)
+        p, out, err = self.aq.runcommand(command)
         # Does stderr contain output from --help?
         self.assertIn(help_output, err)
 

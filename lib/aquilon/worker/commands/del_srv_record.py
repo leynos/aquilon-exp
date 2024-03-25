@@ -70,13 +70,7 @@ class CommandDelSrvRecord(BrokerCommand):
 
         for dns_rec in rrs:
             delete_dns_record(dns_rec, exporter=exporter)
-
-            ib_args = (service, protocol, dns_domain, dns_rec.target, dns_rec.port, dns_rec.priority, dns_rec.weight)
-
-            ib_services.group.add_action(
-                lambda ib_args=ib_args: ib_services.del_dns_srv_record(*ib_args),
-                lambda ib_args=ib_args: ib_services.add_dns_srv_record(*ib_args)
-            )
+            ib_services.del_dns_srv_record(dns_rec)
 
             cm.consider(dns_rec.fqdn)
         cm.validate()

@@ -23,8 +23,9 @@ if __name__ == "__main__":
     from . import utils
     utils.import_depends()
 
+from mock_ib_services import ib_expect_add_a
+from mock_ib_services import ib_expect_add_ptr
 from .brokertest import TestBrokerCommand
-from mock_ib_services import ib_expect_add_address
 
 
 class TestAddManager(TestBrokerCommand):
@@ -55,7 +56,8 @@ class TestAddManager(TestBrokerCommand):
     def testaddunittest00r(self):
         fqdn = "unittest00r.one-nyp.ms.com"
         ip = self.net["unknown0"].usable[4]
-        ib_expect_add_address(fqdn, ip)
+        ib_expect_add_a(fqdn, ip)
+        ib_expect_add_ptr(fqdn, ip)
         self.dsdb_expect_add(fqdn, ip, "bmc", ip.mac)
         self.noouttest(["add", "manager", "--ip", ip,
                         "--hostname", "unittest00.one-nyp.ms.com"])
@@ -115,7 +117,8 @@ class TestAddManager(TestBrokerCommand):
     def testaddunittest02rsa(self):
         fqdn = "unittest02rsa.one-nyp.ms.com"
         ip = self.net["unknown0"].usable[9]
-        ib_expect_add_address(fqdn, ip)
+        ib_expect_add_a(fqdn, ip)
+        ib_expect_add_ptr(fqdn, ip)
         self.dsdb_expect_add(fqdn, ip, "ilo", ip.mac)
         self.noouttest(["add", "manager", "--interface", "ilo",
                         "--ip", ip, "--mac", ip.mac,
@@ -173,7 +176,8 @@ class TestAddManager(TestBrokerCommand):
     def testaddunittest12bmc(self):
         fqdn = "unittest12r.aqd-unittest.ms.com"
         ip = self.net["unknown0"].usable[8]
-        ib_expect_add_address(fqdn, ip)
+        ib_expect_add_a(fqdn, ip)
+        ib_expect_add_ptr(fqdn, ip)
         self.dsdb_expect_add(fqdn, ip, "mgmt0",
                              ip.mac)
         command = ["add", "manager", "--interface", "mgmt0",
@@ -212,7 +216,8 @@ class TestAddManager(TestBrokerCommand):
         net = self.net["ut8_oob"]
         fqdn = "unittest17r.aqd-unittest.ms.com"
         ip = net.usable[3]
-        ib_expect_add_address(fqdn, ip)
+        ib_expect_add_a(fqdn, ip)
+        ib_expect_add_ptr(fqdn, ip)
         self.dsdb_expect_add(fqdn, ip, "mgmt0", ip.mac)
         command = ["add_manager", "--hostname", "unittest17.aqd-unittest.ms.com",
                    "--interface", "mgmt0", "--mac", ip.mac, "--ip", ip]

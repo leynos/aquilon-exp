@@ -25,11 +25,14 @@ if __name__ == "__main__":
     from . import utils
     utils.import_depends()
 
+from mock_ib_services import ib_expect_add_a
+from mock_ib_services import ib_expect_add_ptr
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
 from .brokertest import TestBrokerCommand
 from .notificationtest import VerifyNotificationsMixin
 from .personalitytest import PersonalityTestMixin
 from .eventstest import EventsTestMixin
-from mock_ib_services import ib_expect_add_address, ib_expect_del_address
 
 
 class TestAppliance(VerifyNotificationsMixin, PersonalityTestMixin,
@@ -84,7 +87,8 @@ class TestAppliance(VerifyNotificationsMixin, PersonalityTestMixin,
     def test_210_add_appliance_host(self):
         ip = self.net["ut01ga2s02_v713"].usable[1]
         fqdn = "utva.aqd-unittest.ms.com"
-        ib_expect_add_address(fqdn, ip)
+        ib_expect_add_a(fqdn, ip)
+        ib_expect_add_ptr(fqdn, ip)
         self.dsdb_expect_add(fqdn, ip, "eth0", "00:50:56:01:20:1b")
         command = ["add", "host", "--hostname", "utva.aqd-unittest.ms.com",
                    "--ip", ip,
@@ -106,7 +110,8 @@ class TestAppliance(VerifyNotificationsMixin, PersonalityTestMixin,
         basetime = datetime.now()
         fqdn = "utva.aqd-unittest.ms.com"
         ip = self.net["ut01ga2s02_v713"].usable[1]
-        ib_expect_del_address(fqdn, ip)
+        ib_expect_del_a(fqdn, ip)
+        ib_expect_del_ptr(ip)
         self.dsdb_expect_delete(ip)
         command = ["del", "host", "--hostname", fqdn]
         self.statustest(command)

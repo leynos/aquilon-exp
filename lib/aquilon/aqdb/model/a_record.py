@@ -115,6 +115,13 @@ class ARecord(DnsRecord):
                              (self.fqdn.dns_environment, value.dns_environment))
         return value
 
+    def get_dns_args(self):
+        return {
+            'name': self.fqdn,
+            'ip': self.ip,
+            'ttl': -1 if self.ttl is None else self.ttl,
+            'reverse_ptr': self.fqdn if self.reverse_ptr is None else self.reverse_ptr
+        }
 
 # Create a secondary mapper to allow filtering DNS entries based on the DNS
 # environment associated with the network the address is allocated from:

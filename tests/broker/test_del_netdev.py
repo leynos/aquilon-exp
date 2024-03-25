@@ -23,8 +23,9 @@ if __name__ == "__main__":
     from . import utils
     utils.import_depends()
 
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
 from .brokertest import TestBrokerCommand
-from mock_ib_services import ib_expect_del_address
 
 
 class TestDelNetworkDevice(TestBrokerCommand):
@@ -32,7 +33,8 @@ class TestDelNetworkDevice(TestBrokerCommand):
     def test_100_del_ut3gd1r01(self):
         # Deprecated usage.
         ip = self.net["tor_net_12"].usable[0]
-        ib_expect_del_address("ut3gd1r01.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_a("ut3gd1r01.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         self.dsdb_expect_delete(ip)
         command = "del network_device --network_device ut3gd1r01.aqd-unittest.ms.com"
         self.successtest(command.split(" "))
@@ -48,7 +50,8 @@ class TestDelNetworkDevice(TestBrokerCommand):
 
     def test_105_del_ut3gd1r04(self):
         ip = self.net["ut10_eth1"].usable[1]
-        ib_expect_del_address("ut3gd1r04.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_a("ut3gd1r04.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         self.dsdb_expect_delete(ip)
         command = "del network_device --network_device ut3gd1r04.aqd-unittest.ms.com"
         self.successtest(command.split(" "))
@@ -59,7 +62,8 @@ class TestDelNetworkDevice(TestBrokerCommand):
 
     def test_110_del_ut3gd1r05(self):
         ip = self.net["ut_net_mgmt"].usable[0]
-        ib_expect_del_address("ut3gd1r05.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_a("ut3gd1r05.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         self.dsdb_expect_delete(ip)
         command = "del network_device --network_device ut3gd1r05.aqd-unittest.ms.com"
         self.successtest(command.split(" "))
@@ -70,7 +74,8 @@ class TestDelNetworkDevice(TestBrokerCommand):
 
     def test_115_del_ut3gd1r06(self):
         ip = self.net["ut_net_mgmt"].usable[4]
-        ib_expect_del_address("ut3gd1r06.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_a("ut3gd1r06.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         self.dsdb_expect_delete(ip)
         command = "del network_device --network_device ut3gd1r06.aqd-unittest.ms.com"
         self.successtest(command.split(" "))
@@ -81,7 +86,8 @@ class TestDelNetworkDevice(TestBrokerCommand):
 
     def test_120_del_ut3gd1r07(self):
         ip = self.net["ut_net_mgmt"].usable[2]
-        ib_expect_del_address("ut3gd1r07.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_a("ut3gd1r07.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         self.dsdb_expect_delete(ip)
         command = "del network_device --network_device ut3gd1r07.aqd-unittest.ms.com"
         self.successtest(command.split(" "))
@@ -92,7 +98,8 @@ class TestDelNetworkDevice(TestBrokerCommand):
 
     def test_125_del_switch_in_building(self):
         ip = self.net["ut_net_mgmt"].usable[3]
-        ib_expect_del_address("switchinbuilding.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_a("switchinbuilding.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         self.dsdb_expect_delete(ip)
         command = "del network_device --network_device switchinbuilding.aqd-unittest.ms.com"
         self.successtest(command.split(" "))
@@ -105,7 +112,8 @@ class TestDelNetworkDevice(TestBrokerCommand):
 
     def test_130_del_np06bals03(self):
         ip = self.net["np06bals03_v103"][5]
-        ib_expect_del_address("np06bals03.ms.com", str(ip))
+        ib_expect_del_a("np06bals03.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         self.dsdb_expect_delete(ip)
         command = "del network_device --network_device np06bals03.ms.com"
         self.noouttest(command.split(" "))
@@ -120,7 +128,8 @@ class TestDelNetworkDevice(TestBrokerCommand):
 
     def test_135_del_np06fals01(self):
         ip = self.net["notbunkerized"][5]
-        ib_expect_del_address("np06fals01.ms.com", str(ip))
+        ib_expect_del_a("np06fals01.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         self.dsdb_expect_delete(ip)
         command = "del network_device --network_device np06fals01.ms.com"
         self.noouttest(command.split(" "))
@@ -135,7 +144,8 @@ class TestDelNetworkDevice(TestBrokerCommand):
 
     def test_140_del_ut01ga1s02(self):
         ip = self.net["tor_net_0"].usable[0]
-        ib_expect_del_address("ut01ga1s02.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_a("ut01ga1s02.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         self.dsdb_expect_delete(ip)
         command = "del network_device --network_device ut01ga1s02.aqd-unittest.ms.com"
         self.noouttest(command.split(" "))
@@ -150,7 +160,8 @@ class TestDelNetworkDevice(TestBrokerCommand):
 
     def test_150_del_ut01ga1s03(self):
         ip = self.net["hp_eth0"].usable[0]
-        ib_expect_del_address("ut01ga1s03.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_a("ut01ga1s03.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         self.dsdb_expect_delete(ip)
         command = "del network_device --network_device ut01ga1s03.aqd-unittest.ms.com"
         self.noouttest(command.split(" "))
@@ -165,7 +176,8 @@ class TestDelNetworkDevice(TestBrokerCommand):
 
     def test_155_del_ut01ga1s04(self):
         ip = self.net["ut10_eth0"].usable[0]
-        ib_expect_del_address("ut01ga1s04.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_a("ut01ga1s04.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         self.dsdb_expect_delete(ip)
         command = "del network_device --network_device ut01ga1s04.aqd-unittest.ms.com"
         self.noouttest(command.split(" "))
@@ -180,7 +192,8 @@ class TestDelNetworkDevice(TestBrokerCommand):
 
     def test_160_del_ut01ga2s01(self):
         ip = self.net["vmotion_net"].usable[0]
-        ib_expect_del_address("ut01ga2s01.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_a("ut01ga2s01.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         self.dsdb_expect_delete(ip)
         command = "del network_device --network_device ut01ga2s01.aqd-unittest.ms.com"
         self.noouttest(command.split(" "))
@@ -191,7 +204,8 @@ class TestDelNetworkDevice(TestBrokerCommand):
 
     def test_161_del_ut01ga2s02(self):
         ip = self.net["vmotion_net"].usable[1]
-        ib_expect_del_address("ut01ga2s02.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_a("ut01ga2s02.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         self.dsdb_expect_delete(ip)
         command = "del network_device --network_device ut01ga2s02.aqd-unittest.ms.com"
         self.noouttest(command.split(" "))
@@ -202,7 +216,8 @@ class TestDelNetworkDevice(TestBrokerCommand):
 
     def test_162_del_ut01ga2s03(self):
         ip = self.net["ut_net_mgmt"].usable[5]
-        ib_expect_del_address("ut01ga2s03.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_a("ut01ga2s03.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         self.dsdb_expect_delete(ip)
         command = "del network_device --network_device ut01ga2s03.aqd-unittest.ms.com"
         self.noouttest(command.split(" "))
@@ -211,7 +226,8 @@ class TestDelNetworkDevice(TestBrokerCommand):
 
     def test_163_del_ut01ga2s04(self):
         ip = self.net["ut_net_mgmt"].usable[6]
-        ib_expect_del_address("ut01ga2s04.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_a("ut01ga2s04.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         self.dsdb_expect_delete(ip)
         command = "del network_device --network_device ut01ga2s04.aqd-unittest.ms.com"
         self.noouttest(command.split(" "))
@@ -220,7 +236,8 @@ class TestDelNetworkDevice(TestBrokerCommand):
 
     def test_164_del_ut3c5netdev1(self):
         ip = self.net["ut_net_mgmt"].usable[7]
-        ib_expect_del_address("ut3c5netdev1.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_a("ut3c5netdev1.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         self.dsdb_expect_delete(ip)
         command = "del network_device --network_device ut3c5netdev1.aqd-unittest.ms.com"
         self.noouttest(command.split(" "))
@@ -229,7 +246,8 @@ class TestDelNetworkDevice(TestBrokerCommand):
 
     def test_164_del_ut3c5netdev2(self):
         ip = self.net["ut_net_mgmt"].usable[8]
-        ib_expect_del_address("ut3c5netdev2.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_a("ut3c5netdev2.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         self.dsdb_expect_delete(ip)
         command = "del network_device --network_device ut3c5netdev2.aqd-unittest.ms.com"
         self.noouttest(command.split(" "))

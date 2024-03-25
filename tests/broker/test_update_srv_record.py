@@ -165,23 +165,11 @@ class TestUpdateSrvRecord(TestBrokerCommand):
                         command)
 
     def test_620_update_eon_id(self):
-        old = {
-            "service": "sip",
-            "protocol": "tcp",
-            "domain": "aqd-unittest.ms.com",
-            "weight": 10,
-            "priority": 10,
-            "port": 5060,
-        }
-        for n in ("13", "14", "50"):
-            old["target"] = "arecord{}.aqd-unittest.ms.com".format(n)
-
-            ib_expect_update_dns_srv_record(old, {}, justification=self.valid_justification)
-
         command = ["update", "srv", "record", "--service", "sip",
                    "--protocol", "tcp", "--dns_domain", "aqd-unittest.ms.com",
                    "--eon_id", "2"] + self.valid_just_tcm
         self.noouttest(command)
+        self.ib_verify(empty=True)  # No ib requests because only eond_id is being updated
 
     def test_625_verify_update_grn(self):
         command = ["show", "srv", "record", "--service", "sip",
@@ -203,6 +191,7 @@ class TestUpdateSrvRecord(TestBrokerCommand):
         self.matchoutput(out,
                          "Option or option group grn conflicts with target",
                          command)
+        self.ib_verify(empty=True)  # No ib requests because command failed
 
 
 if __name__ == '__main__':

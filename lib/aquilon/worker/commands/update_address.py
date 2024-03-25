@@ -51,10 +51,10 @@ class CommandUpdateAddress(BrokerCommand):
         cm.validate()
 
         # Save state before making change, mostly for possible rollbacks
+        ib_rollback_args = dbdns_rec.get_dns_args()
         old_ip = dbdns_rec.ip
         old_comments = dbdns_rec.comments
         old_reverse_ptr = dbdns_rec.reverse_ptr
-        old_ttl = dbdns_rec.ttl
         fqdn = str(dbdns_rec.fqdn)
 
         if ip:
@@ -89,24 +89,7 @@ class CommandUpdateAddress(BrokerCommand):
 
         ib_services = IBServices(logger, justification=justification, **arguments)
         if ip or reverse_ptr or clear_ttl or ttl:
-            ib_services.group.add_action(
-                lambda fqdn=fqdn, new_ip=ip, reverse_ptr=reverse_ptr, clear_ttl=clear_ttl, ttl=ttl:
-                    ib_services.update_a_ptr(fqdn, old_ip, new_ip, reverse_ptr, -1 if clear_ttl else ttl),
-                lambda fqdn=fqdn, new_ip=ip, old_ip=old_ip, old_reverse_ptr=old_reverse_ptr, old_ttl=old_ttl:
-                    ib_services.update_a_ptr(fqdn, new_ip if new_ip else old_ip, old_ip if new_ip else None, old_reverse_ptr, old_ttl)
-            )
-            if ip:
-                for address_alias in dbdns_rec.address_aliases:
-                    alias_fqdn = str(address_alias.fqdn)
-                    alias_target = str(address_alias.target)
-                    if alias_target == fqdn:
-                        ib_services.group.add_action(
-                            lambda fqdn=alias_fqdn, new_ip=ip, old_ip=old_ip, ttl=ttl, clear_ttl=clear_ttl:
-                                ib_services.update_a_ptr(fqdn, old_ip, new_ip, ttl=-1 if clear_ttl else ttl),
-                            lambda fqdn=alias_fqdn, new_ip=ip, old_ip=old_ip, ttl=ttl, clear_ttl=clear_ttl:
-                                ib_services.update_a_ptr(fqdn, new_ip, old_ip, old_ttl)
-                        )
-
+            ib_services.update_a_ptr(dbdns_rec, ib_rollback_args)
 
         dsdb_runner = None
         if dbdns_env.is_default and (dbdns_rec.ip != old_ip or dbdns_rec.comments != old_comments):
@@ -117,10 +100,10 @@ class CommandUpdateAddress(BrokerCommand):
                                             old_comments=old_comments)
             dsdb_runner.commit_or_rollback()
 
-            if ib_services.feature_enabled("address"):
-                try:
-                    ib_services.group.commit_or_rollback()
-                except ProcessException as e:
-                    if dsdb_runner:
-                        dsdb_runner.rollback()
-                    raise e
+        if ib_services.feature_enabled("address"):
+            try:
+                ib_services.group.commit_or_rollback()
+            except ProcessException as e:
+                if dsdb_runner:
+                    dsdb_runner.rollback()
+                raise e

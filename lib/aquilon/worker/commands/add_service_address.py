@@ -194,8 +194,7 @@ class CommandAddServiceAddress(BrokerCommand):
                                                 exporter=exporter,
                                                 require_grn=False)
         ip = dbdns_rec.ip
-        ibs_args = {'name': str(dbdns_rec.fqdn)}
-        ibs_rollback_args = {'name': str(dbdns_rec.fqdn), 'ip': ip}
+        ib_rollback_args = dbdns_rec.get_dns_args() if not newly_created else None
 
         if map_to_primary and map_to_shared_name:
             raise ArgumentError("Cannot use --map_to_primary and "
@@ -204,23 +203,14 @@ class CommandAddServiceAddress(BrokerCommand):
             # if the holder is a resource-group that has a SharedServiceName
             # resource, then set the PTR record as the SharedServiceName's FQDN
             if sibling_ssn:
-                if not newly_created:
-                    ibs_rollback_args['assign_to_ptr'] = None if dbdns_rec.reverse_ptr is None \
-                                                                else str(dbdns_rec.reverse_ptr)
                 dbdns_rec.reverse_ptr = sibling_ssn.fqdn
-                ibs_args['assign_ptr_to_fqdn'] = str(dbdns_rec.reverse_ptr)
             else:
                 raise ArgumentError("--map_to_shared_name specified, but no "
                                     "shared service name in {0:l}".
                                     format(holder))
         elif map_to_primary:
             if isinstance(toplevel_holder, Host):
-                if not newly_created:
-                    ibs_rollback_args['assign_to_ptr'] = None if dbdns_rec.reverse_ptr is None \
-                                                                else str(dbdns_rec.reverse_ptr)
-                dbdns_rec.reverse_ptr = \
-                    toplevel_holder.hardware_entity.primary_name.fqdn
-                ibs_args['assign_ptr_to_fqdn'] = str(dbdns_rec.reverse_ptr)
+                dbdns_rec.reverse_ptr = toplevel_holder.hardware_entity.primary_name.fqdn
             else:
                 raise ArgumentError("The --map_to_primary option works only "
                                     "for host-based service addresses or "
@@ -247,14 +237,11 @@ class CommandAddServiceAddress(BrokerCommand):
 
         ib_services = IBServices(logger, justification=justification, **kwargs)
         if newly_created:
-            ib_services.group.add_action(
-                lambda: ib_services.add_a_ptr(ip=ip, **ibs_args),
-                lambda: ib_services.delete_a_ptr(**ibs_rollback_args))
+            ib_services.add_a_ptr(dbdns_rec)
         else:
-            if (len(ibs_args.keys()) > 2):
-                ib_services.group.add_action(
-                    lambda: ib_services.update_a_ptr(ip=ip, **ibs_args),
-                    lambda: ib_services.update_a_ptr(**ibs_rollback_args))
+            # When a service address is created using an address previously created with `aq add address`
+            # and either `--map_to_primary` or `--map_to_shared` are used, the PTR of that address needs updating
+            ib_services.update_a_ptr(dbdns_rec, ib_rollback_args)
 
         session.flush()
 
@@ -266,10 +253,7 @@ class CommandAddServiceAddress(BrokerCommand):
                               dbtargetfqdn=dbdns_rec.fqdn,
                               ttl=None, grn=None, eon_id=None,
                               comments=None, exporter=exporter,
-                              flush_session=True, sync_ib=False)
-            ib_services.group.add_action(
-                lambda: ib_services.add_a_ptr(str(sibling_ssn.fqdn), dbdns_rec.ip),
-                lambda: ib_services.delete_a_ptr(str(sibling_ssn.fqdn)))
+                              flush_session=True, ib_services=ib_services)
 
         plenaries.add(holder.holder_object)
         plenaries.add(dbsrv)
@@ -292,7 +276,7 @@ class CommandAddServiceAddress(BrokerCommand):
 
             dsdb_runner.commit_or_rollback("Could not add host to DSDB")
 
-            if ib_services.feature_enabled("service_address") and dbdns_rec.fqdn.dns_environment.is_default:
+            if ib_services.feature_enabled("service_address"):
                 try:
                     ib_services.group.commit_or_rollback()
                 except ProcessException as e:

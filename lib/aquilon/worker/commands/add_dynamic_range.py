@@ -129,10 +129,7 @@ class CommandAddDynamicRange(BrokerCommand):
                 dsdb_runner.add_host_details(dbfqdn, ip)
 
                 # We do this in all cases, whatever the range_class value.
-                ib_services.group.add_action(
-                    lambda fqdn=str(dbfqdn), ip=ip: ib_services.add_a_ptr(fqdn, ip),
-                    lambda fqdn=str(dbfqdn), ip=ip: ib_services.del_a_ptr(fqdn, ip)
-                )
+                ib_services.add_a_ptr(dbdynamic_stub)
 
         session.flush()
         # This may take some time if the range is big, so be verbose

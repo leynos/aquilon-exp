@@ -24,8 +24,9 @@ if __name__ == "__main__":
     from . import utils
     utils.import_depends()
 
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
 from .brokertest import TestBrokerCommand
-from mock_ib_services import ib_expect_del_address
 
 
 class TestDel10GigHardware(TestBrokerCommand):
@@ -46,7 +47,8 @@ class TestDel10GigHardware(TestBrokerCommand):
                 net_index = ((i - 9) % 4) + 4
                 usable_index = (i - 9) // 4
             ip = nets[net_index].usable[usable_index]
-            ib_expect_del_address(hostname, ip)
+            ib_expect_del_a(hostname, ip)
+            ib_expect_del_ptr(ip)
             self.dsdb_expect_delete(ip)
 
             self.statustest(command.split(" "))
@@ -63,7 +65,8 @@ class TestDel10GigHardware(TestBrokerCommand):
             else:
                 port = i - 12
                 machine = "ut12s02p%d" % port
-            ib_expect_del_address(hostname, str(ip))
+            ib_expect_del_a(hostname, str(ip))
+            ib_expect_del_ptr(str(ip))
             self.dsdb_expect_delete(ip)
             command = ["del_interface_address", "--fqdn", hostname,
                        "--machine", machine, "--interface", "eth1"]

@@ -38,6 +38,47 @@ from urllib.parse import quote
 import logging as log
 import time
 
+class IBServicesTest(IBServices):
+    def _add_network(self, network, name, compartment=None, side=None, sysloc=None):
+        url = "/networks/{}".format(quote(network, safe=""))
+
+        payload = {
+            "name": name,
+            "compartment": compartment,
+            "side": side,
+            "sysloc": sysloc,
+        }
+        if self.eonid:
+            payload["eonid"] = self.eonid
+
+        self._http_request("POST", url, payload)
+
+    def _show_network(self, network):
+        url = "/networks/{}".format(quote(network, safe=""))
+
+        return self._http_request("GET", url, ignore_statuses=[404])
+
+    def _del_network(self, network):
+        url = "/networks/{}".format(quote(network, safe=""))
+
+        self._http_request("DELETE", url, ignore_statuses=[404])
+
+    def _add_zone(self, fqdn, city=None):
+        url = "/dns/zones/"
+        payload = {"fqdn": fqdn, "city": city, "eonid": self.eonid}
+        if self.justification is not None:
+            payload["cm_token"] = self.justification
+        self._http_request("POST", url, payload)
+
+    def _show_zone(self, fqdn):
+        url = f"/dns/zones/{fqdn}"
+
+        return self._http_request("GET", url, ignore_statuses=[404])
+
+    def _del_zone(self, fqdn):
+        url = f"/dns/zones/{fqdn}"
+        self._http_request("DELETE", url, ignore_statuses=[404])
+
 
 class IBChecker:
     def __init__(self, broker_test):
@@ -106,10 +147,10 @@ class DnsChecker:
 
         (p, out, err) = self._run_dns_check([fqdn])
         self.broker_test.assertEmptyErr(err, [fqdn])
-        self.broker_test.assertEqual(p.returncode, 0)
         self.broker_test.assertTrue(out.find(expected_stdout) >= 0,
                                     "STDOUT for {} did not include '{}':\n@@@\n'{}'\n@@@\n".format(fqdn, expected_stdout,
                                                                                                out))
+        self.broker_test.assertEqual(p.returncode, 0)
 
     def cname(self, fqdn, target, ips):
         expected_stdout = f"{fqdn} is an alias for {target}.\n"
@@ -148,16 +189,16 @@ class TestIBEndToEnd(TestBrokerCommand):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.ib_services = IBServices(log, requestid=self.dummy_request_id)
-        zone_response = self.ib_services.show_zone(self.test_domain)
+        self.ib_services = IBServicesTest(log, requestid=self.dummy_request_id)
+        zone_response = self.ib_services._show_zone(self.test_domain)
 
         if zone_response and not zone_response.ok:
             self.fail(f"Required test zone {self.test_domain} does not exist in IB instance.")
 
     def _clean_ib_services(self):
-        response = self.ib_services.show_network(self.test_network)
+        response = self.ib_services._show_network(self.test_network)
         if response and response.status_code != 404:
-            self.ib_services.delete_network(network=self.test_network)
+            self.ib_services._del_network(network=self.test_network)
 
         # TODO: hard-coded dns zone
         # if self.ib_services.show_zone(self.test_domain).status_code != 404:
@@ -167,7 +208,7 @@ class TestIBEndToEnd(TestBrokerCommand):
         super().setUp(*args, **kwargs)
 
         self._clean_ib_services()
-        self.ib_services.add_network(network=self.test_network, name="aqd-unittest", side="a", sysloc="np.ny.na",
+        self.ib_services._add_network(network=self.test_network, name="aqd-unittest", side="a", sysloc="np.ny.na",
                                      compartment="interior.lab.access")
         # TODO: Zone changes in the l2 IB instance require a restart of the dns server before domains in that zone can
         # be resolved, so for now rely on a previously created zone instead
@@ -176,6 +217,16 @@ class TestIBEndToEnd(TestBrokerCommand):
     def tearDown(self, *args, **kwargs):
         super().tearDown(*args, **kwargs)
         self._clean_ib_services()
+
+    def _delete_a_ptr(self, fqdn, ip):
+        self.ib_services._del_a(fqdn,ip)
+        self.ib_services._del_ptr(ip)
+
+    def _add_a_ptr(self, fqdn, ip, ib_checker):
+        response = self.ib_services._add_a(fqdn,ip)
+        ib_checker.check_headers(response)
+        response = self.ib_services._add_ptr(fqdn, ip)
+        ib_checker.check_headers(response)
 
     def test_100_aptr_cname(self):
         mh = MockHub(self)
@@ -194,15 +245,15 @@ class TestIBEndToEnd(TestBrokerCommand):
         building = mh.add_building()
 
         # Make sure the addresses we are going to create were not left lingering from a previous test run
-        self.ib_services.delete_dns_alias(test_alias_fqdn)
-        self.ib_services.delete_dns_alias(test_alias2_fqdn)
-        self.ib_services.delete_a_ptr(test_a_fqdn, '2.3.4.1')
-        self.ib_services.delete_a_ptr(test_a_fqdn, '2.3.4.2')
-        self.ib_services.delete_a_ptr(test_a_fqdn, '2.3.4.3')
-        self.ib_services.delete_a_ptr(test_ib_a_fqdn, '2.3.4.4')
-        self.ib_services.delete_a_ptr(test_ib_a_fqdn, '2.3.4.5')
-        self.ib_services.delete_a_ptr(test_ib_a_fqdn2, '2.3.4.4')
-        self.ib_services.delete_a_ptr(test_ib_a_fqdn2, '2.3.4.5')
+        self.ib_services._del_dns_alias(test_alias_fqdn)
+        self.ib_services._del_dns_alias(test_alias2_fqdn)
+        self._delete_a_ptr(test_a_fqdn, '2.3.4.1')
+        self._delete_a_ptr(test_a_fqdn, '2.3.4.2')
+        self._delete_a_ptr(test_a_fqdn, '2.3.4.3')
+        self._delete_a_ptr(test_ib_a_fqdn, '2.3.4.4')
+        self._delete_a_ptr(test_ib_a_fqdn, '2.3.4.5')
+        self._delete_a_ptr(test_ib_a_fqdn2, '2.3.4.4')
+        self._delete_a_ptr(test_ib_a_fqdn2, '2.3.4.5')
         dns_checker.notfound(test_a_fqdn)
         dns_checker.notfound(test_ib_a_fqdn)
         dns_checker.notfound(test_ib_a_fqdn2)
@@ -229,7 +280,7 @@ class TestIBEndToEnd(TestBrokerCommand):
         dns_checker.cname('alias.' + self.test_domain, test_a_fqdn, ['2.3.4.2'])
 
         # Now delete the alias in IB, but not in AQ
-        self.ib_services.delete_dns_alias('alias.' + self.test_domain)
+        self.ib_services._del_dns_alias('alias.' + self.test_domain)
         # And test that updating the alias in AQ will re-create it in IB
         # Note that we are not specifying the alias target here, that's on purpose to test that the aq code knows to
         # send the target, without which IB can't possibly know how to create the alias
@@ -240,7 +291,7 @@ class TestIBEndToEnd(TestBrokerCommand):
         dns_checker.notfound('alias.' + self.test_domain)
 
         # Delete a_ptr record in IB (but not in AQ)
-        self.ib_services.delete_a_ptr(test_a_fqdn, '2.3.4.2')
+        self._delete_a_ptr(test_a_fqdn, '2.3.4.2')
         # Check it is no longer in DNS
         dns_checker.notfound(test_a_fqdn)
         # Update in AQ
@@ -256,8 +307,7 @@ class TestIBEndToEnd(TestBrokerCommand):
         dns_checker.notfound(test_a_fqdn)
 
         # Create a-record in ib
-        response = self.ib_services.add_a_ptr(test_ib_a_fqdn, '2.3.4.4')
-        ib_checker.check_headers(response)
+        self._add_a_ptr(test_ib_a_fqdn, '2.3.4.4', ib_checker)
 
         # Check it resolves
         dns_checker.a_record(test_ib_a_fqdn, '2.3.4.4')
@@ -270,7 +320,7 @@ class TestIBEndToEnd(TestBrokerCommand):
         self.dsdb_verify()
 
         # Create a-record in ib
-        self.ib_services.add_a_ptr(test_ib_a_fqdn2, '2.3.4.4')
+        self._add_a_ptr(test_ib_a_fqdn2, '2.3.4.4', ib_checker)
         # Check it resolves
         dns_checker.a_record(test_ib_a_fqdn2, '2.3.4.4')
         # Create a-record in aq with same fqdn but different ip
@@ -282,7 +332,7 @@ class TestIBEndToEnd(TestBrokerCommand):
         self.dsdb_verify()
 
         # Create cname in ib
-        self.ib_services.add_dns_alias(test_alias2_fqdn, test_ib_a_fqdn)
+        self.ib_services._add_dns_alias(test_alias2_fqdn, test_ib_a_fqdn)
         # Check it resolves
         dns_checker.cname(test_alias2_fqdn, test_ib_a_fqdn, ['2.3.4.4'])
         # Create same cname in aq
@@ -291,14 +341,14 @@ class TestIBEndToEnd(TestBrokerCommand):
         dns_checker.cname(test_alias2_fqdn, test_ib_a_fqdn, ['2.3.4.4'])
 
         # Now delete the alias in IB but not in AQ
-        self.ib_services.delete_dns_alias(test_alias2_fqdn)
+        self.ib_services._del_dns_alias(test_alias2_fqdn)
         dns_checker.notfound(test_alias2_fqdn)
         # And the delete it in AQ and check that it works
         self.noouttest(['del_alias', '--fqdn', test_alias2_fqdn])
         dns_checker.notfound(test_alias2_fqdn)
 
         # Create cname in ib
-        self.ib_services.add_dns_alias(test_alias2_fqdn, test_ib_a_fqdn)
+        self.ib_services._add_dns_alias(test_alias2_fqdn, test_ib_a_fqdn)
         # Check it resolves
         dns_checker.cname(test_alias2_fqdn, test_ib_a_fqdn, ['2.3.4.4'])
         # Create same cname in aq pointing to a different fqdn
@@ -307,7 +357,7 @@ class TestIBEndToEnd(TestBrokerCommand):
         dns_checker.cname(test_alias2_fqdn, test_ib_a_fqdn2, ['2.3.4.4', '2.3.4.5'])
 
         # Now delete the alias in IB but not in AQ
-        self.ib_services.delete_dns_alias(test_alias2_fqdn)
+        self.ib_services._del_dns_alias(test_alias2_fqdn)
         dns_checker.notfound(test_alias2_fqdn)
         # And the delete it in AQ and check that it works
         self.noouttest(['del_alias', '--fqdn', test_alias2_fqdn])
@@ -316,7 +366,7 @@ class TestIBEndToEnd(TestBrokerCommand):
         # Final clean up
 
         # delete in ib first
-        self.ib_services.delete_a_ptr(test_ib_a_fqdn, "2.3.4.4")
+        self._delete_a_ptr(test_ib_a_fqdn, "2.3.4.4")
         self.dsdb_expect_delete('2.3.4.4')
         # and check that deleting in aq succeeds
         self.noouttest(['del_address', '--fqdn', test_ib_a_fqdn] + self.valid_just_tcm)
@@ -326,7 +376,7 @@ class TestIBEndToEnd(TestBrokerCommand):
         self.noouttest(['del_address', '--fqdn', test_ib_a_fqdn2] + self.valid_just_tcm)
         self.dsdb_verify()
         dns_checker.a_record(test_ib_a_fqdn2, '2.3.4.4')
-        self.ib_services.delete_a_ptr(test_ib_a_fqdn2, '2.3.4.4')
+        self._delete_a_ptr(test_ib_a_fqdn2, '2.3.4.4')
         dns_checker.notfound(test_ib_a_fqdn2)
 
         self.noouttest(['del_network', '--ip', '2.3.4.0'])
@@ -402,8 +452,8 @@ class TestIBEndToEnd(TestBrokerCommand):
         test_fqdn = "aqd-ib-srv-test01." + self.test_domain
         test_ip = "2.3.4.1"
 
-        self.ib_services.delete_a_ptr(test_fqdn, test_ip)
-        self.runcommand(['del_address', '--fqdn', test_fqdn, '--ip', test_ip] + self.valid_just_tcm)
+        self._delete_a_ptr(test_fqdn, test_ip)
+        self.aq.runcommand(['del_address', '--fqdn', test_fqdn, '--ip', test_ip] + self.valid_just_tcm)
 
         self.dsdb_expect_add(test_fqdn, test_ip)
         command = ["add_address", "--fqdn", test_fqdn, "--ip", test_ip, '--grn', mh.grn] + self.valid_just_tcm

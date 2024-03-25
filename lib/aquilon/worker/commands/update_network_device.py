@@ -50,6 +50,8 @@ class CommandUpdateNetworkDevice(BrokerCommand):
         cm.consider(dbnetdev)
         cm.validate()
 
+        ib_services = IBServices(logger, justification=justification, **arguments)
+        ib_old_info = ib_services.snapshot_hw_a_records(dbnetdev)
         oldinfo = DSDBRunner.snapshot_hw(dbnetdev)
         plenaries.add(dbnetdev, cls=PlenarySwitchData)
         plenaries.add(dbnetdev)
@@ -116,7 +118,7 @@ class CommandUpdateNetworkDevice(BrokerCommand):
             NetworkDevice.check_type(type)
             dbnetdev.switch_type = type
 
-        old_ip = dbnetdev.primary_name.ip
+        ib_rollback_args = dbnetdev.primary_name.get_dns_args()
         if ip:
             update_primary_ip(session, logger, dbnetdev, ip)
 
@@ -152,10 +154,11 @@ class CommandUpdateNetworkDevice(BrokerCommand):
             dsdb_runner.update_host(dbnetdev, oldinfo)
             dsdb_runner.commit_or_rollback("Could not update network device in DSDB")
 
-            ib_services = IBServices(logger, justification=justification, **arguments)
-            if ip and ib_services.feature_enabled("network_device"):
+            if ib_services.feature_enabled("network_device"):
+                ib_new_info = ib_services.snapshot_hw_a_records(dbnetdev)
+                ib_services.bulk_change_a_ptr(ib_old_info, ib_new_info)
                 try:
-                    ib_services.update_a_ptr(str(dbnetdev.primary_name.fqdn), old_ip, ip)
+                    ib_services.group.commit_or_rollback()
                 except ProcessException as e:
                     dsdb_runner.rollback()
                     raise e

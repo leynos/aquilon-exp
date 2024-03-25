@@ -90,7 +90,8 @@ class CommandAddAlias(BrokerCommand):
             try:
                 if ib_services.assert_dns_environment(db_record.fqdn.dns_environment.name) and \
                         ib_services.assert_dns_environment(db_record.target.dns_environment.name):
-                    ib_services.add_dns_alias(str(db_record.fqdn), str(db_record.target), ttl)
+                    ib_services.add_dns_alias(db_record)
+                    ib_services.group.commit_or_rollback()
             except ProcessException as e:
                 if dsdb_runner:
                     dsdb_runner.rollback()

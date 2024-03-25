@@ -19,7 +19,11 @@
 
 import unittest
 
-from mock_ib_services import ib_expect_add_address, ib_expect_del_address, ib_expect_update_address
+from mock_ib_services import ib_expect_add_a
+from mock_ib_services import ib_expect_add_ptr
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
+from mock_ib_services import ib_expect_update_a
 
 if __name__ == "__main__":
     from . import utils
@@ -43,8 +47,9 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
                    "--machine", "ut3c5n10", "--mac", mac,
                    "--comments", "New interface comments"]
         out = self.badrequesttest(command)
-        self.dsdb_verify()
         self.matchoutput(out, "DSDB update failed", command)
+        self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because dsdb failed
 
         out = self.commandtest(["show", "host", "--hostname", self.badhost])
         self.matchoutput(out, "Interface: eth0 %s" % oldmac, command)
@@ -57,6 +62,7 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
                         "--machine", "ut3c5n10", "--mac", mac,
                         "--comments", "New interface comments"])
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because only comments changed
 
     def test_110_update_ut3c5n10_eth0_ip_bad(self):
         oldip = self.net["unknown0"].usable[0]
@@ -66,6 +72,7 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
 
         out = self.badrequesttest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because dsdb failed
         self.matchoutput(out, "Could not update machine in DSDB", command)
 
         out = self.commandtest(["show", "host", "--hostname", self.badhost])
@@ -75,7 +82,9 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
         oldip = self.net["unknown0"].usable[0]
         newip = self.net["unknown0"].usable[11]
         self.dsdb_expect_update(self.badhost, "eth0", newip)
-        ib_expect_update_address(self.badhost, oldip, new_ip=newip)
+        ib_expect_update_a(self.badhost, oldip, new_ip=newip)
+        ib_expect_del_ptr(oldip)
+        ib_expect_add_ptr(self.badhost, newip)
 
         self.noouttest(["update", "machine", "--machine", "ut3c5n10",
                         "--ip", newip])
@@ -173,6 +182,7 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
                    "--mac", mac]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because only comments changed
 
     def test_130_update_switch1(self):
         mac = self.net["ut_net_mgmt"].usable[1].mac
@@ -183,6 +193,7 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
                    "--mac", mac, "--network_device=ut3gd1r06.aqd-unittest.ms.com"]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because only comments changed
         self.check_plenary_contents('network_device', 'americas', 'ut', 'ut3gd1r06',
                                     contains=['xge49', str(mac)])
 
@@ -198,6 +209,7 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
                    "--network_device=ut3gd1r06.aqd-unittest.ms.com"]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because only comments changed
 
     def test_130_update_switch3(self):
         # This is not the primary interface, therefore updating the comments
@@ -211,6 +223,7 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
                    "--network_device=ut3gd1r04.aqd-unittest.ms.com"]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because only comments changed
 
     def test_130_update_chassis(self):
         mac = self.net["unknown0"].usable[24].mac
@@ -221,6 +234,7 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
                    "--comments", "New chassis interface comments"]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because only comments changed
 
     def test_140_fliproute1(self):
         command = ["update", "interface", "--interface", "eth0",
@@ -258,10 +272,14 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
         ip      = str(self.net["unknown1"].usable[44])
         ip_hsrp = str(self.net["unknown1"].usable[42])
 
-        ib_expect_del_address(fqdn_pre, ip)
-        ib_expect_del_address(fqdn_hsrp_pre, ip_hsrp)
-        ib_expect_add_address(fqdn_post, ip)
-        ib_expect_add_address(fqdn_hsrp_post, ip_hsrp)
+        ib_expect_del_a(fqdn_pre, ip)
+        ib_expect_del_ptr(ip)
+        ib_expect_del_a(fqdn_hsrp_pre, ip_hsrp)
+        ib_expect_del_ptr(ip_hsrp)
+        ib_expect_add_a(fqdn_post, ip)
+        ib_expect_add_ptr(fqdn_post, ip)
+        ib_expect_add_a(fqdn_hsrp_post, ip_hsrp)
+        ib_expect_add_ptr(fqdn_hsrp_post, ip_hsrp)
 
         self.dsdb_expect_rename(fqdn_pre, fqdn_post, "vlan110", "vlan220")
         self.dsdb_expect_rename(fqdn_hsrp_pre, fqdn_hsrp_post, "vlan110_hsrp", "vlan220_hsrp")
@@ -280,7 +298,8 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
                    "--interfaces", "eth0", "--name", "renametest",
                    "--service_address", "renametest-ivirt.aqd-unittest.ms.com"]
         self.dsdb_expect_add("renametest-ivirt.aqd-unittest.ms.com", ip)
-        ib_expect_add_address("renametest-ivirt.aqd-unittest.ms.com", str(ip))
+        ib_expect_add_a("renametest-ivirt.aqd-unittest.ms.com", str(ip))
+        ib_expect_add_ptr("renametest-ivirt.aqd-unittest.ms.com", str(ip))
         self.noouttest(command)
         self.dsdb_verify()
         self.ib_verify()
@@ -315,6 +334,7 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
                                 new_iface="eth1")
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because only interface name changed
 
     def test_173_verify_rename(self):
         command = ["cat", "--data", "--hostname", "ivirt11.aqd-unittest.ms.com"]
@@ -343,7 +363,8 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
         fqdn = "ivirt11.aqd-unittest.ms.com"
         ip = self.net["zebra_vip"].usable[5]
         self.dsdb_expect_delete(ip)
-        ib_expect_del_address("renametest-ivirt.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_a("renametest-ivirt.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         self.noouttest(["del_service_address", "--name", "renametest",
                         "--hostname", fqdn])
         self.dsdb_verify()

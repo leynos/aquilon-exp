@@ -22,6 +22,7 @@ from aquilon.aqdb.model import (
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.dbwrappers.dns import add_address_alias
+from aquilon.worker.ib_services import IBServices
 
 
 class CommandAddAddressAlias(BrokerCommand):
@@ -47,11 +48,13 @@ class CommandAddAddressAlias(BrokerCommand):
         cm.consider(dbtarget)
         cm.validate()
 
+        ib_services = IBServices(logger, justification=justification, **arguments)
         add_address_alias(session, logger, config=self.config,
                           dbsrcfqdn=dbfqdn,
                           dbtargetfqdn=dbtarget,
                           ttl=ttl, grn=grn, eon_id=eon_id,
                           comments=comments, exporter=exporter,
-                          flush_session=True, justification=justification, **arguments)
+                          flush_session=True, ib_services=ib_services, **arguments)
+        ib_services.group.commit_or_rollback()
 
         return

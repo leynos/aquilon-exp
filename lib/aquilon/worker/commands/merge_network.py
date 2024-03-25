@@ -26,6 +26,7 @@ from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.network import fix_foreign_links
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
+from aquilon.worker.ib_services import IBServices
 
 
 class CommandMergeNetwork(BrokerCommand):
@@ -80,13 +81,14 @@ class CommandMergeNetwork(BrokerCommand):
             session.add(dbsuper)
             plenaries.add(dbsuper)
 
+        ib_services = IBServices(logger, justification=justification, **arguments)
         for oldnet in dbnets:
             plenaries.add(oldnet)
 
             # Delete routers of the old subnets
             for dbrouter in oldnet.routers:
                 for dns_rec in dbrouter.dns_records:
-                    delete_dns_record(dns_rec, exporter=exporter)
+                    delete_dns_record(dns_rec, exporter=exporter, ib_services=ib_services)
             oldnet.routers = []
 
             fix_foreign_links(session, oldnet, dbsuper)
@@ -94,3 +96,4 @@ class CommandMergeNetwork(BrokerCommand):
 
         session.flush()
         plenaries.write()
+        ib_services.group.commit_or_rollback()

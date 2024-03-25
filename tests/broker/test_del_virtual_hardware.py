@@ -23,9 +23,10 @@ if __name__ == "__main__":
     from . import utils
     utils.import_depends()
 
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
 from .brokertest import TestBrokerCommand
 from .eventstest import EventsTestMixin
-from mock_ib_services import ib_expect_del_address
 
 
 class TestDelVirtualHardware(EventsTestMixin, TestBrokerCommand):
@@ -92,7 +93,8 @@ class TestDelVirtualHardware(EventsTestMixin, TestBrokerCommand):
     def test_140_del_utmc9_hosts(self):
         fqdn = "evm50.aqd-unittest.ms.com"
         ip = self.net["autopg2"].usable[0]
-        ib_expect_del_address(fqdn, ip)
+        ib_expect_del_a(fqdn, ip)
+        ib_expect_del_ptr(ip)
         self.dsdb_expect_delete(ip)
         command = ["del", "host", "--hostname", fqdn]
         self.statustest(command)

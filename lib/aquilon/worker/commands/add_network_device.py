@@ -66,10 +66,11 @@ class CommandAddNetworkDevice(BrokerCommand):
         elif slot is not None:
             raise ArgumentError("The --slot option requires a --chassis.")
 
+        ib_services = IBServices(logger, justification=justification, **arguments)
         dbdns_rec, _ = grab_address(session, network_device, ip,
                                     allow_restricted_domain=True,
                                     allow_reserved=True, preclude=True,
-                                    exporter=exporter, require_grn=False)
+                                    exporter=exporter, require_grn=False, ib_services=ib_services)
         if not label:
             label = dbdns_rec.fqdn.name
             try:
@@ -140,10 +141,9 @@ class CommandAddNetworkDevice(BrokerCommand):
             dsdb_runner.update_host(dbnetdev, None)
             dsdb_runner.commit_or_rollback("Could not add network device to DSDB")
 
-            ib_services = IBServices(logger, justification=justification, **arguments)
-            if f_type(dbdns_rec) == ARecord and ib_services.feature_enabled("network_device"):
+            if ib_services.feature_enabled("network_device"):
                 try:
-                    ib_services.add_a_ptr(str(dbdns_rec.fqdn), ip)
+                    ib_services.group.commit_or_rollback()
                 except ProcessException as e:
                     dsdb_runner.rollback()
                     raise e

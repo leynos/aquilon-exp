@@ -37,11 +37,12 @@ class CommandAddRouterAddress(BrokerCommand):
         else:
             dbbuilding = None
 
-        (dbdns_rec, newly_created) = grab_address(session, fqdn, ip,
-                                                  network_environment,
-                                                  exporter=exporter,
-                                                  router=True,
-                                                  require_grn=False)
+        ib_services = IBServices(logger, justification=justification, **arguments)
+        dbdns_rec, _ = grab_address(session, fqdn, ip,
+                                    network_environment,
+                                    exporter=exporter,
+                                    router=True,
+                                    require_grn=False, ib_services=ib_services)
         if not ip:
             ip = dbdns_rec.ip
 
@@ -77,6 +78,5 @@ class CommandAddRouterAddress(BrokerCommand):
         plenaries.add(dbnetwork)
 
         with plenaries.transaction():
-            ib_services = IBServices(logger, justification=justification, **arguments)
-            if newly_created and ib_services.feature_enabled("router_address"):
-                ib_services.add_a_ptr(str(dbdns_rec.fqdn), ip)
+            if ib_services.feature_enabled("router_address"):
+                ib_services.group.commit_or_rollback()

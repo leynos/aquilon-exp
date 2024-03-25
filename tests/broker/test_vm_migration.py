@@ -23,8 +23,10 @@ if __name__ == "__main__":
     from . import utils
     utils.import_depends()
 
+from mock_ib_services import ib_expect_add_ptr
+from mock_ib_services import ib_expect_del_ptr
+from mock_ib_services import ib_expect_update_a
 from .brokertest import TestBrokerCommand
-from mock_ib_services import ib_expect_update_address
 
 
 class TestVMMigration(TestBrokerCommand):
@@ -177,7 +179,9 @@ class TestVMMigration(TestBrokerCommand):
         new_ip = self.net["autopg1"].usable[0]
         fqdn = "evm50.aqd-unittest.ms.com"
         self.dsdb_expect_update(fqdn, "eth0", new_ip)
-        ib_expect_update_address(fqdn, old_ip, new_ip=new_ip)
+        ib_expect_update_a(fqdn, old_ip, new_ip=new_ip)
+        ib_expect_del_ptr(old_ip)
+        ib_expect_add_ptr(fqdn, new_ip)
         command = ["update_machine", "--machine", "evm50",
                    "--cluster", "utecl13", "--allow_metacluster_change",
                    "--remap_disk", "filesystem/utfs1:share/utmc8as1/test_v2_share",
@@ -213,7 +217,9 @@ class TestVMMigration(TestBrokerCommand):
         new_ip = self.net["autopg2"].usable[0]
         fqdn = "evm50.aqd-unittest.ms.com"
         self.dsdb_expect_update(fqdn, "eth0", new_ip)
-        ib_expect_update_address(fqdn, old_ip, new_ip=new_ip)
+        ib_expect_update_a(fqdn, old_ip, new_ip=new_ip)
+        ib_expect_del_ptr(old_ip)
+        ib_expect_add_ptr(fqdn, new_ip)
         command = ["update_machine", "--machine", "evm50",
                    "--vmhost", "evh82.aqd-unittest.ms.com",
                    "--allow_metacluster_change",

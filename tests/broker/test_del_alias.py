@@ -84,8 +84,8 @@ class TestDelAlias(EventsTestMixin, TestBrokerCommand):
                          "Alias alias.ms.com is not in DSDB, proceeding",
                          command)
         self.dsdb_verify()
-        self.events_verify()
         self.ib_verify()
+        self.events_verify()
 
     def test_230_del_alias2diff_environment_fail(self):
         command = ["del", "alias", "--fqdn", "alias2alias.aqd-unittest-ut-env.ms.com",
@@ -178,7 +178,7 @@ class TestDelAlias(EventsTestMixin, TestBrokerCommand):
         command = ["del", "alias", "--fqdn", "alias2host-grn.aqd-unittest.ms.com"]
         self.noouttest(command)
         self.dsdb_verify(empty=True)
-        self.ib_verify()
+        self.ib_verify()  # TODO Not sure why data is sent to ib but not to dsdb
 
     def test_405_verify_alias_with_grn_gone(self):
         command = ["search", "dns", "--fqdn", "alias2host-grn.aqd-unittest.ms.com"]
@@ -189,7 +189,7 @@ class TestDelAlias(EventsTestMixin, TestBrokerCommand):
         command = ["del", "alias", "--fqdn", "alias2host-eon-id.aqd-unittest.ms.com"]
         self.noouttest(command)
         self.dsdb_verify(empty=True)
-        self.ib_verify()
+        self.ib_verify()  # TODO Not sure why data is sent to ib but not to dsdb
 
     def test_415_verify_alias_with_eon_id_gone(self):
         command = ["search", "dns", "--fqdn", "alias2host-eon-id.aqd-unittest.ms.com"]

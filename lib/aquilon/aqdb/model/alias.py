@@ -66,6 +66,13 @@ class Alias(DnsRecordTargetMixin, DnsRecord):
             tlist.extend(tgt.get_alias_targets())
         return tlist
 
+    def get_dns_args(self):
+        return {
+            'name': self.fqdn,
+            'target': self.target.fqdn,
+            'ttl': -1 if self.ttl is None else self.ttl,
+        }
+
     def __init__(self, fqdn, target, **kwargs):
         self.target = target
         super(Alias, self).__init__(fqdn=fqdn, **kwargs)

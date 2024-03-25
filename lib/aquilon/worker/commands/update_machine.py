@@ -157,20 +157,16 @@ def update_interface_bindings(session, logger, dbmachine, autoip,
             new_ip = generate_ip(session, logger, dbinterface, autoip=True,
                                  network_environment=old_net.network_environment)
             for dbdns_rec in addr.dns_records:
+                ib_rollback_args = dbdns_rec.get_dns_args()
                 dbdns_rec.network = new_net
                 dbdns_rec.ip = new_ip
+                ib_services.update_a_ptr(dbdns_rec, ib_rollback_args)
 
-            old_ip = addr.ip
             addr.ip = new_ip
             addr.network = new_net
             logger.info("Changed {0:l} IP address from {1!s} to {2!s}."
-                        .format(dbinterface, old_ip, new_ip))
+                        .format(dbinterface, ib_rollback_args["ip"], new_ip))
 
-            fqdn = str(dbinterface.hardware_entity.primary_name.fqdn)
-            ib_services.group.add_action(
-                lambda: ib_services.update_a_ptr(fqdn, old_ip, new_ip=new_ip),
-                lambda: ib_services.update_a_ptr(fqdn, new_ip, new_ip=old_ip)
-            )
 
         dbinterface.check_pg_consistency(logger=logger)
 
@@ -482,14 +478,12 @@ class CommandUpdateMachine(BrokerCommand):
             dsdb_runner.update_host_details(swap_addr.fqdn,
                                             old_ip=swap_addr.ip,
                                             new_ip=temp_ip)
+            ib_rollback_args = swap_addr.get_dns_args()
             update_address(session, swap_addr, temp_ip, swap_addr.network)
             session.flush()
 
             fqdn = str(swap_addr.fqdn)
-            ib_services.group.add_action(
-                lambda: ib_services.update_a_ptr(fqdn, swap_addr.ip, new_ip=temp_ip),
-                lambda: ib_services.update_a_ptr(fqdn, temp_ip,      new_ip=swap_addr.ip)
-            )
+            ib_services.update_a_ptr(swap_addr, ib_rollback_args)
 
         if (ip or swap_ip):
             target_ip = ip if ip else swap_ip
@@ -497,22 +491,15 @@ class CommandUpdateMachine(BrokerCommand):
                 for srv in dbmachine.host.services_provided:
                     si = srv.service_instance
                     plenaries.add(si, cls=PlenaryServiceInstanceToplevel)
-            update_primary_ip(session, logger, dbmachine, target_ip)
-            swap_fqdn = str(dbmachine.primary_name.fqdn)
 
-            ib_services.group.add_action(
-                lambda: ib_services.update_a_ptr(swap_fqdn, old_ip,    new_ip=target_ip),
-                lambda: ib_services.update_a_ptr(swap_fqdn, target_ip, new_ip=old_ip)
-            )
+            ib_rollback_args = dbmachine.primary_name.get_dns_args() if dbmachine.primary_name is not None else None
+            update_primary_ip(session, logger, dbmachine, target_ip)
+            ib_services.update_a_ptr(dbmachine.primary_name, ib_rollback_args)
 
         if swap_ip:
+            ib_rollback_args = swap_addr.get_dns_args()
             update_address(session, swap_addr, old_ip, swap_addr.network)
-
-            fqdn = str(swap_addr.fqdn)
-            ib_services.group.add_action(
-                lambda: ib_services.update_a_ptr(fqdn, temp_ip, new_ip=old_ip),
-                lambda: ib_services.update_a_ptr(fqdn, old_ip,  new_ip=temp_ip)
-            )
+            ib_services.update_a_ptr(swap_addr, ib_rollback_args)
 
         if dbmachine.location != old_location and dbmachine.host:
             for vm in dbmachine.host.virtual_machines:

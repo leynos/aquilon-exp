@@ -23,9 +23,11 @@ if __name__ == "__main__":
     from . import utils
     utils.import_depends()
 
+from mock_ib_services import ib_expect_add_ptr
+from mock_ib_services import ib_expect_del_ptr
+from mock_ib_services import ib_expect_update_a
 from .brokertest import TestBrokerCommand
 from .netdevtest import VerifyNetworkDeviceMixin
-from mock_ib_services import ib_expect_update_address
 
 
 class TestUpdateNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
@@ -34,7 +36,9 @@ class TestUpdateNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
         newip = self.net["ut10_eth1"].usable[1]
         self.dsdb_expect_update("ut3gd1r04.aqd-unittest.ms.com", "xge49", newip,
                                 comments="Some new switch comments")
-        ib_expect_update_address("ut3gd1r04.aqd-unittest.ms.com", "4.2.9.8", new_ip=str(newip))
+        ib_expect_update_a("ut3gd1r04.aqd-unittest.ms.com", "4.2.9.8", new_ip=str(newip))
+        ib_expect_del_ptr("4.2.9.8")
+        ib_expect_add_ptr("ut3gd1r04.aqd-unittest.ms.com", str(newip))
         command = ["update", "network_device", "--type", "bor",
                    "--network_device", "ut3gd1r04.aqd-unittest.ms.com",
                    "--ip", newip, "--model", "uttorswitch",
@@ -91,6 +95,7 @@ class TestUpdateNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
                    "--comments", "LANWAN"]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because only comments changed
 
     def test_115_verify_ut3gd1r05(self):
         self.verifynetdev("ut3gd1r05.aqd-unittest.ms.com", "hp", "uttorswitch",
@@ -110,18 +115,22 @@ class TestUpdateNetworkDevice(TestBrokerCommand, VerifyNetworkDeviceMixin):
                           switch_type='tor',
                           ip=ip, mac=mac, interface="xge49")
         self.dsdb_verify()
+        self.ib_verify(empty=True)  # No IB requests because no FQDN/IP change
         self.check_plenary_contents('network_device', 'americas', 'ut', 'ut3gd1r06',
                                     contains=str(mac))
 
     def test_122_update_with_interface(self):
         newip = self.net["ut_net_mgmt"].usable[4]
         self.dsdb_expect_update("ut3gd1r06.aqd-unittest.ms.com", "xge49", newip)
-        ib_expect_update_address("ut3gd1r06.aqd-unittest.ms.com", "4.2.9.134", new_ip=str(newip))
+        ib_expect_update_a("ut3gd1r06.aqd-unittest.ms.com", "4.2.9.134", new_ip=str(newip))
+        ib_expect_del_ptr("4.2.9.134")
+        ib_expect_add_ptr("ut3gd1r06.aqd-unittest.ms.com", str(newip))
         command = ["update", "network_device",
                    "--network_device", "ut3gd1r06.aqd-unittest.ms.com",
                    "--ip", newip]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify()
 
     def test_125_verify_ut3gd1r06(self):
         self.verifynetdev("ut3gd1r06.aqd-unittest.ms.com", "generic",

@@ -50,7 +50,7 @@ class CommandUpdateConsoleServer(BrokerCommand):
         if serial is not None:
             dbcons.serial_no = serial
 
-        old_ip = dbcons.primary_name.ip
+        rollback_infoblox_args = dbcons.primary_name.get_dns_args()
         if ip:
             update_primary_ip(session, logger, dbcons, ip)
 
@@ -69,8 +69,9 @@ class CommandUpdateConsoleServer(BrokerCommand):
 
         ib_services = IBServices(logger, justification=justification, **arguments)
         if ip and ib_services.feature_enabled("console_server"):
+            ib_services.update_a_ptr(dbcons.primary_name, rollback_infoblox_args)
             try:
-                ib_services.update_a_ptr(str(dbcons.primary_name.fqdn), old_ip, ip)
+                ib_services.group.commit_or_rollback()
             except ProcessException as e:
                 dsdb_runner.rollback()
                 raise e

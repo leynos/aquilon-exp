@@ -19,7 +19,8 @@
 
 import unittest
 
-from mock_ib_services import ib_expect_add_address
+from mock_ib_services import ib_expect_add_a
+from mock_ib_services import ib_expect_add_ptr
 
 if __name__ == '__main__':
     from . import utils
@@ -50,7 +51,8 @@ class TestAddNSRecord(TestBrokerCommand):
 
     def test_101_add_a_record_grn(self):
         self.dsdb_expect_add(NAME, self.IP)
-        ib_expect_add_address(NAME, self.IP, justification=self.valid_justification)
+        ib_expect_add_a(NAME, self.IP, justification=self.valid_justification)
+        ib_expect_add_ptr(NAME, self.IP, justification=self.valid_justification)
         cmd = ['add', 'address', '--fqdn', NAME, '--ip', self.IP,
                '--grn', GRN] + self.valid_just_tcm
         self.noouttest(cmd)

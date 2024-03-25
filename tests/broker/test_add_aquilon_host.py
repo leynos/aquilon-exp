@@ -23,10 +23,13 @@ if __name__ == "__main__":
     from . import utils
     utils.import_depends()
 
+from mock_ib_services import ib_expect_add_a
+from mock_ib_services import ib_expect_add_ptr
+from mock_ib_services import ib_expect_del_ptr
+from mock_ib_services import ib_expect_update_ptr
 from .eventstest import EventsTestMixin
 from .brokertest import TestBrokerCommand
 from .dnstest import inaddr_ptr
-from mock_ib_services import ib_expect_add_address, ib_expect_update_address
 
 # TODO: this file should be merged into test_add_host.py
 
@@ -35,7 +38,8 @@ class TestAddAquilonHost(EventsTestMixin, TestBrokerCommand):
     def test_100_add_unittest00(self):
         ip = self.net["unknown0"].usable[2]
         fqdn = "unittest00.one-nyp.ms.com"
-        ib_expect_add_address(fqdn, ip)
+        ib_expect_add_a(fqdn, ip)
+        ib_expect_add_ptr(fqdn, ip)
         self.dsdb_expect_add(fqdn, ip, "eth0", ip.mac)
         self.noouttest(["add", "host", "--archetype", "aquilon",
                         "--hostname", "unittest00.one-nyp.ms.com", "--ip", ip,
@@ -94,7 +98,8 @@ class TestAddAquilonHost(EventsTestMixin, TestBrokerCommand):
     def test_110_add_unittest12(self):
         ip = self.net["unknown0"].usable[7]
         fqdn = "unittest12.aqd-unittest.ms.com"
-        ib_expect_add_address(fqdn, ip)
+        ib_expect_add_a(fqdn, ip)
+        ib_expect_add_ptr(fqdn, ip)
         self.dsdb_expect_add(fqdn, ip, "eth0", ip.mac)
         self.noouttest(["add", "host", "--archetype", "aquilon",
                         "--hostname", "unittest12.aqd-unittest.ms.com",
@@ -149,6 +154,7 @@ class TestAddAquilonHost(EventsTestMixin, TestBrokerCommand):
                    "--interface", "eth1", "--fqdn", fqdn]
         self.noouttest(command)
         self.dsdb_verify()
+        self.ib_verify(empty=True)
 
     def test_132_add_unittest20_rollback(self):
         "Test rollback when IB Services call fails"
@@ -163,12 +169,12 @@ class TestAddAquilonHost(EventsTestMixin, TestBrokerCommand):
         self.dsdb_expect_add(eth1_fqdn, eth1_ip, "eth1",
                              eth1_ip.mac, primary=fqdn)
 
-        ib_expect_update_address(eth1_fqdn, eth1_ip, reverse_ptr=fqdn)
-        ib_expect_add_address(fqdn, ip, reverse_ptr=None, fail=True)
+        ib_expect_update_ptr(eth1_ip, fqdn)
+        ib_expect_add_a(fqdn, ip, fail=True)
 
         # This is the IB rollback.  Only the first update needs to be rolled back
         # as the add was forced to fail (so didn't happen).
-        ib_expect_update_address(eth1_fqdn, eth1_ip, reverse_ptr=None)
+        ib_expect_update_ptr(eth1_ip, eth1_fqdn)
 
         self.failuretest(["add", "host", "--archetype", "aquilon",
                         "--hostname", fqdn,
@@ -230,8 +236,9 @@ class TestAddAquilonHost(EventsTestMixin, TestBrokerCommand):
         self.dsdb_expect_delete(eth1_ip)
         self.dsdb_expect_add(eth1_fqdn, eth1_ip, "eth1",
                              eth1_ip.mac, primary=fqdn)
-        ib_expect_update_address(eth1_fqdn, eth1_ip, reverse_ptr=fqdn)
-        ib_expect_add_address(fqdn, ip, reverse_ptr=None)
+        ib_expect_update_ptr(eth1_ip, fqdn)
+        ib_expect_add_a(fqdn, ip)
+        ib_expect_add_ptr(fqdn, ip)
         self.noouttest(["add", "host", "--archetype", "aquilon",
                         "--hostname", fqdn,
                         "--ip", ip, "--zebra_interfaces", "eth0,eth1",
@@ -309,7 +316,8 @@ class TestAddAquilonHost(EventsTestMixin, TestBrokerCommand):
     def test_140_add_unittest21(self):
         ip = self.net["zebra_eth0"].usable[1]
         fqdn = "unittest21.aqd-unittest.ms.com"
-        ib_expect_add_address(fqdn, ip)
+        ib_expect_add_a(fqdn, ip)
+        ib_expect_add_ptr(fqdn, ip)
         self.dsdb_expect_add(fqdn, ip, "bond0")
         self.noouttest(["add", "host", "--archetype", "aquilon",
                         "--hostname", "unittest21.aqd-unittest.ms.com",
@@ -346,7 +354,8 @@ class TestAddAquilonHost(EventsTestMixin, TestBrokerCommand):
     def test_150_add_unittest22(self):
         ip = self.net["zebra_eth0"].usable[2]
         fqdn = "unittest22.aqd-unittest.ms.com"
-        ib_expect_add_address(fqdn, ip)
+        ib_expect_add_a(fqdn, ip)
+        ib_expect_add_ptr(fqdn, ip)
         self.dsdb_expect_add(fqdn, ip, "br0")
         self.noouttest(["add", "host", "--archetype", "aquilon",
                         "--hostname", "unittest22.aqd-unittest.ms.com",
@@ -382,7 +391,8 @@ class TestAddAquilonHost(EventsTestMixin, TestBrokerCommand):
     def test_160_add_unittest23(self):
         ip = self.net["vpls"].usable[1]
         fqdn = "unittest23.aqd-unittest.ms.com"
-        ib_expect_add_address(fqdn, ip)
+        ib_expect_add_a(fqdn, ip)
+        ib_expect_add_ptr(fqdn, ip)
         self.dsdb_expect_add(fqdn, ip, "eth0", ip.mac)
         self.noouttest(["add", "host", "--archetype", "aquilon",
                         "--hostname", "unittest23.aqd-unittest.ms.com",
@@ -395,7 +405,8 @@ class TestAddAquilonHost(EventsTestMixin, TestBrokerCommand):
     def test_161_add_unittest24(self):
         ip = self.net["vpls"].usable[2]
         fqdn = "unittest24.one-nyp.ms.com"
-        ib_expect_add_address(fqdn, ip)
+        ib_expect_add_a(fqdn, ip)
+        ib_expect_add_ptr(fqdn, ip)
         self.dsdb_expect_add(fqdn, ip, "eth0", ip.mac)
         self.noouttest(["add", "host", "--archetype", "aquilon",
                         "--hostname", "unittest24.one-nyp.ms.com",
@@ -408,7 +419,8 @@ class TestAddAquilonHost(EventsTestMixin, TestBrokerCommand):
     def test_162_add_unittest25(self):
         ip = self.net["unknown0"].usable[20]
         fqdn = "unittest25.aqd-unittest.ms.com"
-        ib_expect_add_address(fqdn, ip)
+        ib_expect_add_a(fqdn, ip)
+        ib_expect_add_ptr(fqdn, ip)
         self.dsdb_expect_add(fqdn, ip, "eth0", ip.mac)
         self.noouttest(["add", "host", "--archetype", "aquilon",
                         "--hostname", "unittest25.aqd-unittest.ms.com",
@@ -421,7 +433,8 @@ class TestAddAquilonHost(EventsTestMixin, TestBrokerCommand):
     def test_163_add_unittest26(self):
         ip = self.net["unknown0"].usable[23]
         fqdn = "unittest26.aqd-unittest.ms.com"
-        ib_expect_add_address(fqdn, ip)
+        ib_expect_add_a(fqdn, ip)
+        ib_expect_add_ptr(fqdn, ip)
         self.dsdb_expect_add(fqdn, ip, "eth0", ip.mac)
         self.noouttest(["add", "host", "--archetype", "aquilon",
                         "--hostname", "unittest26.aqd-unittest.ms.com",

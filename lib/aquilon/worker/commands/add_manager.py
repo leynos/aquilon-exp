@@ -66,9 +66,10 @@ class CommandAddManager(BrokerCommand):
         ip = generate_ip(session, logger, dbinterface, compel=True,
                          audit_results=audit_results, **arguments)
 
+        ib_services = IBServices(logger, justification=justification, **arguments)
         dbdns_rec, _ = grab_address(session, manager, ip, comments=comments,
                                     preclude=True, exporter=exporter,
-                                    require_grn=False)
+                                    require_grn=False, ib_services=ib_services)
 
         assign_address(dbinterface, ip, dbdns_rec.network, logger=logger)
 
@@ -80,10 +81,9 @@ class CommandAddManager(BrokerCommand):
             dsdb_runner.update_host(dbmachine, oldinfo)
             dsdb_runner.commit_or_rollback("Could not add host to DSDB")
 
-            ib_services = IBServices(logger, justification=justification, **arguments)
             if ib_services.feature_enabled("manager"):
                 try:
-                    ib_services.add_a_ptr(manager, ip)
+                    ib_services.group.commit_or_rollback()
                 except ProcessException as e:
                     dsdb_runner.rollback()
                     raise e

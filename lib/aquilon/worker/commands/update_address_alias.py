@@ -62,14 +62,17 @@ class CommandUpdateAddressAlias(BrokerCommand):
             update_grn = True
 
         # Validate ChangeManagement
+        ib_services = IBServices(logger, justification=justification, **arguments)
         cm = ChangeManagement(session, user, justification, reason, logger, self.command, **arguments)
         for dbaddr_alias in dbdns_records:
             cm.consider(dbaddr_alias.target)
 
+            ib_rollback = dbaddr_alias.get_dns_args()
             if ttl is not None:
                 dbaddr_alias.ttl = ttl
             elif clear_ttl:
                 dbaddr_alias.ttl = None
+            ib_services.update_a_ptr(dbaddr_alias, ib_rollback)
 
             if update_grn:
                 dbaddr_alias.owner_grn = dbgrn
@@ -79,12 +82,9 @@ class CommandUpdateAddressAlias(BrokerCommand):
 
         cm.validate()
 
-        ib_services = IBServices(logger, justification=justification, **arguments)
-        if ib_services.feature_enabled("address_alias") and ttl:
+        if ib_services.feature_enabled("address_alias"):
             try:
-                for dns_rec in dbdns_records:
-                    if ib_services.assert_dns_environment(dns_rec.fqdn.dns_environment.name):
-                        ib_services.update_a(str(dns_rec), dns_rec.target_ip, new_ttl=ttl)
+                ib_services.group.commit_or_rollback()
             except ProcessException as e:
                 raise e
 

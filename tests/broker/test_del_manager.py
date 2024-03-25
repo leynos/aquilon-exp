@@ -23,15 +23,17 @@ if __name__ == "__main__":
     from . import utils
     utils.import_depends()
 
+from mock_ib_services import ib_expect_del_a
+from mock_ib_services import ib_expect_del_ptr
 from .brokertest import TestBrokerCommand
-from mock_ib_services import ib_expect_del_address
 
 
 class TestDelManager(TestBrokerCommand):
 
     def test_100_del_unittest00r(self):
         ip = self.net["unknown0"].usable[4]
-        ib_expect_del_address("unittest00r.one-nyp.ms.com", str(ip))
+        ib_expect_del_a("unittest00r.one-nyp.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         self.dsdb_expect_delete(ip)
         command = "del manager --manager unittest00r.one-nyp.ms.com"
         self.statustest(command.split(" "))
@@ -54,7 +56,8 @@ class TestDelManager(TestBrokerCommand):
 
     def test_110_del_unittest02rsa(self):
         ip = self.net["unknown0"].usable[9]
-        ib_expect_del_address("unittest02rsa.one-nyp.ms.com", str(ip))
+        ib_expect_del_a("unittest02rsa.one-nyp.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         self.dsdb_expect_delete(ip)
         command = "del manager --manager unittest02rsa.one-nyp.ms.com"
         self.statustest(command.split(" "))
@@ -67,7 +70,8 @@ class TestDelManager(TestBrokerCommand):
 
     def test_120_del_unittest12r(self):
         ip = self.net["unknown0"].usable[8]
-        ib_expect_del_address("unittest12r.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_a("unittest12r.aqd-unittest.ms.com", str(ip))
+        ib_expect_del_ptr(str(ip))
         self.dsdb_expect_delete(ip)
         command = "del manager --manager unittest12r.aqd-unittest.ms.com"
         self.statustest(command.split(" "))
