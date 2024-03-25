@@ -30,7 +30,7 @@ except ImportError:
 else:
     ms.version.addpkg('setuptools', '46.1.3')
     ms.version.addpkg('protobuf', '4.23.1')
-    ms.version.addpkg('zope.interface', '4.6.0-py37')
+    ms.version.addpkg('zope.interface', '4.6.0')
     ms.version.addpkg('twisted', '21.2.0')
     ms.version.addpkg('incremental', '16.10.1')
     ms.version.addpkg('Automat', '20.2.0')
@@ -42,7 +42,7 @@ else:
     ms.version.addpkg('pbr', '5.4.4')
     ms.version.addpkg('prettytable', '1.0.1')
     ms.version.addpkg('constantly', '15.1.0')
-    ms.version.addpkg('coverage', '5.3.1-py37')
+    ms.version.addpkg('coverage', '5.3.1')
     ms.version.addpkg('ipaddress', '1.0.23')
     ms.version.addpkg('mako', '1.0.7')
     ms.version.addpkg('pure-cdb', '3.1.0')
@@ -50,7 +50,7 @@ else:
     ms.version.addpkg('jsonschema', '3.2.0')
     ms.version.addpkg("ms.directory", "4.0.0")
     ms.version.addpkg('attrs', '20.3.0')
-    ms.version.addpkg('pyrsistent', '0.15.7-py37')
+    ms.version.addpkg('pyrsistent', '0.15.7')
     ms.version.addpkg('decorator', '5.1.1')
     ms.version.addpkg('requests-gssapi', '1.2.3')
     ms.version.addpkg('gssapi', '1.8.2')
@@ -65,5 +65,5 @@ else:
     ms.version.addpkg("requests-kerberos", "0.14.0")
     ms.version.addpkg("kerberos", "1.3.1-1.16")
     ms.version.addpkg("cffi", "1.15.1")
-    ms.version.addpkg("orjson", "3.6.3-py37")
+    ms.version.addpkg("orjson", "3.6.3")
     ms.version.addpkg("krb5", "0.4.0")  # Required by HTTPKerberosAuth used in infoblox integration
