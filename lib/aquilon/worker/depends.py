@@ -49,6 +49,8 @@ else:
     ms.version.addpkg('six', '1.16.0')
     ms.version.addpkg('jsonschema', '3.2.0')
     ms.version.addpkg("ms.directory", "4.0.0")
+    ms.version.addpkg("ldap3", "2.9.1")
+    ms.version.addpkg("pyasn1", "0.5.0")
     ms.version.addpkg('attrs', '20.3.0')
     ms.version.addpkg('pyrsistent', '0.15.7')
     ms.version.addpkg('decorator', '5.1.1')
