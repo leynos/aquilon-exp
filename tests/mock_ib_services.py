@@ -406,6 +406,10 @@ def get_aq_dns_data():
                 if record_domain in restricted_domain_names:
                     continue
 
+                # Ignore A records of dynamic ranges (dynamic range dns entries are not sent to infoblox)
+                if record.fqdn[:8] == 'dynamic-':
+                    continue
+
                 # Ignore A-records of aurora hosts because they should not be sent to infoblox
                 if record.fqdn in aurora_fqdns and rdata.target in aurora_ips:
                     continue
@@ -413,7 +417,11 @@ def get_aq_dns_data():
                 # Ignore PTR records of aurora hosts
                 # this expression converts "D.C.B.A.in-addr.arpa" to "A.B.C.D"
                 ip_address = ".".join(record.fqdn.replace(".in-addr.arpa", "").split(".")[::-1])
-                if ip_address in aurora_ips and record.rdata[0].target in aurora_fqdns:
+                if ip_address in aurora_ips and rdata.target in aurora_fqdns:
+                    continue
+
+                # Ignore PTR records of dynamic ranges (dynamic range dns entries are not sent to infoblox)
+                if rdata.target[:8] == 'dynamic-':
                     continue
 
             rdata.ClearField('target_environment_name')

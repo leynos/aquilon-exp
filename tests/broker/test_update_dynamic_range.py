@@ -21,8 +21,6 @@ from ipaddress import ip_address, IPv4Address
 import re
 import unittest
 
-from mock_ib_services import ib_expect_add_a
-from mock_ib_services import ib_expect_add_ptr
 from mock_ib_services import ib_expect_add_range
 from mock_ib_services import ib_expect_del_range
 from mock_ib_services import ib_expect_show_range
@@ -56,8 +54,6 @@ class TestUpdateDynamicRange(TestBrokerCommand):
             self.dsdb_expect_add(hostname, address)
             messages.append("DSDB: add_host -host_name %s -ip_address %s "
                             "-status aq" % (hostname, address))
-            ib_expect_add_a(hostname, str(address), justification=self.valid_justification)
-            ib_expect_add_ptr(hostname, str(address), justification=self.valid_justification)
 
         command = ["add_dynamic_range",
                    "--startip=%s" % startip,

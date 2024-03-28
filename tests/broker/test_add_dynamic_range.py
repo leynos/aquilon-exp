@@ -19,11 +19,7 @@
 
 import unittest
 
-from mock_ib_services import ib_expect_add_a
-from mock_ib_services import ib_expect_add_ptr
 from mock_ib_services import ib_expect_add_range
-from mock_ib_services import ib_expect_del_a
-from mock_ib_services import ib_expect_del_ptr
 
 if __name__ == "__main__":
     from . import utils
@@ -62,8 +58,6 @@ class TestAddDynamicRange(TestBrokerCommand):
             self.dsdb_expect_add(hostname, address)
             messages.append("DSDB: add_host -host_name %s -ip_address %s "
                             "-status aq" % (hostname, address))
-            ib_expect_add_a(hostname, str(address), justification=self.valid_justification)
-            ib_expect_add_ptr(hostname, str(address), justification=self.valid_justification)
 
         command = ["add_dynamic_range",
                    "--startip=%s" % startip,
@@ -85,8 +79,6 @@ class TestAddDynamicRange(TestBrokerCommand):
             self.dsdb_expect_add(hostname, address)
             messages.append("DSDB: add_host -host_name %s -ip_address %s "
                             "-status aq" % (hostname, address))
-            ib_expect_add_a(hostname, str(address), justification=self.valid_justification)
-            ib_expect_add_ptr(hostname, str(address), justification=self.valid_justification)
 
         range_class = "vm"
 
@@ -229,8 +221,6 @@ class TestAddDynamicRange(TestBrokerCommand):
         ib_expect_add_range("dynamic-{}-{}".format(ip_s, ip_s), ip_s, ip_s, justification=self.valid_justification)
         hostname = self.dynname(ip)
         self.dsdb_expect_add(hostname, ip)
-        ib_expect_add_a(hostname, ip_s, justification=self.valid_justification)
-        ib_expect_add_ptr(hostname, ip_s, justification=self.valid_justification)
         command = ["add_dynamic_range", "--startip", ip, "--endip", ip,
                    "--range_class", "infoblox_managed",
                    "--dns_domain=aqd-unittest.ms.com"] + self.valid_just_tcm
@@ -254,8 +244,6 @@ class TestAddDynamicRange(TestBrokerCommand):
             self.dsdb_expect_add(hostname, address)
             messages.append("DSDB: add_host -host_name %s -ip_address %s "
                             "-status aq" % (hostname, address))
-            ib_expect_add_a(hostname, str(address), justification=self.valid_justification)
-            ib_expect_add_ptr(hostname, str(address), justification=self.valid_justification)
 
         command = ["add_dynamic_range",
                    "--fillnetwork", self.net["dyndhcp3"].ip] + self.valid_just_tcm
@@ -304,8 +292,6 @@ class TestAddDynamicRange(TestBrokerCommand):
         ip = str(net.usable[5])
         hostname = self.dynname(ip, domain="one-nyp.ms.com")
 
-        ib_expect_del_a(hostname, ip, justification=self.valid_justification)
-        ib_expect_del_ptr(ip, justification=self.valid_justification)
         self.dsdb_expect_delete(ip)
         command = ["del_dynamic_range", "--start", ip, "--end", ip] + self.valid_just_tcm
         self.statustest(command)
@@ -346,7 +332,7 @@ class TestAddDynamicRange(TestBrokerCommand):
                    "--dns_domain", "aqd-unittest.ms.com"] + self.valid_just_tcm
         out = self.badrequesttest(command)
         self.dsdb_verify()
-        self.ib_verify(empty=True)  # TODO, this seems wrong, why are requests being made to DSDB but not IB ?
+        self.ib_verify(empty=True)  # No requests sent to IB because DSDB failed
         self.matchoutput(out, "Could not add addresses to DSDB", command)
 
     def test_200_different_networks(self):
