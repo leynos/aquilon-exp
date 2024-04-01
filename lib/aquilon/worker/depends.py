@@ -30,7 +30,6 @@ except ImportError:
 else:
     ms.version.addpkg('setuptools', '46.1.3')
     ms.version.addpkg('protobuf', '4.23.1')
-    ms.version.addpkg('zope.interface', '4.6.0')
     ms.version.addpkg('twisted', '21.2.0')
     ms.version.addpkg('incremental', '16.10.1')
     ms.version.addpkg('Automat', '20.2.0')
@@ -69,3 +68,11 @@ else:
     ms.version.addpkg("cffi", "1.15.1")
     ms.version.addpkg("orjson", "3.6.3")
     ms.version.addpkg("krb5", "0.4.0")  # Required by HTTPKerberosAuth used in infoblox integration
+
+
+import sys
+import ms.version
+if sys.version_info >= (3, 9):
+    ms.version.addpkg('zope.interface', '6.0-ms1')
+else:
+    ms.version.addpkg('zope.interface', '5.2.0')
