@@ -41,7 +41,6 @@ else:
     ms.version.addpkg('pbr', '5.4.4')
     ms.version.addpkg('prettytable', '1.0.1')
     ms.version.addpkg('constantly', '15.1.0')
-    ms.version.addpkg('coverage', '5.3.1')
     ms.version.addpkg('ipaddress', '1.0.23')
     ms.version.addpkg('mako', '1.0.7')
     ms.version.addpkg('pure-cdb', '3.1.0')
@@ -51,7 +50,6 @@ else:
     ms.version.addpkg("ldap3", "2.9.1")
     ms.version.addpkg("pyasn1", "0.5.0")
     ms.version.addpkg('attrs', '20.3.0')
-    ms.version.addpkg('pyrsistent', '0.15.7')
     ms.version.addpkg('decorator', '5.1.1')
     ms.version.addpkg('requests-gssapi', '1.2.3')
     ms.version.addpkg('gssapi', '1.8.2')
@@ -66,13 +64,19 @@ else:
     ms.version.addpkg("requests-kerberos", "0.14.0")
     ms.version.addpkg("kerberos", "1.3.1-1.16")
     ms.version.addpkg("cffi", "1.15.1")
-    ms.version.addpkg("orjson", "3.6.3")
-    ms.version.addpkg("krb5", "0.4.0")  # Required by HTTPKerberosAuth used in infoblox integration
 
 
 import sys
 import ms.version
 if sys.version_info >= (3, 9):
     ms.version.addpkg('zope.interface', '6.0-ms1')
+    ms.version.addpkg('coverage', '7.2.7-ms1')
+    ms.version.addpkg('pyrsistent', '0.19.3')
+    ms.version.addpkg("orjson", "3.8.8")
+    ms.version.addpkg("krb5", "0.4.1-1.16") # Required by HTTPKerberosAuth used in infoblox integration
 else:
     ms.version.addpkg('zope.interface', '5.2.0')
+    ms.version.addpkg('coverage', '6.5.0')
+    ms.version.addpkg('pyrsistent', '0.15.7')
+    ms.version.addpkg("orjson", "3.6.3")
+    ms.version.addpkg("krb5", "0.4.0") # Required by HTTPKerberosAuth used in infoblox integration
