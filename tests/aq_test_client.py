@@ -15,7 +15,7 @@ class AqTestClient():
     config = Config()
 
     def runcommand(self, command, auth=True, **kwargs):
-        aq = os.path.join(self.config.get("broker", "srcdir"), "bin", "aq.py")
+        aq = os.path.join(self.config.get("broker", "srcdir"), "../install/common/bin", "aq")
         if auth:
             port = self.config.get("broker", "kncport")
         else:
