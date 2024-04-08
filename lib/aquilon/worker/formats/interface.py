@@ -135,6 +135,7 @@ class InterfaceFormatter(ObjectFormatter):
     def fill_proto(self, interface, skeleton, embedded=True,
                    indirect_attrs=True):
         skeleton.bootable = interface.bootable
+        skeleton.default_route = interface.default_route
 
         if interface.mac:
             skeleton.mac = str(interface.mac)

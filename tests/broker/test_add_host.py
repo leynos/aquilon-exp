@@ -661,6 +661,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         # There's no detailed information for phys machines
         self.assertEqual(ifaces["eth1"].port_group_usage, "")
         self.assertEqual(ifaces["eth1"].port_group_tag, 0)
+        self.assertEqual(ifaces["eth1"].default_route, False)
 
     def test_325_verify_cat_ut11s01p1(self):
         command = "cat --machine ut11s01p1"

@@ -289,6 +289,9 @@ class TestAddAquilonHost(EventsTestMixin, TestBrokerCommand):
                         "Existing resources: %s" %
                         ", ".join("%s %s" % (res.type, res.name)
                                   for res in host.resources))
+        ifaces = {iface.device: iface for iface in host.machine.interfaces}
+        self.assertEqual(ifaces["eth0"].default_route, True)
+        self.assertEqual(ifaces["eth1"].default_route, True)
 
     def test_135_verify_unittest20_service(self):
         ip = self.net["zebra_vip"].usable[2]
