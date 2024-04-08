@@ -591,7 +591,8 @@ if __name__ == "__main__":
         elif msg.find(b'Unknown host') >= 0:
             print("%s: Unknown host." % host_failed, file=sys.stderr)
         else:
-            print(f"Error: {repr(e)}: {msg}", file=sys.stderr)
+            err_msg = msg.decode() if isinstance(msg, bytes) else msg
+            print(f"Error: {repr(e)}: {err_msg}", file=sys.stderr)
         sys.exit(1)
 
     if int(res.headers.get("Content-Length", 0)) < MAXAMOUNT:

@@ -368,7 +368,7 @@ class TestCompile(VerifyNotificationsMixin, TestBrokerCommand):
 
     def test_700_aqcompile(self):
         aqcompile = os.path.join(self.config.get("broker", "srcdir"),
-                                 "bin", "aq_compile.py")
+                                 "../install/common/bin", "aq_compile")
         basedir = self.config.get("broker", "quattordir")
         templates = os.path.join(self.sandboxdir, "utsandbox")
         # Make sure aq_compile uses the same panc.jar as the rest of the tests

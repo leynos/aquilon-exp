@@ -21,15 +21,15 @@ if [ -z "$AQDCONF" ] ; then
 	export AQDCONF
 fi
 
-BASEDIR=`$STARTDIR/../bin/aqd_config.py --get broker.basedir`
+BASEDIR=`$STARTDIR/../../install/common/bin/aqd_config --get broker.basedir`
 
 if [ -z "$BASEDIR" ]; then
 	echo "Failed to determine the base directory" >&2
 	exit 1
 fi
 
-RUNDIR=`$STARTDIR/../bin/aqd_config.py --get broker.rundir`
-DSN=`$STARTDIR/../bin/aqd_config.py --get database.dsn`
+RUNDIR=`$STARTDIR/../../install/common/bin/aqd_config --get broker.rundir`
+DSN=`$STARTDIR/../../install/common/bin/aqd_config --get database.dsn`
 
 echo
 echo "Using AQDCONF = $AQDCONF"
