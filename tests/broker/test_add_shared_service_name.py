@@ -97,6 +97,24 @@ class TestAddSharedServiceName(TestBrokerCommand):
                    '--sa_aliases']
         self.successtest(command)
 
+    def test_015_verify_show_pn(self):
+        command = ['show_resourcegroup', '--resourcegroup=utvcs1ifset']
+        out = self.commandtest(command)
+        self.matchoutput(out, 'SharedServiceName: utvcs1pn1', command)
+        self.matchoutput(out, 'FQDN: addralias4.aqd-unittest.ms.com', command)
+        self.matchoutput(out, 'SA Aliases: True', command)
+
+    def test_015_verify_show_pn_proto(self):
+        command = ['show_resourcegroup', '--resourcegroup=utvcs1ifset',
+                   '--format=proto']
+        resourcegroup = self.protobuftest(command, expect=1)[0]
+        resources = {resource.name: resource for resource in resourcegroup.resourcegroup.resources
+                     if resource.name == 'utvcs1pn1'}
+        self.assertIn('utvcs1pn1', resources)
+        self.assertEqual(resources['utvcs1pn1'].type, 'shared_sn')
+        self.assertEqual(resources['utvcs1pn1'].shared_service_name.fqdn, 'addralias4.aqd-unittest.ms.com')
+        self.assertEqual(resources['utvcs1pn1'].shared_service_name.sa_aliases, True)
+
     def test_017_pn_inuse_del(self):
         # remove the above
         command = ['del_shared_service_name', '--resourcegroup=utvcs1ifset',

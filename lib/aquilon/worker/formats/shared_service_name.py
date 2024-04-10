@@ -28,5 +28,14 @@ class SharedServiceNameFormatter(ResourceFormatter):
         details.append(indent + "  SA Aliases: %s" % pn.sa_aliases)
         return details
 
+    def fill_proto(self, pn, skeleton, embedded=True, indirect_attrs=True):
+        if hasattr(skeleton, 'shared_service_name'):
+            # When working on a Resource and not directly on a SharedServiceName
+            super(SharedServiceNameFormatter, self).fill_proto(pn, skeleton)
+            skeleton = skeleton.shared_service_name
+
+        skeleton.fqdn = str(pn.fqdn)
+        skeleton.sa_aliases = pn.sa_aliases
+
 
 ObjectFormatter.handlers[SharedServiceName] = SharedServiceNameFormatter()
