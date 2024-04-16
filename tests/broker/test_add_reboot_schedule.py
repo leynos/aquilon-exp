@@ -234,6 +234,8 @@ class TestAddRebootSchedule(TestBrokerCommand):
         last_entry = json.loads(self.tail_file(cmlogfile))
         self.assertEqual(last_entry["requestor"], "anotheruser2")
         self.assertEqual(last_entry["reason"], "txid:aa1a76e6-b0b5-11ee-85b8-00505601c099 obo:anotheruser2")
+        self.assertIsInstance(last_entry["eonid"], int)
+        self.assertIsNot(last_entry["eonid"], 6980)  # default in ChangeManagement class
 
     def test_301_make_server3(self):
         command = ["make", "--hostname=server3.aqd-unittest.ms.com"]

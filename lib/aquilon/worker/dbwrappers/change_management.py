@@ -233,10 +233,13 @@ class ChangeManagement:
             # If reason is empty, no need to continue
             return
 
+        # Assign the impacted eonid to the eonid in the EDM request.
+        if len(self.impacted_eonids) == 1:
+            self.eonid = next(iter(self.impacted_eonids))
+
         match = reason_pat.match(self.reason)
         txid, self.username = match.groups()
         self.logger.info(f"Running {self.command} using Selfservice as {self.username} with transaction id {txid}.")
-
 
     def validate(self):
         """Perform change management validation, or return in-scope objects.
