@@ -146,8 +146,8 @@ class HostFormatter(CompileableFormatter):
         """Format host as a dictionnary and return it for json output"""
         # Create from hardware entity and update after.
         details = self.redirect_json(host.hardware_entity, indirect_attrs=False)
-
         details["branch"] = host.authored_branch
+        details["branch_type"] = host.branch.branch_type if host.branch else "branch"
         details["build_status"] = host.status.name
         details["owner_eonid"] = host.effective_owner_grn.eon_id
         details["owner_grn"] = host.owner_grn.grn if host.owner_grn else None

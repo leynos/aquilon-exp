@@ -17,6 +17,7 @@
 # limitations under the License.
 """Module for testing the add cluster command."""
 
+import json
 import unittest
 
 if __name__ == "__main__":
@@ -157,6 +158,26 @@ class TestAddCluster(PersonalityTestMixin, TestBrokerCommand):
         self.assertEqual(cluster.maint_threshold_is_percent, True)
         self.assertEqual(cluster.metacluster, "")
         self.assertEqual(cluster.virtual_switch.name, "")
+
+
+    def test_43_verifyshowutgrid1_json(self):
+        command = ["show_cluster", "--cluster=utgrid1", "--format=json"]
+        out = self.commandtest(command)
+        cluster = json.loads(out)[0]
+        self.assertIsInstance(cluster, dict)
+        self.assertEqual(cluster["name"], "utgrid1")
+        self.assertEqual(cluster["personality"]["archetype"], "gridcluster")
+        self.assertEqual(cluster["branch"], 'unittest')
+        self.assertEqual(cluster["branch_type"], "domain")
+        self.assertEqual(cluster["build_status"], "build")
+        self.assertEqual(cluster["location_constraint"]["name"], "ut")
+        self.assertEqual(cluster["location_constraint"]["type"], "building")
+        self.assertIsNone(cluster["max_host"])
+        self.assertEqual(cluster["threshold"], 5)
+        self.assertTrue(cluster["threshold_is_percent"])
+        self.assertEqual(cluster["maint_threshold"], 6)
+        self.assertTrue(cluster["maint_threshold_is_percent"])
+        self.assertIsNone(cluster["metacluster"])
 
     def test_44_verifyshowall(self):
         command = "show cluster --all"
