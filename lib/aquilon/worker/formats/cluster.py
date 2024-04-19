@@ -17,16 +17,15 @@
 
 from operator import attrgetter
 
-from aquilon.aqdb.model import (Building, Cluster, EsxCluster, ComputeCluster,
-                                StorageCluster)
-from aquilon.worker.formats.formatters import ObjectFormatter
+from aquilon.aqdb.model import Building, Cluster, ComputeCluster, EsxCluster, StorageCluster
 from aquilon.worker.formats.compileable import CompileableFormatter
+from aquilon.worker.formats.formatters import ObjectFormatter
 
 
 class ClusterFormatter(CompileableFormatter):
     def fill_proto(self, cluster, skeleton, embedded=True,
                    indirect_attrs=True):
-        super(ClusterFormatter, self).fill_proto(cluster, skeleton)
+        super().fill_proto(cluster, skeleton)
 
         skeleton.name = cluster.name
         skeleton.threshold = cluster.down_hosts_threshold
@@ -66,12 +65,49 @@ class ClusterFormatter(CompileableFormatter):
                 gskel = skeleton.grouped_cluster.add()
                 gskel.name = member.name
 
+    def format_json(self, cluster, embedded=True, indirect_attrs=True):
+        details = {
+            "name": cluster.name,
+            "build_status": cluster.status.name,
+            "location_constraint": {
+                "name": cluster.location_constraint.name,
+                "type": cluster.location_constraint.location_type,
+            },
+            "branch": cluster.authored_branch,
+            "branch_type": cluster.branch.branch_type if cluster.branch else "branch",
+            "threshold": cluster.down_hosts_threshold,
+            "threshold_is_percent": cluster.down_hosts_percent,
+            "maint_threshold": cluster.down_maint_threshold,
+            "maint_threshold_is_percent": cluster.down_maint_percent,
+            "personality": self.redirect_json(cluster.personality_stage, indirect_attrs=False),
+            "max_host": cluster.max_hosts,
+            "metacluster": cluster.metacluster.name if cluster.metacluster else None,
+            "members": [],
+            "resources": [],
+            "comments": cluster.comments,
+        }
+        for member in sorted(
+            cluster._hosts,
+            key=attrgetter("host.fqdn", "host.hardware_entity.location.building"),
+        ):
+            details["members"].append(
+                {
+                    "node_index": member.node_index,
+                    "fqdn": member.host.fqdn,
+                    "building": member.host.hardware_entity.location.building.name,
+                }
+            )
+        if cluster.resholder and cluster.resholder.resources:
+            for resource in sorted(cluster.resholder.resources, key=attrgetter("resource_type", "name")):
+                details["resources"].append(self.redirect_json(resource, indirect_attrs=True))
+
+        return details
+
     def format_raw(self, cluster, indent="", embedded=True,
                    indirect_attrs=True):
-        details = [indent + "{0:c}: {0.name}".format(cluster)]
+        details = [indent + f"{cluster:c}: {cluster.name}"]
         if cluster.metacluster:
-            details.append(indent +
-                           "  {0:c}: {0.name}".format(cluster.metacluster))
+            details.append(indent + f"  {cluster.metacluster:c}: {cluster.metacluster.name}")
         details.append(indent + "  Member Location Constraint:")
         details.append(self.redirect_raw(cluster.location_constraint,
                                          indent + "    "))
@@ -82,8 +118,7 @@ class ClusterFormatter(CompileableFormatter):
             details.append(indent + "  Member Buildings: " +
                            ",".join(sorted(bldg.name for bldg in bldgs)))
         if cluster.preferred_location:
-            details.append(indent + "  Preferred {0:c}: {0.name}"
-                           .format(cluster.preferred_location))
+            details.append(indent + f"  Preferred {cluster.preferred_location:c}: {cluster.preferred_location.name}")
         if cluster.max_hosts is None:
             details.append(indent + "  Max members: unlimited")
         else:
@@ -91,8 +126,7 @@ class ClusterFormatter(CompileableFormatter):
 
         if cluster.down_hosts_percent:
             dht = cluster.down_hosts_threshold * len(cluster.hosts) // 100
-            details.append(indent + "  Down Hosts Threshold: %s (%s%%)" %
-                           (dht, cluster.down_hosts_threshold))
+            details.append(indent + f"  Down Hosts Threshold: {dht} ({cluster.down_hosts_threshold}%)")
         else:
             details.append(indent + "  Down Hosts Threshold: %s" %
                            cluster.down_hosts_threshold)
@@ -100,8 +134,7 @@ class ClusterFormatter(CompileableFormatter):
         if cluster.down_maint_threshold is not None:
             if cluster.down_maint_percent:
                 dht = cluster.down_maint_threshold * len(cluster.hosts) // 100
-                details.append(indent + "  Maintenance Threshold: %s (%s%%)" %
-                               (dht, cluster.down_maint_threshold))
+                details.append(indent + f"  Maintenance Threshold: {dht} ({cluster.down_maint_threshold}%)")
             else:
                 details.append(indent + "  Maintenance Threshold: %s" %
                                cluster.down_maint_threshold)
@@ -110,7 +143,7 @@ class ClusterFormatter(CompileableFormatter):
             for member in cluster.cluster_group.members:
                 if member == cluster:
                     continue
-                details.append("  Grouped with {0:c}: {0.name}".format(member))
+                details.append(f"  Grouped with {member:c}: {member.name}")
 
         if cluster.resholder and cluster.resholder.resources:
             details.append(indent + "  Resources:")
@@ -128,29 +161,27 @@ class ClusterFormatter(CompileableFormatter):
             details.append(indent + "  ESX VMHost count: %s" %
                            len(cluster.hosts))
             if cluster.network_device:
-                details.append(indent + "  {0:c}: {0!s}".format(cluster.network_device))
+                details.append(indent + f"  {cluster.network_device:c}: {cluster.network_device!s}")
         details.append(indent + "  Build Status: %s" % cluster.status)
         details.append(self.redirect_raw(cluster.personality_stage,
                                          indent + "  "))
-        details.append(indent + "  {0:c}: {1}"
-                       .format(cluster.branch, cluster.authored_branch))
+        details.append(indent + f"  {cluster.branch:c}: {cluster.authored_branch}")
         for dbsi in cluster.services_used:
-            details.append(indent +
-                           "  Member Alignment: Service %s Instance %s" %
-                           (dbsi.service.name, dbsi.name))
-        for srv in sorted(cluster.services_provided,
-                          key=attrgetter("service_instance.service.name",
-                                         "service_instance.name")):
-            details.append(indent + "  Provides Service: %s Instance: %s"
-                           % (srv.service_instance.service.name,
-                              srv.service_instance.name))
+            details.append(indent + f"  Member Alignment: Service {dbsi.service.name} Instance {dbsi.name}")
+        for srv in sorted(
+            cluster.services_provided, key=attrgetter("service_instance.service.name", "service_instance.name")
+        ):
+            details.append(
+                indent
+                + f"  Provides Service: {srv.service_instance.service.name} Instance: {srv.service_instance.name}"
+            )
             details.append(self.redirect_raw(srv, indent + "    "))
         for personality in cluster.allowed_personalities:
-            details.append(indent + "  Allowed {0:c}: {0.name} {1:c}: {1.name}"
-                           .format(personality, personality.archetype))
+            details.append(
+                indent + "  Allowed {0:c}: {0.name} {1:c}: {1.name}".format(personality, personality.archetype)
+            )
         for member in sorted(cluster._hosts, key=attrgetter("host.fqdn")):
-            details.append(indent + "  Member: %s [node_index: %d]" %
-                           (member.host.fqdn, member.node_index))
+            details.append(indent + "  Member: %s [node_index: %d]" % (member.host.fqdn, member.node_index))
         if cluster.comments:
             details.append(indent + "  Comments: %s" % cluster.comments)
         return "\n".join(details)
