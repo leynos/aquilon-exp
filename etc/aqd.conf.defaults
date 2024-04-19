@@ -431,7 +431,7 @@ precreated_compartments_only = False
 ignore_network_compartments_regex =
 
 [protocols]
-directory = /ms/dist/aquilon/PROJ/protocols/2024.04.09-1/common/lib/python/
+directory = /ms/dist/aquilon/PROJ/protocols/2024.04.18-1/common/lib/python/
 
 # [readonly_batch]
 # A Section in the config file having details of the aqhost, port

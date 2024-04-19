@@ -113,6 +113,16 @@ class TestAddStaticRoute(MachineTestMixin, TestBrokerCommand):
         self.matchoutput(out, "Comments: Some route comments", command)
         self.matchclean(out, "192.168.252.0", command)
 
+    def test_200_show_host_proto(self):
+        gw = self.net["routing1"].usable[-1]
+        command = ["show", "host", "--hostname", "unittest26.aqd-unittest.ms.com",
+                   "--format", "proto"]
+        host = self.protobuftest(command, expect=1)[0]
+        static_routes = {route.destination: route for interface in host.machine.interfaces
+                         for route in interface.static_routes}
+        self.assertIn('192.168.250.0/23', static_routes)
+        self.assertEqual(static_routes['192.168.250.0/23'].gateway_ip, str(gw))
+
     def test_200_show_network(self):
         gw = self.net["routing1"].usable[-1]
         command = ["show", "network", "--ip", self.net["routing1"].ip]
@@ -126,6 +136,17 @@ class TestAddStaticRoute(MachineTestMixin, TestBrokerCommand):
                           r'\s*Comments: Some route comments' % gw,
                           command)
         self.matchclean(out, "192.168.252.0", command)
+
+    def test_200_show_network_proto(self):
+        gw = self.net["routing1"].usable[-1]
+        command = ["show", "network", "--ip", self.net["routing1"].ip,
+                   "--format", "proto"]
+        net = self.protobuftest(command, expect=1)[0]
+        static_routes = {route.destination: route for route in net.static_routes}
+        self.assertIn('192.168.248.0/24', static_routes)
+        self.assertEqual(static_routes['192.168.248.0/24'].gateway_ip, str(gw))
+        self.assertEqual(static_routes['192.168.248.0/24'].personality.name, 'inventory')
+        self.assertEqual(static_routes['192.168.248.0/24'].personality.archetype.name, 'aquilon')
 
     def test_210_make_unittest26(self):
         command = ["make", "--hostname", "unittest26.aqd-unittest.ms.com"]

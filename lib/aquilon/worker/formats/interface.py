@@ -155,6 +155,22 @@ class InterfaceFormatter(ObjectFormatter):
         if interface.model_allowed and indirect_attrs:
             self.redirect_proto(interface.model, skeleton.model)
 
+        if interface.hardware_entity.host:
+            dbstage = interface.hardware_entity.host.personality_stage
+        else:
+            dbstage = None
+        static_routes = set()
+        for addr in interface.assignments:
+            static_routes |= set(addr.network.personality_static_routes(dbstage))
+
+        for route in sorted(static_routes,
+                            key=attrgetter('destination', 'gateway_ip')):
+            map = skeleton.static_routes.add()
+            map.destination = str(route.destination)
+            map.gateway_ip = str(route.gateway_ip)
+            if route.personality_stage:
+                self.redirect_proto(route.personality_stage, map.personality)
+
     def format_json(self, interface, embedded=True, indirect_attrs=True):
         details = {
             "name": interface.name,
