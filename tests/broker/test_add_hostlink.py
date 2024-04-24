@@ -17,6 +17,7 @@
 # limitations under the License.
 """Module for testing the add hostlink command."""
 
+import json
 import unittest
 
 if __name__ == "__main__":
@@ -95,6 +96,18 @@ class TestAddHostlink(TestBrokerCommand):
               Owner: user1
               Mode: 1777
             """, command)
+
+    def test_111_show_hostlink_json(self):
+        command = ["show_hostlink", "--hostlink=app2", "--hostname=server1.aqd-unittest.ms.com", "--format", "json"]
+        out = self.commandtest(command)
+        results = json.loads(out)[0]
+        self.assertIsInstance(results, dict)
+        self.matchoutput(results["name"], "app2", command)
+        self.matchoutput(results["holder"], "server1.aqd-unittest.ms.com", command)
+        self.matchoutput(results["type"], "hostlink", command)
+        self.matchoutput(results["target"], "/var/spool/hostlinks/app2", command)
+        self.matchoutput(results["owner_user"], "user1", command)
+        self.assertEqual(results["target_mode"], 1777, command)
 
     def test_112_check_plenary_with_mode(self):
         self.check_plenary_contents("resource", "host",
