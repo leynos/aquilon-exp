@@ -16,9 +16,9 @@
 # limitations under the License.
 """Hostlink Resource formatter."""
 
+from aquilon.aqdb.model import Hostlink
 from aquilon.worker.formats.formatters import ObjectFormatter
 from aquilon.worker.formats.resource import ResourceFormatter
-from aquilon.aqdb.model import Hostlink
 
 
 class HostlinkFormatter(ResourceFormatter):
@@ -33,10 +33,9 @@ class HostlinkFormatter(ResourceFormatter):
 
         details.append(indent + "  Owner: %s" % hostlink.owner_user)
         if hostlink.entitlements:
-            details.append('{}  Relates to:'.format(indent))
+            details.append(f'{indent}  Relates to:')
             for entit in hostlink.entitlements:
-                details.append(self.redirect_raw(entit,
-                                                 indent=indent + '    '))
+                details.append(self.redirect_raw(entit, indent=indent + '    '))
 
         if hostlink.owner_group is not None:
             details.append(indent + "  Group: %s" % hostlink.owner_group)
@@ -47,7 +46,7 @@ class HostlinkFormatter(ResourceFormatter):
 
     def fill_proto(self, hostlink, skeleton, embedded=True,
                    indirect_attrs=True):
-        super(HostlinkFormatter, self).fill_proto(hostlink, skeleton)
+        super().fill_proto(hostlink, skeleton)
         # Target field in protobuf is marked as being required, we thus need
         # to provide an information even if we do not have one; we fall back
         # on using '/dev/null' in this case
@@ -58,5 +57,14 @@ class HostlinkFormatter(ResourceFormatter):
             skeleton.hostlink.owner_group = hostlink.owner_group
         if hasattr(skeleton.hostlink, "mode") and hostlink.target_mode:
             skeleton.hostlink.mode = "%o" % (hostlink.target_mode)
+
+    def extra_details_json(self, hostlink):
+        details = {
+            "target": hostlink.target,
+            "owner_user": hostlink.owner_user,
+            "owner_group": hostlink.owner_group,
+            "target_mode": int(f"{hostlink.target_mode:o}") if hostlink.target_mode else None,
+        }
+        return details
 
 ObjectFormatter.handlers[Hostlink] = HostlinkFormatter()

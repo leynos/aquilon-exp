@@ -160,7 +160,7 @@ class HostFormatter(CompileableFormatter):
         if host.resholder and host.resholder.resources:
             details["resources"] = []
             for resource in sorted(host.resholder.resources, key=attrgetter("resource_type", "name")):
-                details["resources"].append(self.redirect_json(resource))
+                details["resources"].append(self.redirect_json(resource, indirect_attrs=False))
         details["personality"] = self.redirect_json(host.personality_stage, indirect_attrs=False)
         details["archetype"] = self.redirect_json(host.archetype, indirect_attrs=False)
         details["operating_system"] = self.redirect_json(host.operating_system, indirect_attrs=False)

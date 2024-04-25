@@ -27,6 +27,9 @@ class ResourceFormatter(ObjectFormatter):
     def extra_details(self, share, indent=""):  # pylint: disable=W0613
         return []
 
+    def extra_details_json(self, share):  # pylint: disable=W0613
+        return {}
+
     def format_raw(self, resource, indent="", embedded=True,
                    indirect_attrs=True):
         details = []
@@ -51,6 +54,9 @@ class ResourceFormatter(ObjectFormatter):
 
     def format_json(self, resource, embedded=True, indirect_attrs=True):
         details = {"name": resource.name, "type": resource.resource_type}
+        if indirect_attrs:
+            details["holder"] = resource.holder.holder_name if resource.holder else None
+            details.update(self.extra_details_json(resource))
         return details
 
 
