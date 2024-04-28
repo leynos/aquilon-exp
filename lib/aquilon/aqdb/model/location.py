@@ -85,7 +85,7 @@ class Location(Base):
         # Include self as well
         q = q.filter(or_(Location.id == self.id,
                          LocationLink.parent_id == self.id))
-        return q.subquery()
+        return q
 
     def parent_ids(self):
         session = object_session(self)
@@ -94,7 +94,7 @@ class Location(Base):
         # Include self as well
         q = q.filter(or_(Location.id == self.id,
                          LocationLink.child_id == self.id))
-        return q.subquery()
+        return q
 
     def sysloc(self):
         components = ('building', 'city', 'continent')

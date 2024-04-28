@@ -17,7 +17,7 @@
 
 from logging import Logger, Handler, addLevelName, NOTSET
 
-from sqlalchemy.util import KeyedTuple
+from collections import namedtuple
 
 
 CLIENT_INFO = 25
@@ -42,8 +42,8 @@ class StatusHandler(Handler):
         # getMessage() is not safe to call in a different thread if the record
         # contains unsubstituted formatting. So force the formatting to be
         # evaluated here
-        new_record = KeyedTuple((record.levelno, record.getMessage()),
-                                labels=("levelno", "message"))
+        KeyedTuple = namedtuple("KeyedTuple", ["levelno", "message"])
+        new_record = KeyedTuple(record.levelno, record.getMessage())
         self.status.publish(new_record)
 
 

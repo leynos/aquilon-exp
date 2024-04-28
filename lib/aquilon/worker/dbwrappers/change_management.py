@@ -534,7 +534,7 @@ class ChangeManagement:
 
         else:
             session = object_session(network_or_networks.first())
-            network_sub_q = network_or_networks.options(load_only("id")).subquery()
+            network_sub_q = network_or_networks.options(load_only(Network.id))
             # Filter Service addresses mapped to the clusters directly
             q2 = session.query(Cluster).join(ClusterResource).join(Resource). \
                 join(ServiceAddress).join(ARecord).join(Network).filter(Network.id.in_(network_sub_q))

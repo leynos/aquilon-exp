@@ -100,7 +100,7 @@ def get_clusters_by_locations(session, locations, archetype):
         q1 = q1.outerjoin(Parent, HWLoc.parents)
         q1 = q1.filter(or_(HWLoc.id == side.id, Parent.id == side.id))
 
-        q = q.filter(Cluster.id.in_(q1.subquery()))
+        q = q.filter(Cluster.id.in_(q1))
 
     # TODO: Add eager-loading options
     return q.all()

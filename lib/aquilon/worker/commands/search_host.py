@@ -290,7 +290,7 @@ class CommandSearchHost(BrokerCommand):
 
             q = q.join(Host.hardware_entity.of_type(Machine),
                        Machine.disks.of_type(VirtualDisk), aliased=True)
-            q = q.filter(VirtualDisk.backing_store_id.in_(v2shares.subquery()))
+            q = q.filter(VirtualDisk.backing_store_id.in_(v2shares))
             q = q.reset_joinpoint()
 
         if member_cluster_share:
@@ -301,7 +301,7 @@ class CommandSearchHost(BrokerCommand):
 
             q = q.join('_cluster', 'cluster', ClusterResource, VirtualMachine,
                        Machine, Machine.disks.of_type(VirtualDisk), aliased=True)
-            q = q.filter(VirtualDisk.backing_store_id.in_(v2shares.subquery()))
+            q = q.filter(VirtualDisk.backing_store_id.in_(v2shares))
             q = q.reset_joinpoint()
 
         if grn or eon_id:
@@ -317,7 +317,7 @@ class CommandSearchHost(BrokerCommand):
             q = q.outerjoin(Host.grns, aliased=True)
             q = q.filter(or_(Host.owner_eon_id == dbgrn.eon_id,
                              HostGrnMap.eon_id == dbgrn.eon_id,
-                             Host.personality_stage_id.in_(persq.subquery())))
+                             Host.personality_stage_id.in_(persq)))
             q = q.reset_joinpoint()
 
         if fullinfo or style != "raw":

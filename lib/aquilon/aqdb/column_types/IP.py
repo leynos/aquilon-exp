@@ -57,6 +57,7 @@ class IP(TypeDecorator):
 
     # Placeholder only
     impl = TypeEngine
+    cache_ok = True
 
     def load_dialect_impl(self, dialect):
         if dialect.name == 'postgresql':

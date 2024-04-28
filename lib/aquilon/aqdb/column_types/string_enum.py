@@ -23,6 +23,7 @@ from aquilon.aqdb.types import StringEnum
 
 class StringEnumColumn(sqlalchemy.types.TypeDecorator):
     impl = sqlalchemy.types.String
+    cache_ok = True
 
     def __init__(self, cls, size, permissive_reads=False):
         if not issubclass(cls, StringEnum):  # pragma: no cover

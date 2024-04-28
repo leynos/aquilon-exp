@@ -25,6 +25,7 @@ class AqStr(sqlalchemy.types.TypeDecorator):
         leading and trailing whitespace """
 
     impl = sqlalchemy.types.String
+    cache_ok = True
 
     @staticmethod
     def normalize(value):
@@ -55,6 +56,8 @@ class AqStr(sqlalchemy.types.TypeDecorator):
 
 
 class EmptyStr(AqStr):
+
+    cache_ok = True
 
     def process_bind_param(self, value, dialect):
         if dialect.name == "oracle" and value is not None:

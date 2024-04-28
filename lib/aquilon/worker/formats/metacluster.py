@@ -65,8 +65,8 @@ class MetaClusterFormatter(CompileableFormatter):
         q = q.order_by(Share.name)
         shares = q.all()
 
-        for share_name in shares:
-            details.append(indent + "  Share: %s" % share_name)
+        for share in shares:
+            details.append(indent + "  Share: %s" % share.name)
 
         if metacluster.comments:
             details.append(indent + "  Comments: %s" % metacluster.comments)

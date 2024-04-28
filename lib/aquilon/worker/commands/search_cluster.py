@@ -136,7 +136,7 @@ class CommandSearchCluster(BrokerCommand):
                 q1 = q1.filter(or_(HWLoc.id == dblocation.id,
                                    Parent.id == dblocation.id))
 
-            q = q.filter(Cluster.id.in_(q1.subquery()))
+            q = q.filter(Cluster.id.in_(q1))
 
         dblocation = get_location(
             session, locfunc=lambda x: 'preferred_{}'.format(x), **arguments)
