@@ -21,7 +21,7 @@ from six.moves import range  # pylint: disable=F0401
 
 from sqlalchemy import (Column, Integer, DateTime, Sequence, ForeignKey,
                         UniqueConstraint)
-from sqlalchemy.orm import relation, backref, deferred
+from sqlalchemy.orm import relationship, backref, deferred
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.ext.mutable import MutableDict
 
@@ -59,7 +59,7 @@ class Parameter(Base):
                                     nullable=False))
     holder_type = Column(AqStr(16), nullable=False)
 
-    param_def_holder = relation(ParamDefHolder, innerjoin=True)
+    param_def_holder = relationship(ParamDefHolder, innerjoin=True)
 
     __mapper_args__ = {'polymorphic_on': holder_type}
 
@@ -256,7 +256,7 @@ class PersonalityParameter(Parameter):
                                              ondelete='CASCADE'),
                                   nullable=True, index=True)
 
-    personality_stage = relation(PersonalityStage,
+    personality_stage = relationship(PersonalityStage,
                                  backref=backref('parameters',
                                                  cascade='all, delete-orphan',
                                                  collection_class=attribute_mapped_collection('param_def_holder')))

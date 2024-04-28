@@ -19,7 +19,7 @@ from datetime import datetime
 
 from sqlalchemy import (Column, DateTime, String, ForeignKey,
                         PrimaryKeyConstraint)
-from sqlalchemy.orm import relation, backref, deferred
+from sqlalchemy.orm import relationship, backref, deferred
 
 from aquilon.aqdb.model import Base, DnsDomain, ARecord
 
@@ -40,11 +40,11 @@ class NsRecord(Base):
 
     comments = deferred(Column(String(255), nullable=True))
 
-    a_record = relation(ARecord, lazy=False, innerjoin=True,
+    a_record = relationship(ARecord, lazy=False, innerjoin=True,
                         backref=backref('_ns_records', cascade='all',
                                         passive_deletes=True))
 
-    dns_domain = relation(DnsDomain, lazy=False, innerjoin=True,
+    dns_domain = relationship(DnsDomain, lazy=False, innerjoin=True,
                           backref=backref('_ns_records', cascade='all'))
 
     __table_args__ = (PrimaryKeyConstraint(a_record_id, dns_domain_id),

@@ -21,7 +21,7 @@ import socket
 
 from sqlalchemy import (Column, Integer, DateTime, Sequence, ForeignKey,
                         UniqueConstraint)
-from sqlalchemy.orm import relation, deferred, backref
+from sqlalchemy.orm import relationship, deferred, backref
 from sqlalchemy.ext.orderinglist import ordering_list
 
 from aquilon.exceptions_ import AquilonError
@@ -62,20 +62,20 @@ class ServiceInstanceServer(Base):
     creation_date = deferred(Column(DateTime, default=datetime.now,
                                     nullable=False))
 
-    service_instance = relation(ServiceInstance, innerjoin=True,
+    service_instance = relationship(ServiceInstance, innerjoin=True,
                                 backref=backref("servers",
                                                 cascade="all, delete-orphan",
                                                 collection_class=ordering_list('position'),
                                                 order_by=[position]))
 
-    host = relation(Host, backref=backref('services_provided'))
-    cluster = relation(Cluster, backref=backref('services_provided'))
-    service_address = relation(ServiceAddress,
+    host = relationship(Host, backref=backref('services_provided'))
+    cluster = relationship(Cluster, backref=backref('services_provided'))
+    service_address = relationship(ServiceAddress,
                                backref=backref("services_provided"))
-    address_assignment = relation(AddressAssignment,
+    address_assignment = relationship(AddressAssignment,
                                   backref=backref("services_provided"))
-    alias = relation(Alias, backref=backref("services_provided"))
-    address = relation(ARecord, backref=backref("services_provided"))
+    alias = relationship(Alias, backref=backref("services_provided"))
+    address = relationship(ARecord, backref=backref("services_provided"))
 
     __table_args__ = (UniqueConstraint(service_instance_id, host_id, cluster_id,
                                        address_assignment_id,

@@ -21,7 +21,7 @@ from six import itervalues
 
 from sqlalchemy import (Column, Integer, Sequence, String, DateTime,
                         ForeignKey, UniqueConstraint, PrimaryKeyConstraint)
-from sqlalchemy.orm import (relation, contains_eager, column_property, backref,
+from sqlalchemy.orm import (relationship, contains_eager, column_property, backref,
                             deferred, aliased, object_session)
 from sqlalchemy.sql import select, func, or_, null
 
@@ -49,7 +49,7 @@ class ServiceInstance(Base):
                                     nullable=False))
     comments = Column(String(255), nullable=True)
 
-    service = relation(Service, lazy=False, innerjoin=True, backref='instances')
+    service = relationship(Service, lazy=False, innerjoin=True, backref='instances')
 
     __table_args__ = (UniqueConstraint(service_id, name),
                       {'info': {'unique_fields': ['name', 'service']}},)
@@ -150,7 +150,7 @@ class __BuildItem(Base):
 
     __table_args__ = (PrimaryKeyConstraint(host_id, service_instance_id),)
 
-ServiceInstance.clients = relation(Host, secondary=__BuildItem.__table__,
+ServiceInstance.clients = relationship(Host, secondary=__BuildItem.__table__,
                                    backref=backref("services_used",
                                                    cascade="all",
                                                    passive_deletes=True))
@@ -177,7 +177,7 @@ class __ClusterServiceBinding(Base):
 
     __table_args__ = (PrimaryKeyConstraint(cluster_id, service_instance_id),)
 
-Cluster.services_used = relation(ServiceInstance,
+Cluster.services_used = relationship(ServiceInstance,
                                  secondary=__ClusterServiceBinding.__table__,
                                  passive_deletes=True,
                                  backref=backref("cluster_clients"))

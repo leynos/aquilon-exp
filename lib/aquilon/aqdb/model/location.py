@@ -22,7 +22,7 @@ from sqlalchemy import (Integer, DateTime, Sequence, String, Column,
                         ForeignKey, UniqueConstraint, PrimaryKeyConstraint,
                         Index)
 from sqlalchemy import literal
-from sqlalchemy.orm import (relation, backref, object_session, deferred,
+from sqlalchemy.orm import (relationship, backref, object_session, deferred,
                             reconstructor)
 from sqlalchemy.sql import and_, or_, desc
 
@@ -54,7 +54,7 @@ class Location(Base):
 
     comments = Column(String(255), nullable=True)
 
-    default_dns_domain = relation(DnsDomain)
+    default_dns_domain = relationship(DnsDomain)
 
     uri = Column(String(255), nullable=True)
 
@@ -227,12 +227,12 @@ class LocationLink(Base):
     # Distance from the given parent. 1 means direct child.
     distance = Column(Integer, nullable=False)
 
-    child = relation(Location, innerjoin=True, foreign_keys=child_id,
+    child = relationship(Location, innerjoin=True, foreign_keys=child_id,
                      backref=backref("_parent_links",
                                      cascade="all, delete-orphan",
                                      passive_deletes=True))
 
-    parent = relation(Location, innerjoin=True, foreign_keys=parent_id,
+    parent = relationship(Location, innerjoin=True, foreign_keys=parent_id,
                       backref=backref("_child_links",
                                       cascade="all, delete-orphan",
                                       passive_deletes=True))
@@ -241,7 +241,7 @@ class LocationLink(Base):
 
 # Make these relations view-only, to make sure the distance is managed
 # explicitely
-Location.parents = relation(Location,
+Location.parents = relationship(Location,
                             secondary=LocationLink.__table__,
                             primaryjoin=Location.id == LocationLink.child_id,
                             secondaryjoin=Location.id == LocationLink.parent_id,
@@ -252,7 +252,7 @@ Location.parents = relation(Location,
                                             viewonly=True))
 
 # FIXME: this should be dropped when multiple parents are allowed
-Location.parent = relation(Location, uselist=False,
+Location.parent = relationship(Location, uselist=False,
                            secondary=LocationLink.__table__,
                            primaryjoin=and_(Location.id == LocationLink.child_id,
                                             LocationLink.distance == 1),

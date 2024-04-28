@@ -23,7 +23,7 @@ from six import iteritems
 
 from sqlalchemy import (Column, Integer, DateTime, Sequence, String, Boolean,
                         ForeignKey, UniqueConstraint)
-from sqlalchemy.orm import relation, backref, deferred, validates
+from sqlalchemy.orm import relationship, backref, deferred, validates
 from sqlalchemy.orm.exc import NoResultFound
 
 from aquilon.exceptions_ import ArgumentError, NotFoundException, InternalError
@@ -56,7 +56,7 @@ class Feature(Base):
                                     nullable=False))
     comments = deferred(Column(String(255), nullable=True))
 
-    owner_grn = relation(Grn, innerjoin=True)
+    owner_grn = relationship(Grn, innerjoin=True)
 
     __table_args__ = (UniqueConstraint(name, feature_type),
                       {'info': {'unique_fields': ['name', 'feature_type']}},)
@@ -195,16 +195,16 @@ class FeatureLink(Base):
     creation_date = deferred(Column(DateTime, default=datetime.now,
                                     nullable=False))
 
-    feature = relation(Feature, innerjoin=True,
+    feature = relationship(Feature, innerjoin=True,
                        backref=backref('links', passive_deletes=True))
 
-    model = relation(Model,
+    model = relationship(Model,
                      backref=backref('features', passive_deletes=True))
 
-    archetype = relation(Archetype,
+    archetype = relationship(Archetype,
                          backref=backref('features', passive_deletes=True))
 
-    personality_stage = relation(PersonalityStage,
+    personality_stage = relationship(PersonalityStage,
                                  backref=backref('features',
                                                  passive_deletes=True))
 

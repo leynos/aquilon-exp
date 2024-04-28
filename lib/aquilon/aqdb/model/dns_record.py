@@ -21,7 +21,7 @@ from collections import deque
 
 from sqlalchemy import Integer, DateTime, Sequence, String, Column, ForeignKey
 from sqlalchemy.inspection import inspect
-from sqlalchemy.orm import (relation, deferred, backref, object_session,
+from sqlalchemy.orm import (relationship, deferred, backref, object_session,
                             lazyload, validates)
 from sqlalchemy.ext.associationproxy import association_proxy
 
@@ -76,10 +76,10 @@ class DnsRecord(Base):
     owner_eon_id = Column(ForeignKey(Grn.eon_id, name='%s_owner_grn_fk' % _TN),
                           nullable=True)
 
-    fqdn = relation(Fqdn, lazy=False, innerjoin=True,
+    fqdn = relationship(Fqdn, lazy=False, innerjoin=True,
                     backref=backref('dns_records'))
 
-    owner_grn = relation(Grn)
+    owner_grn = relationship(Grn)
 
     aliases = association_proxy('fqdn', 'aliases')
     srv_records = association_proxy('fqdn', 'srv_records')

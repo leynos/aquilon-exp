@@ -22,7 +22,7 @@ from sys import maxsize
 
 from sqlalchemy import (Column, Integer, Sequence, DateTime, ForeignKey,
                         UniqueConstraint, CheckConstraint)
-from sqlalchemy.orm import (relation, deferred, backref, defer, undefer,
+from sqlalchemy.orm import (relationship, deferred, backref, defer, undefer,
                             lazyload, contains_eager, object_session)
 from sqlalchemy.sql import and_, or_, null, case
 from sqlalchemy.sql.functions import coalesce
@@ -97,14 +97,14 @@ class ServiceMap(Base):
     creation_date = deferred(Column(DateTime, default=datetime.now,
                                     nullable=False))
 
-    service_instance = relation(ServiceInstance, innerjoin=True,
+    service_instance = relationship(ServiceInstance, innerjoin=True,
                                 backref=backref('service_map',
                                                 cascade="all, delete-orphan",
                                                 passive_deletes=True))
-    personality = relation(Personality)
-    host_environment = relation(HostEnvironment)
-    location = relation(Location)
-    network = relation(Network)
+    personality = relationship(Personality)
+    host_environment = relationship(HostEnvironment)
+    location = relationship(Location)
+    network = relationship(Network)
 
     __table_args__ = (UniqueConstraint(service_instance_id,
                                        personality_id, host_environment_id,

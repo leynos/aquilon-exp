@@ -21,7 +21,7 @@ import re
 
 from sqlalchemy import (Column, Integer, DateTime, ForeignKey, CheckConstraint,
                         PrimaryKeyConstraint, Index, Sequence)
-from sqlalchemy.orm import relation, backref, deferred, foreign, remote
+from sqlalchemy.orm import relationship, backref, deferred, foreign, remote
 from sqlalchemy.sql import and_
 
 from aquilon.exceptions_ import InternalError
@@ -92,12 +92,12 @@ class PortGroup(Base):
     __table_args__ = (Index("%s_usage_tag_idx" % _PG, usage, network_tag,
                             oracle_compress=1),)
 
-    network = relation(Network, innerjoin=True,
+    network = relationship(Network, innerjoin=True,
                        backref=backref('port_group', uselist=False,
                                        passive_deletes=True))
 
     # This is needed only for legacy naming
-    legacy_vlan = relation(VlanInfo,
+    legacy_vlan = relationship(VlanInfo,
                            primaryjoin=and_(foreign(usage) == remote(VlanInfo.vlan_type),
                                             foreign(network_tag) == remote(VlanInfo.vlan_id)),
                            viewonly=True)
@@ -131,6 +131,6 @@ class __ObservedVlan(Base):
 
     __table_args__ = (PrimaryKeyConstraint(network_device_id, port_group_id),)
 
-NetworkDevice.port_groups = relation(PortGroup,
+NetworkDevice.port_groups = relationship(PortGroup,
                                      secondary=__ObservedVlan.__table__,
                                      cascade="save-update, merge")

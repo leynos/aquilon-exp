@@ -17,7 +17,7 @@
 """ DNS Address Alias records """
 
 from sqlalchemy import Column, ForeignKey
-from sqlalchemy.orm import relation, backref, column_property, object_session
+from sqlalchemy.orm import relationship, backref, column_property, object_session
 from sqlalchemy.sql import select, func
 
 from aquilon.exceptions_ import AquilonError, ArgumentError
@@ -37,7 +37,7 @@ class AddressAlias(DnsRecordTargetMixin, DnsRecord):
     target_id = Column(ForeignKey(Fqdn.id, name='%s_target_fk' % _TN),
                        nullable=False, index=True)
 
-    target = relation(Fqdn, innerjoin=True, foreign_keys=target_id,
+    target = relationship(Fqdn, innerjoin=True, foreign_keys=target_id,
                       backref=backref('address_aliases'))
 
     __table_args__ = ({'info': {'unique_fields': ['fqdn'],

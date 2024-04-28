@@ -21,7 +21,7 @@ import re
 from sqlalchemy import (Column, Integer, Boolean, DateTime, Sequence, String,
                         ForeignKey, UniqueConstraint, PrimaryKeyConstraint)
 from sqlalchemy.inspection import inspect
-from sqlalchemy.orm import (relation, backref, deferred, object_session,
+from sqlalchemy.orm import (relationship, backref, deferred, object_session,
                             reconstructor)
 from sqlalchemy.orm.collections import column_mapped_collection
 from sqlalchemy.util import memoized_property
@@ -70,10 +70,10 @@ class Personality(Base):
                                     nullable=False))
     comments = Column(String(255), nullable=True)
 
-    archetype = relation(Archetype, innerjoin=True)
-    owner_grn = relation(Grn, innerjoin=True)
+    archetype = relationship(Archetype, innerjoin=True)
+    owner_grn = relationship(Grn, innerjoin=True)
 
-    host_environment = relation(HostEnvironment, innerjoin=True)
+    host_environment = relationship(HostEnvironment, innerjoin=True)
 
     __table_args__ = (UniqueConstraint(archetype_id, name),
                       {'info': {'unique_fields': ['name', 'archetype']}},)
@@ -161,7 +161,7 @@ class PersonalityStage(Base):
 
     # The plenary classes need the ORM to be aware if the object is deleted, so
     # we're using a ORM cascading instead of passive_deletes=True here.
-    personality = relation(Personality, innerjoin=True,
+    personality = relationship(Personality, innerjoin=True,
                            backref=backref('stages',
                                            cascade='all, delete-orphan',
                                            collection_class=column_mapped_collection(name)))
@@ -272,7 +272,7 @@ class PersonalityGrnMap(Base):
 
     target = Column(AqStr(32), nullable=False)
 
-    grn = relation(Grn, lazy=False, innerjoin=True)
+    grn = relationship(Grn, lazy=False, innerjoin=True)
 
     __table_args__ = (PrimaryKeyConstraint(personality_stage_id, eon_id,
                                            target),)
@@ -280,7 +280,7 @@ class PersonalityGrnMap(Base):
     def copy(self):
         return type(self)(eon_id=self.eon_id, target=self.target)
 
-PersonalityStage.grns = relation(PersonalityGrnMap,
+PersonalityStage.grns = relationship(PersonalityGrnMap,
                                  cascade='all, delete-orphan',
                                  passive_deletes=True)
 
@@ -299,7 +299,7 @@ class __PersonalityRootUser(Base):
 
     __table_args__ = (PrimaryKeyConstraint(personality_id, user_id),)
 
-Personality.root_users = relation(User,
+Personality.root_users = relationship(User,
                                   secondary=__PersonalityRootUser.__table__,
                                   passive_deletes=True)
 
@@ -318,7 +318,7 @@ class __PersonalityRootNetGroup(Base):
 
     __table_args__ = (PrimaryKeyConstraint(personality_id, netgroup_id),)
 
-Personality.root_netgroups = relation(NetGroupWhiteList,
+Personality.root_netgroups = relationship(NetGroupWhiteList,
                                       secondary=__PersonalityRootNetGroup.__table__,
                                       passive_deletes=True)
 

@@ -19,7 +19,7 @@ from sqlalchemy import String, Integer, Column, ForeignKey, CheckConstraint
 from sqlalchemy.sql import and_
 from sqlalchemy.orm import (
     object_session,
-    relation,
+    relationship,
     validates,
 )
 
@@ -99,12 +99,12 @@ class HostlinkParentMap(Base):
     resource_id = Column(ForeignKey(Hostlink.id,
                                     ondelete='CASCADE'),
                          nullable=False, primary_key=True)
-    resource = relation(Hostlink, lazy=False, innerjoin=True)
+    resource = relationship(Hostlink, lazy=False, innerjoin=True)
 
     parent = Column(AqStr(32), nullable=False, primary_key=True)
 
 
-Hostlink.parents = relation(HostlinkParentMap,
+Hostlink.parents = relationship(HostlinkParentMap,
                             cascade='all, delete-orphan',
                             passive_deletes=True)
 
@@ -122,7 +122,7 @@ class HostlinkEntitlementMap(Base):
     resource_id = Column(ForeignKey(Hostlink.id,
                                     ondelete='CASCADE'),
                          nullable=False, primary_key=True)
-    resource = relation(Hostlink, lazy=False, innerjoin=True)
+    resource = relationship(Hostlink, lazy=False, innerjoin=True)
 
     entitlement_id = Column(ForeignKey(EntitlementId.id,
                                        ondelete='CASCADE'),
@@ -136,6 +136,6 @@ class HostlinkEntitlementMap(Base):
         return q.one()
 
 
-Hostlink.entitmap = relation(HostlinkEntitlementMap,
+Hostlink.entitmap = relationship(HostlinkEntitlementMap,
                              cascade='all, delete-orphan',
                              passive_deletes=True)

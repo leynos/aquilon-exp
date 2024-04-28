@@ -22,7 +22,7 @@
 from datetime import datetime
 
 from sqlalchemy import Column, Integer, DateTime, Sequence, String, ForeignKey
-from sqlalchemy.orm import relation, backref, deferred, validates
+from sqlalchemy.orm import relationship, backref, deferred, validates
 
 from aquilon.exceptions_ import ArgumentError
 from aquilon.config import Config
@@ -61,11 +61,11 @@ class MachineSpecs(Base):
     creation_date = deferred(Column(DateTime, default=datetime.now,
                                     nullable=False))
 
-    # This is a one-to-one relation, so we need uselist=False on the backref
-    model = relation(Model, innerjoin=True, foreign_keys=model_id,
+    # This is a one-to-one relationship, so we need uselist=False on the backref
+    model = relationship(Model, innerjoin=True, foreign_keys=model_id,
                      backref=backref('machine_specs', uselist=False))
-    cpu_model = relation(Model, innerjoin=True, foreign_keys=cpu_model_id)
-    nic_model = relation(Model, foreign_keys=nic_model_id)
+    cpu_model = relationship(Model, innerjoin=True, foreign_keys=cpu_model_id)
+    nic_model = relationship(Model, foreign_keys=nic_model_id)
 
     @validates('disk_type')
     def validate_disk(self, key, value):  # pylint: disable=W0613

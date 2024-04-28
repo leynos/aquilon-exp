@@ -17,7 +17,7 @@
 """ ChassisSlot sets up a structure for tracking position within a chassis. """
 
 from sqlalchemy import Column, Integer, ForeignKey, PrimaryKeyConstraint
-from sqlalchemy.orm import relation, backref
+from sqlalchemy.orm import relationship, backref
 
 from aquilon.aqdb.model import Base, Machine, Chassis, NetworkDevice, HardwareEntity
 from aquilon.aqdb.column_types import AqStr
@@ -38,7 +38,7 @@ class ChassisSlot(Base):
 
     slot_number = Column(Integer, nullable=False, autoincrement=False)
 
-    chassis = relation(Chassis, innerjoin=True,
+    chassis = relationship(Chassis, innerjoin=True,
                        backref=backref('slots', cascade='delete, delete-orphan',
                                        passive_deletes=True,
                                        order_by=[slot_number]))
@@ -60,7 +60,7 @@ class MachineChassisSlot(ChassisSlot):
 
     # No delete-orphan here, it's fine to leave the slot in place even if the
     # machine is removed
-    machine = relation(Machine,
+    machine = relationship(Machine,
                        backref=backref('chassis_slot', cascade='all'))
 
 
@@ -74,5 +74,5 @@ class NetworkDeviceChassisSlot(ChassisSlot):
 
     # No delete-orphan here, it's fine to leave the slot in place even if the
     # network_device is removed
-    network_device = relation(NetworkDevice,
+    network_device = relationship(NetworkDevice,
                               backref=backref('chassis_slot', cascade='all'))

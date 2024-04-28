@@ -19,7 +19,7 @@
 from datetime import datetime
 
 from sqlalchemy import Column, Integer, DateTime, ForeignKey, UniqueConstraint
-from sqlalchemy.orm import relation, backref, deferred
+from sqlalchemy.orm import relationship, backref, deferred
 from sqlalchemy.orm.collections import column_mapped_collection
 
 from aquilon.aqdb.column_types import AqStr
@@ -56,13 +56,13 @@ class ConsolePort(Base):
     creation_date = deferred(Column(DateTime, default=datetime.now,
                                     nullable=False))
 
-    console_server = relation(ConsoleServer, innerjoin=True,
+    console_server = relationship(ConsoleServer, innerjoin=True,
                               primaryjoin=console_server_id == ConsoleServer.hardware_entity_id,
                               backref=backref('ports',
                                               collection_class=column_mapped_collection(port_number),
                                               passive_deletes=True, cascade='all'))
 
-    client = relation(HardwareEntity, innerjoin=True,
+    client = relationship(HardwareEntity, innerjoin=True,
                       primaryjoin=client_id == HardwareEntity.id,
                       backref=backref('consoles',
                                       collection_class=column_mapped_collection(client_port),

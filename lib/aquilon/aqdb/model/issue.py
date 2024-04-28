@@ -30,7 +30,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import (
                             backref,
                             deferred,
-                            relation,
+                            relationship,
                            )
 from aquilon.aqdb.column_types import (
                                        AqStr,
@@ -78,7 +78,7 @@ class __ModelIssueListItem(Base):
     __table_args__ = (PrimaryKeyConstraint(model_id, issue_id),)
 
 
-Issue.models = relation(Model,
+Issue.models = relationship(Model,
                         secondary=__ModelIssueListItem.__table__,
                         backref=backref("issues"),
                         passive_deletes=True)
@@ -95,7 +95,7 @@ class __OSIssueListItem(Base):
     __table_args__ = (PrimaryKeyConstraint(os_id, issue_id),)
 
 
-Issue.os = relation(OperatingSystem,
+Issue.os = relationship(OperatingSystem,
                     secondary=__OSIssueListItem.__table__,
                     backref=backref("issues"),
                     passive_deletes=True)

@@ -23,7 +23,7 @@ import re
 
 from sqlalchemy import (Column, Integer, DateTime, Sequence, String, Boolean,
                         ForeignKey, UniqueConstraint, CheckConstraint)
-from sqlalchemy.orm import (relation, backref, validates, object_session,
+from sqlalchemy.orm import (relationship, backref, validates, object_session,
                             deferred, foreign, remote)
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.sql import desc, case, and_, or_, null
@@ -105,18 +105,18 @@ class Interface(DeviceLinkMixin, Base):
     # snapshot_hw(), so it is not worth deferring it
     comments = Column(String(255), nullable=True)
 
-    hardware_entity = relation(HardwareEntity, innerjoin=True,
+    hardware_entity = relationship(HardwareEntity, innerjoin=True,
                                backref=backref('interfaces',
                                                cascade='all, delete-orphan'))
 
-    model = relation(Model, innerjoin=True)
+    model = relationship(Model, innerjoin=True)
 
-    master = relation('Interface',
+    master = relationship('Interface',
                       primaryjoin=foreign(master_id) == remote(id),
                       backref=backref('slaves'))
 
     # FIXME: move to PublicInterface
-    port_group = relation("PortGroup")
+    port_group = relationship("PortGroup")
 
     # Order matters here, utils/constraints.py checks for endswith("NOT NULL")
     __table_args__ = (UniqueConstraint(hardware_entity_id, name),
@@ -292,7 +292,7 @@ class VlanInterface(Interface):
 
     vlan_id = Column(Integer)
 
-    parent = relation(Interface,
+    parent = relationship(Interface,
                       primaryjoin=foreign(parent_id) == remote(Interface.id),
                       backref=backref('vlans',
                                       collection_class=attribute_mapped_collection('vlan_id')))

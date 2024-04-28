@@ -19,7 +19,7 @@ from datetime import datetime
 
 from sqlalchemy import (Column, Integer, DateTime, Sequence, String, ForeignKey,
                         UniqueConstraint)
-from sqlalchemy.orm import relation, deferred
+from sqlalchemy.orm import relationship, deferred
 
 from aquilon.aqdb.model import Base, Archetype, AssetLifecycle
 from aquilon.aqdb.column_types.aqstr import AqStr
@@ -43,9 +43,9 @@ class OperatingSystem(Base):
 
     lifecycle_id = Column(ForeignKey(AssetLifecycle.id), nullable=False)
 
-    archetype = relation(Archetype, lazy=False, innerjoin=True)
+    archetype = relationship(Archetype, lazy=False, innerjoin=True)
 
-    lifecycle = relation(AssetLifecycle, innerjoin=True)
+    lifecycle = relationship(AssetLifecycle, innerjoin=True)
 
     __table_args__ = (UniqueConstraint(archetype_id, name, version),
                       {'info': {'unique_fields': ['name', 'version',

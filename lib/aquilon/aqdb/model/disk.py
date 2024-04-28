@@ -44,7 +44,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import (
     backref,
     deferred,
-    relation,
+    relationship,
     validates,
     )
 
@@ -88,7 +88,7 @@ class Disk(DeviceLinkMixin, Base):
 
     comments = deferred(Column(String(255), nullable=True))
 
-    machine = relation(Machine, innerjoin=True,
+    machine = relationship(Machine, innerjoin=True,
                        backref=backref('disks', cascade='all, delete-orphan',
                                        passive_deletes=True))
 

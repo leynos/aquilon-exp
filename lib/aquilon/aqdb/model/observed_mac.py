@@ -21,7 +21,7 @@
 from datetime import datetime
 
 from sqlalchemy import Column, DateTime, ForeignKey, PrimaryKeyConstraint
-from sqlalchemy.orm import relation, backref, deferred
+from sqlalchemy.orm import relationship, backref, deferred
 
 from aquilon.aqdb.model import Base, NetworkDevice
 from aquilon.aqdb.column_types import AqStr, AqMac
@@ -48,7 +48,7 @@ class ObservedMac(Base):
 
     last_seen = Column(DateTime, default=datetime.now, nullable=False)
 
-    network_device = relation(NetworkDevice, innerjoin=True,
+    network_device = relationship(NetworkDevice, innerjoin=True,
                               backref=backref('observed_macs',
                                               cascade='delete',
                                               passive_deletes=True))

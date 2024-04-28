@@ -19,7 +19,7 @@
 import re
 
 from sqlalchemy import Column, Integer, ForeignKey
-from sqlalchemy.orm import relation, backref, object_session, validates
+from sqlalchemy.orm import relationship, backref, object_session, validates
 from sqlalchemy.ext.associationproxy import association_proxy
 
 from aquilon.exceptions_ import AquilonError, ArgumentError
@@ -46,7 +46,7 @@ class SrvRecord(DnsRecordTargetMixin, DnsRecord):
     target_id = Column(ForeignKey(Fqdn.id, name='%s_target_fk' % _TN),
                        nullable=False, index=True)
 
-    target = relation(Fqdn, innerjoin=True, foreign_keys=target_id,
+    target = relationship(Fqdn, innerjoin=True, foreign_keys=target_id,
                       backref=backref('srv_records'))
 
     target_rrs = association_proxy('target', 'dns_records')
