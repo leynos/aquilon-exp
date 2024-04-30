@@ -17,6 +17,7 @@
 
 """ Tables/classes for configuration based on building pairs. """
 
+from collections import namedtuple
 from datetime import datetime
 from operator import attrgetter
 
@@ -25,7 +26,6 @@ from sqlalchemy import (DateTime, Column, ForeignKey, PrimaryKeyConstraint,
 from sqlalchemy.orm import column_property, deferred, relation, validates
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql import and_, or_, case, exists
-from sqlalchemy.util import KeyedTuple
 
 from aquilon.exceptions_ import ArgumentError, NotFoundException
 from aquilon.aqdb.model import Base, Building, Archetype
@@ -33,6 +33,7 @@ from aquilon.aqdb.model.base import _raise_custom
 
 _TN = 'building_preference'
 
+KeyedTuple = namedtuple("KeyedTuple", ["a", "b"])
 
 class BuildingPreference(Base):
     """ Table identifying for particular building pairs which building
@@ -110,14 +111,14 @@ class BuildingPreference(Base):
                                 "building codes.")
 
         pair.sort(key=attrgetter('id'))
-        return KeyedTuple(pair, labels=("a", "b"))
+        return KeyedTuple(pair[0], pair[1])
 
     @classmethod
     def ordered_pair(cls, buildings):
         assert len(buildings) == 2
 
         pair = sorted(buildings, key=attrgetter('id'))
-        return KeyedTuple(pair, labels=("a", "b"))
+        return KeyedTuple(pair[0], pair[1])
 
     @classmethod
     def get_unique(cls, session, a=None, b=None, building_pair=None,

@@ -271,9 +271,9 @@ def search_branch_query(config, session, cls, owner=None,
                 subq = subq.filter_by(is_compileable=True)
 
             if used:
-                filters.append(cls.id.in_(subq.subquery()))
+                filters.append(cls.id.in_(subq))
             else:
-                filters.append(~cls.id.in_(subq.subquery()))
+                filters.append(~cls.id.in_(subq))
 
         if used:
             q = q.filter(or_(*filters))

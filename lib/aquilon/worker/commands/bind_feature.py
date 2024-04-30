@@ -133,7 +133,7 @@ class CommandBindFeature(BrokerCommand):
             else:
                 subq = subq.join(PersonalityStage, Personality)
                 subq = subq.filter_by(archetype=dbarchetype)
-            filters.append(Domain.id.in_(subq.subquery()))
+            filters.append(Domain.id.in_(subq))
 
         q = session.query(Domain)
         q = q.distinct()

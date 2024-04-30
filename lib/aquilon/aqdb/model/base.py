@@ -310,7 +310,7 @@ class Base:
             if obj is None:
                 msg = "{} {} not found.".format(clslabel, ", ".join(desc))
                 _raise_custom(compel, NotFoundException, msg)
-        return query.subquery()
+        return query
 
     def lock_row(self):
         """
