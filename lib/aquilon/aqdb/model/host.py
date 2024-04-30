@@ -23,7 +23,7 @@ from sqlalchemy import (Boolean, DateTime, String, Column, ForeignKey,
 from sqlalchemy.orm import backref
 from sqlalchemy.orm import deferred
 from sqlalchemy.orm import reconstructor
-from sqlalchemy.orm import relation
+from sqlalchemy.orm import relationship
 from sqlalchemy.orm import validates
 
 from aquilon.aqdb.model import (Base, HardwareEntity, HostLifecycle, Grn,
@@ -76,14 +76,14 @@ class Host(CompileableMixin, Base):
 
     comments = deferred(Column(String(255), nullable=True))
 
-    # This is a one-to-one relation, so we need uselist=False on the backref
-    hardware_entity = relation(HardwareEntity, innerjoin=True,
+    # This is a one-to-one relationship, so we need uselist=False on the backref
+    hardware_entity = relationship(HardwareEntity, innerjoin=True,
                                backref=backref('host', uselist=False,
                                                cascade='all, delete-orphan'))
 
-    status = relation(HostLifecycle, innerjoin=True)
-    operating_system = relation(OperatingSystem, innerjoin=True)
-    owner_grn = relation(Grn)
+    status = relationship(HostLifecycle, innerjoin=True)
+    operating_system = relationship(OperatingSystem, innerjoin=True)
+    owner_grn = relationship(Grn)
 
     # Optionally check if grn change restrictions apply to this host
     @validates('owner_grn')
@@ -266,9 +266,9 @@ class HostGrnMap(Base):
 
     target = Column(AqStr(32), nullable=False)
 
-    grn = relation(Grn, lazy=False, innerjoin=True)
+    grn = relationship(Grn, lazy=False, innerjoin=True)
 
     __table_args__ = (PrimaryKeyConstraint(host_id, eon_id, target),)
 
-Host.grns = relation(HostGrnMap, cascade='all, delete-orphan',
+Host.grns = relationship(HostGrnMap, cascade='all, delete-orphan',
                      passive_deletes=True)

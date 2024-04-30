@@ -22,7 +22,7 @@ import re
 
 from sqlalchemy import (Column, Integer, Sequence, ForeignKey, UniqueConstraint,
                         String, DateTime)
-from sqlalchemy.orm import relation, backref, lazyload, validates, deferred, relationship
+from sqlalchemy.orm import relationship, backref, lazyload, validates, deferred
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm.attributes import set_committed_value
 
@@ -68,13 +68,13 @@ class HardwareEntity(Base):
     # snapshot_hw(), so it is not worth deferring it
     comments = Column(String(255), nullable=True)
 
-    model = relation(Model, innerjoin=True)
-    owner_grn = relation(Grn)
+    model = relationship(Model, innerjoin=True)
+    owner_grn = relationship(Grn)
 
     # When working with machines the primary name always crops up, so load it
     # eagerly
-    # This is a one-to-one relation, so we need uselist=False on the backref
-    primary_name = relation(DnsRecord, lazy=False,
+    # This is a one-to-one relationship, so we need uselist=False on the backref
+    primary_name = relationship(DnsRecord, lazy=False,
                             backref=backref('hardware_entity', uselist=False,
                                             passive_deletes=True))
 

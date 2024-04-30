@@ -29,7 +29,7 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
 )
-from sqlalchemy.orm import relation, backref, validates, deferred
+from sqlalchemy.orm import relationship, backref, validates, deferred
 from sqlalchemy.ext.declarative import declared_attr
 
 from aquilon.exceptions_ import InternalError
@@ -99,8 +99,8 @@ class HostResource(ResourceHolder):
     host_id = Column(ForeignKey(Host.hardware_entity_id, ondelete='CASCADE'),
                      nullable=True, unique=True)
 
-    # This is a one-to-one relation, so we need uselist=False on the backref
-    host = relation(Host,
+    # This is a one-to-one relationship, so we need uselist=False on the backref
+    host = relationship(Host,
                     backref=backref('resholder', uselist=False,
                                     cascade='all, delete-orphan'))
 
@@ -119,8 +119,8 @@ class ClusterResource(ResourceHolder):
     cluster_id = Column(ForeignKey(Cluster.id, ondelete='CASCADE'),
                         nullable=True, unique=True)
 
-    # This is a one-to-one relation, so we need uselist=False on the backref
-    cluster = relation(Cluster,
+    # This is a one-to-one relationship, so we need uselist=False on the backref
+    cluster = relationship(Cluster,
                        backref=backref('resholder', uselist=False,
                                        cascade='all, delete-orphan'))
 
@@ -146,13 +146,13 @@ class ResourceHolderWithLocation(ResourceHolder):
     def location(cls):
         # Would be more efficient with a innerjoin, but not possible here
         # as the field might be 'null' (as same table for all holders...)
-        return relation(Location, lazy=False)
+        return relationship(Location, lazy=False)
 
 
 class PersonalityResource(ResourceHolderWithLocation):
     personality_id = Column(ForeignKey(Personality.id, ondelete='CASCADE'),
                             nullable=True)
-    personality = relation(Personality, lazy=False)
+    personality = relationship(Personality, lazy=False)
 
     __mapper_args__ = {'polymorphic_identity': 'personality'}
 
@@ -180,7 +180,7 @@ CheckConstraint(or_(PersonalityResource.holder_type != 'personality',
                     PersonalityResource.__tablename__))
 # This is a one-to-multi relationship, given that there might be multiple
 # locations specified
-Personality.resholders = relation(PersonalityResource,
+Personality.resholders = relationship(PersonalityResource,
                                   cascade='all, delete-orphan',
                                   passive_deletes=True)
 
@@ -196,13 +196,13 @@ class ResourceHolderWithLocationAndHostEnvironment(ResourceHolderWithLocation):
     def host_environment(cls):
         # Would be more efficient with a innerjoin, but not possible here
         # as the field might be 'null' (as same table for all holders...)
-        return relation(HostEnvironment, lazy=False)
+        return relationship(HostEnvironment, lazy=False)
 
 
 class ArchetypeResource(ResourceHolderWithLocationAndHostEnvironment):
     archetype_id = Column(ForeignKey(Archetype.id, ondelete='CASCADE'),
                           nullable=True)
-    archetype = relation(Archetype, lazy=False)
+    archetype = relationship(Archetype, lazy=False)
 
     __mapper_args__ = {'polymorphic_identity': 'archetype'}
 
@@ -234,7 +234,7 @@ CheckConstraint(or_(ArchetypeResource.holder_type != 'archetype',
                     ArchetypeResource.__tablename__))
 # This is a one-to-multi relationship, given that there might be multiple
 # locations or host_environment specified
-Archetype.resholders = relation(ArchetypeResource,
+Archetype.resholders = relationship(ArchetypeResource,
                                 cascade='all, delete-orphan',
                                 passive_deletes=True)
 
@@ -242,7 +242,7 @@ Archetype.resholders = relation(ArchetypeResource,
 class GrnResource(ResourceHolderWithLocationAndHostEnvironment):
     eon_id = Column(ForeignKey(Grn.eon_id, ondelete='CASCADE'),
                     nullable=True)
-    grn = relation(Grn, lazy=False)
+    grn = relationship(Grn, lazy=False)
 
     __mapper_args__ = {'polymorphic_identity': 'grn'}
 
@@ -273,7 +273,7 @@ CheckConstraint(or_(GrnResource.holder_type != 'grn',
                 name='{}_grn_ck'.format(GrnResource.__tablename__))
 # This is a one-to-multi relationship, given that there might be multiple
 # locations or host_environment specified
-Grn.resholders = relation(GrnResource,
+Grn.resholders = relationship(GrnResource,
                           cascade='all, delete-orphan',
                           passive_deletes=True)
 
@@ -311,7 +311,7 @@ class Resource(Base):
     holder_id = Column(ForeignKey(ResourceHolder.id, ondelete='CASCADE'),
                        nullable=False, index=True)
 
-    holder = relation(ResourceHolder, innerjoin=True,
+    holder = relationship(ResourceHolder, innerjoin=True,
                       backref=backref('resources',
                                       cascade='all, delete-orphan'))
 

@@ -37,7 +37,7 @@ from sqlalchemy.ext.declarative import (
 from sqlalchemy.orm import (
     deferred,
     object_session,
-    relation,
+    relationship,
 )
 from sqlalchemy.sql import and_
 
@@ -122,11 +122,11 @@ class EntitlementTypeUserTypeMap(Base):
     entitlement_type_id = Column(ForeignKey(EntitlementType.id,
                                             ondelete='CASCADE'),
                                  nullable=False)
-    entitlement_type = relation(EntitlementType, lazy=False, innerjoin=True)
+    entitlement_type = relationship(EntitlementType, lazy=False, innerjoin=True)
 
     user_type_id = Column(ForeignKey(UserType.id, ondelete='CASCADE'),
                           nullable=False)
-    user_type = relation(UserType, lazy=False, innerjoin=True)
+    user_type = relationship(UserType, lazy=False, innerjoin=True)
 
     __table_args__ = (
         PrimaryKeyConstraint(entitlement_type_id, user_type_id),
@@ -142,7 +142,7 @@ class EntitlementTypeUserTypeMap(Base):
 
 
 # List of user types an entitlement type allows to set entitlements to
-EntitlementType.to_user_types = relation(EntitlementTypeUserTypeMap,
+EntitlementType.to_user_types = relationship(EntitlementTypeUserTypeMap,
                                          cascade='all, delete-orphan',
                                          passive_deletes=True)
 
@@ -256,7 +256,7 @@ class EntitlementWithId(object):
 
     @declared_attr
     def idobj(cls):
-        return relation(EntitlementId, lazy=False, innerjoin=True,
+        return relationship(EntitlementId, lazy=False, innerjoin=True,
                         foreign_keys=cls.id)
 
 
@@ -279,7 +279,7 @@ class EntitlementWithType(object):
 
     @declared_attr
     def type(cls):
-        return relation(EntitlementType, lazy=False, innerjoin=True,
+        return relationship(EntitlementType, lazy=False, innerjoin=True,
                         foreign_keys=cls.type_id)
 
     _ids = ('type_id', )
@@ -306,7 +306,7 @@ class EntitlementToUser(EntitlementTo):
 
     @declared_attr
     def user(cls):
-        return relation(User, lazy=False, innerjoin=True,
+        return relationship(User, lazy=False, innerjoin=True,
                         foreign_keys=cls.user_id)
 
     _ids = ('user_id', )
@@ -326,7 +326,7 @@ class EntitlementToGrn(EntitlementTo):
 
     @declared_attr
     def grn(cls):
-        return relation(Grn, lazy=False, innerjoin=True,
+        return relationship(Grn, lazy=False, innerjoin=True,
                         foreign_keys=cls.eon_id)
 
     _ids = ('eon_id', )
@@ -355,7 +355,7 @@ class EntitlementOnHost(EntitlementOn):
 
     @declared_attr
     def host(cls):
-        return relation(Host, lazy=False, innerjoin=True,
+        return relationship(Host, lazy=False, innerjoin=True,
                         foreign_keys=cls.host_id)
 
     _ids = ('host_id', )
@@ -375,7 +375,7 @@ class EntitlementOnCluster(EntitlementOn):
 
     @declared_attr
     def cluster(cls):
-        return relation(Cluster, lazy=False, innerjoin=True,
+        return relationship(Cluster, lazy=False, innerjoin=True,
                         foreign_keys=cls.cluster_id)
 
     _ids = ('cluster_id', )
@@ -395,7 +395,7 @@ class EntitlementOnLocation(EntitlementOn):
 
     @declared_attr
     def location(cls):
-        return relation(Location, lazy=False, innerjoin=True,
+        return relationship(Location, lazy=False, innerjoin=True,
                         foreign_keys=cls.location_id)
 
     _ids = ('location_id', )
@@ -415,7 +415,7 @@ class EntitlementOnHostEnvironment(EntitlementOn):
 
     @declared_attr
     def host_environment(cls):
-        return relation(HostEnvironment, lazy=False, innerjoin=True,
+        return relationship(HostEnvironment, lazy=False, innerjoin=True,
                         foreign_keys=cls.host_environment_id)
 
     _ids = ('host_environment_id', )
@@ -437,7 +437,7 @@ class EntitlementOnPersonality(EntitlementOnLocation):
 
     @declared_attr
     def personality(cls):
-        return relation(Personality, lazy=False, innerjoin=True,
+        return relationship(Personality, lazy=False, innerjoin=True,
                         foreign_keys=cls.personality_id)
 
     _ids = ('personality_id', )
@@ -462,7 +462,7 @@ class EntitlementOnArchetype(EntitlementOnHostEnvironment,
 
     @declared_attr
     def archetype(cls):
-        return relation(Archetype, lazy=False, innerjoin=True,
+        return relationship(Archetype, lazy=False, innerjoin=True,
                         foreign_keys=cls.archetype_id)
 
     _ids = ('archetype_id', )
@@ -490,7 +490,7 @@ class EntitlementOnGrn(EntitlementOnHostEnvironment,
 
     @declared_attr
     def target_grn(cls):
-        return relation(Grn, lazy=False, innerjoin=True,
+        return relationship(Grn, lazy=False, innerjoin=True,
                         foreign_keys=cls.target_eon_id)
 
     _ids = ('target_eon_id', )
@@ -525,10 +525,10 @@ class EntitlementHostUserMap(EntitlementWithId,
         super(EntitlementHostUserMap, self).__init__(*args, **kwargs)
 
 
-Host.entitled_grns = relation(EntitlementHostGrnMap,
+Host.entitled_grns = relationship(EntitlementHostGrnMap,
                               cascade='all, delete-orphan',
                               passive_deletes=True)
-Host.entitled_users = relation(EntitlementHostUserMap,
+Host.entitled_users = relationship(EntitlementHostUserMap,
                                cascade='all, delete-orphan',
                                passive_deletes=True)
 
@@ -561,10 +561,10 @@ class EntitlementClusterUserMap(EntitlementWithId,
         super(EntitlementClusterUserMap, self).__init__(*args, **kwargs)
 
 
-Cluster.entitled_grns = relation(EntitlementClusterGrnMap,
+Cluster.entitled_grns = relationship(EntitlementClusterGrnMap,
                                  cascade='all, delete-orphan',
                                  passive_deletes=True)
-Cluster.entitled_users = relation(EntitlementClusterUserMap,
+Cluster.entitled_users = relationship(EntitlementClusterUserMap,
                                   cascade='all, delete-orphan',
                                   passive_deletes=True)
 
@@ -597,10 +597,10 @@ class EntitlementPersonalityUserMap(EntitlementWithId,
         super(EntitlementPersonalityUserMap, self).__init__(*args, **kwargs)
 
 
-Personality.entitled_grns = relation(EntitlementPersonalityGrnMap,
+Personality.entitled_grns = relationship(EntitlementPersonalityGrnMap,
                                      cascade='all, delete-orphan',
                                      passive_deletes=True)
-Personality.entitled_users = relation(EntitlementPersonalityUserMap,
+Personality.entitled_users = relationship(EntitlementPersonalityUserMap,
                                       cascade='all, delete-orphan',
                                       passive_deletes=True)
 
@@ -633,10 +633,10 @@ class EntitlementArchetypeUserMap(EntitlementWithId,
         super(EntitlementArchetypeUserMap, self).__init__(*args, **kwargs)
 
 
-Archetype.entitled_grns = relation(EntitlementArchetypeGrnMap,
+Archetype.entitled_grns = relationship(EntitlementArchetypeGrnMap,
                                    cascade='all, delete-orphan',
                                    passive_deletes=True)
-Archetype.entitled_users = relation(EntitlementArchetypeUserMap,
+Archetype.entitled_users = relationship(EntitlementArchetypeUserMap,
                                     cascade='all, delete-orphan',
                                     passive_deletes=True)
 
@@ -669,11 +669,11 @@ class EntitlementGrnUserMap(EntitlementWithId,
         super(EntitlementGrnUserMap, self).__init__(*args, **kwargs)
 
 
-Grn.entitled_grns = relation(EntitlementGrnGrnMap,
+Grn.entitled_grns = relationship(EntitlementGrnGrnMap,
                              cascade='all, delete-orphan',
                              passive_deletes=True,
                              foreign_keys=EntitlementGrnGrnMap.target_eon_id)
-Grn.entitled_users = relation(EntitlementGrnUserMap,
+Grn.entitled_users = relationship(EntitlementGrnUserMap,
                               cascade='all, delete-orphan',
                               passive_deletes=True)
 

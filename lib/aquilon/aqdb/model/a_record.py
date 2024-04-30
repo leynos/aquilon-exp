@@ -17,7 +17,7 @@
 """ Representation of DNS A records """
 
 from sqlalchemy import Column, ForeignKey, Index
-from sqlalchemy.orm import (relation, backref, mapper, deferred, object_session,
+from sqlalchemy.orm import (relationship, backref, mapper, deferred, object_session,
                             validates)
 from sqlalchemy.orm.attributes import instance_state
 from sqlalchemy.sql import join, and_
@@ -48,10 +48,10 @@ class ARecord(DnsRecord):
                                        ondelete='SET NULL'),
                             nullable=True, index=True)
 
-    network = relation(Network, innerjoin=True,
+    network = relationship(Network, innerjoin=True,
                        backref=backref('dns_records', passive_deletes=True))
 
-    reverse_ptr = relation(Fqdn, foreign_keys=reverse_ptr_id,
+    reverse_ptr = relationship(Fqdn, foreign_keys=reverse_ptr_id,
                            backref=backref('reverse_entries',
                                            passive_deletes=True))
 
@@ -168,7 +168,7 @@ dns_fqdn_mapper = mapper(ARecord, __j,
                              # mapper. This will cause fqdn being joined twice,
                              # but there's no way to tell SQLAlchemy that this
                              # information is already present in __j.
-                             'fqdn': relation(Fqdn, lazy=False, innerjoin=True,
+                             'fqdn': relationship(Fqdn, lazy=False, innerjoin=True,
                                               primaryjoin=__j.c.dns_record_fqdn_id == Fqdn.id)
                          },
                          polymorphic_identity=_TN,
@@ -216,5 +216,5 @@ class DynamicStub(ARecord):
         raise ArgumentError("Unknown range class '{}'.  The valid range classes are: {}."
                             .format(value, ", ".join(valid_range_classes)))
 
-Network.dynamic_stubs = relation(DynamicStub, order_by=[DynamicStub.ip],
+Network.dynamic_stubs = relationship(DynamicStub, order_by=[DynamicStub.ip],
                                  viewonly=True)

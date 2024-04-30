@@ -21,7 +21,7 @@ from six import string_types
 
 from sqlalchemy import (Integer, DateTime, Sequence, Column, ForeignKey,
                         UniqueConstraint)
-from sqlalchemy.orm import relation, deferred
+from sqlalchemy.orm import relationship, deferred
 from sqlalchemy.orm.session import Session
 
 from aquilon.exceptions_ import InternalError, ArgumentError
@@ -49,9 +49,9 @@ class Fqdn(Base):
     creation_date = deferred(Column(DateTime, default=datetime.now,
                                     nullable=False))
 
-    dns_domain = relation(DnsDomain, innerjoin=True)
+    dns_domain = relationship(DnsDomain, innerjoin=True)
 
-    dns_environment = relation(DnsEnvironment, innerjoin=True)
+    dns_environment = relationship(DnsEnvironment, innerjoin=True)
 
     __table_args__ = (UniqueConstraint(dns_domain_id, name, dns_environment_id,
                                        name='%s_domain_name_env_uk' % _TN),

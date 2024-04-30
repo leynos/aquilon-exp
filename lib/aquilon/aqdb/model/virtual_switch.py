@@ -20,7 +20,7 @@ from datetime import datetime
 
 from sqlalchemy import (Column, Integer, String, DateTime, Sequence, ForeignKey,
                         PrimaryKeyConstraint)
-from sqlalchemy.orm import relation, backref, deferred
+from sqlalchemy.orm import relationship, backref, deferred
 
 from aquilon.aqdb.column_types import AqStr
 from aquilon.aqdb.model import Base, Host, Cluster, PortGroup
@@ -63,7 +63,7 @@ class __VSwitchClusterAssignment(Base):
 
     __table_args__ = (PrimaryKeyConstraint(virtual_switch_id, cluster_id),)
 
-VirtualSwitch.clusters = relation(Cluster,
+VirtualSwitch.clusters = relationship(Cluster,
                                   secondary=__VSwitchClusterAssignment.__table__,
                                   passive_deletes=True,
                                   backref=backref('virtual_switch',
@@ -81,7 +81,7 @@ class __VSwitchHostAssignment(Base):
 
     __table_args__ = (PrimaryKeyConstraint(virtual_switch_id, host_id),)
 
-VirtualSwitch.hosts = relation(Host,
+VirtualSwitch.hosts = relationship(Host,
                                secondary=__VSwitchHostAssignment.__table__,
                                passive_deletes=True,
                                backref=backref('virtual_switch', uselist=False,
@@ -99,7 +99,7 @@ class __VSwitchPGAssignment(Base):
 
     __table_args__ = (PrimaryKeyConstraint(virtual_switch_id, port_group_id),)
 
-VirtualSwitch.port_groups = relation(PortGroup,
+VirtualSwitch.port_groups = relationship(PortGroup,
                                      secondary=__VSwitchPGAssignment.__table__,
                                      passive_deletes=True,
                                      backref=backref('virtual_switches',

@@ -21,7 +21,7 @@ from datetime import datetime
 from sqlalchemy import (Column, DateTime, Integer, ForeignKey,
                         PrimaryKeyConstraint)
 from sqlalchemy.ext.associationproxy import association_proxy
-from sqlalchemy.orm import backref, deferred, relation
+from sqlalchemy.orm import backref, deferred, relationship
 from sqlalchemy.orm.collections import attribute_mapped_collection
 
 from aquilon.exceptions_ import InternalError, NotFoundException
@@ -87,12 +87,12 @@ class MemberPriority(Base):
 
     __table_args__ = (PrimaryKeyConstraint(priority_list_id, member_id),)
 
-    priority_list = relation(PriorityList,
+    priority_list = relationship(PriorityList,
                              backref=backref("entries",
                                              cascade="all, delete-orphan",
                                              collection_class=attribute_mapped_collection("host"),
                                              passive_deletes=True))
-    member = relation(HostClusterMember, innerjoin=True)
+    member = relationship(HostClusterMember, innerjoin=True)
     host = association_proxy("member", "host")
 
 

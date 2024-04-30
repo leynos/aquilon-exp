@@ -22,7 +22,7 @@ import re
 from sqlalchemy import (Column, Integer, DateTime, ForeignKey, Sequence,
                         UniqueConstraint, Index)
 from sqlalchemy.ext.associationproxy import association_proxy
-from sqlalchemy.orm import relation, backref, deferred, validates
+from sqlalchemy.orm import relationship, backref, deferred, validates
 from sqlalchemy.sql import and_
 
 from aquilon.exceptions_ import InternalError
@@ -67,14 +67,14 @@ class AddressAssignment(Base):
     creation_date = deferred(Column(DateTime, default=datetime.now,
                                     nullable=False))
 
-    interface = relation(Interface, innerjoin=True,
+    interface = relationship(Interface, innerjoin=True,
                          backref=backref('assignments', order_by=[label],
                                          cascade='all, delete-orphan'))
 
     # Setting viewonly is very important here as we do not want the removal of
     # an AddressAssignment record to change the linked DNS record(s)
     # Can't use backref or back_populates due to the different mappers
-    dns_records = relation(dns_fqdn_mapper,
+    dns_records = relationship(dns_fqdn_mapper,
                            primaryjoin=and_(network_id == dns_fqdn_mapper.c.network_id,
                                             ip == dns_fqdn_mapper.c.ip),
                            foreign_keys=[dns_fqdn_mapper.c.ip,
@@ -83,7 +83,7 @@ class AddressAssignment(Base):
 
     fqdns = association_proxy('dns_records', 'fqdn')
 
-    network = relation(Network, innerjoin=True,
+    network = relationship(Network, innerjoin=True,
                        backref=backref('assignments', passive_deletes=True,
                                        order_by=[ip]))
 
@@ -144,7 +144,7 @@ Interface.addresses = association_proxy('assignments', 'ip')
 # This relation gives us the two other sides of the triangle mentioned above
 # Do NOT consider the DNS environment here - whether the IP is used or not does
 # not depend on its visibility in DNS
-ARecord.assignments = relation(
+ARecord.assignments = relationship(
     AddressAssignment,
     primaryjoin=and_(AddressAssignment.network_id == ARecord.network_id,
                      AddressAssignment.ip == ARecord.ip),

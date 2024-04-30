@@ -20,7 +20,7 @@ from datetime import datetime
 
 from sqlalchemy import (Column, Integer, DateTime, Sequence, String, ForeignKey,
                         UniqueConstraint)
-from sqlalchemy.orm import relation, reconstructor, deferred
+from sqlalchemy.orm import relationship, reconstructor, deferred
 from sqlalchemy.orm.collections import column_mapped_collection
 
 from aquilon.aqdb.model import Base, PersonalityStage
@@ -55,7 +55,7 @@ class PersonalityClusterInfo(Base):
         # the copy to the same personality anyway
         return type(self)(cluster_type=self.cluster_type)
 
-PersonalityStage.cluster_infos = relation(PersonalityClusterInfo,
+PersonalityStage.cluster_infos = relationship(PersonalityClusterInfo,
                                           collection_class=column_mapped_collection(PersonalityClusterInfo.cluster_type),
                                           cascade="all, delete-orphan",
                                           passive_deletes=True)

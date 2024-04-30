@@ -35,7 +35,7 @@ from sqlalchemy import (
     )
 from sqlalchemy.orm import (
     column_property,
-    relation,
+    relationship,
     validates,
     )
 from sqlalchemy.sql import (
@@ -59,7 +59,7 @@ class VirtualDisk(Disk):
 
     vsan_policy_key = Column(String(255), nullable=True)
 
-    backing_store = relation(Resource)
+    backing_store = relationship(Resource)
 
     __mapper_args__ = {'polymorphic_identity': 'virtual_disk'}
 

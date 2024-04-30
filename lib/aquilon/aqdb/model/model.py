@@ -31,7 +31,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import (
                             deferred,
                             object_session,
-                            relation,
+                            relationship,
                             )
 
 
@@ -58,7 +58,7 @@ class Model(Base):
                                     nullable=False))
     comments = Column(String(255))
 
-    vendor = relation(Vendor, innerjoin=True)
+    vendor = relationship(Vendor, innerjoin=True)
 
     __table_args__ = (UniqueConstraint(vendor_id, name),
                       {'info': {'unique_fields': ['name', 'vendor'],

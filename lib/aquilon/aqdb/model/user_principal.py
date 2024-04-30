@@ -20,7 +20,7 @@ from datetime import datetime
 
 from sqlalchemy import (Column, Integer, DateTime, Sequence, String, ForeignKey,
                         UniqueConstraint)
-from sqlalchemy.orm import relation, deferred
+from sqlalchemy.orm import relationship, deferred
 
 from aquilon.aqdb.model import Base, Role, Realm
 
@@ -45,8 +45,8 @@ class UserPrincipal(Base):
 
     comments = deferred(Column(String(255), nullable=True))
 
-    role = relation(Role, innerjoin=True)
-    realm = relation(Realm, innerjoin=True)
+    role = relationship(Role, innerjoin=True)
+    realm = relationship(Realm, innerjoin=True)
 
     __table_args__ = (UniqueConstraint(realm_id, name),
                       {'info': {'unique_fields': ['name', 'realm']}})

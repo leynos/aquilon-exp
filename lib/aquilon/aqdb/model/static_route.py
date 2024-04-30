@@ -20,7 +20,7 @@ from ipaddress import ip_network
 
 from sqlalchemy import (Column, Integer, String, DateTime, ForeignKey, Sequence,
                         Index)
-from sqlalchemy.orm import relation, deferred, backref
+from sqlalchemy.orm import relationship, deferred, backref
 
 from aquilon.aqdb.model import Base, Network
 from aquilon.aqdb.column_types import IP
@@ -56,12 +56,12 @@ class StaticRoute(Base):
                                     nullable=False))
     comments = deferred(Column(String(255), nullable=True))
 
-    network = relation(Network, innerjoin=True,
+    network = relationship(Network, innerjoin=True,
                        backref=backref("static_routes",
                                        cascade="all, delete-orphan",
                                        passive_deletes=True))
 
-    personality_stage = relation('PersonalityStage')
+    personality_stage = relationship('PersonalityStage')
 
     __table_args__ = (Index("%s_gw_network_ip_idx" % _TN, network_id,
                             gateway_ip),)

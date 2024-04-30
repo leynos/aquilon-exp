@@ -22,7 +22,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import (
     backref,
-    relation,
+    relationship,
 )
 
 from aquilon.aqdb.model import (
@@ -49,7 +49,7 @@ class SharedServiceName(Resource):
     # that the address-alias records can be created against
     fqdn_id = Column(ForeignKey(Fqdn.id), nullable=False, index=True)
 
-    fqdn = relation(Fqdn, lazy=False, innerjoin=True,
+    fqdn = relationship(Fqdn, lazy=False, innerjoin=True,
                     backref=backref('shared_service_names'))
 
     __table_args__ = ({'info': {'unique_fields': ['name', 'holder']}},)

@@ -19,7 +19,7 @@
 from sqlalchemy.ext.declarative import declared_attr
 
 from sqlalchemy import Column, ForeignKey
-from sqlalchemy.orm import relation
+from sqlalchemy.orm import relationship
 
 from aquilon.aqdb.model import Branch, Sandbox, PersonalityStage, User
 
@@ -41,15 +41,15 @@ class CompileableMixin:
 
     @declared_attr
     def personality_stage(cls):  # pylint: disable=E0213
-        return relation(PersonalityStage, lazy=False, innerjoin=True)
+        return relationship(PersonalityStage, lazy=False, innerjoin=True)
 
     @declared_attr
     def branch(cls):  # pylint: disable=E0213
-        return relation(Branch, lazy=False, innerjoin=True)
+        return relationship(Branch, lazy=False, innerjoin=True)
 
     @declared_attr
     def sandbox_author(cls):  # pylint: disable=E0213
-        return relation(User)
+        return relationship(User)
 
     @property
     def archetype(self):

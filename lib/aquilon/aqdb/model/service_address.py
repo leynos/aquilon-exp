@@ -16,7 +16,7 @@
 # limitations under the License.
 
 from sqlalchemy import Column, ForeignKey, PrimaryKeyConstraint
-from sqlalchemy.orm import relation, backref
+from sqlalchemy.orm import relationship, backref
 
 from aquilon.aqdb.model import Base, Resource, ARecord, Interface
 
@@ -33,7 +33,7 @@ class ServiceAddress(Resource):
     dns_record_id = Column(ForeignKey(ARecord.dns_record_id),
                            nullable=False, index=True)
 
-    dns_record = relation(ARecord, innerjoin=True,
+    dns_record = relationship(ARecord, innerjoin=True,
                           backref=backref('service_addresses',
                                           passive_deletes=True))
 
@@ -64,7 +64,7 @@ class __ServiceAddressInterface(Base):
 
     __table_args__ = (PrimaryKeyConstraint(service_address_id, interface_id),)
 
-ServiceAddress.interfaces = relation(Interface,
+ServiceAddress.interfaces = relationship(Interface,
                                      secondary=__ServiceAddressInterface.__table__,
                                      passive_deletes=True,
                                      backref=backref('service_addresses'))

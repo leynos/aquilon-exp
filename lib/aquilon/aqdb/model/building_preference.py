@@ -23,7 +23,7 @@ from operator import attrgetter
 
 from sqlalchemy import (DateTime, Column, ForeignKey, PrimaryKeyConstraint,
                         CheckConstraint)
-from sqlalchemy.orm import column_property, deferred, relation, validates
+from sqlalchemy.orm import column_property, deferred, relationship, validates
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.sql import and_, or_, case, exists
 
@@ -58,10 +58,10 @@ class BuildingPreference(Base):
     creation_date = deferred(Column(DateTime, default=datetime.now,
                                     nullable=False))
 
-    a = relation(Building, foreign_keys=a_id, innerjoin=True)
-    b = relation(Building, foreign_keys=b_id, innerjoin=True)
-    prefer = relation(Building, foreign_keys=prefer_id, innerjoin=True)
-    archetype = relation(Archetype, innerjoin=True)
+    a = relationship(Building, foreign_keys=a_id, innerjoin=True)
+    b = relationship(Building, foreign_keys=b_id, innerjoin=True)
+    prefer = relationship(Building, foreign_keys=prefer_id, innerjoin=True)
+    archetype = relationship(Archetype, innerjoin=True)
 
     __table_args__ = (PrimaryKeyConstraint(a_id, b_id, archetype_id),
                       CheckConstraint(and_(a_id < b_id,

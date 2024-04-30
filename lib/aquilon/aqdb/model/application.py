@@ -16,7 +16,7 @@
 # limitations under the License.
 
 from sqlalchemy import Column, ForeignKey
-from sqlalchemy.orm import relation
+from sqlalchemy.orm import relationship
 
 from aquilon.aqdb.model import Resource, Grn
 
@@ -32,7 +32,7 @@ class Application(Resource):
 
     eon_id = Column(ForeignKey(Grn.eon_id), nullable=False)
 
-    grn = relation(Grn, innerjoin=True)
+    grn = relationship(Grn, innerjoin=True)
 
     __mapper_args__ = {'polymorphic_identity': _TN}
     __table_args__ = ({'info': {'unique_fields': ['name', 'holder']}},)

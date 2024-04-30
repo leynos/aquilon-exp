@@ -17,7 +17,7 @@
 """ DNS CNAME records """
 
 from sqlalchemy import Column, ForeignKey
-from sqlalchemy.orm import relation, backref, column_property
+from sqlalchemy.orm import relationship, backref, column_property
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.sql import select, func
 
@@ -37,7 +37,7 @@ class Alias(DnsRecordTargetMixin, DnsRecord):
     target_id = Column(ForeignKey(Fqdn.id, name='%s_target_fk' % _TN),
                        nullable=False, index=True)
 
-    target = relation(Fqdn, innerjoin=True, foreign_keys=target_id,
+    target = relationship(Fqdn, innerjoin=True, foreign_keys=target_id,
                       backref=backref('aliases'))
 
     # The same name may resolve to multiple RRs

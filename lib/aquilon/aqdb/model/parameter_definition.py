@@ -24,7 +24,7 @@ from jsonschema import validate, ValidationError, Draft4Validator
 
 from sqlalchemy import (Column, Integer, DateTime, Sequence, String, Boolean,
                         Text, ForeignKey, UniqueConstraint)
-from sqlalchemy.orm import relation, backref, deferred, validates
+from sqlalchemy.orm import relationship, backref, deferred, validates
 from sqlalchemy.orm.collections import column_mapped_collection
 
 from aquilon.exceptions_ import ArgumentError, InternalError
@@ -87,7 +87,7 @@ class ArchetypeParamDef(ParamDefHolder):
 
     template = Column(String(32))
 
-    archetype = relation(Archetype,
+    archetype = relationship(Archetype,
                          backref=backref('param_def_holders',
                                          cascade='all, delete-orphan',
                                          passive_deletes=True,
@@ -111,7 +111,7 @@ class FeatureParamDef(ParamDefHolder):
     feature_id = Column(ForeignKey(Feature.id, ondelete='CASCADE'),
                         nullable=True, unique=True)
 
-    feature = relation(Feature,
+    feature = relationship(Feature,
                        backref=backref('param_def_holder', uselist=False,
                                        cascade='all, delete-orphan',
                                        passive_deletes=True))
@@ -150,7 +150,7 @@ class ParamDefinition(Base):
 
     activation = Column(Enum(10, _ACTIVATION_TYPE), nullable=True)
 
-    holder = relation(ParamDefHolder, innerjoin=True,
+    holder = relationship(ParamDefHolder, innerjoin=True,
                       backref=backref('param_definitions',
                                       cascade='all, delete-orphan'))
 

@@ -23,7 +23,7 @@ from datetime import datetime
 
 from sqlalchemy import (Column, Integer, DateTime, ForeignKey,
                         PrimaryKeyConstraint)
-from sqlalchemy.orm import (relation, backref, deferred, validates,
+from sqlalchemy.orm import (relationship, backref, deferred, validates,
                             object_session)
 
 from aquilon.exceptions_ import ArgumentError
@@ -128,6 +128,6 @@ class __MetaClusterMember(Base):
 
     __table_args__ = (PrimaryKeyConstraint(metacluster_id, cluster_id),)
 
-MetaCluster.members = relation(Cluster,
+MetaCluster.members = relationship(Cluster,
                                secondary=__MetaClusterMember.__table__,
                                backref=backref('metacluster', uselist=False))

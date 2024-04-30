@@ -32,7 +32,7 @@ from datetime import datetime
 
 from sqlalchemy import (Column, Integer, Sequence, String, DateTime, Boolean,
                         ForeignKey, PrimaryKeyConstraint)
-from sqlalchemy.orm import relation, backref, deferred, aliased, object_session
+from sqlalchemy.orm import relationship, backref, deferred, aliased, object_session
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.sql import or_, null
 from sqlalchemy.util import memoized_property
@@ -105,7 +105,7 @@ class __ServiceListItem(Base):
 
     __table_args__ = (PrimaryKeyConstraint(service_id, archetype_id),)
 
-Service.archetypes = relation(Archetype, secondary=__ServiceListItem.__table__,
+Service.archetypes = relationship(Archetype, secondary=__ServiceListItem.__table__,
                               backref=backref("required_services",
                                               passive_deletes=True))
 
@@ -126,16 +126,16 @@ class PersonalityServiceListItem(Base):
 
     host_environment_id = Column(ForeignKey(HostEnvironment.id), nullable=True)
 
-    service = relation(Service, innerjoin=True,
+    service = relationship(Service, innerjoin=True,
                        backref=backref("personality_assignments"))
 
-    personality_stage = relation(PersonalityStage, innerjoin=True,
+    personality_stage = relationship(PersonalityStage, innerjoin=True,
                                  backref=backref("required_services",
                                                  collection_class=attribute_mapped_collection('service'),
                                                  cascade="all, delete-orphan",
                                                  passive_deletes=True))
 
-    host_environment = relation(HostEnvironment)
+    host_environment = relationship(HostEnvironment)
 
     __table_args__ = (PrimaryKeyConstraint(service_id, personality_stage_id),)
 
@@ -155,7 +155,7 @@ class __OSServiceListItem(Base):
 
     __table_args__ = (PrimaryKeyConstraint(service_id, operating_system_id),)
 
-Service.operating_systems = relation(OperatingSystem,
+Service.operating_systems = relationship(OperatingSystem,
                                      secondary=__OSServiceListItem.__table__,
                                      backref=backref("required_services",
                                                      passive_deletes=True))

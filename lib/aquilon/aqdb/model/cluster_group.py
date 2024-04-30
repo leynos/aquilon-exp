@@ -19,7 +19,7 @@ from datetime import datetime
 
 from sqlalchemy import (Column, Integer, DateTime, Sequence, ForeignKey,
                         PrimaryKeyConstraint)
-from sqlalchemy.orm import relation, backref, deferred
+from sqlalchemy.orm import relationship, backref, deferred
 
 from aquilon.aqdb.model import Base, Cluster
 
@@ -47,7 +47,7 @@ class __ClusterGroupMember(Base):
 
     __table_args__ = (PrimaryKeyConstraint(cluster_group_id, cluster_id),)
 
-ClusterGroup.members = relation(Cluster,
+ClusterGroup.members = relationship(Cluster,
                                 secondary=__ClusterGroupMember.__table__,
                                 passive_deletes=True,
                                 backref=backref('cluster_group', uselist=False,

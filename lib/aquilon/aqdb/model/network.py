@@ -28,7 +28,7 @@ from six import text_type
 from sqlalchemy import (Column, Integer, Sequence, String, DateTime, ForeignKey,
                         UniqueConstraint, CheckConstraint, desc, event)
 from sqlalchemy.ext.associationproxy import association_proxy
-from sqlalchemy.orm import (relation, deferred, reconstructor, validates,
+from sqlalchemy.orm import (relationship, deferred, reconstructor, validates,
                             object_session)
 from sqlalchemy.pool import Pool
 from sqlalchemy.sql import and_, not_, func, literal_column, case
@@ -132,11 +132,11 @@ class Network(Base):
 
     comments = deferred(Column(String(255), nullable=True))
 
-    network_environment = relation(NetworkEnvironment, innerjoin=True)
+    network_environment = relationship(NetworkEnvironment, innerjoin=True)
 
-    network_compartment = relation(NetworkCompartment)
+    network_compartment = relationship(NetworkCompartment)
 
-    location = relation(Location, innerjoin=True)
+    location = relationship(Location, innerjoin=True)
 
     # The routers relation is defined in router_address.py
     router_ips = association_proxy("routers", "ip")

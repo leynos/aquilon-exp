@@ -19,7 +19,7 @@ from datetime import datetime
 
 from sqlalchemy import (Column, String, DateTime, ForeignKey,
                         PrimaryKeyConstraint)
-from sqlalchemy.orm import relation, deferred, backref
+from sqlalchemy.orm import relationship, deferred, backref
 from sqlalchemy.sql import and_
 
 from aquilon.aqdb.model import Base, Network, Location
@@ -52,13 +52,13 @@ class RouterAddress(Base):
 
     comments = deferred(Column(String(255), nullable=True))
 
-    network = relation(Network, innerjoin=True,
+    network = relationship(Network, innerjoin=True,
                        backref=backref('routers', cascade="all, delete-orphan",
                                        order_by=[ip]))
 
-    location = relation(Location)
+    location = relationship(Location)
 
-    dns_records = relation(dns_fqdn_mapper,
+    dns_records = relationship(dns_fqdn_mapper,
                            primaryjoin=and_(network_id == dns_fqdn_mapper.c.network_id,
                                             ip == dns_fqdn_mapper.c.ip),
                            foreign_keys=[dns_fqdn_mapper.c.ip,

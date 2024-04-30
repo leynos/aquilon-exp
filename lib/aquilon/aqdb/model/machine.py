@@ -17,7 +17,7 @@
 """The tables/objects/mappings related to hardware in Aquilon. """
 
 from sqlalchemy import Column, Integer, ForeignKey, String
-from sqlalchemy.orm import relation
+from sqlalchemy.orm import relationship
 
 from aquilon.aqdb.column_types import GUID
 from aquilon.aqdb.model import Model, HardwareEntity
@@ -45,7 +45,7 @@ class Machine(HardwareEntity):
 
     uri = Column(String(400), nullable=True)
 
-    cpu_model = relation(Model, innerjoin=True, foreign_keys=cpu_model_id)
+    cpu_model = relationship(Model, innerjoin=True, foreign_keys=cpu_model_id)
 
     @property
     def cluster(self):

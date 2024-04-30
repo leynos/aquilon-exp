@@ -28,7 +28,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import (
     deferred,
-    relation,
+    relationship,
 )
 
 from aquilon.aqdb.column_types import AqStr
@@ -70,7 +70,7 @@ class User(Base):
     home_dir = Column(String(64), nullable=False)
 
     type_id = Column(ForeignKey(UserType.id), nullable=False)
-    type = relation(UserType, lazy=False, innerjoin=True)
+    type = relationship(UserType, lazy=False, innerjoin=True)
 
     creation_date = deferred(Column(DateTime, default=datetime.now,
                                     nullable=False))

@@ -16,7 +16,7 @@
 # limitations under the License.
 
 from sqlalchemy import Column, ForeignKey
-from sqlalchemy.orm import relation, backref
+from sqlalchemy.orm import relationship, backref
 
 from aquilon.aqdb.model import Resource, Machine
 
@@ -34,7 +34,7 @@ class VirtualMachine(Resource):
     machine_id = Column(ForeignKey(Machine.hardware_entity_id), nullable=False,
                         unique=True)
 
-    machine = relation(Machine, innerjoin=True,
+    machine = relationship(Machine, innerjoin=True,
                        backref=backref('vm_container', uselist=False,
                                        cascade='all'))
 

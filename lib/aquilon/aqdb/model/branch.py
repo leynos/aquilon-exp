@@ -20,7 +20,7 @@ from datetime import datetime
 
 from sqlalchemy import (Integer, Boolean, DateTime, Sequence, String,
                         Column, ForeignKey, PrimaryKeyConstraint)
-from sqlalchemy.orm import relation, deferred, backref, validates
+from sqlalchemy.orm import relationship, deferred, backref, validates
 
 from aquilon.exceptions_ import ArgumentError
 from aquilon.aqdb.model import Base, UserPrincipal
@@ -94,7 +94,7 @@ class Domain(Branch):
 
     archived = Column(Boolean, nullable=False, default=False)
 
-    tracked_branch = relation(Branch, foreign_keys=tracked_branch_id,
+    tracked_branch = relationship(Branch, foreign_keys=tracked_branch_id,
                               backref=backref('trackers'))
 
     auto_compile = Column(Boolean, nullable=False, default=True)
@@ -118,7 +118,7 @@ class Sandbox(Branch):
 
     base_commit = Column(AqStr(40), nullable=False)
 
-    owner = relation(UserPrincipal, innerjoin=True)
+    owner = relationship(UserPrincipal, innerjoin=True)
 
     __table_args__ = ({'info': {'unique_fields': ['name']}},)
     __mapper_args__ = {'polymorphic_identity': _SBX}
@@ -143,9 +143,9 @@ class Review(Base):
 
     approved = Column(Boolean, nullable=True)
 
-    target = relation(Domain, innerjoin=True, foreign_keys=target_id)
+    target = relationship(Domain, innerjoin=True, foreign_keys=target_id)
 
-    source = relation(Branch, innerjoin=True, foreign_keys=source_id,
+    source = relationship(Branch, innerjoin=True, foreign_keys=source_id,
                       backref=backref('reviews',
                                       cascade="all, delete-orphan",
                                       passive_deletes=True))

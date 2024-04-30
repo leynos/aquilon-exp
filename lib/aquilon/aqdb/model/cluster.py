@@ -20,7 +20,7 @@ from datetime import datetime
 
 from sqlalchemy import (Column, Integer, Boolean, String, DateTime, Sequence,
                         ForeignKey, UniqueConstraint, PrimaryKeyConstraint)
-from sqlalchemy.orm import (object_session, relation, backref, deferred,
+from sqlalchemy.orm import (object_session, relationship, backref, deferred,
                             joinedload, validates)
 from sqlalchemy.orm.attributes import set_committed_value
 from sqlalchemy.ext.associationproxy import association_proxy
@@ -79,10 +79,10 @@ class Cluster(CompileableMixin, Base):
     status_id = Column(ForeignKey(ClusterLifecycle.id), nullable=False)
     comments = Column(String(255))
 
-    status = relation(ClusterLifecycle, innerjoin=True)
-    location_constraint = relation(Location, lazy=False, innerjoin=True,
+    status = relationship(ClusterLifecycle, innerjoin=True)
+    location_constraint = relationship(Location, lazy=False, innerjoin=True,
                                    foreign_keys=location_constraint_id)
-    preferred_location = relation(Location, foreign_keys=preferred_location_id)
+    preferred_location = relationship(Location, foreign_keys=preferred_location_id)
 
     hosts = association_proxy('_hosts', 'host', creator=_hcm_host_creator)
 
@@ -308,7 +308,7 @@ class EsxCluster(Cluster):
     network_device_id = Column(ForeignKey(NetworkDevice.hardware_entity_id),
                                nullable=True, index=True)
 
-    network_device = relation(NetworkDevice, lazy=False,
+    network_device = relationship(NetworkDevice, lazy=False,
                               backref=backref('esx_clusters'))
 
     __table_args__ = ({'info': {'unique_fields': ['name']}},)
@@ -358,12 +358,12 @@ class HostClusterMember(Base):
     # of the Cluster and it's links. On the contrary do not have
     # cascade='all' on the forward mapper here, else deletion of
     # clusters and their links also causes deletion of hosts (BAD)
-    cluster = relation(Cluster, innerjoin=True,
+    cluster = relationship(Cluster, innerjoin=True,
                        backref=backref('_hosts', cascade='all, delete-orphan',
                                        passive_deletes=True))
 
-    # This is a one-to-one relation, so we need uselist=False on the backref
-    host = relation(Host, innerjoin=True,
+    # This is a one-to-one relationship, so we need uselist=False on the backref
+    host = relationship(Host, innerjoin=True,
                     backref=backref('_cluster', uselist=False,
                                     cascade='all, delete-orphan',
                                     passive_deletes=True))
@@ -387,6 +387,6 @@ class __ClusterAllowedPersonality(Base):
 
     __table_args__ = (PrimaryKeyConstraint(cluster_id, personality_id),)
 
-Cluster.allowed_personalities = relation(Personality,
+Cluster.allowed_personalities = relationship(Personality,
                                          secondary=__ClusterAllowedPersonality.__table__,
                                          passive_deletes=True)
