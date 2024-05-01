@@ -215,7 +215,7 @@ class IBServices:
             return
         if not name:
             raise ArgumentError("Required argument 'name' is missing")
-        payload = {"eonid": self.eonid, "name": name, "address": ip}
+        payload = {"name": name, "address": ip}
         if ttl is not None and ttl != -1:
             payload['ttl'] = ttl
         if (self.justification is not None):
@@ -238,7 +238,7 @@ class IBServices:
         if new_name is None and new_ttl is None:
             return
 
-        payload = {"eonid": self.eonid}
+        payload = {}
         if (self.justification is not None):
             payload["cm_token"] = self.justification
         if new_name is not None:
@@ -264,9 +264,7 @@ class IBServices:
         assert(isinstance(ip, str))
         if not self._assert_ip(ip):
             return
-        params = {
-            "eonid": self.eonid,
-        }
+        params = {}
         if self.justification is not None:
             params["cm_token"] = self.justification
         url = "/dns/a_ptr/ptr/{}".format(ip)
@@ -282,7 +280,7 @@ class IBServices:
             assert(isinstance(ttl, int))
         if not self._assert_ip(ip):
             return
-        payload = {"eonid": self.eonid, "name": name, "address": ip}
+        payload = {"name": name, "address": ip}
         if ttl is not None and ttl != -1:
             payload['ttl'] = ttl
         if (self.justification is not None):
@@ -306,7 +304,7 @@ class IBServices:
         if new_ip is None and new_ttl is None:
             return
 
-        payload = {"eonid": self.eonid}
+        payload = {}
         if (self.justification is not None):
             payload["cm_token"] = self.justification
         if new_ip is not None:
@@ -334,9 +332,7 @@ class IBServices:
         assert(isinstance(ip, str))
         if not self._assert_ip(ip):
             return
-        params = {
-            "eonid": self.eonid,
-        }
+        params = {}
         if self.justification is not None:
             params["cm_token"] = self.justification
         url = "/dns/a_ptr/a/{}/{}".format(name, ip)
@@ -517,7 +513,7 @@ class IBServices:
         assert(isinstance(target, str))
         if ttl is not None:
             assert(isinstance(ttl, int))
-        payload = {"eonid": self.eonid, "name": name, "target": target}
+        payload = {"name": name, "target": target}
         if ttl is not None and ttl != -1:
             payload["ttl"] = ttl
         if self.justification is not None:
@@ -533,7 +529,7 @@ class IBServices:
     @with_timer
     def _del_dns_alias(self, name):
         assert(isinstance(name, str))
-        params = { "eonid": self.eonid }
+        params = {}
         if self.justification is not None:
             params["cm_token"] = self.justification
         url = f"/dns/aliases/{name}"
@@ -548,7 +544,7 @@ class IBServices:
             assert(isinstance(new_target, str))
         if ttl is not None:
             assert(isinstance(ttl, int))
-        payload = {"eonid": self.eonid}
+        payload = {}
         if new_target is not None:
             payload["target"] = new_target
         if ttl is not None:
@@ -573,7 +569,6 @@ class IBServices:
     @with_timer
     def add_dynamic_range(self, name, start_address, end_address):
         payload = {
-            "eonid":         self.eonid,
             "name":          name,
             "start_address": str(start_address),
             "end_address":   str(end_address),
@@ -586,7 +581,7 @@ class IBServices:
 
     @with_timer
     def delete_dynamic_range(self, start_address, end_address):
-        params = { "eonid": self.eonid }
+        params = {}
         if self.justification is not None:
             params["cm_token"] = self.justification
         url = f"/ranges/{start_address}/{end_address}"
@@ -626,7 +621,6 @@ class IBServices:
             assert(isinstance(ttl, int))
         url = "/dns/srv"
         payload = {
-            "eonid":    self.eonid,
             "service":  service,
             "protocol": protocol,
             "domain":   str(dns_domain),
@@ -667,7 +661,6 @@ class IBServices:
         assert(isinstance(priority, int))
         assert(isinstance(weight, int))
         options = {
-            "eonid":    self.eonid,
             "service":  service,
             "protocol": protocol,
             "domain":   str(dns_domain),
@@ -721,7 +714,6 @@ class IBServices:
             payload["domain"] = str(payload["domain"])
         if payload.get("target", None):
             payload["target"] = str(payload["target"])
-        payload["eonid"] = self.eonid
         payload["cm_token"] = self.justification
 
         params = dict(filter(lambda item: item[1] is not None, old.items()))
@@ -800,7 +792,7 @@ class IBServices:
                         # Probably a JSON decode error.  Fall back to showing whole body of response.
                         error_msg = response.text
 
-                    msg = self._log_ib_result(f"Infoblox response exception error: '{error_msg}'", http_cmd, full_url, data, response)
+                    msg = self._log_ib_result(f"Infoblox error: '{error_msg}'", http_cmd, full_url, data, response)
                     raise ProcessException(msg)
             else:
                 raise ProcessException("Infoblox returned errors or no Infoblox servers could be reached, aborting change")
@@ -813,7 +805,7 @@ class IBServices:
 
     def _log_ib_result(self, msg, http_cmd, full_url, request_data, response):
         response_str = f"{response.status_code} {response.reason}"
-        msg += f"got {response_str} for {http_cmd} {full_url}"
+        msg += f" got {response_str} for {http_cmd} {full_url}"
 
         if request_data:
             msg += f" (request body '{request_data}')"

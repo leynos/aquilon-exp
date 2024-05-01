@@ -65,7 +65,7 @@ class IBServicesTest(IBServices):
 
     def _add_zone(self, fqdn, city=None):
         url = "/dns/zones/"
-        payload = {"fqdn": fqdn, "city": city, "eonid": self.eonid}
+        payload = {"fqdn": fqdn, "city": city}
         if self.justification is not None:
             payload["cm_token"] = self.justification
         self._http_request("POST", url, payload)
