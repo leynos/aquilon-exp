@@ -332,7 +332,7 @@ class IBServicesRequestHandler(SimpleHTTPRequestHandler):
             test_case = http_monitor.expects.pop(0)
             r = test_case["request"]
 
-            assert r["method"] == self.command and r["path"] == self.path, "Expected xrequest:\n{} {} {}\ngot:\n{} {} {}\n".format(
+            assert r["method"] == self.command and r["path"] == self.path, "Expected request:\n{} {} {}\ngot:\n{} {} {}\n".format(
                     r["method"], r["path"], r["payload"], self.command, self.path, self.body)
 
             if self.json_body:
