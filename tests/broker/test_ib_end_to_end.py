@@ -135,7 +135,7 @@ class DnsChecker:
         return (p, out, err)
 
     def _run_dns_check(self, args):
-        dns_server = '10.253.74.75'
+        dns_server = '10.253.123.138'
         # Using /usr/bin/host makes this code compatible with both python 2 and 3.
         # Ideally change this to use a python library after the broker is migrated to python 3.
         command = ['/usr/bin/host'] + args + [dns_server]
