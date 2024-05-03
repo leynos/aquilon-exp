@@ -50,7 +50,6 @@ class IBServices:
     urls = re.split(r"\s*,\s*", config.get("ib-services", "urls"))
     timeout = float(config.get("ib-services", "timeout"))
     ca_chain = config.get("ib-services", "ca_chain")
-    eonid = config.get("broker", "aqd_eonid")
 
     transaction_id_header = "X-MS-Unique-ID"
 

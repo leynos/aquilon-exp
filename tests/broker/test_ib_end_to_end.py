@@ -43,13 +43,12 @@ class IBServicesTest(IBServices):
         url = "/networks/{}".format(quote(network, safe=""))
 
         payload = {
+            "eonid": 1156,
             "name": name,
             "compartment": compartment,
             "side": side,
             "sysloc": sysloc,
         }
-        if self.eonid:
-            payload["eonid"] = self.eonid
 
         self._http_request("POST", url, payload)
 
