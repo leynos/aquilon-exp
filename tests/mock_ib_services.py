@@ -459,8 +459,6 @@ def ib_test_case(method, path, payload, response_code, response_body):
     }
 
 
-eonid = "1156"
-
 def ib_expect_add_ptr(fqdn, ip, ttl=None, response_code=201, response_body="", justification=None, fail=False):
     ip = str(ip)
     if fail:
@@ -468,7 +466,6 @@ def ib_expect_add_ptr(fqdn, ip, ttl=None, response_code=201, response_body="", j
     payload = {
         "name": fqdn,
         "address": ip,
-        "eonid": eonid,
     }
     if ttl is not None and ttl != -1: #  In ib add_ptr, a ttl value of -1 triggers an error, see http://jiraeai.ms.com/jira/browse/DDI-2982
         payload["ttl"] = ttl
@@ -483,9 +480,9 @@ def ib_expect_del_ptr(ip, response_code=204, response_body="", justification=Non
     ip = str(ip)
     if fail:
         response_code = 400
-    path = "/dns/a_ptr/ptr/{}?eonid={}".format(ip, eonid)
+    path = "/dns/a_ptr/ptr/{}".format(ip)
     if justification is not None:
-        path = path + "&cm_token={}".format(quote_plus(justification))
+        path = path + "?cm_token={}".format(quote_plus(justification))
     test_case = ib_test_case(
         "DELETE",
         path,
@@ -500,7 +497,6 @@ def ib_expect_update_ptr(ip, new_fqdn, new_ttl=-1, response_code=201, response_b
         response_code = 400
     payload = {
         "name": new_fqdn,
-        "eonid": eonid,
     }
     if new_ttl is not None:
         payload["ttl"] = new_ttl
@@ -518,7 +514,6 @@ def ib_expect_add_a(fqdn, ip, ttl=None, response_code=201, response_body="", jus
     payload = {
         "name": fqdn,
         "address": ip,
-        "eonid": eonid,
     }
     if ttl is not None:
         payload["ttl"] = ttl
@@ -533,9 +528,9 @@ def ib_expect_del_a(fqdn, ip, response_code=204, response_body="", justification
     ip = str(ip)
     if fail:
         response_code = 400
-    path = "/dns/a_ptr/a/{}/{}?eonid={}".format(str(fqdn), ip, eonid)
+    path = "/dns/a_ptr/a/{}/{}".format(str(fqdn), ip)
     if justification is not None:
-        path = path + "&cm_token={}".format(quote_plus(justification))
+        path = path + "?cm_token={}".format(quote_plus(justification))
     test_case = ib_test_case(
         "DELETE",
         path,
@@ -549,7 +544,7 @@ def ib_expect_update_a(fqdn, original_ip, new_ip=None,
     original_ip = str(original_ip)
     if fail:
         response_code = 400
-    payload = {"eonid": eonid}
+    payload = {}
     if new_ip:
         payload["address"] = str(new_ip)
     else:
@@ -569,7 +564,7 @@ def ib_expect_update_a(fqdn, original_ip, new_ip=None,
 def ib_expect_add_alias(fqdn, target, ttl=None, response_code=204, response_body="", justification=None, fail=False):
     if fail:
         response_code = 400
-    payload = {"eonid": eonid, "name": fqdn, "target": target}
+    payload = {"name": fqdn, "target": target}
     if ttl is not None:
         payload["ttl"] = ttl
     if justification is not None:
@@ -585,7 +580,7 @@ def ib_expect_update_alias(fqdn, target=None, ttl=-1, response_code=204, respons
                            fail=False):
     if fail:
         response_code = 400
-    payload = {"eonid": eonid}
+    payload = {}
     if target:
         payload["target"] = target
     if ttl is not None:
@@ -602,9 +597,9 @@ def ib_expect_update_alias(fqdn, target=None, ttl=-1, response_code=204, respons
 def ib_expect_del_alias(fqdn, response_code=204, response_body="", justification=None, fail=False):
     if fail:
         response_code = 400
-    path = f"/dns/aliases/{fqdn}?eonid={eonid}"
+    path = f"/dns/aliases/{fqdn}"
     if justification is not None:
-        path = path + f"&cm_token={quote_plus(justification)}"
+        path = path + f"?cm_token={quote_plus(justification)}"
     test_case = ib_test_case(
         "DELETE",
         path,
@@ -616,7 +611,7 @@ def ib_expect_add_range(name, start_address, end_address, response_code=201, res
                         fail=False):
     if fail:
         response_code = 400
-    payload = {"eonid": eonid, "name": name, "start_address": start_address, "end_address": end_address}
+    payload = {"name": name, "start_address": start_address, "end_address": end_address}
     if justification is not None:
         payload["cm_token"] = justification
     test_case = ib_test_case("POST", "/ranges", payload, response_code, response_body)
@@ -627,9 +622,9 @@ def ib_expect_del_range(start_address, end_address, response_code=204, response_
                         fail=False):
     if fail:
         response_code = 400
-    path = f"/ranges/{start_address}/{end_address}?eonid={eonid}"
+    path = f"/ranges/{start_address}/{end_address}"
     if justification is not None:
-        path = path + f"&cm_token={quote_plus(justification)}"
+        path = path + f"?cm_token={quote_plus(justification)}"
     test_case = ib_test_case(
         "DELETE",
         path,
@@ -651,7 +646,6 @@ def ib_expect_add_dns_srv_record(service, protocol, dns_domain, target, port, pr
     if fail:
         response_code = 400
     payload = {
-        "eonid":    eonid,
         "service":  service,
         "domain":   str(dns_domain),
         "target":   str(target),
@@ -692,7 +686,6 @@ def ib_expect_update_dns_srv_record(old, new, response_code=204, response_body="
         payload["domain"] = str(payload["domain"])
     if payload.get("target", None):
         payload["target"] = str(payload["target"])
-    payload["eonid"] = eonid
 
     if justification is not None:
         payload["cm_token"] = justification
@@ -710,7 +703,6 @@ def ib_expect_del_dns_srv_record(service, protocol, dns_domain, target, port=Non
         response_code = 400
 
     options = {
-        "eonid":    eonid,
         "service":  service,
         "protocol": protocol,
         "domain":   dns_domain,
