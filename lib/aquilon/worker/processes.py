@@ -403,7 +403,7 @@ DNS_DOMAIN_NOT_FOUND = re.compile(r"DNS domain ([-\w\.\d]+) doesn't exists")
 
 DNS_DOMAIN_EXISTS = re.compile(r"DNS domain [-\w\.\d]+ already defined")
 
-ALIAS_NOT_FOUND = re.compile(r"Alias [-\w\.\d]+.ms.com doesn't exist")
+ALIAS_NOT_FOUND = re.compile(r"Alias '[-\w\.\d]+.ms.com' doesn't exist")
 
 # The regexp is taken from DSDB
 INVALID_NAME_RE = re.compile(r"[^A-Za-z0-9_.-]")
