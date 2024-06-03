@@ -74,7 +74,7 @@ class TestDelAlias(EventsTestMixin, TestBrokerCommand):
         self.event_del_dns('alias.ms.com')
 
         dsdb_command = "delete_host_alias -alias_name alias.ms.com"
-        errstr = "Alias alias.ms.com doesn't exist"
+        errstr = "Alias 'alias.ms.com' doesn't exist"
         self.dsdb_expect(dsdb_command, True, errstr)
         ib_expect_del_alias("alias.ms.com")
 
