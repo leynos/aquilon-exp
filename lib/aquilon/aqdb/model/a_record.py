@@ -168,7 +168,7 @@ dns_fqdn_mapper = mapper(ARecord, __j,
                              # mapper. This will cause fqdn being joined twice,
                              # but there's no way to tell SQLAlchemy that this
                              # information is already present in __j.
-                             'fqdn': relationship(Fqdn, lazy=False, innerjoin=True,
+                             'fqdn': relationship(Fqdn, overlaps="dns_records,fqdn", lazy=False, innerjoin=True,
                                               primaryjoin=__j.c.dns_record_fqdn_id == Fqdn.id)
                          },
                          polymorphic_identity=_TN,

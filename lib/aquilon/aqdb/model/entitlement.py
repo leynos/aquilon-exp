@@ -122,7 +122,7 @@ class EntitlementTypeUserTypeMap(Base):
     entitlement_type_id = Column(ForeignKey(EntitlementType.id,
                                             ondelete='CASCADE'),
                                  nullable=False)
-    entitlement_type = relationship(EntitlementType, lazy=False, innerjoin=True)
+    entitlement_type = relationship(EntitlementType, lazy=False, innerjoin=True, back_populates='to_user_types')
 
     user_type_id = Column(ForeignKey(UserType.id, ondelete='CASCADE'),
                           nullable=False)
@@ -356,7 +356,7 @@ class EntitlementOnHost(EntitlementOn):
     @declared_attr
     def host(cls):
         return relationship(Host, lazy=False, innerjoin=True,
-                        foreign_keys=cls.host_id)
+                        foreign_keys=cls.host_id, viewonly=True)
 
     _ids = ('host_id', )
     _on_class = Host
@@ -376,7 +376,7 @@ class EntitlementOnCluster(EntitlementOn):
     @declared_attr
     def cluster(cls):
         return relationship(Cluster, lazy=False, innerjoin=True,
-                        foreign_keys=cls.cluster_id)
+                        foreign_keys=cls.cluster_id, viewonly=True)
 
     _ids = ('cluster_id', )
     _on_class = Cluster
@@ -438,7 +438,7 @@ class EntitlementOnPersonality(EntitlementOnLocation):
     @declared_attr
     def personality(cls):
         return relationship(Personality, lazy=False, innerjoin=True,
-                        foreign_keys=cls.personality_id)
+                        foreign_keys=cls.personality_id, viewonly=True)
 
     _ids = ('personality_id', )
     _on_class = Personality
@@ -463,7 +463,7 @@ class EntitlementOnArchetype(EntitlementOnHostEnvironment,
     @declared_attr
     def archetype(cls):
         return relationship(Archetype, lazy=False, innerjoin=True,
-                        foreign_keys=cls.archetype_id)
+                        foreign_keys=cls.archetype_id, viewonly=True)
 
     _ids = ('archetype_id', )
     _on_class = Archetype
@@ -491,7 +491,7 @@ class EntitlementOnGrn(EntitlementOnHostEnvironment,
     @declared_attr
     def target_grn(cls):
         return relationship(Grn, lazy=False, innerjoin=True,
-                        foreign_keys=cls.target_eon_id)
+                        foreign_keys=cls.target_eon_id, viewonly=True)
 
     _ids = ('target_eon_id', )
     _on_class = Grn

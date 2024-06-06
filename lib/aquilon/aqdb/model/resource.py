@@ -152,7 +152,7 @@ class ResourceHolderWithLocation(ResourceHolder):
 class PersonalityResource(ResourceHolderWithLocation):
     personality_id = Column(ForeignKey(Personality.id, ondelete='CASCADE'),
                             nullable=True)
-    personality = relationship(Personality, lazy=False)
+    personality = relationship(Personality, lazy=False, back_populates="resholders")
 
     __mapper_args__ = {'polymorphic_identity': 'personality'}
 
@@ -202,7 +202,7 @@ class ResourceHolderWithLocationAndHostEnvironment(ResourceHolderWithLocation):
 class ArchetypeResource(ResourceHolderWithLocationAndHostEnvironment):
     archetype_id = Column(ForeignKey(Archetype.id, ondelete='CASCADE'),
                           nullable=True)
-    archetype = relationship(Archetype, lazy=False)
+    archetype = relationship(Archetype, lazy=False, back_populates="resholders")
 
     __mapper_args__ = {'polymorphic_identity': 'archetype'}
 
@@ -242,7 +242,7 @@ Archetype.resholders = relationship(ArchetypeResource,
 class GrnResource(ResourceHolderWithLocationAndHostEnvironment):
     eon_id = Column(ForeignKey(Grn.eon_id, ondelete='CASCADE'),
                     nullable=True)
-    grn = relationship(Grn, lazy=False)
+    grn = relationship(Grn, lazy=False, back_populates="resholders")
 
     __mapper_args__ = {'polymorphic_identity': 'grn'}
 
