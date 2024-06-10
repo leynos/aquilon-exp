@@ -179,6 +179,14 @@ class NetworkFormatter(ObjectFormatter):
         if net.network_compartment:
             skeleton.compartment = net.network_compartment.name
 
+        for route in sorted(net.static_routes,
+                            key=attrgetter('destination', 'gateway_ip')):
+            map = skeleton.static_routes.add()
+            map.destination = str(route.destination)
+            map.gateway_ip = str(route.gateway_ip)
+            if route.personality_stage:
+                self.redirect_proto(route.personality_stage, map.personality)
+
         # Look for dynamic DHCP ranges
         range_msg = None
         last_ip = None

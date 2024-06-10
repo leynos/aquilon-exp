@@ -10,7 +10,7 @@ from aq_test_client import AqTestClient
 
 import ms.version
 ms.version.addpkg('protobuf', '4.23.1')
-ms.version.addpkg("protocols", "2024.01.25-1", meta="aquilon")
+ms.version.addpkg("protocols", "2024.04.18-1", meta="aquilon")
 
 from aqddnsdomains_pb2 import DNSRecordList, DNSRecordData, DNSDomainList
 from aqdsystems_pb2 import HostList
