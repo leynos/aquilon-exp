@@ -20,11 +20,13 @@
 import unittest
 import json
 
+from mock_ib_services import get_ib_dns
 from mock_ib_services import ib_expect_add_a
 from mock_ib_services import ib_expect_add_ptr
 from mock_ib_services import ib_expect_del_a
 from mock_ib_services import ib_expect_del_ptr
 from mock_ib_services import ib_expect_update_a
+from mock_ib_services import ib_expect_update_ptr
 
 if __name__ == "__main__":
     from broker import utils
@@ -718,6 +720,27 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         self.ib_verify()
 
         mh.delete()
+
+    def test_920_update_ptr_missing_from_ib(self):
+        mh = MockHub(self)
+
+        mh.add_dns_domain('test-infoblox.cc', restricted=False)
+        mh.add_network()
+
+        mh.add_address("address1.test-infoblox.cc", "10.25.0.1")
+        mh.add_address("address2.test-infoblox.cc", "10.25.0.2")
+
+        # Test that when we update a PTR record that doesn't exist in IB, we correctly create the PTR record in IB
+        mock_ib_dns = get_ib_dns()
+        mock_ib_dns.delete_ptr("10.25.0.1")
+        ib_expect_update_ptr("10.25.0.1", "address2.test-infoblox.cc", response_code=404, justification=self.valid_justification,)
+        ib_expect_add_ptr("address2.test-infoblox.cc", "10.25.0.1", justification=self.valid_justification)
+        command = ["update_address", "--fqdn", "address1.test-infoblox.cc", "--reverse_ptr", "address2.test-infoblox.cc"] + self.valid_just_tcm
+        self.noouttest(command)
+        self.ib_verify()
+
+        mh.delete()
+
 
 
 if __name__ == '__main__':
