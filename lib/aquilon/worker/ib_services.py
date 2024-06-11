@@ -143,6 +143,8 @@ class IBServices:
         # _from.fqdn internal _to.fqdn external # delete the _from PTR record from IB
         # _from.fqdn external _to.fqdn internal # add the _to PTR  record to IB
         # _from.fqdn external _to.fqdn external # Don't update anything
+
+        # If the reverse ptr exists, we need to update it
         if _from["reverse_ptr"] is not None:
             # then check if the ip changed, in which case the reverse ptr needs to be deleted and re-created
             if _from["ip"] != _to["ip"]:
@@ -161,6 +163,12 @@ class IBServices:
                         lambda ip=str(_to["ip"]), new_name=xstr(_to["reverse_ptr"]), new_ttl=int(_to["ttl"]): self._update_ptr(ip=ip, new_name=new_name, new_ttl=new_ttl),
                         lambda ip=str(_to["ip"]), new_name=str(_from["reverse_ptr"]), new_ttl=int(_from["ttl"]): self._update_ptr(ip=ip, new_name=new_name, new_ttl=new_ttl),
                     )
+        else: # If the reverse ptr did not exist before, we need to create it
+            if _to["reverse_ptr"] is not None:
+                self.group.add_action(
+                    lambda ip=str(_to["ip"]), name=str(_to["reverse_ptr"]), ttl=int(_to["ttl"]): self._add_ptr(name=name, ip=ip, ttl=ttl),
+                    lambda ip=str(_to["ip"]): self._del_ptr(ip=ip),
+                )
 
     def del_a_ptr(self, dbdns_rec):
         if not self._wants_infoblox_sync(dbdns_rec):
@@ -251,6 +259,7 @@ class IBServices:
             if new_name is None:
                 raise ArgumentError("Required argument 'new_name is missing")
             payload['name'] = new_name
+            payload['address'] = ip
             if payload.get('ttl'):
                 if payload['ttl'] == -1:
                     del payload['ttl']
