@@ -373,6 +373,99 @@ class TestAddVirtualHardware(EventsTestMixin, TestBrokerCommand):
         command = ["make_cluster", "--cluster=utecl1"]
         self.successtest(command)
 
+    def test_150_add_utmc4_machines_fail(self):
+        for i in range(0, 18):
+            cluster = "utecl%d" % (5 + (i // 3))
+            share = "utecl%d_share" % (5 + (i // 3))
+            machine = "evm%d" % (10 + i)
+            recipe = {
+                "disks": {
+                    "$disk25GB": {
+                        "controller": "sata",
+                        "size": 15,
+                        "share": share,
+                        "address": "0:0",
+                    },
+                },
+            }
+            command = ["add", "machine", "--machine", machine,
+                            "--cluster", cluster, "--model", "utmedium",
+                            "--recipe", json.dumps(recipe)]
+
+            out = self.badrequesttest(command)
+            self.matchoutput(out, "Bad Request: Failed to validate recipe: "
+                                  "'$disk25GB' does not match any of the regexes: '^[A-Za-z0-9_]+$", command)
+
+    def test_151_add_machine_recipe_2_disks(self):
+        cluster = "utecl5"
+        model = "utmedium"
+        share = "utecl5_share"
+        machine = "evm10"
+        recipe = {
+            "disks": {
+                "vmdisk1": {
+                    "controller": "sata",
+                    "size": 15,
+                    "share": share,
+                    "address": "0:0",
+                },
+                "disk2_15gb": {
+                    "controller": "sata",
+                    "size": 15,
+                    "share": share,
+                    "address": "0:1",
+                },
+            },
+        }
+        self.noouttest(["add", "machine", "--machine", machine,
+                        "--cluster", cluster, "--model", "utmedium",
+                        "--recipe", json.dumps(recipe)])
+
+    def test_152_search_network_fail(self):
+        command = ["search_network", "--machine=evm10"]
+        out = self.badrequesttest(command)
+        self.matchoutput(out,
+                         "Machine evm10 has no interfaces with a port group "
+                         "or assigned to a network.",
+                         command)
+
+    def test_153_add_utmc4_interfaces(self):
+        machine = "evm10"
+        self.noouttest(["add", "interface", "--machine", machine,
+                        "--interface", "eth0", "--automac", "--autopg"])
+
+    def test_154_verifycatmachines(self):
+            share = "utecl5_share"
+            machine = "evm10"
+            command = ["cat", "--machine", machine, "--generate"]
+            out = self.commandtest(command)
+            self.searchoutput(out,
+                              r'"harddisks/\{vmdisk1\}" = nlist\(\s*'
+                              r'"address", "0:0",\s*'
+                              r'"capacity", 15\*GB,\s*'
+                              r'"interface", "sata",\s*'
+                              r'"mountpoint", "/vol/lnn30f1v1/%s",\s*'
+                              r'"path", "%s/vmdisk1.vmdk",\s*'
+                              r'"server", "lnn30f1",\s*'
+                              r'"sharename", "%s"\s*'
+                              r'\);' % (share, machine, share),
+                              command)
+            self.searchoutput(out,
+                              r'"harddisks/\{disk2_15gb\}" = nlist\(\s*'
+                              r'"address", "0:1",\s*'
+                              r'"capacity", 15\*GB,\s*'
+                              r'"interface", "sata",\s*'
+                              r'"mountpoint", "/vol/lnn30f1v1/%s",\s*'
+                              r'"path", "%s/disk2_15gb.vmdk",\s*'
+                              r'"server", "lnn30f1",\s*'
+                              r'"sharename", "%s"\s*'
+                              r'\);' % (share, machine, share),
+                              command)
+
+    def test_155_delmachines(self):
+        # Need to remove machines without interfaces or the make will fail.
+        self.noouttest(["del", "machine", "--machine", "evm10"])
+
     def test_200_add_utmc4_machines(self):
         for i in range(0, 18):
             cluster = "utecl%d" % (5 + (i // 3))
