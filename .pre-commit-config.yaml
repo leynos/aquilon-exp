@@ -11,7 +11,7 @@ repos:
       types: [ python ]
     - id: ruff
       name: ruff
-      entry: /ms/dist/python/PROJ/ruff/0.2.1-ms1/bin/ruff
+      entry: /ms/dist/python/PROJ/ruff/0.4.2/bin/ruff
       args: ['check', '--fix', '--exit-non-zero-on-fix']
       language: system
       types: [python]

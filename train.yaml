@@ -73,7 +73,7 @@ test_types:
             command:  # Do not fail build on error, for now.
               - *test_setup
               - echo -e "\n-- ruff linter check --"
-              - /ms/dist/python/PROJ/ruff/0.2.1-ms1/bin/ruff check --config pyproject.toml . && /ms/dist/python/PROJ/ruff/0.2.1-ms1/bin/ruff --config pyproject.toml --format junit -o ../install/common/test-results/ruff.xml .
+              - /ms/dist/python/PROJ/ruff/0.4.2/bin/ruff check --config pyproject.toml . && /ms/dist/python/PROJ/ruff/0.2.1-ms1/bin/ruff --config pyproject.toml --format junit -o ../install/common/test-results/ruff.xml .
               - echo -e "\n** ruff is currently informative only, but try to fix issues when possible. Try 'ruff check --fix' on your file for quick wins.**".
               - echo -e "\n-- black (darker) code reformatter on commit check --"
               - tools/darker --diff --check --revision $(git rev-parse --abbrev-ref --symbolic-full-name @{u}) || echo -e "\nFAILED - !!! darker found formating issue. Please run **black** or *tools/darker** on new code to fix and resubmit code. !!!\n"

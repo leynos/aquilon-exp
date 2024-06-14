@@ -17,6 +17,7 @@
 # limitations under the License.
 """Module for testing the map service command."""
 
+import json
 import unittest
 
 if __name__ == "__main__":
@@ -125,6 +126,16 @@ class TestMapService(TestBrokerCommand):
                          "Service: afs Instance: q.ny.ms.com Map: Building ut",
                          command)
 
+    def test_105_verify_afs_json(self):
+        command = "show map --service afs --instance q.ny.ms.com --building ut --format json"
+        out = self.commandtest(command.split(" "))
+        results = json.loads(out)[0]
+        self.assertIsInstance(results, dict)
+        self.assertEqual(results["service"], "afs")
+        self.assertEqual(results["service_instance"], "q.ny.ms.com")
+        self.assertEqual(results["location"]["name"], "ut")
+        self.assertEqual(results["location"]["location_type"], "building")
+
     def test_105_verify_dns_ut(self):
         command = ["show", "map", "--building", "ut", "--service", "dns"]
         out = self.commandtest(command)
@@ -167,6 +178,19 @@ class TestMapService(TestBrokerCommand):
         self.matchoutput(out,
                          "Service: reboot Instance: week1 Map: Country us",
                          command)
+
+    def test_105_verify_reboot_json(self):
+        command = ["show_map", "--service", "reboot", "--instance", "week1", "--format", "json"]
+        out = self.commandtest(command)
+        results = json.loads(out)
+        self.assertIsInstance(results, list)
+        self.assertEqual(results[0]["service"], "reboot")
+        self.assertEqual(results[1]["service"], "reboot")
+        self.assertEqual(results[0]["service_instance"], "week1")
+        self.assertEqual(results[0]["location"]["name"], "gb")
+        self.assertEqual(results[0]["location"]["location_type"], "country")
+        self.assertEqual(results[1]["location"]["location_type"], "country")
+        self.assertEqual(results[1]["location"]["name"], "us")
 
     def test_110_map_utsi1(self):
         self.noouttest(["map", "service", "--building", "ut",
@@ -248,6 +272,19 @@ class TestMapService(TestBrokerCommand):
         self.assertEqual(map.service.serviceinstances[0].name, 'utsi2')
         self.assertEqual(map.personality.name, 'utunused/dev')
         self.assertEqual(map.personality.archetype.name, 'aquilon')
+
+    def test_135_verify_personality_map_json(self):
+        command = ["show_map", "--format=json", "--archetype=aquilon", "--personality=utunused/dev", "--service=utsvc"]
+        out = self.commandtest(command)
+        results = json.loads(out)[0]
+        self.assertIsInstance(results, dict)
+        self.assertEqual(results["service"], "utsvc")
+        self.assertEqual(results["service"], "utsvc")
+        self.assertEqual(results["service_instance"], "utsi2")
+        self.assertEqual(results["personality"]["name"], "utunused/dev")
+        self.assertEqual(results["personality"]["archetype"], "aquilon")
+        self.assertEqual(results["location"]["name"], "ms")
+        self.assertEqual(results["location"]["location_type"], "organization")
 
     def test_200_verify_nomatch(self):
         command = "show map --service afs --instance q.ny.ms.com --organization ms"

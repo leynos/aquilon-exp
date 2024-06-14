@@ -17,6 +17,7 @@
 # limitations under the License.
 """Module for testing the add room command."""
 
+import json
 import unittest
 
 if __name__ == "__main__":
@@ -39,6 +40,16 @@ class TestAddRoom(TestBrokerCommand):
         self.matchoutput(out, "Room: utroom1", command)
         self.matchoutput(out, "Floor: 42", command)
         self.matchoutput(out, "Fullname: UT pod1", command)
+
+    def test_105_verifyaddutroom1_json(self):
+        command = "show room --room utroom1 --format json"
+        out = self.commandtest(command.split(" "))
+        results = json.loads(out)[0]
+        self.assertIsInstance(results, dict)
+        self.assertEqual(results["name"], "utroom1")
+        self.assertEqual(results["fullname"], "UT pod1")
+        self.assertEqual(results["location_type"], "room")
+        self.assertEqual(results["floor"], "42")
 
     def test_110_addutroom2(self):
         command = ['add_room', '--room=utroom2', '--building=ut', '--floor=GF']
