@@ -71,7 +71,7 @@ class TestAddNetwork(TestBrokerCommand):
         self.assertEqual(results["name"], "np06bals03_v103")
         self.assertEqual(results["ip"], str(net.ip))
         self.assertEqual(results["cidr"], 26)
-        self.assertEqual(results["location"]["location_type"], "bunker")
+        self.assertEqual(results["location"]["type"], "bunker")
         self.assertEqual(results["location"]["name"], "nyb10.np")
 
     def test_130_addnetworkdup(self):

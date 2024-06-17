@@ -48,7 +48,7 @@ class TestAddRoom(TestBrokerCommand):
         self.assertIsInstance(results, dict)
         self.assertEqual(results["name"], "utroom1")
         self.assertEqual(results["fullname"], "UT pod1")
-        self.assertEqual(results["location_type"], "room")
+        self.assertEqual(results["type"], "room")
         self.assertEqual(results["floor"], "42")
 
     def test_110_addutroom2(self):

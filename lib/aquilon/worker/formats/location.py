@@ -81,7 +81,7 @@ class LocationFormatter(ObjectFormatter):
     def format_json(self, loc, embedded=True, indirect_attrs=True):
         details = {
             "name": loc.name,
-            "location_type": loc.location_type,
+            "type": loc.location_type,
         }
         if indirect_attrs:
             details.update(
@@ -110,7 +110,7 @@ class LocationFormatter(ObjectFormatter):
             if loc.parent:
                 details["parent"] = {
                     "name": loc.parent.name,
-                    "location_type": loc.parent.location_type,
+                    "type": loc.parent.location_type,
                 }
         return details
 
