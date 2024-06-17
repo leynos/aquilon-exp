@@ -17,6 +17,7 @@
 # limitations under the License.
 """Module for testing the add building command."""
 
+import json
 import unittest
 
 if __name__ == "__main__":
@@ -143,6 +144,21 @@ class TestAddBuilding(TestBrokerCommand):
               Location URI: assetinventory://003430
               Location Parents: [Organization ms, Hub ny, Continent na, Country us, Campus ny, City ny]
             """, command)
+
+    def test_114_verifyaddbuforce_json(self):
+        command = "show building --building fo --format json"
+        out = self.commandtest(command.split(" "))
+        results = json.loads(out)[0]
+        self.assertIsInstance(results, dict)
+        self.assertEqual(results["name"], "fo")
+        self.assertEqual(results["fullname"], "fo")
+        self.assertEqual(results["location_type"], "building")
+        self.assertEqual(results["uri"], "assetinventory://003430")
+        self.assertEqual(results["address"], "64 Force Lane")
+        self.assertEqual(results["next_rackid"], 3)
+        self.assertTrue(results["netdev_rack"])
+        self.assertEqual(results["parent"]["name"], "ny")
+        self.assertEqual(results["parent"]["location_type"], "city")
 
     def test_115_addbuincorrecturi(self):
         command = ["add", "building", "--building", "plaza", "--city", "ex",

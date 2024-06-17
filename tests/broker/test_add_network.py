@@ -17,6 +17,7 @@
 # limitations under the License.
 """Module for testing the add_network command."""
 
+import json
 import unittest
 
 if __name__ == "__main__":
@@ -24,6 +25,7 @@ if __name__ == "__main__":
     utils.import_depends()
 
 from .brokertest import TestBrokerCommand
+
 
 class TestAddNetwork(TestBrokerCommand):
 
@@ -59,6 +61,18 @@ class TestAddNetwork(TestBrokerCommand):
         self.matchoutput(out, "Network: np06bals03_v103", command)
         self.matchoutput(out, "IP: %s" % net.ip, command)
         self.matchoutput(out, "Bunker: nyb10.np", command)
+
+    def test_120_verifybunker_json(self):
+        net = self.net["np06bals03_v103"]
+        command = ["show", "network", "--ip", net.ip, "--format", "json"]
+        out = self.commandtest(command)
+        results = json.loads(out)[0]
+        self.assertIsInstance(results, dict)
+        self.assertEqual(results["name"], "np06bals03_v103")
+        self.assertEqual(results["ip"], str(net.ip))
+        self.assertEqual(results["cidr"], 26)
+        self.assertEqual(results["location"]["location_type"], "bunker")
+        self.assertEqual(results["location"]["name"], "nyb10.np")
 
     def test_130_addnetworkdup(self):
         # Old name, new address

@@ -37,6 +37,18 @@ class PersonalityFormatter(ObjectFormatter):
         skeleton.config_override = personality.config_override
         skeleton.cluster_required = personality.cluster_required
 
+    def format_json(self, personality, embedded=True, indirect_attrs=True):
+        details = {
+            "name": personality.name,
+            "archetype": personality.archetype.name,
+            "environment": personality.host_environment.name,
+            "owner_eonid": personality.owner_eon_id or None,
+            "config_override": personality.config_override,
+            "cluster_required": personality.cluster_required,
+            "comments": personality.comments,
+        }
+        return details
+
     def csv_fields(self, obj):
         yield (obj.archetype.name, obj.name,)
 
@@ -53,8 +65,10 @@ class PersonalityStageFormatter(PersonalityFormatter):
         else:
             description = "Host"
 
-        details.append(indent + "{0} {1:c}: {1.name} {2:c}: {2.name}"
-                       .format(description, personality, personality.archetype))
+        details.append(
+            indent
+            + f"{description} {personality:c}: {personality.name} {personality.archetype:c}: {personality.archetype.name}"
+        )
         if personality.staged:
             details.append(indent + f"  Stage: {persst.name}")
         details.append(indent + f"  Environment: {personality.host_environment.name}")
@@ -73,10 +87,10 @@ class PersonalityStageFormatter(PersonalityFormatter):
                 details.append(indent + f"    Environment Override: {info.host_environment.name}")
 
         for usr in personality.root_users:
-            details.append(indent + "  Root Access User: %s" % usr)
+            details.append(indent + f"  Root Access User: {usr.name}")
 
         for ng in personality.root_netgroups:
-            details.append(indent + "  Root Access Netgroup: %s" % ng)
+            details.append(indent + f"  Root Access Netgroup: {ng.name}")
 
         for link in sorted(persst.features,
                            key=attrgetter("feature.feature_type",
@@ -91,8 +105,9 @@ class PersonalityStageFormatter(PersonalityFormatter):
 
             details.append(indent + f"  {link.feature:c}: {link.feature.name}{flagstr}")
             if link.model:
-                details.append(indent + "    {0:c}: {0.name} {1:c}: {1.name}"
-                               .format(link.model.vendor, link.model))
+                details.append(
+                    indent + f"    {link.model.vendor:c}: {link.model.vendor.name} {link.model:c}: {link.model.name}"
+                )
             if link.interface_name:
                 details.append(indent + f"    Interface: {link.interface_name}")
 
@@ -100,10 +115,9 @@ class PersonalityStageFormatter(PersonalityFormatter):
             details.append(indent + f"  Comments: {personality.comments}")
 
         for cltype, info in list(persst.cluster_infos.items()):
-            details.append(indent + "  Extra settings for %s clusters:" % cltype)
+            details.append(indent + f"  Extra settings for {cltype} clusters:")
             if cltype == "esx":
-                details.append(indent + "    VM host capacity function: %s" %
-                               info.vmhost_capacity_function)
+                details.append(indent + f"    VM host capacity function: {info.vmhost_capacity_function}")
         return "\n".join(details)
 
     def fill_proto(self, persst, skeleton, embedded=True, indirect_attrs=True):

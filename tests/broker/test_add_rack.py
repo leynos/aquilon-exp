@@ -17,6 +17,7 @@
 # limitations under the License.
 """Module for testing the add rack command."""
 
+import json
 import unittest
 
 if __name__ == "__main__":
@@ -55,6 +56,19 @@ class TestAddRack(TestBrokerCommand):
               Column: 3
               Location Parents: [Organization ms, Hub ny, Continent na, Country us, Campus ny, City ny, Building ut, Room utroom1, Bunker zebrabucket.ut]
             """, command)
+
+    def test_105_verifyaddut3_json(self):
+        command = "show rack --rack ut3 --format json"
+        out = self.commandtest(command.split(" "))
+        results = json.loads(out)[0]
+        self.assertIsInstance(results, dict)
+        self.assertEqual(results["name"], "ut3")
+        self.assertEqual(results["fullname"], "ut3")
+        self.assertEqual(results["location_type"], "rack")
+        self.assertEqual(results["rack_row"], "a")
+        self.assertEqual(results["rack_column"], "3")
+        self.assertEqual(results["parent"]["name"], "zebrabucket.ut")
+        self.assertEqual(results["parent"]["location_type"], "bunker")
 
     def test_110_verifyaddut3proto(self):
         command = "show rack --rack ut3 --format proto"

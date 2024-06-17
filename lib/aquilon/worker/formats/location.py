@@ -17,37 +17,37 @@
 # limitations under the License.
 """Location formatter."""
 
-from aquilon.aqdb.model import Location, Rack, Building, Room
+from aquilon.aqdb.model import Building, Location, Rack, Room
 from aquilon.worker.formats.formatters import ObjectFormatter
 
 
 class LocationFormatter(ObjectFormatter):
     def format_raw(self, location, indent="", embedded=True,
                    indirect_attrs=True):
-        details = [indent + "{0:c}: {0.name}".format(location)]
+        details = [indent + f"{location:c}: {location.name}"]
         if location.fullname:
-            details.append(indent + "  Fullname: {}".format(location.fullname))
+            details.append(indent + f"  Fullname: {location.fullname}")
         if hasattr(location, 'timezone'):
-            details.append(indent + "  Timezone: {}".format(location.timezone))
+            details.append(indent + f"  Timezone: {location.timezone}")
         # Rack could have been a separate formatter, but since this is
         # the only difference...
         if isinstance(location, Rack):
-            details.append(indent + "  Row: {}".format(location.rack_row))
-            details.append(indent + "  Column: {}".format(location.rack_column))
+            details.append(indent + f"  Row: {location.rack_row}")
+            details.append(indent + f"  Column: {location.rack_column}")
         elif isinstance(location, Building):
-            details.append(indent + "  Address: {}".format(location.address))
-            details.append(indent + "  Next Rack ID: {}".format(location.next_rackid))
-            details.append(indent + "  Network Devices Require Racks: {}".format(location.netdev_rack))
+            details.append(indent + f"  Address: {location.address}")
+            details.append(indent + f"  Next Rack ID: {location.next_rackid}")
+            details.append(indent + f"  Network Devices Require Racks: {location.netdev_rack}")
         elif isinstance(location, Room) and location.floor:
-            details.append(indent + "  Floor: {}".format(location.floor))
+            details.append(indent + f"  Floor: {location.floor}")
         if location.uri:
-            details.append(indent + "  Location URI: {}".format(location.uri))
+            details.append(indent + f"  Location URI: {location.uri}")
         if location.comments:
-            details.append(indent + "  Comments: {}".format(location.comments))
+            details.append(indent + f"  Comments: {location.comments}")
         if location.parents:
             details.append(indent + "  Location Parents: [{}]".format(", ".join(format(p) for p in location.parents)))
         if location.default_dns_domain:
-            details.append(indent + "  Default DNS Domain: {0.name}".format(location.default_dns_domain))
+            details.append(indent + f"  Default DNS Domain: {location.default_dns_domain.name}")
         return "\n".join(details)
 
     def fill_proto(self, loc, skeleton, embedded=True, indirect_attrs=True):
@@ -77,6 +77,42 @@ class LocationFormatter(ObjectFormatter):
                     parent.location_type = "company"
                 else:
                     parent.location_type = p.location_type
+
+    def format_json(self, loc, embedded=True, indirect_attrs=True):
+        details = {
+            "name": loc.name,
+            "location_type": loc.location_type,
+        }
+        if indirect_attrs:
+            details.update(
+                {
+                    "fullname": loc.fullname,
+                    "default_dns_domain": loc.default_dns_domain.name if loc.default_dns_domain else None,
+                    "timezone": loc.timezone if hasattr(loc, "timezone") else None,
+                    "uri": loc.uri,
+                    "comments": loc.comments,
+                    "parent": {},
+                }
+            )
+            if isinstance(loc, Rack) and loc.rack_row and loc.rack_column:
+                details["rack_row"] = loc.rack_row
+                details["rack_column"] = loc.rack_column
+            elif isinstance(loc, Room) and loc.floor:
+                details["floor"] = loc.floor
+            elif isinstance(loc, Building):
+                details.update(
+                    {
+                        "address": loc.address,
+                        "next_rackid": loc.next_rackid,
+                        "netdev_rack": loc.netdev_rack,
+                    }
+                )
+            if loc.parent:
+                details["parent"] = {
+                    "name": loc.parent.name,
+                    "location_type": loc.parent.location_type,
+                }
+        return details
 
     def csv_fields(self, location):
         """Yield a CSV-ready list of selected attribute values for location."""

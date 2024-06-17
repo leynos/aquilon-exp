@@ -16,23 +16,24 @@
 # limitations under the License.
 """ServiceMap formatter."""
 
-from aquilon.worker.formats.formatters import ObjectFormatter
 from aquilon.aqdb.model import ServiceMap
+from aquilon.worker.formats.formatters import ObjectFormatter
 
 
 class ServiceMapFormatter(ObjectFormatter):
     def format_raw(self, sm, indent="", embedded=True, indirect_attrs=True):
         details = []
         if sm.personality:
-            details.append("{0:c}: {0.name} {1:c}: {1.name}"
-                           .format(sm.personality.archetype, sm.personality))
+            details.append(
+                f"{sm.personality.archetype:c}: {sm.personality.archetype.name} {sm.personality:c}: {sm.personality.name}"
+            )
         if sm.host_environment:
-            details.append("{0:c}: {0.name}".format(sm.host_environment))
+            details.append(f"{sm.host_environment:c}: {sm.host_environment.name}")
 
-        details.append("{0:c}: {0.name} Instance: {1.name}"
-                       .format(sm.service_instance.service,
-                               sm.service_instance))
-        details.append("Map: {0}".format(sm.scope))
+        details.append(
+            f"{sm.service_instance.service:c}: {sm.service_instance.service.name} Instance: {sm.service_instance.name}"
+        )
+        details.append(f"Map: {sm.scope}")
 
         return indent + " ".join(details)
 
@@ -53,5 +54,18 @@ class ServiceMapFormatter(ObjectFormatter):
                                 indirect_attrs=False)
         elif service_map.host_environment:
             skeleton.host_environment = service_map.host_environment.name
+
+    def format_json(self, sm, embedded=True, indirect_attrs=True):
+        details = {
+            "environment": sm.host_environment.name if sm.host_environment else None,
+            "service_instance": sm.service_instance.name if sm.service_instance else None,
+            "service": sm.service_instance.service.name
+            if sm.service_instance and sm.service_instance.service
+            else None,
+            "location": self.redirect_json(sm.location, indirect_attrs=False) if sm.location else {},
+            "network": self.redirect_json(sm.network, indirect_attrs=False) if sm.network else {},
+            "personality": self.redirect_json(sm.personality, indirect_attrs=False) if sm.personality else {},
+        }
+        return details
 
 ObjectFormatter.handlers[ServiceMap] = ServiceMapFormatter()

@@ -17,15 +17,13 @@
 """Network formatter."""
 
 from collections import defaultdict
+from ipaddress import IPv4Network
 from operator import attrgetter
 
-from ipaddress import IPv4Network
-
-from sqlalchemy.orm.attributes import set_committed_value
 from sqlalchemy.orm import object_session, subqueryload
-from sqlalchemy.inspection import inspect
+from sqlalchemy.orm.attributes import set_committed_value
 
-from aquilon.aqdb.model import Network, HardwareEntity, Machine
+from aquilon.aqdb.model import HardwareEntity, Network
 from aquilon.utils import chunk
 from aquilon.worker.formats.formatters import ObjectFormatter
 from aquilon.worker.formats.list import ListFormatter
@@ -49,16 +47,16 @@ def summarize_ranges(addrlist):
                 prev_range_class = addr.range_class
                 continue
         if start == end:
-            ranges.append("{} ({})".format(start, prev_range_class))
+            ranges.append(f"{start} ({prev_range_class})")
         else:
-            ranges.append("{}-{} ({})".format(start, end, prev_range_class))
+            ranges.append(f"{start}-{end} ({prev_range_class})")
         start = end = addr.ip
         prev_range_class = addr.range_class
     if start is not None:
         if start == end:
-            ranges.append("{} ({})".format(start, prev_range_class))
+            ranges.append(f"{start} ({prev_range_class})")
         else:
-            ranges.append("{}-{} ({})".format(start, end, prev_range_class))
+            ranges.append(f"{start}-{end} ({prev_range_class})")
 
     return ranges
 
@@ -104,50 +102,47 @@ class NetworkFormatter(ObjectFormatter):
     def format_raw(self, network, indent="", embedded=True,
                    indirect_attrs=True):
         sysloc = network.location.sysloc()
-        details = [indent + "{0:c}: {0.name}".format(network)]
-        details.append(indent + "  {0:c}: {0.name}".format(network.network_environment))
-        details.append(indent + "  IP: %s" % network.network_address)
+        details = [indent + f"{network:c}: {network.name}"]
+        details.append(indent + f"  {network.network_environment:c}: {network.network_environment.name}")
+        details.append(indent + f"  IP: {network.network_address}")
         if isinstance(network.network, IPv4Network):
-            details.append(indent + "  Netmask: %s" % network.netmask)
+            details.append(indent + f"  Netmask: {network.netmask}")
         else:
             details.append(indent + "  Prefix: %d" % network.cidr)
-        details.append(indent + "  Sysloc: %s" % sysloc)
+        details.append(indent + f"  Sysloc: {sysloc}")
         details.append(self.redirect_raw(network.location, indent + "  "))
-        details.append(indent + "  Side: %s" % network.side)
-        details.append(indent + "  Network Type: %s" % network.network_type)
+        details.append(indent + f"  Side: {network.side}")
+        details.append(indent + f"  Network Type: {network.network_type}")
         if network.network_compartment:
-            details.append(indent + "  {0:c}: {0.name}".format(network.network_compartment))
+            details.append(indent + f"  {network.network_compartment:c}: {network.network_compartment.name}")
         if network.comments:
-            details.append(indent + "  Comments: %s" % network.comments)
+            details.append(indent + f"  Comments: {network.comments}")
 
         if network.routers:
-            routers = ", ".join(sorted("{0} ({1})".format(rtr.ip, rtr.location)
-                                       for rtr in network.routers))
-            details.append(indent + "  Routers: %s" % routers)
+            routers = ", ".join(sorted(f"{rtr.ip} ({rtr.location})" for rtr in network.routers))
+            details.append(indent + f"  Routers: {routers}")
 
         if network.port_group:
-            details.append(indent + "  Port Group: %s" %
-                           network.port_group.name)
+            details.append(indent + f"  Port Group: {network.port_group.name}")
 
         # Look for dynamic DHCP ranges
         ranges = summarize_ranges(network.dynamic_stubs)
         if ranges:
-            details.append(indent + "  Dynamic Ranges: %s" % ", ".join(ranges))
+            details.append(indent + "  Dynamic Ranges: {}".format(", ".join(ranges)))
 
         for route in sorted(network.static_routes,
                             key=attrgetter('destination', 'gateway_ip')):
-            details.append(indent + "  {0:c}: {0.destination} gateway {0.gateway_ip}"
-                           .format(route))
+            details.append(indent + f"  {route:c}: {route.destination} gateway {route.gateway_ip}")
             if route.personality_stage:
-                details.append(indent + "    {0:c}: {0.name} {1:c}: {1.name}"
-                               .format(route.personality_stage.personality,
-                                       route.personality_stage.archetype))
+                details.append(
+                    indent
+                    + f"    {route.personality_stage.personality:c}: {route.personality_stage.personality.name} {route.personality_stage.archetype:c}: {route.personality_stage.archetype.name}"
+                )
 
                 if route.personality_stage.staged:
-                    details.append(indent + "      Stage: %s" %
-                                   route.personality_stage.name)
+                    details.append(indent + f"      Stage: {route.personality_stage.name}")
             if route.comments:
-                details.append(indent + "    Comments: %s" % route.comments)
+                details.append(indent + f"    Comments: {route.comments}")
 
         return "\n".join(details)
 
@@ -155,6 +150,22 @@ class NetworkFormatter(ObjectFormatter):
         yield (network.name, network.network_address, network.netmask,
                network.location.sysloc(), network.location.country,
                network.side, network.network_type, network.comments)
+
+    def format_json(self, network, embedded=True, indirect_attrs=True):
+        details = {
+            "name": network.name,
+            "network_type": network.network_type,
+            "ip": str(network.network_address) if network.network_address else None,
+            "netmask": str(network.netmask) if network.netmask else None,
+            "cidr": network.cidr,
+            "broadcast_address": str(network.broadcast_address) if network.broadcast_address else None,
+            "side": network.side,
+            "sysloc": network.location.sysloc(),
+            "comments": network.comments,
+        }
+        if indirect_attrs:
+            details.update({"location": self.redirect_json(network.location, embedded=embedded, indirect_attrs=False)})
+        return details
 
     def fill_proto(self, net, skeleton, embedded=True, indirect_attrs=True):
         skeleton.name = net.name
@@ -211,7 +222,6 @@ ObjectFormatter.handlers[Network] = NetworkFormatter()
 class NetworkHostList(list):
     """Holds a list of networks for which a host list will be formatted
     """
-    pass
 
 
 class NetworkHostListFormatter(ListFormatter):
@@ -233,10 +243,11 @@ class NetworkHostListFormatter(ListFormatter):
                     names = ", ".join(sorted(str(fqdn) for fqdn in addr.fqdns))
                 else:
                     names = "unknown"
-                details.append(indent + "  {0:c}: {0.printable_name}, "
-                               "interface: {1.logical_name}, "
-                               "MAC: {2.mac}, IP: {1.ip} ({3})".format(
-                                   hw_ent, addr, iface, names))
+                details.append(
+                    indent + f"  {hw_ent:c}: {hw_ent.printable_name}, "
+                    f"interface: {addr.logical_name}, "
+                    f"MAC: {iface.mac}, IP: {addr.ip} ({names})"
+                )
         return "\n".join(details)
 
     def format_proto(self, result, container, embedded=True, indirect_attrs=True):
@@ -253,8 +264,8 @@ class NetworkHostListFormatter(ListFormatter):
     def fill_proto(self, net, skeleton, embedded=True, indirect_attrs=True):
         # Bulk load information about anything having a network address on this
         # network
-        hw_ids = set(addr.interface.hardware_entity_id for addr in
-                     net.assignments)
+        hw_ids = {addr.interface.hardware_entity_id for addr in
+                     net.assignments}
         if hw_ids:
             session = object_session(net)
             hwent_by_id = {}
@@ -371,7 +382,6 @@ ObjectFormatter.handlers[NetworkHostList] = NetworkHostListFormatter()
 class NetworkAddressAssignmentList(list):
     """Holds a list of networks for which an address assignment list will be formatted
     """
-    pass
 
 
 class NetworkAddressAssignmentFormatter(NetworkHostListFormatter):
@@ -380,7 +390,7 @@ class NetworkAddressAssignmentFormatter(NetworkHostListFormatter):
                    indirect_attrs=True):
         details = []
         for network in netlist:
-            details_str = super(NetworkAddressAssignmentFormatter, self).format_raw(netlist=[network], indent=indent, embedded=embedded,
+            details_str = super().format_raw(netlist=[network], indent=indent, embedded=embedded,
                                                                                     indirect_attrs=indirect_attrs)
             details.extend(details_str.split("\n"))
 
@@ -415,7 +425,6 @@ ObjectFormatter.handlers[NetworkAddressAssignmentList] = NetworkAddressAssignmen
 
 class NetworkList(list):
     """By convention, holds a list of networks to be formatted as alist"""
-    pass
 
 
 class NetworkListFormatter(ListFormatter):
