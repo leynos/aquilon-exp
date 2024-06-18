@@ -134,7 +134,7 @@ class TestMapService(TestBrokerCommand):
         self.assertEqual(results["service"], "afs")
         self.assertEqual(results["service_instance"], "q.ny.ms.com")
         self.assertEqual(results["location"]["name"], "ut")
-        self.assertEqual(results["location"]["location_type"], "building")
+        self.assertEqual(results["location"]["type"], "building")
 
     def test_105_verify_dns_ut(self):
         command = ["show", "map", "--building", "ut", "--service", "dns"]
@@ -188,8 +188,8 @@ class TestMapService(TestBrokerCommand):
         self.assertEqual(results[1]["service"], "reboot")
         self.assertEqual(results[0]["service_instance"], "week1")
         self.assertEqual(results[0]["location"]["name"], "gb")
-        self.assertEqual(results[0]["location"]["location_type"], "country")
-        self.assertEqual(results[1]["location"]["location_type"], "country")
+        self.assertEqual(results[0]["location"]["type"], "country")
+        self.assertEqual(results[1]["location"]["type"], "country")
         self.assertEqual(results[1]["location"]["name"], "us")
 
     def test_110_map_utsi1(self):
@@ -284,7 +284,7 @@ class TestMapService(TestBrokerCommand):
         self.assertEqual(results["personality"]["name"], "utunused/dev")
         self.assertEqual(results["personality"]["archetype"], "aquilon")
         self.assertEqual(results["location"]["name"], "ms")
-        self.assertEqual(results["location"]["location_type"], "organization")
+        self.assertEqual(results["location"]["type"], "organization")
 
     def test_200_verify_nomatch(self):
         command = "show map --service afs --instance q.ny.ms.com --organization ms"

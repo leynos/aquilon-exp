@@ -152,13 +152,13 @@ class TestAddBuilding(TestBrokerCommand):
         self.assertIsInstance(results, dict)
         self.assertEqual(results["name"], "fo")
         self.assertEqual(results["fullname"], "fo")
-        self.assertEqual(results["location_type"], "building")
+        self.assertEqual(results["type"], "building")
         self.assertEqual(results["uri"], "assetinventory://003430")
         self.assertEqual(results["address"], "64 Force Lane")
         self.assertEqual(results["next_rackid"], 3)
         self.assertTrue(results["netdev_rack"])
         self.assertEqual(results["parent"]["name"], "ny")
-        self.assertEqual(results["parent"]["location_type"], "city")
+        self.assertEqual(results["parent"]["type"], "city")
 
     def test_115_addbuincorrecturi(self):
         command = ["add", "building", "--building", "plaza", "--city", "ex",

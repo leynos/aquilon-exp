@@ -64,11 +64,11 @@ class TestAddRack(TestBrokerCommand):
         self.assertIsInstance(results, dict)
         self.assertEqual(results["name"], "ut3")
         self.assertEqual(results["fullname"], "ut3")
-        self.assertEqual(results["location_type"], "rack")
+        self.assertEqual(results["type"], "rack")
         self.assertEqual(results["rack_row"], "a")
         self.assertEqual(results["rack_column"], "3")
         self.assertEqual(results["parent"]["name"], "zebrabucket.ut")
-        self.assertEqual(results["parent"]["location_type"], "bunker")
+        self.assertEqual(results["parent"]["type"], "bunker")
 
     def test_110_verifyaddut3proto(self):
         command = "show rack --rack ut3 --format proto"
