@@ -383,11 +383,6 @@ if __name__ == "__main__":
             for i in v:
                 if isinstance(i, str) and not i.isascii():
                     not_ascii(k)
-        if (k != 'list' and isinstance(v, str)) and len(v) > 2599:
-            print("The character count in {} is beyond the permitted "
-                  "value. Please specify argument value less "
-                  "than 2600".format(k), file=sys.stderr)
-            sys.exit(1)
 
     # if a client config file is specified on command line
     # that should overide  env or default options.
