@@ -99,7 +99,7 @@ class HostlinkParentMap(Base):
     resource_id = Column(ForeignKey(Hostlink.id,
                                     ondelete='CASCADE'),
                          nullable=False, primary_key=True)
-    resource = relationship(Hostlink, lazy=False, innerjoin=True)
+    resource = relationship(Hostlink, lazy=False, innerjoin=True, viewonly=True)
 
     parent = Column(AqStr(32), nullable=False, primary_key=True)
 
@@ -122,7 +122,7 @@ class HostlinkEntitlementMap(Base):
     resource_id = Column(ForeignKey(Hostlink.id,
                                     ondelete='CASCADE'),
                          nullable=False, primary_key=True)
-    resource = relationship(Hostlink, lazy=False, innerjoin=True)
+    resource = relationship(Hostlink, lazy=False, innerjoin=True, viewonly=True)
 
     entitlement_id = Column(ForeignKey(EntitlementId.id,
                                        ondelete='CASCADE'),

@@ -265,8 +265,6 @@ class CommandSearchDns(BrokerCommand):
 
         if fullinfo or style != "raw":
             q = q.options(undefer('comments'),
-                          subqueryload('hardware_entity'),
-                          lazyload('hardware_entity.primary_name'),
                           undefer('alias_cnt'),
                           undefer('address_alias_cnt'))
             if style == 'proto':
