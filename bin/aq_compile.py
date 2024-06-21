@@ -28,6 +28,7 @@ import argparse
 import sys
 import os
 from subprocess import call
+import shlex
 
 try:
     import ms.version
@@ -65,9 +66,8 @@ def run_domain_compile(options, config):
     if config.has_value("broker", "ant_options"):
         panc_env["ANT_OPTS"] = config.get("broker", "ant_options")
 
-    args = [config.lookup_tool("ant"), "--noconfig", "-f"]
-    args.append(lookup_file_path("build.xml"))
-    args.append("-Dbasedir=%s" % options.basedir)
+    args = [shlex.quote(config.lookup_tool("ant")), "--noconfig", "-f", lookup_file_path("build.xml"),
+            "-Dbasedir=%s" % options.basedir]
 
     if options.swrep:
         args.append("-Dswrep=%s" % options.swrep)

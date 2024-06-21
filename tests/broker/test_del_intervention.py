@@ -30,9 +30,9 @@ class TestDelIntervention(TestBrokerCommand):
 
     def test_100_del_intervention(self):
         path = ["resource", "host", "server1.aqd-unittest.ms.com",
-                "intervention", "i1", "config"]
+                "intervention", "i1234", "config"]
         self.check_plenary_exists(*path)
-        command = ["del_intervention", "--intervention=i1",
+        command = ["del_intervention", "--intervention=i1234",
                    "--hostname=server1.aqd-unittest.ms.com"]
         self.successtest(command)
         self.check_plenary_gone(*path)

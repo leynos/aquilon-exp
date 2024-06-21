@@ -22,7 +22,7 @@ dev:
     notify-email: aqd-eng
     script:
       - flip_releaselink
-      - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ny-2/dev --pattern '^(alpha-aqd|alpha-aq_notifyd|alpha-knc)$'
+      - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ny-2/dev --pattern '^(alpha-aqd|alpha-aq_notifyd|alpha-knc|alpha-aqweb)$'
   - name: alpha.verify
     notify-email: aqd-eng
     stages:
@@ -39,7 +39,7 @@ dev:
     notify-email: aqd-eng
     script:
       - flip_releaselink
-      - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ny-2/dev --pattern '^(aqd-ro-instance|next-aqd|next-aq_notifyd|next-knc)$'
+      - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ny-2/dev --pattern '^(aqd-ro-instance|next-aqd|next-aq_notifyd|next-knc|next-aqweb)$'
   - name: beta.verify
     notify-email: aqd-eng
     stages:
@@ -56,7 +56,7 @@ dev:
     notify-email: aqd-eng
     script:
       - flip_releaselink
-      - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ny-2/dev --pattern '^(aqd-ring1-dev|aq_notifyd|knc-ring1-dev)$'
+      - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ny-2/dev --pattern '^(aqd-ring1-dev|aq_notifyd|knc-ring1-dev|aqweb-ring1-dev)$'
   - name: ring1-beta.verify
     notify-email: aqd-eng
     stages:
@@ -77,7 +77,7 @@ prod:
     autodeployuser: aqdautodeploy
     script:
       - flip_releaselink
-      - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ring1-ny-1/prod --pattern '^(aqd|aq_notifyd|knc)$'
+      - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ring1-ny-1/prod --pattern '^(aqd|aq_notifyd|knc|aqweb)$'
   - name: ring1-prod.verify
     notify-email: aqd-eng
     stages:
@@ -95,7 +95,7 @@ prod:
     autodeployuser: aqdautodeploy
     script:
       - flip_releaselink
-      - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ny-1/prod --pattern '^(aqd|aqd-noauth|aq_notifyd|knc|aqd-ro-instance-\d|aqd-ro-knc-\d|aqd-ro-batch-instance-\d|aqd-ro-batch-knc-\d|aqd-ro-dhcp-instance-\d|aqd-ro-dhcp-knc-\d|aqd-ro-instance-\d|aqd-ro-knc-\d)$'
+      - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ny-1/prod --pattern '^(aqd|aqd-noauth|aq_notifyd|knc|aqweb|aqd-ro-instance-\d|aqd-ro-knc-\d|aqd-ro-batch-instance-\d|aqd-ro-batch-knc-\d|aqd-ro-dhcp-instance-\d|aqd-ro-dhcp-knc-\d)$'
   - name: prod.verify
     stages:
       - stage:
