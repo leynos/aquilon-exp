@@ -50,7 +50,7 @@ class IBServicesTest(IBServices):
             "sysloc": sysloc,
         }
 
-        self._http_request("POST", url, payload)
+        return self._http_request("POST", url, payload)
 
     def _show_network(self, network):
         url = "/networks/{}".format(quote(network, safe=""))
@@ -207,8 +207,10 @@ class TestIBEndToEnd(TestBrokerCommand):
         super().setUp(*args, **kwargs)
 
         self._clean_ib_services()
-        self.ib_services._add_network(network=self.test_network, name="aqd-unittest", side="a", sysloc="np.ny.na",
-                                     compartment="interior.lab.access")
+        response = self.ib_services._add_network(network=self.test_network, name="aqd-unittest", side="a", sysloc="np.ny.na",
+                                                 compartment="interior.s2.access")
+        assert response is not None, "Failed to create pre-requisite test network in Infoblox"
+
         # TODO: Zone changes in the l2 IB instance require a restart of the dns server before domains in that zone can
         # be resolved, so for now rely on a previously created zone instead
         # self.ib_services.add_zone(fqdn=self.test_domain, city="ny")
