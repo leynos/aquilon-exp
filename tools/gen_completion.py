@@ -31,8 +31,8 @@ try:
 except ImportError:
     pass
 else:
-    ms.version.addpkg('Cheetah3', '3.2.5-py37')
-    ms.version.addpkg('dill', '0.3.3-ms1')
+    ms.version.addpkg('Cheetah3', '3.2.6')
+    ms.version.addpkg('dill', '0.3.6')
 
 from Cheetah.Template import Template
 import dill

@@ -26,26 +26,21 @@ try:
 except ImportError:
     pass
 else:
-    # ms.version.addpkg('twisted', '18.9.0-py37')
     ms.version.addpkg('twisted', '21.2.0')
-    ms.version.addpkg("Automat", "0.7.0")
+    ms.version.addpkg("Automat", "20.2.0")
     ms.version.addpkg("PyHamcrest", "1.9.0")
     ms.version.addpkg("attrs", "19.3.0")
     ms.version.addpkg("constantly", "15.1.0")
     ms.version.addpkg("hyperlink", "18.0.0")
     ms.version.addpkg("idna", "2.10")
     ms.version.addpkg("incremental", "16.10.1")
-    ms.version.addpkg("setuptools", "45.0.0")
-    ms.version.addpkg("six", "1.14.0")
-    # ms.version.addpkg("twisted", "18.9.0")
-    ms.version.addpkg("zope.interface", "4.6.0")
+    ms.version.addpkg("setuptools", "46.1.3")
+    ms.version.addpkg("six", "1.16.0")
+    ms.version.addpkg("zope.interface", "6.0-ms1")
     # ms.version.addpkg('incremental', '16.10.1')
     # ms.version.addpkg('constantly', '15.1.0')
-    # ms.version.addpkg('zope.interface', '4.6.0-py37')
     # ms.version.addpkg('setuptools', '46.1.3')
-    # ms.version.addpkg('protobuf', '3.10.0')
-    ms.version.addpkg('protobuf', '3.17.3-py37')
-    # ms.version.addpkg('six', '1.15.0')
+    ms.version.addpkg('protobuf', '4.23.1')
 
 from twisted.internet.protocol import Factory
 from twisted.protocols.basic import Int32StringReceiver

@@ -185,9 +185,9 @@ class ChangeManagement:
                 self.logger.debug("No impacted targets exiting")
                 return
             self._call_handler_method(target_obj.first(), queryset=target_obj)
-        # If given Query is evaluated with .all() it is an instance of collections.Iterable
+        # If given Query is evaluated with .all() it is an instance of collections.abc.Iterable
         # then validate each item in the list separatelly
-        elif isinstance(target_obj, collections.Iterable):
+        elif isinstance(target_obj, collections.abc.Iterable):
             for obj in target_obj:
                 self._call_handler_method(obj)
         else:

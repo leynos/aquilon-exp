@@ -60,7 +60,7 @@ class TestCompile(VerifyNotificationsMixin, TestBrokerCommand):
         tree = ET.parse(source)
         source.close()
         mtimes = dict()
-        for profile in tree.getiterator('profile'):
+        for profile in tree.iter('profile'):
             if profile.text and "mtime" in profile.attrib:
                 obj = profile.text.strip()
                 for suffix in [self.xml_suffix, self.json_suffix]:
@@ -368,7 +368,7 @@ class TestCompile(VerifyNotificationsMixin, TestBrokerCommand):
 
     def test_700_aqcompile(self):
         aqcompile = os.path.join(self.config.get("broker", "srcdir"),
-                                 "../install/common/bin", "aq_compile")
+                                 "bin", "aq_compile.py")
         basedir = self.config.get("broker", "quattordir")
         templates = os.path.join(self.sandboxdir, "utsandbox")
         # Make sure aq_compile uses the same panc.jar as the rest of the tests

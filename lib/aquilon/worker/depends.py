@@ -47,15 +47,15 @@ else:
     ms.version.addpkg('markupsafe', '2.1.1')
     ms.version.addpkg('pure-cdb', '3.1.0')
     ms.version.addpkg('six', '1.16.0')
-    ms.version.addpkg('jsonschema', '3.2.0')
+    ms.version.addpkg('jsonschema', '4.19.0')
     ms.version.addpkg("ms.directory", "4.0.0")
     ms.version.addpkg("ldap3", "2.9.1")
     ms.version.addpkg("pyasn1", "0.5.0")
-    ms.version.addpkg('attrs', '20.3.0')
+    ms.version.addpkg('attrs', '23.1.0')
     ms.version.addpkg('decorator', '5.1.1')
     ms.version.addpkg('requests-gssapi', '1.2.3')
     ms.version.addpkg('gssapi', '1.8.2')
-    ms.version.addpkg('pyspnego', '0.8.0')
+    ms.version.addpkg('pyspnego', '0.9.0-ms1')
     ms.version.addpkg('chardet', '5.1.0')
     ms.version.addpkg('certifi', '2022.9.24')
     ms.version.addpkg("httplib2", "0.22.0")
@@ -67,20 +67,9 @@ else:
     ms.version.addpkg("cffi", "1.15.1")
     ms.version.addpkg("pycparser", "2.21")
 
-
-import sys
-import ms.version
-if sys.version_info >= (3, 9):
     ms.version.addpkg('zope.interface', '6.0-ms1')
     ms.version.addpkg('coverage', '7.2.7-ms1')
     ms.version.addpkg('pyrsistent', '0.19.3')
     ms.version.addpkg("orjson", "3.8.8")
-    ms.version.addpkg("krb5", "0.4.1-1.16") # Required by HTTPKerberosAuth used in infoblox integration
+    ms.version.addpkg("krb5", "0.5.0") # Required by HTTPKerberosAuth used in infoblox integration
     ms.version.addpkg("cryptography", "41.0.3")
-else:
-    ms.version.addpkg('zope.interface', '5.2.0')
-    ms.version.addpkg('coverage', '6.5.0')
-    ms.version.addpkg('pyrsistent', '0.15.7')
-    ms.version.addpkg("orjson", "3.6.3")
-    ms.version.addpkg("krb5", "0.4.0") # Required by HTTPKerberosAuth used in infoblox integration
-    ms.version.addpkg("cryptography", "39.0.0")

@@ -44,14 +44,14 @@ else:
 
     # ms.version.addpkg('pyparsing', '2.3.1')  # pydot relies on pyparsing
     ms.version.addpkg("pyparsing", "2.4.7")
-    ms.version.addpkg('pydot', '1.4.1')
-    ms.version.addpkg('pygraphviz', '1.5-py37')
+    ms.version.addpkg('pydot', '1.4.2')
+    ms.version.addpkg('pygraphviz', '1.5-py37') # TODO, no version of pygraphviz is available in /ms/dist for python 3.10
     ms.version.addpkg('pydotplus', '2.0.2')
-    ms.version.addpkg('sklearn', '0.24.2-py37')
-    ms.version.addpkg("numpy", "1.19.3")
-    ms.version.addpkg("scipy", "1.5.2")
-    ms.version.addpkg("joblib", "0.16.0")
-    ms.version.addpkg("setuptools", "45.0.0")
+    ms.version.addpkg('sklearn', '1.4.1.post1')
+    ms.version.addpkg("numpy", "1.26.4")
+    ms.version.addpkg("scipy", "1.10.1-ms1")
+    ms.version.addpkg("joblib", "1.2.0")
+    ms.version.addpkg("setuptools", "46.1.3")
 
 try:
     import os

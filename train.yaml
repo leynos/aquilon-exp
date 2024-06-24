@@ -4,7 +4,7 @@ train_version: 1.0
 
 tools:
    - msde/git/2.35.3
-   - python/core/3.7.9
+   - python/core/3.10.11
    - msde/msdlbuild/prod
    - perl5/core/5.26.1
 
@@ -41,14 +41,14 @@ build_types:
    - build_type:
        name: client
        build:
-         - script: module switch python/core/3.7.9 python/core/3.10.11; make install -f Makefile_client
+         - script: make install -f Makefile_client
    - build_type:
        name: server
        build:
          - script: git ls-remote --sort='version:refname' --tags /ms/dev/aquilon/aqd/SCM/aqd.git | grep refs/tags/TRAIN_DIST_aquilon/aqd | tail -n 2 | head -n 1 | awk '{print $2}' | sed 's/^\([^/]\+\/\)\{2\}//' > doc/version.txt
          - script: msdlbuild clean
          - script: make clean
-         - script: make install -f Makefile_server
+         - script: make install
 
 test_types:
   - test_type:
@@ -76,7 +76,7 @@ test_types:
               - /ms/dist/python/PROJ/ruff/0.4.2/bin/ruff check --config pyproject.toml . && /ms/dist/python/PROJ/ruff/0.2.1-ms1/bin/ruff --config pyproject.toml --format junit -o ../install/common/test-results/ruff.xml .
               - echo -e "\n** ruff is currently informative only, but try to fix issues when possible. Try 'ruff check --fix' on your file for quick wins.**".
               - echo -e "\n-- black (darker) code reformatter on commit check --"
-              - tools/darker --diff --check --revision $(git rev-parse --abbrev-ref --symbolic-full-name @{u}) || echo -e "\nFAILED - !!! darker found formating issue. Please run **black** or *tools/darker** on new code to fix and resubmit code. !!!\n"
+              - /ms/dist/python/PROJ/darker/1.7.2/bin/darker --diff --check --revision $(git rev-parse --abbrev-ref --symbolic-full-name @{u}) || echo -e "\nFAILED - !!! darker found formating issue. Please run **black** or *tools/darker** on new code to fix and resubmit code. !!!\n"
   - test_type:
       name: jenkins
       test:

@@ -48,6 +48,7 @@ class PriorityList(Resource):
 
     resource_id = Column(ForeignKey(Resource.id), primary_key=True)
 
+    __mapper_args__ = {'polymorphic_identity': 'priority_list'}
     __table_args__ = ({'info': {'unique_fields': ['name', 'holder']}},)
 
     hosts = association_proxy("entries", "host",

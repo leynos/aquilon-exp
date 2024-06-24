@@ -34,9 +34,9 @@ else
 	AQDCONF=$(python -c 'import os, sys; print os.path.realpath(sys.argv[1])' "$AQDCONF")
 fi
 
-AQUSER=$($SRCDIR/../install/common/bin/aqd_config.py --get broker.user)
-AQHOST=$($SRCDIR/../install/common/bin/aqd_config.py --get broker.hostname)
-AQPORT=$($SRCDIR/../install/common/bin/aqd_config.py --get broker.kncport)
+AQUSER=$($SRCDIR/bin/aqd_config.py --get broker.user)
+AQHOST=$($SRCDIR/bin/aqd_config.py --get broker.hostname)
+AQPORT=$($SRCDIR/bin/aqd_config.py --get broker.kncport)
 
 echo
 echo "Using srcdir  = $SRCDIR"
@@ -46,7 +46,7 @@ echo "  and AQPORT  = $AQPORT"
 echo "  and AQHOST  = $AQHOST"
 echo
 
-function devaq() { $SRCDIR/../install/common/bin/aq.py "$@" --aqhost $AQHOST --aquser $AQUSER --aqport $AQPORT ; }
+function devaq() { $SRCDIR/bin/aq.py "$@" --aqhost $AQHOST --aquser $AQUSER --aqport $AQPORT ; }
 
 type devaq
 

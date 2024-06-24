@@ -80,7 +80,7 @@ def build_index(config, session, logger=LOGGER):
             else:
                 source = open(index_path)
             tree = ElementTree.parse(source)
-            for profile in tree.getiterator("profile"):
+            for profile in tree.iter("profile"):
                 if not profile.text or "mtime" not in profile.attrib:
                     continue
                 mtime = int(profile.attrib["mtime"])

@@ -38,9 +38,9 @@ else:
     ms.version.addpkg("ptyprocess", "0.6.0")
     ms.version.addpkg("pygments", "2.5.2")
     ms.version.addpkg("scandir", "1.9.0")
-    ms.version.addpkg("setuptools", "41.0.1")
+    ms.version.addpkg("setuptools", "46.1.3")
     ms.version.addpkg("simplegeneric", "0.8.1")
-    ms.version.addpkg("six", "1.14.0")
+    ms.version.addpkg("six", "1.16.0")
     ms.version.addpkg("traitlets", "4.3.2")
     ms.version.addpkg("wcwidth", "0.1.9")
 

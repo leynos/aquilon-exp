@@ -39,7 +39,7 @@ class Enum(sqlalchemy.types.TypeDecorator):
            code.
         """
 
-        if values is None or len(values) is 0:  # pragma: no cover
+        if values is None or len(values) == 0:  # pragma: no cover
             raise ValueError('Enum requires a list of values')
         self.empty_to_none = empty_to_none
         self.strict = strict
@@ -48,7 +48,7 @@ class Enum(sqlalchemy.types.TypeDecorator):
         super(Enum, self).__init__(size)
 
     def process_bind_param(self, value, dialect):
-        if self.empty_to_none and value is '':
+        if self.empty_to_none and value == '':
             value = None
         if value is None:
             return value

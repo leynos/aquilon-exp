@@ -1,4 +1,4 @@
-#!/ms/dist/python/PROJ/core/3.7.9-1/bin/python
+#!/ms/dist/python/PROJ/core/3.10.11-0/bin/python
 
 # Test runner with support for coverage and xml test outout
 
@@ -7,7 +7,7 @@
 import ms.version
 
 ms.version.addpkg("unittest-xml-reporting", "2.5.1")
-ms.version.addpkg("setuptools", "45.0.0")
+ms.version.addpkg("setuptools", "46.1.3")
 ms.version.addpkg("six", "1.16.0")
 
 import os

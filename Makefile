@@ -2,8 +2,8 @@ SHELL  = /bin/ksh
 COMMON = ../install/common
 QACOMMENT = -comment cmrs=qa
 PYTHON_DEFAULT = /usr/bin/env python
-PYTHON_CLIENT_PROD = /ms/dist/python/PROJ/core/3.7.9-1/bin/python -E
-PYTHON_SERVER_PROD = /ms/dist/python/PROJ/core/3.7.9-1/bin/python -E
+PYTHON_CLIENT_PROD = /ms/dist/python/PROJ/core/3.10.11-0/bin/python -E
+PYTHON_SERVER_PROD = /ms/dist/python/PROJ/core/3.10.11-0/bin/python -E
 
 MPR    := $(shell echo $(PWD) | awk -F/ '{print $$(NF-3), $$(NF-2), $$(NF-1)}')
 META   = $(word 1,$(MPR))
