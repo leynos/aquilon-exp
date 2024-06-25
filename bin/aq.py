@@ -620,8 +620,8 @@ if __name__ == "__main__":
             print(pageData)
         else:
             try:
-                proc = subprocess.Popen(shlex.split(pageData.decode()), stdin=sys.stdin,
-                                        stdout=sys.stdout, stderr=sys.stderr,
+                proc = subprocess.Popen(shlex.quote(pageData.decode().strip()).replace("'","").split(" "),
+                                        stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr,
                                         universal_newlines=True)
             except OSError as e:
                 print(str(e), file=sys.stderr)
