@@ -159,6 +159,7 @@ class PersonalityStageFormatter(PersonalityFormatter):
             "archetype": persst.personality.archetype.name,
             "environment": persst.personality.host_environment.name,
             "owner_grn": persst.personality.owner_grn.grn,
+            "owner_eonid": persst.owner_eon_id or None,
             "grns": [],
         }
         if persst.staged:
