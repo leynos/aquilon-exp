@@ -34,8 +34,8 @@ else:
     ms.version.addpkg('pbr', '5.4.4')
     ms.version.addpkg('prettytable', '1.0.1')
     ms.version.addpkg('constantly', '15.1.0')
-    ms.version.addpkg('zope.interface', '4.6.0-py37')
-    ms.version.addpkg("attrs", "19.3.0")
+    ms.version.addpkg('zope.interface', '6.0-ms1')
+    ms.version.addpkg("attrs", "23.1.0")
 
 # -- begin path_setup --
 BINDIR = os.path.dirname(os.path.realpath(sys.argv[0]))

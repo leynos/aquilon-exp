@@ -1,12 +1,12 @@
 default_language_version:
-    python: python3.7
+    python: python3.10
 repos:
 -   repo: local
     # Local to not query github to get modules and use local settings instead of pre-commit one.
     hooks:
     - id: darker
       name: darker
-      entry: tools/darker  # Locally updated to work with Python 3.7
+      entry: /ms/dist/python/PROJ/darker/1.7.2/bin/darker
       language: system
       types: [ python ]
     - id: ruff

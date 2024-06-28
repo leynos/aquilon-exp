@@ -16,7 +16,7 @@
 # limitations under the License.
 
 import re
-from collections import Iterable, Mapping
+from collections.abc import Iterable, Mapping
 from numbers import Number
 from six import string_types
 

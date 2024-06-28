@@ -19,13 +19,13 @@ line-length = 120
 line_length = 120  # bug in current version 1.7.2, line-length is sometimes ignored.
 log_level = "INFO"
 workers = 0
-target-version = 'py37'
-target_version = 'py37'  # bug in current version 1.7.2, target-version is sometimes ignored.
+target-version = 'py310'
+target_version = 'py310'  # bug in current version 1.7.2, target-version is sometimes ignored.
 
 [tool.black]
 line-length = 120
 skip-string-normalization = true
-target-version = ['py37']
+target-version = ['py310']
 exclude = '''
 /(
   \.eggs         # exclude a few common directories in the

@@ -28,7 +28,7 @@ try:
 except ImportError:
     pass
 else:
-    ms.version.addpkg('lxml', '4.5.1-2.9.3')
+    ms.version.addpkg('lxml', '4.9.2-ms1')
 
 from lxml import etree
 
@@ -66,7 +66,7 @@ def read_docbook(file, commands):
     # Collect all options mentioned in the synopsis
     # TODO: use xpath?
     for section in refsynopsisdiv.findall("{%s}cmdsynopsis" % ns):
-        for option in section.getiterator("{%s}option" % ns):
+        for option in section.iter("{%s}option" % ns):
             optname = option.text.strip()
             commands[cmd][optname]["docbook"] = True
             if option.findall("{%s}replaceable" % ns):
@@ -81,9 +81,9 @@ def read_docbook(file, commands):
 
         # Look for varlistentry/term/option
         # TODO: use xpath?
-        for varentry in section.getiterator("{%s}varlistentry" % ns):
+        for varentry in section.iter("{%s}varlistentry" % ns):
             term = varentry.find("{%s}term" % ns)
-            for option in term.getiterator("{%s}option" % ns):
+            for option in term.iter("{%s}option" % ns):
                 optname = option.text.strip()
                 commands[cmd][optname]["body"] = True
                 if option.findall("{%s}replaceable" % ns):

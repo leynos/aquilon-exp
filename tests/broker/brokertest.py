@@ -634,7 +634,7 @@ class TestBrokerCommand(unittest.TestCase):
                         "Command '%s' was not found in input.xml" % cmd_name)
         cmd_node = nodelist[0]
         msg_node = None
-        for fmt_node in cmd_node.getiterator("format"):
+        for fmt_node in cmd_node.iter("format"):
             if fmt_node.attrib["name"] != "proto":
                 continue
             msg_node = fmt_node.find("message_class")

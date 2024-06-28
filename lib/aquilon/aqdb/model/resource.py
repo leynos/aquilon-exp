@@ -137,10 +137,12 @@ class ClusterResource(ResourceHolder):
 
 class ResourceHolderWithLocation(ResourceHolder):
 
+    __abstract__ = True
+
     @declared_attr
     def location_id(cls):
-        return Column(ForeignKey(Location.id, ondelete='CASCADE'),
-                      nullable=True)
+        return ResourceHolder.__table__.c.get("location_id", Column(ForeignKey(Location.id, ondelete='CASCADE'),
+                      nullable=True))
 
     @declared_attr
     def location(cls):
@@ -187,10 +189,12 @@ Personality.resholders = relationship(PersonalityResource,
 
 class ResourceHolderWithLocationAndHostEnvironment(ResourceHolderWithLocation):
 
+    __abstract__ = True
+
     @declared_attr
     def host_environment_id(cls):
-        return Column(ForeignKey(HostEnvironment.id, ondelete='CASCADE'),
-                      nullable=True)
+        return ResourceHolderWithLocation.__table__.c.get("host_environment_id", Column(ForeignKey(HostEnvironment.id, ondelete='CASCADE'),
+                      nullable=True))
 
     @declared_attr
     def host_environment(cls):

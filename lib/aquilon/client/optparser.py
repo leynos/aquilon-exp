@@ -703,7 +703,7 @@ class OptParser:
         helpmsg.append("")
 
         commands = sorted([node.get("name")
-                           for node in self.tree.getiterator("command")
+                           for node in self.tree.iter("command")
                            if node.get("name") != "*"])
 
         maxlen = max(len(s) for s in commands) + 4
