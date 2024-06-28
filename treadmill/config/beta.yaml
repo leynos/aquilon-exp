@@ -1,0 +1,7 @@
+cpu: 50%
+disk: 1G
+cfg_env: qa
+run_env: beta
+memory: 4G
+proid: aqdqa
+keytab: host/nybgipvip156050.new-york.ms.com@is1.morgan

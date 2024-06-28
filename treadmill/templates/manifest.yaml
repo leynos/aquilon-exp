@@ -1,0 +1,26 @@
+cpu: {{ cpu }}
+disk: {{ disk }}
+memory: {{ memory }}
+environ:
+    - name: KRB5_KTNAME
+      value: /var/spool/keytabs/{{ proid }}
+    - name: KRB5CCNAME
+      value: /var/spool/tickets/{{ proid }}
+    - name: PGSERVICEFILE
+      value: /ms/dist/aquilon/PROJ/aqd_ro/{{ cfg_env }}/etc/{{ cfg_env }}/pg_service.conf
+services:
+    - name: aqd_ro
+      command: mkdir -p /var/tmp/{{ proid }}/quattor/logs;/ms/dist/kerberos/PROJ/krb5_keytab/prod/sbin/krb5_keytab -v;/ms/dist/aquilon/PROJ/aqd/{{ run_env }}/sbin/aqd_readonly --pidfile=/tmp/aqd.pid --logfile=- --nodaemon aqd --config=/ms/dist/aquilon/PROJ/aqd_ro/{{ cfg_env }}/etc/{{ cfg_env }}/aqd.conf --readonly
+      restart:
+          limit: 3
+          interval: 60
+base_os: aq7
+tickets:
+    - {{ proid }}@is1.morgan
+keytabs:
+    - '{{ keytab }}'
+endpoints:
+    - name: knc
+      port: 6910
+    - name: aqd
+      port: 6911

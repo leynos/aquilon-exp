@@ -1,0 +1,6 @@
+app_name: "aqdqa.aqd-ro"
+cells:
+  - cell: dz
+    count: 1
+  - cell: dd
+    count: 1

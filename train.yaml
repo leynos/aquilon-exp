@@ -7,6 +7,7 @@ tools:
    - python/core/3.10.11
    - msde/msdlbuild/prod
    - perl5/core/5.26.1
+   - msde/deploy-endpoints/prod
 
 toolchains: [ rhel7, rhel8, solaris11_x86_64 ]
 
@@ -30,25 +31,8 @@ build_types:
           - script: make clean
           - script: make install
           - script: msdlbuild metadata
-   - build_type:
-       name: aqd
-       build:
-         - script:
-            command:
-              - train build --type server
-              - train build --type client
-         - script: msdlbuild metadata
-   - build_type:
-       name: client
-       build:
-         - script: make install -f Makefile_client
-   - build_type:
-       name: server
-       build:
-         - script: git ls-remote --sort='version:refname' --tags /ms/dev/aquilon/aqd/SCM/aqd.git | grep refs/tags/TRAIN_DIST_aquilon/aqd | tail -n 2 | head -n 1 | awk '{print $2}' | sed 's/^\([^/]\+\/\)\{2\}//' > doc/version.txt
-         - script: msdlbuild clean
-         - script: make clean
-         - script: make install
+          - script: train-config build --templates-directory treadmill/templates --config-directory treadmill/config --output-directory ../install/common/treadmill
+          - script: cp -vfar treadmill/monitors ../install/common/treadmill/
 
 test_types:
   - test_type:
