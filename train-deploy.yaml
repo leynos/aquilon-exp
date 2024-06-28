@@ -15,6 +15,7 @@ tools:
   - msde/deploy-endpoints/prod
 # used to call the aq client and verify the broker is up and running
   - aquilon/prod
+  - cloud/treadmill/3
 
 # dev tam environment class
 dev:
@@ -37,9 +38,25 @@ dev:
 
   - name: beta.execute
     notify-email: aqd-eng
-    script:
-      - flip_releaselink
-      - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ny-2/dev --pattern '^(aqd-ro-instance|next-aqd|next-aq_notifyd|next-knc|next-aqweb)$'
+    stages:
+      - stage:
+        name: "Flip release link"
+        script:
+          - flip_releaselink
+      - stage:
+        name: "Restart services"
+        script:
+          - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ny-2/dev --pattern '^(aqd-ro-instance|next-aqd|next-aq_notifyd|next-knc|next-aqweb)$'
+      - stage:
+        name: "Reconfiguring treadmill"
+        script:
+          - treadmill configure aqdqa.aqd-ro --manifest=treadmill/${TRAIN_DEPLOY_ENV}/manifest.yaml
+          - train-treadmill monitor sync --source-dir treadmill/monitors/${TRAIN_DEPLOY_ENV}/
+      - stage:
+        name: "Restarting treadmill instances"
+        script:
+          - train-treadmill monitor restart --application-ids aqdqa.aqd-ro --cells dd,dz
+
   - name: beta.verify
     notify-email: aqd-eng
     stages:
@@ -51,6 +68,7 @@ dev:
         name: Verify aq beta broker
         script:
           - aq status --aqhost nyaqdbeta1.ms.com --aqservice aqdqa
+          - aq status --aqhost aqd-ro-beta.ms.com --aqservice aqdqa
 
   - name: ring1-beta.execute
     notify-email: aqd-eng
