@@ -288,6 +288,9 @@ class IBServices:
             assert(isinstance(ttl, int))
         if not self._assert_ip(ip):
             return
+        if not self._is_domain_authoritative(name):
+            return
+
         payload = {"name": name, "address": ip}
         if ttl is not None and ttl != -1:
             payload['ttl'] = ttl
@@ -310,6 +313,8 @@ class IBServices:
         if not self._assert_ip(ip):
             return
         if new_ip is None and new_ttl is None:
+            return
+        if not self._is_domain_authoritative(name):
             return
 
         payload = {}
@@ -339,6 +344,8 @@ class IBServices:
         assert(isinstance(name, str))
         assert(isinstance(ip, str))
         if not self._assert_ip(ip):
+            return
+        if not self._is_domain_authoritative(name):
             return
         params = {}
         if self.justification is not None:
@@ -750,6 +757,29 @@ class IBServices:
         url = self._generate_url_from_params("/dns/srv", params)
 
         return self._http_request("GET", url, ignore_statuses=[404])
+
+    @with_timer
+    def _show_zone_type(self, dns_domain):
+        url = f"/dns/zones/type/{dns_domain}"
+        return self._http_request("GET", url)
+
+    def _get_domain_from_fqdn(self, fqdn):
+        parts = fqdn.split('.')
+        if len(parts) > 2:
+            return '.'.join(parts[1:])
+        else:
+            return fqdn
+
+    def _is_domain_authoritative(self, fqdn):
+        response = self._show_zone_type(self._get_domain_from_fqdn(fqdn))
+        response_text = response.text
+
+        if response_text == "forward":
+            return True
+        elif response_text == "delegated":
+            return False
+
+        raise ProcessException(f"Unexpected result '{response_text}' when retrieving zone type for {fqdn}")
 
     def _http_request(self, http_cmd, url, data=None, ignore_statuses=[]):
         if not self.enabled:
