@@ -14,6 +14,11 @@ services:
       restart:
           limit: 3
           interval: 60
+    - name: laas
+      command: /ms/dist/aurora/bin/krun -- /ms/dist/esm/PROJ/laas-log-cli/prod/bin/tm3-wrapper --splunk y
+      restart:
+          limit: 5
+          interval: 60
 base_os: aq7
 tickets:
     - {{ proid }}@is1.morgan
