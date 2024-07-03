@@ -345,11 +345,15 @@ class IBServicesRequestHandler(SimpleHTTPRequestHandler):
                     r["method"], r["path"], r["payload"])
 
             response_code = test_case["response"]["code"]
+            response_body = test_case["response"]["payload"]
             if response_code >= 200 and response_code < 300:
                 self._parse_dns()
 
             self.send_response(code=response_code)
             self.end_headers()
+            if response_body is not None:
+                self.wfile.write(response_body.encode("utf-8"))
+
         else:
             http_monitor.invoked_without_expected_test = True
             # When this happens is because the test suite sent a request for
@@ -392,18 +396,22 @@ def get_aq_dns_data():
 
     ib_expected_dns_data = DNSRecordList()
     # This block deals with filtering out records/properties returned by `aq dump dns` that are not sent to infoblox
-    # NOTE, this implementation assumes than when a dns_record has multiple rdata items, we either want to keep or discard the all record,
-    # ie, it doesn't support the case where we want to keep on rdata but discard the other
+    # NOTE, this implementation assumes than when a dns_record has multiple rdata items, we either want to keep or discard all the records,
+    # ie, it doesn't support the case where we want to keep one rdata but discard the other
     for record in aq_dns_data.records:
         keep_record = False
-        # Ignore IPv6 addresses because they are not expected to be sent to infoblox
         for rdata in record.rdata:
             if rdata.rrtype == DNSRecordData.DNSRecordType.AAAA or (rdata.rrtype == DNSRecordData.DNSRecordType.PTR and re.search('ip6.arpa$', record.fqdn)):
+                # Ignore IPv6 addresses because they are not expected to be sent to infoblox
                 continue
             elif rdata.rrtype == DNSRecordData.DNSRecordType.A:
                 # Ignore A-records from restricted domains because they should never be sent to infoblox
                 _, _, record_domain = record.fqdn.partition('.')
                 if record_domain in restricted_domain_names:
+                    continue
+
+                # Also ignore non-authoritative-infoblox.cc because A-Records of non-authoritative domains are not sent to infoblox
+                if record_domain == 'non-authoritative-infoblox.cc':
                     continue
 
                 # Ignore A records of dynamic ranges (dynamic range dns entries are not sent to infoblox)
@@ -506,8 +514,26 @@ def ib_expect_update_ptr(ip, new_fqdn, new_ttl=-1, response_code=201, response_b
     test_case = ib_test_case("PATCH", "/dns/a_ptr/ptr/{}".format(ip), payload, response_code, response_body)
     http_monitor.expect(test_case)
 
+def ib_expect_show_zonetype(fqdn, response_code=200, response_body="forward", fail=False):
+    if fail:
+        response_code = 400
 
-def ib_expect_add_a(fqdn, ip, ttl=None, response_code=201, response_body="", justification=None, fail=False):
+    dns_domain = ''
+    parts = fqdn.split('.')
+    if len(parts) > 2:
+        dns_domain = '.'.join(parts[1:])
+    else:
+        dns_domain = fqdn
+
+    test_case = ib_test_case("GET", f"/dns/zones/type/{dns_domain}", None, response_code, response_body)
+    http_monitor.expect(test_case)
+
+def ib_expect_add_a(fqdn, ip, ttl=None, response_code=201, response_body="", zonetype_response_code=200, zonetype_response_body="forward", justification=None, fail=False):
+
+    ib_expect_show_zonetype(fqdn=fqdn, response_code=zonetype_response_code, response_body=zonetype_response_body)
+    if zonetype_response_code > 300 or zonetype_response_body != "forward":
+        return
+
     ip = str(ip)
     if fail:
         response_code = 400
@@ -524,7 +550,11 @@ def ib_expect_add_a(fqdn, ip, ttl=None, response_code=201, response_body="", jus
     http_monitor.expect(test_case)
 
 
-def ib_expect_del_a(fqdn, ip, response_code=204, response_body="", justification=None, fail=False):
+def ib_expect_del_a(fqdn, ip, response_code=204, response_body="", zonetype_response_code=200, zonetype_response_body="forward", justification=None, fail=False):
+    ib_expect_show_zonetype(fqdn=fqdn, response_code=zonetype_response_code, response_body=zonetype_response_body)
+    if zonetype_response_code > 300 or zonetype_response_body != "forward":
+        return
+
     ip = str(ip)
     if fail:
         response_code = 400
@@ -540,7 +570,12 @@ def ib_expect_del_a(fqdn, ip, response_code=204, response_body="", justification
 
 def ib_expect_update_a(fqdn, original_ip, new_ip=None,
                        new_ttl=-1, response_code=204, response_body="",
+                       zonetype_response_code=200, zonetype_response_body="forward",
                        justification=None, fail=False):
+    ib_expect_show_zonetype(fqdn=fqdn, response_code=zonetype_response_code, response_body=zonetype_response_body)
+    if zonetype_response_code > 300 or zonetype_response_body != "forward":
+        return
+
     original_ip = str(original_ip)
     if fail:
         response_code = 400

@@ -25,6 +25,7 @@ from mock_ib_services import ib_expect_add_a
 from mock_ib_services import ib_expect_add_ptr
 from mock_ib_services import ib_expect_del_a
 from mock_ib_services import ib_expect_del_ptr
+from mock_ib_services import ib_expect_show_zonetype
 from mock_ib_services import ib_expect_update_a
 from mock_ib_services import ib_expect_update_ptr
 
@@ -740,6 +741,50 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         self.ib_verify()
 
         mh.delete()
+
+    def test_930_non_authoritative_domain(self):
+        mh = MockHub(self)
+
+        mh.add_dns_domain('non-authoritative-infoblox.cc', restricted=False)
+        mh.add_network()
+
+        fqdn = "test.non-authoritative-infoblox.cc"
+
+        self.dsdb_expect_add(fqdn, "10.25.0.1")
+
+        # Check that when the zone type check returns "delegated", only a add_ptr request is sent (ie, no add_a request is sent)
+        ib_expect_show_zonetype(fqdn, response_body="delegated")
+        ib_expect_add_ptr(fqdn, "10.25.0.1", justification=self.valid_justification)
+        command = ["add", "address", "--fqdn", fqdn,
+                   "--ip", "10.25.0.1",
+                   "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_tcm
+        self.noouttest(command)
+        self.ib_verify()
+        self.dsdb_verify()
+
+        self.dsdb_expect_update(fqdn, ip="10.25.0.2")
+        ib_expect_show_zonetype(fqdn, response_body="delegated")
+        ib_expect_del_ptr("10.25.0.1", justification=self.valid_justification)
+        ib_expect_add_ptr(fqdn, "10.25.0.2", justification=self.valid_justification)
+        command = ["update", "address", "--fqdn", fqdn,
+                   "--ip", "10.25.0.2",
+                   "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_tcm
+        self.noouttest(command)
+        self.ib_verify()
+        self.dsdb_verify()
+
+        self.dsdb_expect_delete("10.25.0.2")
+        ib_expect_show_zonetype(fqdn, response_body="delegated")
+        ib_expect_del_ptr("10.25.0.2", justification=self.valid_justification)
+        command = ["del", "address", "--fqdn", fqdn,
+                   "--ip", "10.25.0.2"] + self.valid_just_tcm
+        self.noouttest(command)
+        self.ib_verify()
+        self.dsdb_verify()
+
+
+        mh.delete()
+
 
 
 
