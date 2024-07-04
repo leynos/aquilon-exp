@@ -17,6 +17,7 @@
 # limitations under the License.
 """Module for testing the add required service command."""
 
+import json
 import unittest
 
 if __name__ == "__main__":
@@ -91,6 +92,13 @@ class TestAddRequiredService(TestBrokerCommand):
         self.assertEqual(personality.required_services[0].service, 'afs')
         self.assertEqual(personality.required_services[0].instance, '')
         self.assertEqual(personality.required_services[0].host_environment, 'qa')
+
+    def test_105_check_personality_json(self):
+        command = ["show_personality", "--personality", "utpers-dev", "--personality_stage", "next", "--format", "json"]
+        personality = json.loads(self.commandtest(command))[0]
+        self.assertIsInstance(personality, dict)
+        self.assertEqual(len(personality["required_services"]), 1)
+        self.assertEqual(personality["required_services"][0], 'afs')
 
     def test_110_add_defaults(self):
         # Setup required services, as expected by the templates.

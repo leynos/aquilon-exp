@@ -170,6 +170,7 @@ class PersonalityStageFormatter(PersonalityFormatter):
             details["features"] = []
             for link in persst.features:
                 details["features"].append(link.feature.name)
+            details["required_services"] = [x.name for x in persst.required_services]
             if persst.personality.comments:
                 details["comments"] = persst.personality.comments
         return details
