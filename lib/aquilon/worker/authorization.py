@@ -117,7 +117,7 @@ class AuthorizationBroker(object):
             own."""
         if dbuser.name != 'aquilonhost':
             return False
-        m = host_re.match(principal)
+        m = host_re.match(principal.decode() if isinstance(principal, bytes) else principal)
         if not m:
             return False
         if resource.startswith("/host/%s/" % m.group(1)):

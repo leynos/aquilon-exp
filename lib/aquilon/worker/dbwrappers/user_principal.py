@@ -40,16 +40,13 @@ def get_or_create_user_principal(session, principal, createuser=True,
     if principal is None:
         return None
 
-    if isinstance(principal, bytes):
-        m = principal_re.match(principal.decode())
-    else:
-        m = principal_re.match(principal)
+    m = principal_re.match(principal.decode() if isinstance(principal, bytes) else principal)
     if not m:
         raise ArgumentError("User principal '%s' is not valid." % principal)
     realm = m.group(2)
     user = m.group(1)
 
-    m = host_re.match(user)
+    m = host_re.match(user.decode() if isinstance(user, bytes) else user)
     if m:
         user = 'aquilonhost'
         # Verify that the host exists in AQDB
