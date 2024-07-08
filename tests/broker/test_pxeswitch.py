@@ -260,6 +260,7 @@ class TestPxeswitch(TestBrokerCommand):
     def test_105_allowconfigureinstall(self):
         command = ["pxeswitch", "--hostname=unittest00.one-nyp.ms.com",
                    "--configure", "--install"]
+        self.user = ("host/unittest00.one-nyp.ms.com@" + self.realm).encode()
         err = self.statustest(command)
         self.matchoutput(err, "--configurelist", command)
         self.matchoutput(err, "--installlist", command)
