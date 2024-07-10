@@ -120,7 +120,8 @@ class AuthorizationBroker(object):
         m = host_re.match(principal.decode() if isinstance(principal, bytes) else principal)
         if not m:
             return False
-        if resource.startswith("/host/%s/" % m.group(1)):
+        resource_new = resource.decode() if isinstance(resource, bytes) else resource
+        if resource_new.startswith("/host/%s/" % m.group(1)):
             return True
         return False
 
