@@ -752,8 +752,8 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
 
         self.dsdb_expect_add(fqdn, "10.25.0.1")
 
-        # Check that when the zone type check returns "delegated", only a add_ptr request is sent (ie, no add_a request is sent)
-        ib_expect_show_zonetype(fqdn, response_body="delegated")
+        # Check that when the zone type check returns `"delegated"`, only a add_ptr request is sent (ie, no add_a request is sent)
+        ib_expect_show_zonetype(fqdn, response_body='"delegated"')
         ib_expect_add_ptr(fqdn, "10.25.0.1", justification=self.valid_justification)
         command = ["add", "address", "--fqdn", fqdn,
                    "--ip", "10.25.0.1",
@@ -763,7 +763,7 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         self.dsdb_verify()
 
         self.dsdb_expect_update(fqdn, ip="10.25.0.2")
-        ib_expect_show_zonetype(fqdn, response_body="delegated")
+        ib_expect_show_zonetype(fqdn, response_body='"delegated"')
         ib_expect_del_ptr("10.25.0.1", justification=self.valid_justification)
         ib_expect_add_ptr(fqdn, "10.25.0.2", justification=self.valid_justification)
         command = ["update", "address", "--fqdn", fqdn,
@@ -774,7 +774,7 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
         self.dsdb_verify()
 
         self.dsdb_expect_delete("10.25.0.2")
-        ib_expect_show_zonetype(fqdn, response_body="delegated")
+        ib_expect_show_zonetype(fqdn, response_body='"delegated"')
         ib_expect_del_ptr("10.25.0.2", justification=self.valid_justification)
         command = ["del", "address", "--fqdn", fqdn,
                    "--ip", "10.25.0.2"] + self.valid_just_tcm
