@@ -774,9 +774,9 @@ class IBServices:
         response = self._show_zone_type(self._get_domain_from_fqdn(fqdn))
         response_text = response.text
 
-        if response_text == "forward":
+        if re.search("forward", response_text):
             return True
-        elif response_text == "delegated":
+        elif re.search("delegated", response_text):
             return False
 
         raise ProcessException(f"Unexpected result '{response_text}' when retrieving zone type for {fqdn}")

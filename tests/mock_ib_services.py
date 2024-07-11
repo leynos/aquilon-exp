@@ -514,7 +514,7 @@ def ib_expect_update_ptr(ip, new_fqdn, new_ttl=-1, response_code=201, response_b
     test_case = ib_test_case("PATCH", "/dns/a_ptr/ptr/{}".format(ip), payload, response_code, response_body)
     http_monitor.expect(test_case)
 
-def ib_expect_show_zonetype(fqdn, response_code=200, response_body="forward", fail=False):
+def ib_expect_show_zonetype(fqdn, response_code=200, response_body='"forward"', fail=False):
     if fail:
         response_code = 400
 
@@ -528,10 +528,10 @@ def ib_expect_show_zonetype(fqdn, response_code=200, response_body="forward", fa
     test_case = ib_test_case("GET", f"/dns/zones/type/{dns_domain}", None, response_code, response_body)
     http_monitor.expect(test_case)
 
-def ib_expect_add_a(fqdn, ip, ttl=None, response_code=201, response_body="", zonetype_response_code=200, zonetype_response_body="forward", justification=None, fail=False):
+def ib_expect_add_a(fqdn, ip, ttl=None, response_code=201, response_body="", zonetype_response_code=200, zonetype_response_body='"forward"', justification=None, fail=False):
 
     ib_expect_show_zonetype(fqdn=fqdn, response_code=zonetype_response_code, response_body=zonetype_response_body)
-    if zonetype_response_code > 300 or zonetype_response_body != "forward":
+    if zonetype_response_code > 300 or zonetype_response_body != '"forward"':
         return
 
     ip = str(ip)
@@ -550,9 +550,9 @@ def ib_expect_add_a(fqdn, ip, ttl=None, response_code=201, response_body="", zon
     http_monitor.expect(test_case)
 
 
-def ib_expect_del_a(fqdn, ip, response_code=204, response_body="", zonetype_response_code=200, zonetype_response_body="forward", justification=None, fail=False):
+def ib_expect_del_a(fqdn, ip, response_code=204, response_body="", zonetype_response_code=200, zonetype_response_body='"forward"', justification=None, fail=False):
     ib_expect_show_zonetype(fqdn=fqdn, response_code=zonetype_response_code, response_body=zonetype_response_body)
-    if zonetype_response_code > 300 or zonetype_response_body != "forward":
+    if zonetype_response_code > 300 or zonetype_response_body != '"forward"':
         return
 
     ip = str(ip)
@@ -570,10 +570,10 @@ def ib_expect_del_a(fqdn, ip, response_code=204, response_body="", zonetype_resp
 
 def ib_expect_update_a(fqdn, original_ip, new_ip=None,
                        new_ttl=-1, response_code=204, response_body="",
-                       zonetype_response_code=200, zonetype_response_body="forward",
+                       zonetype_response_code=200, zonetype_response_body='"forward"',
                        justification=None, fail=False):
     ib_expect_show_zonetype(fqdn=fqdn, response_code=zonetype_response_code, response_body=zonetype_response_body)
-    if zonetype_response_code > 300 or zonetype_response_body != "forward":
+    if zonetype_response_code > 300 or zonetype_response_body != '"forward"':
         return
 
     original_ip = str(original_ip)
