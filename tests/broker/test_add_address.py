@@ -785,6 +785,49 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
 
         mh.delete()
 
+    def test_940_zone_missing_in_ib(self):
+        mh = MockHub(self)
+
+        mh.add_dns_domain('zone-does-not-exist-infoblox.cc', restricted=False)
+        mh.add_network()
+
+        fqdn = "host.zone-does-not-exist-infoblox.cc"
+
+        self.dsdb_expect_add(fqdn, "10.25.0.1")
+        ib_expect_show_zonetype(fqdn, response_code=404, response_body=None)
+        ib_expect_add_ptr(fqdn, "10.25.0.1", justification=self.valid_justification)
+        command = ["add", "address", "--fqdn", fqdn,
+                   "--ip", "10.25.0.1",
+                   "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_tcm
+        err = self.statustest(command)
+        self.matchoutput(err, "Domain not found in Infoblox: zone-does-not-exist-infoblox.cc", command)
+        self.ib_verify()
+        self.dsdb_verify()
+
+        self.dsdb_expect_update(fqdn, ip="10.25.0.2")
+        ib_expect_show_zonetype(fqdn, response_code=404, response_body=None)
+        ib_expect_del_ptr("10.25.0.1", justification=self.valid_justification)
+        ib_expect_add_ptr(fqdn, "10.25.0.2", justification=self.valid_justification)
+        command = ["update", "address", "--fqdn", fqdn,
+                   "--ip", "10.25.0.2",
+                   "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_tcm
+        err = self.statustest(command)
+        self.matchoutput(err, "Domain not found in Infoblox: zone-does-not-exist-infoblox.cc", command)
+        self.ib_verify()
+        self.dsdb_verify()
+
+        self.dsdb_expect_delete("10.25.0.2")
+        ib_expect_show_zonetype(fqdn, response_code=404, response_body=None)
+        ib_expect_del_ptr("10.25.0.2", justification=self.valid_justification)
+        command = ["del", "address", "--fqdn", fqdn,
+                   "--ip", "10.25.0.2"] + self.valid_just_tcm
+        err = self.statustest(command)
+        self.matchoutput(err, "Domain not found in Infoblox: zone-does-not-exist-infoblox.cc", command)
+        self.ib_verify()
+        self.dsdb_verify()
+
+        mh.delete()
+
 
 
 

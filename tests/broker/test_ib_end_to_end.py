@@ -384,6 +384,49 @@ class TestIBEndToEnd(TestBrokerCommand):
 
         mh.delete()
 
+    def test_150_zone_missing_in_ib(self):
+        mh = MockHub(self)
+        dns_checker = DnsChecker(self)
+        ib_checker = IBChecker(self)
+
+        test_fqdn = 'test.zone-does-not-exist.ms.com'
+
+        mh.add_dns_domain('zone-does-not-exist.ms.com', restricted=False)
+        building = mh.add_building()
+
+        # Make sure the addresses we are going to create were not left lingering from a previous test run
+        self._delete_a_ptr(test_fqdn, '2.3.4.1')
+        dns_checker.notfound(test_fqdn)
+
+        # Setup network used by the tests
+        self.noouttest(['add_network', '--network', 'ib-testing', '--ip', self.test_network_obj['ip'],
+                        '--prefixlen', self.test_network_obj['prefixlen'], '--building', building])
+
+        self.dsdb_expect_add(test_fqdn, '2.3.4.1')
+        command = ['add_address', '--fqdn', test_fqdn, '--ip', '2.3.4.1', '--grn', mh.grn] + self.valid_just_tcm
+        err = self.statustest(command)
+        self.matchoutput(err, "Domain not found in Infoblox: zone-does-not-exist.ms.com", command)
+        self.dsdb_verify()
+        dns_checker.notfound(test_fqdn)
+
+        command = ['update_address', '--fqdn', test_fqdn, '--ip', '2.3.4.2', '--grn', mh.grn] + self.valid_just_tcm
+        self.dsdb_expect_update(test_fqdn, ip='2.3.4.2')
+        err = self.statustest(command)
+        self.matchoutput(err, "Domain not found in Infoblox: zone-does-not-exist.ms.com", command)
+        self.dsdb_verify()
+        dns_checker.notfound(test_fqdn)
+
+        command = ['del_address', '--fqdn', test_fqdn] + self.valid_just_tcm
+        self.dsdb_expect_delete('2.3.4.2')
+        err = self.statustest(command)
+        self.matchoutput(err, "Domain not found in Infoblox: zone-does-not-exist.ms.com", command)
+        self.dsdb_verify()
+        dns_checker.notfound(test_fqdn)
+
+        self.noouttest(['del_network', '--ip', '2.3.4.0'])
+
+        mh.delete()
+
     def test_200_dynamic_range(self):
         mh = MockHub(self)
 
