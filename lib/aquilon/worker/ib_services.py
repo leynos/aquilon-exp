@@ -761,7 +761,7 @@ class IBServices:
     @with_timer
     def _show_zone_type(self, dns_domain):
         url = f"/dns/zones/type/{dns_domain}"
-        return self._http_request("GET", url)
+        return self._http_request("GET", url, ignore_statuses=[404])
 
     def _get_domain_from_fqdn(self, fqdn):
         parts = fqdn.split('.')
@@ -771,7 +771,16 @@ class IBServices:
             return fqdn
 
     def _is_domain_authoritative(self, fqdn):
-        response = self._show_zone_type(self._get_domain_from_fqdn(fqdn))
+        domain = self._get_domain_from_fqdn(fqdn)
+        response = self._show_zone_type(domain)
+
+        if response is None:
+            return False
+
+        if response.status_code == 404:
+            self.log.warning(f"Domain not found in Infoblox: {domain}")
+            return False
+
         response_text = response.text
 
         if re.search("forward", response_text):

@@ -411,7 +411,8 @@ def get_aq_dns_data():
                     continue
 
                 # Also ignore non-authoritative-infoblox.cc because A-Records of non-authoritative domains are not sent to infoblox
-                if record_domain == 'non-authoritative-infoblox.cc':
+                # And ignore domains that do not exist in Infoblox
+                if record_domain == 'non-authoritative-infoblox.cc' or record_domain == 'zone-does-not-exist-infoblox.cc':
                     continue
 
                 # Ignore A records of dynamic ranges (dynamic range dns entries are not sent to infoblox)
