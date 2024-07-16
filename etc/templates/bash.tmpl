@@ -7,16 +7,17 @@ cheetahVarStartToken = ~
 #end compiler-settings
 
 <%
-commands = filter(lambda c: "name" in c.attrib and c.attrib["name"] != "*",
-                  self.tree.iter("command"))
+commands = list(filter(lambda c: "name" in c.attrib and c.attrib["name"] != "*",
+                  self.tree.iter("command")))
 global_command = next(filter(lambda c: "name" in c.attrib and c.attrib["name"] == "*",
                         self.tree.iter("command")))
-global_options = global_command.iter("option")
+
+global_options = list(global_command.iter("option"))
 
 def option_has_parameter(opt):
     return "type" in opt.attrib and opt.attrib["type"] != "boolean"
 
-global_options_with_params = filter(option_has_parameter, global_options)
+global_options_with_params = list(filter(option_has_parameter, global_options))
 %>
 
 _aq_sqlite="/ms/dist/fsf/PROJ/sqlite/3.33.0/bin/sqlite3"
@@ -95,7 +96,7 @@ _aq ()
 
     cmds='#echo " ".join( [ cmd.attrib["name"] for cmd in commands ] ) #'
     globalOpts='#echo " ".join( [ "--" + opt.attrib["name"] for opt in global_options ] ) #'
-    globalParam='#echo "|".join( [ "--" + opt.attrib["name"] for opt in filter(option_has_parameter, global_options) ] ) #'
+    globalParam='#echo "|".join( [ "--" + opt.attrib["name"] for opt in list(filter(option_has_parameter, global_options)) ] ) #'
 
     if [[ $COMP_CWORD -eq 1 ]]; then
         COMPREPLY=( $( compgen -W "$cmds" -- $cur ) )
@@ -159,15 +160,12 @@ _aq ()
     cmdOpts=
     case ${COMP_WORDS[1]} in
     #for cmd in commands
-    '#echo cmd #'
 <%
 
-options = filter(lambda o: "name" in o.attrib, cmd.iter("option"))
-options_with_params = filter(option_has_parameter, options)
+options = list(filter(lambda o: "name" in o.attrib, cmd.iter("option")))
+options_with_params = list(filter(option_has_parameter, options))
 
 %>
-    '#echo options #'
-    '#echo options_with_params #'
     ~{cmd.attrib["name"]})
         cmdOpts='#echo " ".join( [ "--" + opt.attrib["name"] for opt in options ] ) #'
         optsParam='#echo "|".join( [ "--" + opt.attrib["name"] for opt in options_with_params ] ) #'
