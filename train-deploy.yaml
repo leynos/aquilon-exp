@@ -21,9 +21,18 @@ tools:
 dev:
   - name: alpha.execute
     notify-email: aqd-eng
-    script:
-      - flip_releaselink
-      - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ny-2/dev --pattern '^(alpha-aqd|alpha-aq_notifyd|alpha-knc|alpha-aqweb)$'
+    notification-policy: "strict"
+    stages:
+      - stage:
+        name: "Flip release link"
+        script:
+          - flip_releaselink
+        on_failure: "abort"
+      - stage:
+        name: "Restart services"
+        script:
+          - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ny-2/dev --pattern '^(alpha-aqd|alpha-aq_notifyd|alpha-knc|alpha-aqweb)$' --continue-on-fail
+        on_failure: "abort"
   - name: alpha.verify
     notify-email: aqd-eng
     stages:
@@ -38,24 +47,29 @@ dev:
 
   - name: beta.execute
     notify-email: aqd-eng
+    notification-policy: "strict"
     stages:
       - stage:
         name: "Flip release link"
         script:
           - flip_releaselink
+        on_failure: "abort"
       - stage:
         name: "Restart services"
         script:
-          - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ny-2/dev --pattern '^(aqd-ro-instance|next-aqd|next-aq_notifyd|next-knc|next-aqweb)$'
+          - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ny-2/dev --pattern '^(aqd-ro-instance|next-aqd|next-aq_notifyd|next-knc|next-aqweb)$' --continue-on-fail
+        on_failure: "continue"
       - stage:
         name: "Reconfiguring treadmill"
         script:
           - treadmill configure aqdqa.aqd-ro --manifest=treadmill/${TRAIN_DEPLOY_ENV}/manifest.yaml
           - train-treadmill monitor sync --source-dir treadmill/monitors/${TRAIN_DEPLOY_ENV}/
+        on_failure: "abort"
       - stage:
         name: "Restarting treadmill instances"
         script:
           - train-treadmill monitor restart --application-ids aqdqa.aqd-ro --cells dd,dz
+        on_failure: "abort"
 
   - name: beta.verify
     notify-email: aqd-eng
@@ -72,9 +86,18 @@ dev:
 
   - name: ring1-beta.execute
     notify-email: aqd-eng
-    script:
-      - flip_releaselink
-      - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ny-2/dev --pattern '^(aqd-ring1-dev|aq_notifyd|knc-ring1-dev|aqweb-ring1-dev)$'
+    notification-policy: "strict"
+    stages:
+      - stage:
+        name: "Flip release link"
+        script:
+          - flip_releaselink
+        on_failure: "abort"
+      - stage:
+        name: "Restart services"
+        script:
+          - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ny-2/dev --pattern '^(aqd-ring1-dev|aq_notifyd|knc-ring1-dev|aqweb-ring1-dev)$' --continue-on-fail
+        on_failure: "continue"
   - name: ring1-beta.verify
     notify-email: aqd-eng
     stages:
@@ -91,12 +114,22 @@ dev:
 # prod tam environment class
 prod:
   - name: ring1-prod.execute
+    notification-policy: "strict"
     notify-email: aqd-eng
     autodeployuser: aqdautodeploy
-    script:
-      - flip_releaselink
-      - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ring1-ny-1/prod --pattern '^(aqd|aq_notifyd|knc|aqweb)$'
+    stages:
+      - stage:
+        name: "Flip release link"
+        script:
+          - flip_releaselink
+        on_failure: "abort"
+      - stage:
+        name: "Restart services"
+        script:
+          - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ring1-ny-1/prod --pattern '^(aqd|aq_notifyd|knc|aqweb)$' --continue-on-fail
+        on_failure: "continue"
   - name: ring1-prod.verify
+    notification-policy: "strict"
     notify-email: aqd-eng
     stages:
       - stage:
@@ -107,14 +140,31 @@ prod:
         name: Verify aq ring1 prod broker
         script:
           - aq status --aqhost r1aqd.new-york.ms.com --aqservice aqdr1p
+        on_failure: "continue"
 
   - name: prod.execute
     notify-email: aqd-eng
+    notification-policy: "strict"
     autodeployuser: aqdautodeploy
-    script:
-      - flip_releaselink
-      - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ny-1/prod --pattern '^(aqd|aqd-noauth|aq_notifyd|knc|aqweb|aqd-ro-instance-\d|aqd-ro-knc-\d|aqd-ro-batch-instance-\d|aqd-ro-batch-knc-\d|aqd-ro-dhcp-instance-\d|aqd-ro-dhcp-knc-\d)$'
+    stages:
+      - stage:
+        name: "Flip release link"
+        script:
+          - flip_releaselink
+        on_failure: "abort"
+      - stage:
+        name: "Restart RW services"
+        script:
+          - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ny-1/prod --pattern '^(aqd|aqd-noauth|aq_notifyd|knc|aqweb)$' --continue-on-fail
+        on_failure: "continue"
+      - stage:
+        name: "Restart RO services"
+        script:
+          - zapp restart-app --verify-after 10 --status-interval-time 5 --verification-iterations 3 --plant ec/aquilon-ny-1/prod --pattern '^(aqd-ro-instance-\d|aqd-ro-knc-\d|aqd-ro-batch-instance-\d|aqd-ro-batch-knc-\d|aqd-ro-dhcp-instance-\d|aqd-ro-dhcp-knc-\d)$' --continue-on-fail
+        on_failure: "continue"
   - name: prod.verify
+    notification-policy: "strict"
+    notify-email: aqd-eng
     stages:
       - stage:
         name: Verify releaselink
@@ -124,3 +174,4 @@ prod:
         name: Verify aq prod broker
         script:
           - /ms/dist/aquilon/PROJ/aqd-scripts/prod/bin/checkout.pl
+        on_failure: "continue"
