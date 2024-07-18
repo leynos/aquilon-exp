@@ -9,6 +9,7 @@ from aquilon.aqdb.model import Alias, ARecord, DnsRecord, Fqdn, HardwareEntity, 
 from aquilon.config import Config
 from aquilon.exceptions_ import ArgumentError, ProcessException
 from aquilon.utils import with_timer
+import json
 
 xstr = lambda s: None if s is None else str(s)
 
@@ -851,18 +852,18 @@ class IBServices:
                 self.log.warning(f"{e} (but proceeding with change as non-transactional mode is set).")
 
     def _log_ib_result(self, msg, http_cmd, full_url, request_data, response):
-        response_str = f"{response.status_code} {response.reason}"
-        msg += f" got {response_str} for {http_cmd} {full_url}"
+        ib_log = {  'msg': msg,
+                    'status_code': response.status_code,
+                    'response_reason': response.reason,
+                    'http_cmd': http_cmd,
+                    'full_url': full_url,
+                    'request_data': request_data,
+                    'response_body': response.text,
+                    'aqd_request_id': str(self.requestid) if self.requestid else None,
+                    'ib_request_id': response.headers.get(self.transaction_id_header) }
 
-        if request_data:
-            msg += f" (request body '{request_data}')"
-        if response.text and response.text != "{}":
-            msg += f" (response body '{response.text}')"
-        if self.requestid:
-            msg += f" (AQD request ID '{self.requestid}')"
-        ib_request_id = response.headers.get(self.transaction_id_header)
-        if ib_request_id:
-            msg += f" (Infoblox request ID '{ib_request_id}')"
+
+        msg = json.dumps(ib_log, sort_keys=True)
         self.log.info(msg)
         return msg
 

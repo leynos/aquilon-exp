@@ -168,7 +168,7 @@ class TestUpdateDynamicRange(TestBrokerCommand):
                    "--range_class={}".format(range_class)] + self.valid_just_tcm
         out, err = self.failuretest(command, 5)
 
-        self.searchoutput(err, r"(404 Not Found)", " ".join(command))
+        self.searchoutput(err, "Not Found", " ".join(command))
 
     def assert_range_class(self, ip, range_class):
         # Assert that the range including <ip> has the specified range class
