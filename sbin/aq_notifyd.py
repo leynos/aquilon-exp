@@ -105,11 +105,13 @@ class UpdaterThread(Thread):
 
     def run(self):
         self.logger.info("Worker thread starting")
+        wait_time = self.config.get("broker", "aq_notityd_wait")
+        self.logger.info("Worker wait time, %s", wait_time)
 
         while True:
             worker_notify.acquire()
             if not self.update_queued:
-                worker_notify.wait(10.0)
+                worker_notify.wait(float(wait_time))
 
             if self.do_exit:
                 break
