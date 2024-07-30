@@ -34,6 +34,7 @@ CCM_NOTIF = 1
 CDB_NOTIF = 2
 
 NOTIFICATION_TYPES = {CCM_NOTIF: "ccm", CDB_NOTIF: "cdb"}
+NOTIFICATION_TO = {CCM_NOTIF: "client", CDB_NOTIF: "server"}
 
 try:
     CDPPORT = socket.getservbyname("cdp")
@@ -50,6 +51,7 @@ def build_index(config, session, logger=LOGGER):
     and send out notifications to "server modules" (as defined
     within the broker configuration).
     '''
+    logger.info("Starting build_index")
     gzip_output = config.getboolean('panc', 'gzip_output')
     transparent_gzip = config.getboolean('panc', 'transparent_gzip')
     gzip_index = gzip_output and transparent_gzip
@@ -106,6 +108,7 @@ def build_index(config, session, logger=LOGGER):
         finally:
             if source:
                 source.close()
+    logger.info("Fetched %s objects managed by Broker", len(old_object_index))
 
     # modified_index stores the subset of namespaced names that
     # have changed since the last index. The values are unused.
@@ -165,6 +168,7 @@ def build_index(config, session, logger=LOGGER):
 
                 if obj not in objects or objects[obj][0] < mtime:
                     objects[obj] = (mtime, advertise_suffix)
+    logger.info("%s objects shortlisted that have changed since the last index read", len(objects))
 
     content = []
     content.append("<?xml version='1.0' encoding='utf-8'?>")
@@ -239,6 +243,7 @@ def send_notification(ntype, modified, sock=None, logger=LOGGER):
     Returns the number of notifications that were sent.
     '''
 
+    logger.info("sending %s notifications", NOTIFICATION_TO[ntype])
     success = 0
     for obj in modified:
         # We need to clean the name, since it might
@@ -257,10 +262,12 @@ def send_notification(ntype, modified, sock=None, logger=LOGGER):
             packet = NOTIFICATION_TYPES[ntype] + "\0" + str(int(time.time()))
             sock.sendto(packet.encode("ascii"), (ip, CDPPORT))
             success = success + 1
+            logger.debug("In-Progress: sent notification to %s %s", host, NOTIFICATION_TO[ntype])
 
-        except socket.gaierror:
+        except socket.gaierror as err:
             # This hostname is unknown, so we silently
             # discard the notification.
+            logger.warning("Unknown Hostname %s, So discarding the notification due to %s", host, err)
             pass
 
         except Exception as e:
