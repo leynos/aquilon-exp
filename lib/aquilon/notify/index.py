@@ -262,7 +262,6 @@ def send_notification(ntype, modified, sock=None, logger=LOGGER):
             packet = NOTIFICATION_TYPES[ntype] + "\0" + str(int(time.time()))
             sock.sendto(packet.encode("ascii"), (ip, CDPPORT))
             success = success + 1
-            logger.debug("In-Progress: sent notification to %s %s", host, NOTIFICATION_TO[ntype])
 
         except socket.gaierror as err:
             # This hostname is unknown, so we silently
