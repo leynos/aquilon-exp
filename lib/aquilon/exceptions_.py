@@ -137,3 +137,8 @@ class TransientError(AquilonError):
     """
     Raised when there's a transient failure, e.g. database is not available.
     """
+
+class InfobloxException(AquilonError):
+    """
+    Raised when there's a failure in Infoblox operations.
+    """

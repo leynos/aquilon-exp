@@ -19,7 +19,7 @@
 from aquilon.aqdb.model import Fqdn, AddressAlias
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.grn import lookup_grn
-from aquilon.exceptions_ import ArgumentError, ProcessException
+from aquilon.exceptions_ import ArgumentError, InfobloxException
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.ib_services import IBServices
 
@@ -85,7 +85,7 @@ class CommandUpdateAddressAlias(BrokerCommand):
         if ib_services.feature_enabled("address_alias"):
             try:
                 ib_services.group.commit_or_rollback()
-            except ProcessException as e:
+            except InfobloxException as e:
                 raise e
 
 

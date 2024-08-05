@@ -17,7 +17,7 @@
 """Contains the logic for `aq add interface address`."""
 
 from aquilon.utils import validate_nlist_key
-from aquilon.exceptions_ import ArgumentError, ProcessException
+from aquilon.exceptions_ import ArgumentError, InfobloxException
 from aquilon.aqdb.model import (NetworkDevice, NetworkEnvironment, Interface,
                                 ManagementInterface, ARecord)
 from aquilon.worker.broker import BrokerCommand
@@ -203,7 +203,7 @@ class CommandAddInterfaceAddress(BrokerCommand):
             ib_services.add_a_ptr(dbdns_rec)
             try:
                 ib_services.group.commit_or_rollback()
-            except ProcessException as e:
+            except InfobloxException as e:
                 dsdb_runner.rollback()
                 raise e
 

@@ -18,7 +18,7 @@
 from ipaddress import ip_address, IPv4Network
 from sqlalchemy.orm import joinedload
 
-from aquilon.exceptions_ import ArgumentError, NotFoundException, ProcessException, UnimplementedError
+from aquilon.exceptions_ import ArgumentError, NotFoundException, InfobloxException, UnimplementedError
 from aquilon.aqdb.model import DynamicStub, DnsEnvironment
 from aquilon.aqdb.model.network_environment import get_net_dns_env
 from aquilon.aqdb.model.network import get_net_id_from_ip
@@ -83,7 +83,7 @@ class CommandUpdateDynamicRange(BrokerCommand):
         response = None
         try:
             response = ib_services.show_dynamic_range(startip, endip)
-        except ProcessException as e:
+        except InfobloxException as e:
             if response and response.status_code == 404:
                 raise ArgumentException("Dynamic range {} to {} was not found in Infoblox, cannot update"
                                         .format(startip, endip))

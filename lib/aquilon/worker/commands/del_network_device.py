@@ -17,7 +17,7 @@
 """Contains the logic for `aq del network_device`."""
 
 from aquilon.aqdb.model import NetworkDevice
-from aquilon.exceptions_ import ProcessException
+from aquilon.exceptions_ import InfobloxException
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.dbwrappers.hardware_entity import check_only_primary_ip
@@ -75,6 +75,6 @@ class CommandDelNetworkDevice(BrokerCommand):
             if ib_services.feature_enabled("network_device"):
                 try:
                     ib_services.group.commit_or_rollback()
-                except ProcessException as e:
+                except InfobloxException as e:
                     dsdb_runner.rollback()
                     raise e
