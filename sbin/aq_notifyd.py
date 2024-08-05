@@ -49,7 +49,9 @@ from twisted.internet.protocol import Factory
 from twisted.protocols.basic import LineReceiver
 from twisted.internet import reactor
 
+
 import aquilon.aqdb.depends  # pylint: disable=W0611
+from sqlalchemy import select, exc
 
 from aquilon.config import Config
 from aquilon.twisted_patches import integrate_logging
@@ -86,7 +88,11 @@ def update_index_and_notify(config, logger, db):
     session = db.Session()
 
     try:
+        session.execute(select(1).execution_options(timeout=2))
         build_index(config, session, logger)
+    except exc.OperationalError as err:
+        logger.error(err)
+        raise
     except Exception as err:
         logger.error(err)
     finally:
@@ -122,7 +128,11 @@ class UpdaterThread(Thread):
             worker_notify.release()
 
             self.logger.debug("Worker woken up")
-            update_index_and_notify(self.config, self.logger, self.db)
+            try:
+                update_index_and_notify(self.config, self.logger, self.db)
+            except exc.OperationalError as e:
+                self.logger.error("Failed to update index due to %s", e)
+                continue
 
         worker_notify.release()
         self.logger.info("Worker thread finished")
