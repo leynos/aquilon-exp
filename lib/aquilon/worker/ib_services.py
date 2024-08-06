@@ -29,8 +29,8 @@ class IBServiceGroup:
         try:
             # Iterate through the functions, pull off any rollbacks.
             for (action, rollback) in self.functions:
-                action()
-                if rollback:
+                action_result = action()
+                if rollback and action_result is not None:
                     rollbacks.append(rollback)
             self.functions = []
         except InfobloxException as e:

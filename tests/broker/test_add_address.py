@@ -750,9 +750,23 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
 
         fqdn = "test.non-authoritative-infoblox.cc"
 
+        # Check that when the zone type check returns `"delegated"`, only a add_ptr request is sent (ie, no add_a request is sent)
+        # Test case where the add_ptr call fails
+        self.dsdb_expect_add(fqdn, "10.25.0.1")
+        ib_expect_show_zonetype(fqdn, response_body='"delegated"')
+        ib_expect_add_ptr(fqdn, "10.25.0.1", justification=self.valid_justification, fail=True)
+        self.dsdb_expect_delete("10.25.0.1")  # Rollback dsdb call
+        command = ["add", "address", "--fqdn", fqdn,
+                   "--ip", "10.25.0.1",
+                   "--grn=grn:/ms/ei/aquilon/aqd"] + self.valid_just_tcm
+        self.iberrortest(command)
+        self.ib_verify()
+        self.dsdb_verify()
+
         self.dsdb_expect_add(fqdn, "10.25.0.1")
 
         # Check that when the zone type check returns `"delegated"`, only a add_ptr request is sent (ie, no add_a request is sent)
+        # Test case where the add_ptr call succeeds
         ib_expect_show_zonetype(fqdn, response_body='"delegated"')
         ib_expect_add_ptr(fqdn, "10.25.0.1", justification=self.valid_justification)
         command = ["add", "address", "--fqdn", fqdn,
