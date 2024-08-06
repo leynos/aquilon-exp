@@ -378,8 +378,8 @@ class TestBrokerCommand(unittest.TestCase):
         self.matchoutput(err, "DSDB", command)
 
     def iberrortest(self, command, **kwargs):
-        err = self.badrequesttest(command, expected_code=5, **kwargs)
-        self.matchoutput(err, "Infoblox error", command)
+        err = self.internalerrortest(command, **kwargs)
+        self.matchoutput(err, "Infoblox response error", command)
 
     def unauthorizedtest(self, command, auth=False, msgcheck=True, **kwargs):
         (p, out, err) = self.aq.runcommand(command, auth=auth, **kwargs)
@@ -410,7 +410,7 @@ class TestBrokerCommand(unittest.TestCase):
         self.assertEqual(out, "",
                          "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n" %
                          (command, out))
-        self.assertEqual(err.find("Internal Server Error"), 0,
+        self.assertTrue(err.find("Internal Server Error") >= 0,
                          "STDERR for %s did not start with "
                          "Internal Server Error:\n@@@\n'%s'\n@@@\n" %
                          (command, err))

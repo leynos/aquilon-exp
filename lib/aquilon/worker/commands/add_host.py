@@ -16,7 +16,7 @@
 # limitations under the License.
 """Contains the logic for `aq add host`."""
 
-from aquilon.exceptions_ import ArgumentError, ProcessException
+from aquilon.exceptions_ import ArgumentError, InfobloxException
 from aquilon.aqdb.model import DnsDomain
 from aquilon.aqdb.model import (Machine, ServiceAddress, HostResource,
                                 Archetype, Bunker, Building)
@@ -219,7 +219,7 @@ class CommandAddHost(BrokerCommand):
 
                     try:
                         ib_services.group.commit_or_rollback()
-                    except ProcessException as e:
+                    except InfobloxException as e:
                         if dsdb_runner:
                             dsdb_runner.rollback()
                         raise e

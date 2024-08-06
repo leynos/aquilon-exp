@@ -18,7 +18,7 @@
 
 from datetime import datetime
 
-from aquilon.exceptions_ import ArgumentError, ProcessException
+from aquilon.exceptions_ import ArgumentError, InfobloxException
 from aquilon.aqdb.types import MACAddress
 from aquilon.aqdb.model import Model, NetworkDevice, ObservedMac, Chassis, NetworkDeviceChassisSlot, ARecord
 from aquilon.worker.broker import BrokerCommand
@@ -159,7 +159,7 @@ class CommandUpdateNetworkDevice(BrokerCommand):
                 ib_services.bulk_change_a_ptr(ib_old_info, ib_new_info)
                 try:
                     ib_services.group.commit_or_rollback()
-                except ProcessException as e:
+                except InfobloxException as e:
                     dsdb_runner.rollback()
                     raise e
 

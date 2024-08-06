@@ -16,7 +16,7 @@
 # limitations under the License.
 """Contains the logic for `aq add console server`."""
 
-from aquilon.exceptions_ import ArgumentError, ProcessException
+from aquilon.exceptions_ import ArgumentError, InfobloxException
 from aquilon.aqdb.types import ConsoleServerType
 from aquilon.aqdb.model import ConsoleServer, Model
 from aquilon.aqdb.model.network import get_net_id_from_ip
@@ -81,6 +81,6 @@ class CommandAddConsoleServer(BrokerCommand):
         if ib_services.feature_enabled("console_server"):
             try:
                 ib_services.group.commit_or_rollback()
-            except ProcessException as e:
+            except InfobloxException as e:
                 dsdb_runner.rollback()
                 raise e

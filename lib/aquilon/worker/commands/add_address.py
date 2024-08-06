@@ -17,7 +17,7 @@
 """Contains the logic for `aq add address`."""
 
 from aquilon.aqdb.model.network_environment import get_net_dns_env
-from aquilon.exceptions_ import ProcessException
+from aquilon.exceptions_ import InfobloxException
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import (grab_address,
                                            set_reverse_ptr)
@@ -75,7 +75,7 @@ class CommandAddAddress(BrokerCommand):
                 ib_services.add_a_ptr(dbdns_rec)
                 try:
                     ib_services.group.commit_or_rollback()
-                except ProcessException as e:
+                except InfobloxException as e:
                     if dsdb_runner:
                         dsdb_runner.rollback()
                     raise e

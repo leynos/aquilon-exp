@@ -17,7 +17,7 @@
 """Contains the logic for `aq update interface --machine`."""
 
 from aquilon.aqdb.types import NicType
-from aquilon.exceptions_ import ArgumentError, ProcessException
+from aquilon.exceptions_ import ArgumentError, InfobloxException
 from aquilon.aqdb.model import Machine, Interface, Model
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.interface import (set_port_group,
@@ -216,7 +216,7 @@ class CommandUpdateInterfaceMachine(BrokerCommand):
 
                         try:
                             ib_services.group.commit_or_rollback()
-                        except ProcessException as e:
+                        except InfobloxException as e:
                             if dsdb_runner:
                                 dsdb_runner.rollback()
                             raise e

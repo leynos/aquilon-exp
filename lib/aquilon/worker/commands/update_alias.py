@@ -16,7 +16,7 @@
 # limitations under the License.
 """Contains the logic for `aq update alias`."""
 
-from aquilon.exceptions_ import ArgumentError, NotFoundException, ProcessException
+from aquilon.exceptions_ import ArgumentError, NotFoundException, InfobloxException
 from aquilon.aqdb.model import Alias, DnsEnvironment
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
@@ -154,7 +154,7 @@ class CommandUpdateAlias(BrokerCommand):
                     if (clear_ttl or ttl or old_target is not None):
                         ib_services.update_dns_alias(dbalias, ib_rollback_args)
                         ib_services.group.commit_or_rollback()
-            except ProcessException as e:
+            except InfobloxException as e:
                 if dsdb_runner:
                     dsdb_runner.rollback()
                 raise e

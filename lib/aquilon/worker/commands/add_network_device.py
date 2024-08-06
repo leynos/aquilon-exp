@@ -18,7 +18,7 @@
 
 from sqlalchemy.orm import subqueryload
 
-from aquilon.exceptions_ import ArgumentError, ProcessException
+from aquilon.exceptions_ import ArgumentError, InfobloxException
 from aquilon.aqdb.model import NetworkDevice, Model, Archetype, Chassis, NetworkDeviceChassisSlot, ARecord
 from aquilon.aqdb.model.network import get_net_id_from_ip
 from aquilon.worker.broker import BrokerCommand
@@ -144,6 +144,6 @@ class CommandAddNetworkDevice(BrokerCommand):
             if ib_services.feature_enabled("network_device"):
                 try:
                     ib_services.group.commit_or_rollback()
-                except ProcessException as e:
+                except InfobloxException as e:
                     dsdb_runner.rollback()
                     raise e

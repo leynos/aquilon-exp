@@ -19,7 +19,7 @@
 import logging
 
 from aquilon.worker.broker import BrokerCommand
-from aquilon.exceptions_ import ArgumentError, ProcessException
+from aquilon.exceptions_ import ArgumentError, InfobloxException
 from aquilon.aqdb.model import (Interface, AddressAssignment, DnsDomain, Fqdn,
                                 ARecord, NetworkEnvironment)
 from aquilon.utils import first_of
@@ -144,7 +144,7 @@ class CommandDelInterfaceAddress(BrokerCommand):
                     ib_services.del_a_ptr(dns_rec)
                 try:
                     ib_services.group.commit_or_rollback()
-                except ProcessException as e:
+                except InfobloxException as e:
                     dsdb_runner.rollback()
                     raise e
 

@@ -7,7 +7,7 @@ from requests_kerberos import DISABLED, HTTPKerberosAuth
 
 from aquilon.aqdb.model import Alias, ARecord, DnsRecord, Fqdn, HardwareEntity, SrvRecord
 from aquilon.config import Config
-from aquilon.exceptions_ import ArgumentError, ProcessException
+from aquilon.exceptions_ import ArgumentError, InfobloxException, InternalError
 from aquilon.utils import with_timer
 import json
 
@@ -33,7 +33,7 @@ class IBServiceGroup:
                 if rollback:
                     rollbacks.append(rollback)
             self.functions = []
-        except ProcessException as e:
+        except InfobloxException as e:
             # Reverse the rollbacks to start from the last, and run them.
             rollbacks.reverse()
             for rollback in rollbacks:
@@ -123,7 +123,7 @@ class IBServices:
         _to = dbdns_rec.get_dns_args()
 
         if _from["name"] != _to["name"]:
-            raise ProcessException("Updating name of a-record not implemented")
+            raise InternalError("Updating name of a-record not implemented")
 
         if _from["ip"] != _to["ip"] or _from["ttl"] != _to["ttl"]:
             if self._assert_dns_environment(_from["name"]):
@@ -789,7 +789,7 @@ class IBServices:
         elif re.search("delegated", response_text):
             return False
 
-        raise ProcessException(f"Unexpected result '{response_text}' when retrieving zone type for {fqdn}")
+        raise InternalError(f"Unexpected result '{response_text}' when retrieving zone type for {fqdn}")
 
     def _http_request(self, http_cmd, url, data=None, ignore_statuses=[]):
         if not self.enabled:
@@ -838,12 +838,12 @@ class IBServices:
                         error_msg = response.json().get("message")
                     except ValueError:
                         # Probably a JSON decode error.  Fall back to showing whole body of response.
-                        error_msg = response.text
+                        error_msg = response.reason + ' ' + response.text
 
-                    msg = self._log_ib_result(f"Infoblox error: '{error_msg}'", http_cmd, full_url, data, response)
-                    raise ProcessException(msg)
+                    self._log_ib_result(f"Infoblox error: {error_msg}", http_cmd, full_url, data, response)
+                    raise InfobloxException(f"Infoblox response error: '{error_msg}'")
             else:
-                raise ProcessException("Infoblox returned errors or no Infoblox servers could be reached, aborting change")
+                raise InfobloxException("Infoblox returned errors or no Infoblox servers could be reached, aborting change")
 
         except Exception as e:
             if self.transactional:
@@ -862,10 +862,8 @@ class IBServices:
                     'aqd_request_id': str(self.requestid) if self.requestid else None,
                     'ib_request_id': response.headers.get(self.transaction_id_header) }
 
-
-        msg = json.dumps(ib_log, sort_keys=True)
-        self.log.info(msg)
-        return msg
+        #  This is logged as info level because the aq client will display messages of level warning or higher
+        self.log.info(json.dumps(ib_log, sort_keys=True))
 
     def feature_enabled(self, name):
         enabled = False

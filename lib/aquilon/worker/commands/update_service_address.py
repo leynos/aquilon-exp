@@ -25,7 +25,7 @@ from aquilon.aqdb.model import (
     SharedServiceName,
 )
 from aquilon.aqdb.model.network import get_net_id_from_ip
-from aquilon.exceptions_ import ArgumentError, ProcessException
+from aquilon.exceptions_ import ArgumentError, InfobloxException
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.dbwrappers.dns import update_address
@@ -139,7 +139,7 @@ class CommandUpdateServiceAddress(BrokerCommand):
                     if ib_services.feature_enabled("service_address"):
                         try:
                             ib_services.group.commit_or_rollback()
-                        except ProcessException as e:
+                        except InfobloxException as e:
                             dsdb_runner.rollback()
                             raise e
             except:
