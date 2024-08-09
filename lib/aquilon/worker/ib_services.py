@@ -77,7 +77,8 @@ class IBServices:
                 backend="sqlite",
                 urls_expire_after=urls_expire_after,
                 expire_after=self.cache_timeout,
-                allowable_methods=["GET", "HEAD"])
+                allowable_methods=["GET", "HEAD"],
+                allowable_codes=[200,404])
         else:
             self.session = requests.Session()
         if self.ca_chain:
