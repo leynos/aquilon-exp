@@ -78,6 +78,7 @@ class TestAddPersonality(VerifyGrnsMixin, PersonalityTestMixin,
         self.matchoutput(out["owner_grn"], GRN, command)
         self.assertEqual(out["owner_eonid"], 2, command)
         self.assertEqual(out["required_services"], [], command)
+        self.assertTrue(out["staged"])
 
     def test_105_verify_utunused_proto(self):
         command = ["show_personality", "--archetype=aquilon",
