@@ -18,11 +18,11 @@
 from ipaddress import ip_network
 
 from aquilon.exceptions_ import ArgumentError, NotFoundException
-from aquilon.aqdb.model import Network, NetworkEnvironment, NetworkCompartment
+from aquilon.aqdb.model import Network, NetworkEnvironment, NetworkCompartment, NetworkTag
 from aquilon.aqdb.model.network import get_net_id_from_ip
+from aquilon.aqdb.model.network_tag import validate_network_tags
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.location import get_location
-
 
 class CommandAddNetwork(BrokerCommand):
     requires_plenaries = True
@@ -31,9 +31,17 @@ class CommandAddNetwork(BrokerCommand):
 
     def render(self, session, logger, plenaries, dbuser, network, ip,
                network_environment, type, side, comments, netmask, prefixlen,
-               network_compartment, **arguments):
+               network_compartment, network_tag, **arguments):
         if prefixlen:
             netmask = prefixlen
+
+        network_tag_list = []
+        if self.config.getboolean("netseg", "enable") and network_tag:
+            validate_network_tags(network_tag)
+            network_tag_list = [
+                NetworkTag(tag_name=key, tag_value=network_tag[key])
+                for key in network_tag
+            ]
 
         try:
             address = ip_network("%s/%s" % (ip, netmask))
@@ -81,7 +89,7 @@ class CommandAddNetwork(BrokerCommand):
         net = Network(name=network, network=address,
                       network_environment=dbnet_env, network_type=type,
                       side=side, location=location, comments=comments,
-                      network_compartment=dbcomp)
+                      network_compartment=dbcomp, network_tags=network_tag_list)
 
         session.add(net)
         session.flush()
