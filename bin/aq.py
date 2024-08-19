@@ -384,6 +384,12 @@ if __name__ == "__main__":
             for i in v:
                 if isinstance(i, str) and not i.isascii():
                     not_ascii(k)
+        elif isinstance(v, dict):
+            for i in v:
+                if isinstance(i, str) and not i.isascii():
+                    not_ascii(k)
+                if isinstance(v.get(i), str) and not v.get(i).isascii():
+                    not_ascii(k)
 
     # if a client config file is specified on command line
     # that should overide  env or default options.
@@ -450,7 +456,11 @@ if __name__ == "__main__":
     newOptions = {}
 
     for k, v in commandOptions.items():
-        newOptions[str(k)] = str(v)
+        # Serialise values which are dicts
+        if isinstance(v, dict):
+            newOptions[str(k)] = ",".join([f"{key}={val}" for key, val in v.items()])
+        else:
+            newOptions[str(k)] = str(v)
     commandOptions = newOptions
 
     # Should maybe have an input.xml flag on which global options
@@ -555,8 +565,6 @@ if __name__ == "__main__":
                 RESTResource(conn, uri).delete()
 
         elif transport.method == 'put':
-            # FIXME: This will need to be more complicated.
-            # In some cases, we may even need to call code here.
             putData = urlencode(commandOptions)
             mimeType = 'application/x-www-form-urlencoded'
             RESTResource(conn, uri).put(putData, mimeType)

@@ -17,13 +17,14 @@
 """Network formatter."""
 
 from collections import defaultdict
+import google.protobuf.message
 from ipaddress import IPv4Network
 from operator import attrgetter
 
 from sqlalchemy.orm import object_session, subqueryload
 from sqlalchemy.orm.attributes import set_committed_value
 
-from aquilon.aqdb.model import HardwareEntity, Network
+from aquilon.aqdb.model import HardwareEntity, Network, NetworkTag
 from aquilon.utils import chunk
 from aquilon.worker.formats.formatters import ObjectFormatter
 from aquilon.worker.formats.list import ListFormatter
@@ -118,6 +119,12 @@ class NetworkFormatter(ObjectFormatter):
         if network.comments:
             details.append(indent + f"  Comments: {network.comments}")
 
+        tags = network.network_tags
+        if tags:
+            details.append(indent + f"  Network Tags:")
+            for tag in tags:
+                details.append(indent + f"    {tag.tag_name}: {tag.tag_value}")
+
         if network.routers:
             routers = ", ".join(sorted(f"{rtr.ip} ({rtr.location})" for rtr in network.routers))
             details.append(indent + f"  Routers: {routers}")
@@ -147,9 +154,11 @@ class NetworkFormatter(ObjectFormatter):
         return "\n".join(details)
 
     def csv_fields(self, network):
+        tags = network.network_tags;
+        tags_str = ",".join(f"{tag.tag_name}={tag.tag_value}" for tag in tags)
         yield (network.name, network.network_address, network.netmask,
                network.location.sysloc(), network.location.country,
-               network.side, network.network_type, network.comments)
+               network.side, network.network_type, network.comments, tags_str)
 
     def format_json(self, network, embedded=True, indirect_attrs=True):
         details = {
@@ -163,6 +172,9 @@ class NetworkFormatter(ObjectFormatter):
             "sysloc": network.location.sysloc(),
             "comments": network.comments,
         }
+        tags = network.network_tags
+        if tags:
+            details["network_tags"] = { tag.tag_name: tag.tag_value for tag in tags }
         if indirect_attrs:
             details.update({"location": self.redirect_json(network.location, embedded=embedded, indirect_attrs=False)})
         return details
@@ -185,6 +197,9 @@ class NetworkFormatter(ObjectFormatter):
                             indirect_attrs=False)
         skeleton.type = net.network_type
         skeleton.env_name = net.network_environment.name
+
+        self.redirect_proto(net.network_tags, skeleton.network_tags,
+                            indirect_attrs=False)
 
         skeleton.routers.extend(str(router.ip) for router in net.routers)
         if net.network_compartment:
@@ -437,3 +452,13 @@ class NetworkListFormatter(ListFormatter):
                          for network in sorted(objects, key=sortkey))
 
 ObjectFormatter.handlers[NetworkList] = NetworkListFormatter()
+
+
+class NetworkTagFormatter(ListFormatter):
+    def format_proto(self, tag, container, embedded=True, indirect_attrs=True):
+        skeleton = container
+
+        skeleton.name = tag.tag_name
+        skeleton.value = tag.tag_value
+
+ObjectFormatter.handlers[NetworkTag] = NetworkTagFormatter()
