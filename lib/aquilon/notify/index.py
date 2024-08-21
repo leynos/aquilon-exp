@@ -252,25 +252,29 @@ def send_notification(ntype, modified, sock=None, logger=LOGGER):
         # checks based on the namespace. Not for now.
         (_, _, host) = obj.rpartition('/')
 
-        try:
-            # If you think it would be a good idea to look up the IP address
-            # from the DB directly, then think about the case when the IP
-            # address of a host changes: the DB contains the new address, but
-            # the host still uses the old. Relying on DNS here means that the
-            # notification goes to the right place.
-            ip = socket.gethostbyname(host)
-            packet = NOTIFICATION_TYPES[ntype] + "\0" + str(int(time.time()))
-            sock.sendto(packet.encode("ascii"), (ip, CDPPORT))
-            success = success + 1
+        # Only notify hosts and not the clusters since the domain is
+        # not available in the hostname and throws below exception
+        # [Errno -2] Name or service not known
+        if host.endswith("ms.com"):
+            try:
+                # If you think it would be a good idea to look up the IP address
+                # from the DB directly, then think about the case when the IP
+                # address of a host changes: the DB contains the new address, but
+                # the host still uses the old. Relying on DNS here means that the
+                # notification goes to the right place.
+                ip = socket.gethostbyname(host)
+                packet = NOTIFICATION_TYPES[ntype] + "\0" + str(int(time.time()))
+                sock.sendto(packet.encode("ascii"), (ip, CDPPORT))
+                success = success + 1
 
-        except socket.gaierror as err:
-            # This hostname is unknown, so we silently
-            # discard the notification.
-            logger.warning("Unknown Hostname %s, So discarding the notification due to %s", host, err)
-            pass
+            except socket.gaierror as err:
+                # This hostname is unknown, so we silently
+                # discard the notification.
+                logger.warning("Unknown Hostname %s, So discarding the notification due to %s", host, err)
+                pass
 
-        except Exception as e:
-            logger.info("Error notifying %s: %s", host, e)
+            except Exception as e:
+                logger.info("Error notifying %s: %s", host, e)
 
     return success
 
