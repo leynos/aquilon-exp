@@ -225,7 +225,7 @@ class TestAddNetwork(TestBrokerCommand):
             if not network.autocreate:
                 continue
             if network.loc_type == "building" and network.loc_name == "ut":
-                self.matchoutput(out, "%s,%s,%s,ut.ny.na,us,a,%s,%s,\n" %
+                self.matchoutput(out, "%s,%s,%s,ut.ny.na,us,a,%s,%s\n" %
                                  (network.name, network.ip, network.netmask,
                                   network.nettype, network.comments or ""),
                                  command)

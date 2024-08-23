@@ -63,7 +63,7 @@ from aquilon.worker.processes import cache_version
 from aquilon.worker.messages import StatusCatalog
 from aquilon.utils import (force_int, force_float, force_boolean, force_ip,
                            force_mac, force_ascii, force_list, force_json,
-                           force_uuid, force_dict)
+                           force_uuid)
 from aquilon.worker.command_registry import CommandRegistry, CommandEntry
 
 # Regular Expression for matching variables in a path definition.
@@ -374,7 +374,6 @@ class ResourcesCommandEntry(CommandEntry):
         'file': force_ascii,
         'list': force_list,
         'uuid': force_uuid,
-        'dict': force_dict,
     }
 
     def __init__(self, fullname, method, path, name, trigger):

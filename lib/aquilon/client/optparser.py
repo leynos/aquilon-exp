@@ -55,24 +55,6 @@ def read_file(option, opt, value, parser):
                                (value, opt, e))
 
 
-def store_in_dict(option, opt_str, value, parser):
-    "Callback function to support a 'dict' option type"
-    opt = opt_str.lstrip("-")
-
-    # Commas are a problem when we serialise the data later, just don't allow them.
-    if value.find(",") >= 0:
-        raise OptionValueError(f"The value for option '{opt_str}' may not contain a comma (',')")
-
-    result = value.split("=", 1)
-    key, val = result if len(result) == 2 else (result[0], "")
-
-    item = getattr(parser.values, opt)
-    if item == None:
-        item = {}
-    item[key] = val
-    setattr(parser.values, opt, item)
-
-
 def get_term_width():
     width = None
     try:
@@ -619,8 +601,6 @@ class Option(Element):
                               callback=read_file, type="string")
         elif self.type == 'multiple':
             parser.add_option(*names, dest=self.name, action="append")
-        elif self.type == 'dict':
-            parser.add_option(*names, action="callback", callback=store_in_dict, type="string")
         else:
             raise ParsingError('Invalid option type: ' + self.type)
 

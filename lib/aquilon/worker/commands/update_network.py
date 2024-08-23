@@ -17,8 +17,7 @@
 """Contains the logic for `aq update network`."""
 
 from aquilon.exceptions_ import NotFoundException, ArgumentError
-from aquilon.aqdb.model import Network, NetworkEnvironment, NetworkCompartment, NetworkTag
-from aquilon.aqdb.model.network_tag import validate_network_tags
+from aquilon.aqdb.model import Network, NetworkEnvironment, NetworkCompartment
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.location import get_location
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
@@ -29,7 +28,7 @@ class CommandUpdateNetwork(BrokerCommand):
 
     def render(self, session, plenaries, dbuser, network, ip, network_environment,
                rename_to, type, side, network_compartment, comments, user,
-               justification, reason, logger, network_tag, **arguments):
+               justification, reason, logger, **arguments):
 
         dbnet_env = NetworkEnvironment.get_unique_or_default(session,
                                                              network_environment)
@@ -84,28 +83,8 @@ class CommandUpdateNetwork(BrokerCommand):
                 dbnetwork.network_compartment = dbcomp
             if comments is not None:
                 dbnetwork.comments = comments
-            if self.config.getboolean("netseg", "enable") and network_tag:
-                tags = merged_network_tags(dbnetwork.network_tags, network_tag)
-                validate_network_tags(tags)
-                network_tag_list = [
-                    NetworkTag(tag_name=key, tag_value=tags[key])
-                    for key in tags
-                ]
-                dbnetwork.network_tags[:] = network_tag_list
             plenaries.add(dbnetwork)
 
         session.flush()
         plenaries.write()
         return
-
-
-def merged_network_tags(old_tag_list, new_tag_dict):
-    tags = { t.tag_name: t.tag_value for t in old_tag_list } 
-
-    for tag in new_tag_dict:
-        if new_tag_dict[tag] is not None and new_tag_dict[tag] != "":
-            tags[tag] = new_tag_dict[tag]
-        elif tags.get(tag):
-            del tags[tag]
-
-    return tags

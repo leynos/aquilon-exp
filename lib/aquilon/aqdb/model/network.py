@@ -42,6 +42,7 @@ from aquilon.config import Config
 LOGGER = logging.getLogger(__name__)
 _TN = "network"
 
+
 class NetworkProperties(object):
     """ Container class for attributes derived from the network's type """
 
@@ -134,8 +135,6 @@ class Network(Base):
     network_environment = relationship(NetworkEnvironment, innerjoin=True)
 
     network_compartment = relationship(NetworkCompartment)
-
-    network_tags = relationship("NetworkTag", back_populates="network", cascade="all, delete-orphan")
 
     location = relationship(Location, innerjoin=True)
 
