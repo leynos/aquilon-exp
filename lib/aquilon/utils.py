@@ -226,19 +226,6 @@ def force_uuid(label, value):
     return value
 
 
-def force_dict(label, value):
-    """Deserialise a dict type represented as 'key1=val1,key2=val2,...'"""
-    items = value.split(",")
-    value = {}
-
-    for item in items:
-        result = item.split("=", 1)
-        k, v = result if len(result) == 2 else (result, None)
-
-        value[k] = v
-
-    return value
-
 def first_of(iterable, function):
     """
     Return the first matching element of an iterable

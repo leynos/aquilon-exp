@@ -222,9 +222,6 @@ transactional = False
 
 urls =
 
-[netseg]
-enable = False
-
 [change_management]
 # The contents of --justification will not be validated externally
 # (syntax checking will still be performed)
@@ -437,7 +434,7 @@ precreated_compartments_only = False
 ignore_network_compartments_regex =
 
 [protocols]
-directory = /ms/dist/aquilon/PROJ/protocols/2024.08.13-1/common/lib/python/
+directory = /ms/dist/aquilon/PROJ/protocols/2024.04.18-1/common/lib/python/
 
 # [readonly_batch]
 # A Section in the config file having details of the aqhost, port
