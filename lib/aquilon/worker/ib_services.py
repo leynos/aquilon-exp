@@ -2,7 +2,8 @@ import re
 from ipaddress import IPv4Address
 from urllib.parse import quote, urlencode, urlparse, urlunparse
 
-from requests import Session, Timeout
+import requests
+import requests_cache
 from requests_kerberos import DISABLED, HTTPKerberosAuth
 
 from aquilon.aqdb.model import Alias, ARecord, DnsRecord, Fqdn, HardwareEntity, SrvRecord
@@ -51,6 +52,8 @@ class IBServices:
     urls = re.split(r"\s*,\s*", config.get("ib-services", "urls"))
     timeout = float(config.get("ib-services", "timeout"))
     ca_chain = config.get("ib-services", "ca_chain")
+    cache_location = config.get("ib-services", "cache_location", fallback=None)
+    cache_timeout = config.getint("ib-services", "cache_timeout", fallback=3600)
 
     transaction_id_header = "X-MS-Unique-ID"
 
@@ -64,7 +67,20 @@ class IBServices:
         else:
             self.justification = justification
 
-        self.session = Session()
+        if self.cache_location is not None:
+            urls_expire_after = {
+                '*/dns/zones/type': self.cache_timeout,
+                '*': requests_cache.DO_NOT_CACHE,
+            }
+            self.session = requests_cache.CachedSession(
+                self.cache_location,
+                backend="sqlite",
+                urls_expire_after=urls_expire_after,
+                expire_after=self.cache_timeout,
+                allowable_methods=["GET", "HEAD"],
+                allowable_codes=[200,404])
+        else:
+            self.session = requests.Session()
         if self.ca_chain:
             self.session.auth = HTTPKerberosAuth(mutual_authentication=DISABLED, force_preemptive=True)
             self.session.verify = self.ca_chain
@@ -816,7 +832,8 @@ class IBServices:
 
                     response = self.session.request(http_cmd, full_url, json=data, timeout=self.timeout,
                                                     headers=headers)
-                except Timeout:
+
+                except requests.Timeout:
                     self.log.warning(f"Infoblox timeout error: request to {full_url} timed out after {self.timeout}s.")
 
                 # There are several possible other exception types.  Not all possibilities are known.
@@ -860,7 +877,8 @@ class IBServices:
                     'request_data': request_data,
                     'response_body': response.text,
                     'aqd_request_id': str(self.requestid) if self.requestid else None,
-                    'ib_request_id': response.headers.get(self.transaction_id_header) }
+                    'ib_request_id': response.headers.get(self.transaction_id_header),
+                    'from_cache': response.from_cache if hasattr(response, 'from_cache') else None,}
 
         #  This is logged as info level because the aq client will display messages of level warning or higher
         self.log.info(json.dumps(ib_log, sort_keys=True))
