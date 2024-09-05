@@ -63,6 +63,11 @@ else:
     ms.version.addpkg('urllib3', '2.0.3')
     ms.version.addpkg("requests", "2.31.0")
     ms.version.addpkg("requests-kerberos", "0.14.0")
+    ms.version.addpkg('requests-cache', '1.1.0')
+    ms.version.addpkg('url-normalize', '1.4.3')  # Required by requests-cache
+    ms.version.addpkg('cattrs', '22.2.0')  # Required by requests-cache
+    ms.version.addpkg('exceptiongroup', '1.1.2')  # Required by cattrs
+    ms.version.addpkg('platformdirs', '3.8.0')  # Required by requests-cache/backend/sqlite
     ms.version.addpkg("kerberos", "1.3.1-1.16")
     ms.version.addpkg("cffi", "1.15.1")
     ms.version.addpkg("pycparser", "2.21")
