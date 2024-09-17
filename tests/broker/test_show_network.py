@@ -46,7 +46,7 @@ class TestShowNetwork(TestBrokerCommand):
                          'refreshtest1', 'netuc_transit_3a', 'netuc_transit_3b', 'refresh_bunker',
                          'netuc_transit_1b', 'netuc_transit_1a', 'netuc_netmgmt_1b', 'netuc_netmgmt_1a']
 
-    def _test_network_detailed_output(self, out, net, command, hosts=False, service_addresses=[]):
+    def _test_network_detailed_output(self, out, net, command, hosts=False, service_addresses=[], dns_records=True):
         self.matchoutput(out, "Network: {}".format(net.name), command)
         self.matchoutput(out, "IP: {}".format(net.network_address), command)
         self.matchoutput(out, "{}: {}".format(net.loc_type.title(), net.loc_name), command)
@@ -61,6 +61,13 @@ class TestShowNetwork(TestBrokerCommand):
         if service_addresses:
             for srv in service_addresses:
                 self.matchoutput(out, "{}".format(srv), command)
+        if dns_records:
+            cmd = ["search_dns", "--record_type", "a_record", "--network", net.name, "--format=proto"]
+            addresses = self.protobuftest(cmd)
+            for address in addresses:
+                for rdata in address.rdata:
+                    if rdata.rrtype == 'A':
+                        self.matchoutput(out, "{}".format(rdata.target), command)
 
     def _test_network_detailed_output_protobuf(self, proto_out, net, hosts=False, service_addresses=[]):
         self.assertEqual(net.name, proto_out.name)
@@ -123,7 +130,7 @@ class TestShowNetwork(TestBrokerCommand):
                                                net, command,
                                                hosts=self.network_details["hosts"].get(net.name, True),
                                                service_addresses=self.network_details["service_addresses"].get(net.name,
-                                                                                                               []))
+                                                                                                               []), dns_records=False)
 
     def test_116_show_global_network_details(self):
         command = ["show_network", "--all_dns_environments"]
@@ -132,7 +139,7 @@ class TestShowNetwork(TestBrokerCommand):
             if net.name in self.network_not_exist:
                 continue
             self._test_network_detailed_output(out,
-                                               net, command)
+                                               net, command, dns_records=False)
 
     def test_117_show_global_network_addr_details(self):
         command = ["show_network", "--all_dns_environments", "--address_assignments"]
@@ -144,7 +151,7 @@ class TestShowNetwork(TestBrokerCommand):
                                                net, command,
                                                hosts=self.network_details["hosts"].get(net.name, True),
                                                service_addresses=self.network_details["service_addresses"].get(net.name,
-                                                                                                               []))
+                                                                                                               []), dns_records=False)
 
     def test_118_show_global_network_all_error(self):
         command = ["show_network", "--all_dns_environments", "--network_environment",
