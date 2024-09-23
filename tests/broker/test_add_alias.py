@@ -17,20 +17,19 @@
 # limitations under the License.
 """Module for testing the add/show alias command."""
 
-import unittest
 import json
+import unittest
 
-from mock_ib_services import ib_expect_add_alias
-from mock_ib_services import ib_expect_del_alias
-from mock_ib_services import ib_expect_update_alias
+from mock_ib_services import ib_expect_add_alias, ib_expect_del_alias, ib_expect_update_alias
 
 if __name__ == '__main__':
     from broker import utils
     utils.import_depends()
 
 from broker.brokertest import TestBrokerCommand
-from .eventstest import EventsTestMixin
 from broker.utils import MockHub
+
+from .eventstest import EventsTestMixin
 
 
 class TestAddAlias(EventsTestMixin, TestBrokerCommand):
@@ -399,9 +398,20 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
         self.assertEqual(interfaces["eth1:e1"].fqdn, 'unittest20-e1-1.aqd-unittest.ms.com')
 
         ib_expect_del_alias('alias11.aqd-unittest.ms.com')
-        command = ["del", "alias", "--fqdn", "alias11.aqd-unittest.ms.com"]
+        command = [
+            "del",
+            "alias",
+            "--fqdn",
+            "alias11.aqd-unittest.ms.com",
+            "--reason=txid:aa1a76e6-b0b5-11ee-85b8-00505601c002 obo:anotheruser",
+        ]
         out = self.commandtest(command)
         self.ib_verify()
+        # Check that it did not checked by EDM because of obo / AQ SS reason
+        cmlogfile = self.config.get("broker", "cmlogfile")
+        last_entry = json.loads(self.tail_file(cmlogfile))
+        # Non-prod change, EDM will not be called
+        self.assertIsNot(last_entry["reason"], "txid:aa1a76e6-b0b5-11ee-85b8-00505601c002 obo:anotheruser")
 
         ib_expect_del_alias('alias1.aqd-unittest.ms.com')
         command = ["del", "alias", "--fqdn", "alias1.aqd-unittest.ms.com"]
