@@ -142,7 +142,7 @@ def build_index(config, session, logger=LOGGER):
                 # that the file has been removed since calling os.walk().
                 # If that's the case, no need to add it to the modified_index.
                 try:
-                    mtime = os.path.getmtime(os.path.join(root, profile))
+                    mtime = int(os.path.getmtime(os.path.join(root, profile)))
                 except OSError as e:
                     continue
 
@@ -168,7 +168,6 @@ def build_index(config, session, logger=LOGGER):
 
                 if obj not in objects or objects[obj][0] < mtime:
                     objects[obj] = (mtime, advertise_suffix)
-    logger.info("%s objects shortlisted that have changed since the last index read", len(objects))
 
     content = []
     content.append("<?xml version='1.0' encoding='utf-8'?>")
