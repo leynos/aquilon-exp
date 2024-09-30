@@ -842,7 +842,33 @@ class TestAddAddress(EventsTestMixin, TestBrokerCommand):
 
         mh.delete()
 
+    def test_950_handle_inconsistent_ib_responses(self):
+        mh = MockHub(self)
 
+        mh.add_dns_domain('test-infoblox.cc', restricted=False)
+        mh.add_network()
+
+        command = ['add_address',
+                    '--grn', mh.grn,
+                    '--fqdn', 'address1.test-infoblox.cc',
+                    '--ip', '10.25.0.1'] + self.valid_just_tcm
+
+
+        # This test verifies that if we send a POST request and ib_services returns 409 already exists,
+        # We follow up with a PATCH request for the same resource.
+        # If that PATCH request fails with 404, we should raise an error and no further requests are sent.
+
+        self.dsdb_expect_add("address1.test-infoblox.cc", "10.25.0.1")
+        ib_expect_add_a("address1.test-infoblox.cc", "10.25.0.1",
+                            justification=self.valid_justification, response_code=409)
+        ib_expect_update_a("address1.test-infoblox.cc", "10.25.0.1",
+                            justification=self.valid_justification, response_code=404)
+        self.dsdb_expect_delete("10.25.0.1") # dsdb rollback after ib fails
+        self.iberrortest(command)
+
+        self.dsdb_verify(empty=False)
+        self.ib_verify(empty=False)
+        mh.delete()
 
 
 if __name__ == '__main__':

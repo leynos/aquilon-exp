@@ -230,7 +230,7 @@ class IBServices:
                 self.del_a_ptr(rec)
 
     @with_timer
-    def _add_ptr(self, name, ip, ttl=None):
+    def _add_ptr(self, name, ip, ttl=None, update_if_exists=True):
         assert(isinstance(name, str))
         assert(isinstance(ip, str))
         if ttl is not None:
@@ -244,13 +244,13 @@ class IBServices:
             payload['ttl'] = ttl
         if (self.justification is not None):
             payload["cm_token"] = self.justification
-        r = self._http_request("POST", "/dns/a_ptr/ptr", payload, ignore_statuses=[409])
-        if r is not None and r.status_code == 409:
-            return self._update_ptr(ip, new_name=name, new_ttl=ttl)
+        r = self._http_request("POST", "/dns/a_ptr/ptr", payload, ignore_statuses=[409] if update_if_exists else [])
+        if update_if_exists and r is not None and r.status_code == 409:
+            return self._update_ptr(ip, new_name=name, new_ttl=ttl, create_if_missing=False)
         return r
 
     @with_timer
-    def _update_ptr(self, ip, new_name, new_ttl=None):
+    def _update_ptr(self, ip, new_name, new_ttl=None, create_if_missing=True):
         assert(isinstance(ip, str))
         if new_name is None:
             raise ArgumentError("new_name parameter is required")
@@ -271,8 +271,8 @@ class IBServices:
             payload['ttl'] = new_ttl
 
         url = "/dns/a_ptr/ptr/{}".format(ip)
-        r = self._http_request("PATCH", url, payload, ignore_statuses=[404])
-        if r is not None and r.status_code == 404:
+        r = self._http_request("PATCH", url, payload, ignore_statuses=[404] if create_if_missing else [])
+        if create_if_missing and r is not None and r.status_code == 404:
             if new_name is None:
                 raise ArgumentError("Required argument 'new_name is missing")
             payload['name'] = new_name
@@ -298,7 +298,7 @@ class IBServices:
         return self._http_request("DELETE", url, ignore_statuses=[404])
 
     @with_timer
-    def _add_a(self, name, ip, ttl=None):
+    def _add_a(self, name, ip, ttl=None, update_if_exists=True):
         assert(isinstance(name, str))
         assert(isinstance(ip, str))
         if ttl is not None:
@@ -313,13 +313,13 @@ class IBServices:
             payload['ttl'] = ttl
         if (self.justification is not None):
             payload["cm_token"] = self.justification
-        r = self._http_request("POST", "/dns/a_ptr/a", payload, ignore_statuses=[409])
-        if r is not None and r.status_code == 409:
-            r = self._update_a(name, ip, new_ip=ip, new_ttl=ttl)
+        r = self._http_request("POST", "/dns/a_ptr/a", payload, ignore_statuses=[409] if update_if_exists else [])
+        if update_if_exists and r is not None and r.status_code == 409:
+            r = self._update_a(name, ip, new_ip=ip, new_ttl=ttl, create_if_missing=False)
         return r
 
     @with_timer
-    def _update_a(self, name, ip, new_ip, new_ttl=None):
+    def _update_a(self, name, ip, new_ip, new_ttl=None, create_if_missing=True):
         assert(isinstance(name, str))
         assert(isinstance(ip, str))
         if new_ip is None:
@@ -343,8 +343,8 @@ class IBServices:
             payload['ttl'] = new_ttl
 
         url = "/dns/a_ptr/a/{}/{}".format(name, ip)
-        r = self._http_request("PATCH", url, payload, ignore_statuses=[404])
-        if r is not None and r.status_code == 404:
+        r = self._http_request("PATCH", url, payload, ignore_statuses=[404] if create_if_missing else [])
+        if create_if_missing and r is not None and r.status_code == 404:
             if new_ip is None:
                 raise ArgumentError(f"Required argument '{new_ip}' is missing")
             payload['name'] = name
@@ -540,7 +540,7 @@ class IBServices:
 
 
     @with_timer
-    def _add_dns_alias(self, name, target, ttl=None):
+    def _add_dns_alias(self, name, target, ttl=None, update_if_exists=True):
         assert(isinstance(name, str))
         assert(isinstance(target, str))
         if ttl is not None:
@@ -552,9 +552,9 @@ class IBServices:
             payload["cm_token"] = self.justification
         url = f"/dns/aliases/"
 
-        r = self._http_request("POST", url, payload, ignore_statuses=[409])
-        if r is not None and r.status_code == 409:
-            return self._update_dns_alias(name, new_target=target, ttl=ttl)
+        r = self._http_request("POST", url, payload, ignore_statuses=[409] if update_if_exists else [])
+        if update_if_exists and r is not None and r.status_code == 409:
+            return self._update_dns_alias(name, new_target=target, ttl=ttl, create_if_missing=False)
         else:
             return r
 
@@ -570,7 +570,7 @@ class IBServices:
         return self._http_request("DELETE", url, ignore_statuses=[404])
 
     @with_timer
-    def _update_dns_alias(self, name, new_target=None, ttl=None):
+    def _update_dns_alias(self, name, new_target=None, ttl=None, create_if_missing=True):
         assert(isinstance(name, str))
         if new_target is not None:
             assert(isinstance(new_target, str))
@@ -585,8 +585,8 @@ class IBServices:
             payload["cm_token"] = self.justification
         url = "/dns/aliases/{}".format(name)
 
-        r = self._http_request("PATCH", url, payload, ignore_statuses=[404])
-        if r is not None and r.status_code == 404:
+        r = self._http_request("PATCH", url, payload, ignore_statuses=[404] if create_if_missing else [])
+        if create_if_missing and r is not None and r.status_code == 404:
             if new_target is None:
                 raise ArgumentError("Required argument 'new_target' is missing")
             payload['name'] = name

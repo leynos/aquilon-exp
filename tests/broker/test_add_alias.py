@@ -570,6 +570,34 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
 
         mh.delete()
 
+    def test_910_ib_handle_inconsistent_ib_responses(self):
+        mh = MockHub(self)
+
+        mh.add_dns_domain('test-infoblox.cc', restricted=False)
+        mh.add_network()
+
+        mh.add_address("alias-target-1.test-infoblox.cc", "10.25.0.1", dns_environment='internal')
+
+        command = ['add_alias',
+                    '--fqdn', 'alias-fqdn.test-infoblox.cc',
+                    '--target', 'alias-target-1.test-infoblox.cc',
+                    '--dns_environment', 'internal'] + self.valid_just_tcm
+
+
+        # This test verifies that if we send a POST request and ib_services returns 409 already exists,
+        # We follow up with a PATCH request for the same resource.
+        # If that PATCH request fails with 404, we should raise an error and no further requests are sent.
+
+        ib_expect_add_alias("alias-fqdn.test-infoblox.cc", "alias-target-1.test-infoblox.cc",
+                            justification=self.valid_justification, response_code=409)
+        ib_expect_update_alias("alias-fqdn.test-infoblox.cc", "alias-target-1.test-infoblox.cc",
+                            justification=self.valid_justification, response_code=404)
+        self.iberrortest(command)
+
+        self.dsdb_verify(empty=True)
+        self.ib_verify(empty=False)
+        mh.delete()
+
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestAddAlias)
