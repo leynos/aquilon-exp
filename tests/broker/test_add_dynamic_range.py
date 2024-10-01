@@ -59,10 +59,10 @@ class TestAddDynamicRange(TestBrokerCommand):
             messages.append("DSDB: add_host -host_name %s -ip_address %s "
                             "-status aq" % (hostname, address))
 
+        # No range class is specified, so it should default to infoblox_managed
         command = ["add_dynamic_range",
                    "--startip=%s" % startip,
                    "--endip=%s" % endip,
-                   "--range_class=infoblox_managed",
                    "--dns_domain=aqd-unittest.ms.com"] + self.valid_just_tcm
         err = self.statustest(command)
         for message in messages:
@@ -246,6 +246,7 @@ class TestAddDynamicRange(TestBrokerCommand):
                             "-status aq" % (hostname, address))
 
         command = ["add_dynamic_range",
+                   "--range_class", "vm",
                    "--fillnetwork", self.net["dyndhcp3"].ip] + self.valid_just_tcm
         err = self.statustest(command)
         for message in messages:
