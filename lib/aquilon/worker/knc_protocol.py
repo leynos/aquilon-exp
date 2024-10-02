@@ -76,7 +76,7 @@ class KNCHTTPChannel(http.HTTPChannel):
                         raise KNCProtocolException(f"Missing {field}")
                 self.__need_knc_data = 0
 
-                # Fix the log prefix to include the real remote IP
+                # Fixed the log prefix to include the real remote IP after Python3 Upgrade
                 logstr = f"{self.__class__.__name__},{self.transport.sessionno},{self.kncinfo[b'REMOTE_IP']}"
                 ctx = context.get(ILogContext)
                 ctx.update({"system": logstr})

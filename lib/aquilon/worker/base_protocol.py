@@ -94,8 +94,9 @@ class AQDSite(server.Site):
     # getUser() is commented out... could have just fiddled with that).
     def log(self, request):
         if hasattr(self, "logFile"):
-            line = '%s - %s %s "%s" %d %s "%s" "%s"\n' % (
-                request.getClientIP(),
+            logstr = f"{(request.transport.logstr).split(',')[0]},{request.transport.sessionno},{request.getClientIP()}"
+            line = '[%s] - %s %s "%s" %d %s "%s" "%s"\n' % (
+                logstr,
                 alt_repr(request.getPrincipal()) if request.getPrincipal() else "-",
                 self._logDateTime,
                 '{} {} {}'.format(alt_repr(request.method),
