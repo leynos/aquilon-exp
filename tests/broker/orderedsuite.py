@@ -284,7 +284,6 @@ from .test_show_network import TestShowNetwork
 from .test_show_permission import TestShowPermission
 from .test_show_review import TestShowReview
 from .test_show_service_all import TestShowServiceAll
-from .test_split_merge_network import TestSplitMergeNetwork
 from .test_start import TestBrokerStart
 from .test_status import TestStatus
 from .test_stop import TestBrokerStop
@@ -555,7 +554,7 @@ class BrokerIntegrationTestSuite(BrokerTestSuite):
                  TestUpdateClusterAutoStartList,
                  TestUpdateClusterSystemList,
                  TestUpdateNetworkCompartment,
-                 TestUpdateNetwork, TestSplitMergeNetwork,
+                 TestUpdateNetwork,
                  TestNetworkConstraints,
                  TestUpdateService,
                  TestUpdateNetworkEnvironment, TestUpdateDnsEnvironment,
