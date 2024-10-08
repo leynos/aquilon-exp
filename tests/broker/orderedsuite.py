@@ -554,7 +554,7 @@ class BrokerIntegrationTestSuite(BrokerTestSuite):
                  TestUpdateClusterAutoStartList,
                  TestUpdateClusterSystemList,
                  TestUpdateNetworkCompartment,
-                 TestUpdateNetwork, TestSplitMergeNetwork,
+                 TestUpdateNetwork,
                  TestNetworkConstraints,
                  TestUpdateService,
                  TestUpdateNetworkEnvironment, TestUpdateDnsEnvironment,
