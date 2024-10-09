@@ -33,6 +33,7 @@ except ImportError:
 # we can thus mock the DbFactory in order for it not to try and open
 # the database (which is not required anyway)
 with mock.patch('aquilon.aqdb.db_factory.DbFactory', autospec=True):
+    import aquilon.worker.depends
     import aquilon.worker.commands.compile
 
 import aquilon.worker.commands

@@ -29,13 +29,7 @@ LIBDIR = os.path.join(SRCDIR, 'lib')
 site.addsitedir(LIBDIR)
 # -- end path_setup --
 
-import ms.version
-ms.version.addpkg('mako', '1.0.7')
-ms.version.addpkg('twisted', '21.2.0')
-ms.version.addpkg('incremental', '16.10.1')
-ms.version.addpkg('constantly', '15.1.0')
-ms.version.addpkg('zope.interface', '6.0-ms1')
-ms.version.addpkg('six', '1.16.0')
+import aquilon.worker.depends
 
 from six import text_type
 import zope.interface

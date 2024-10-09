@@ -16,7 +16,6 @@
 # limitations under the License.
 # Uses ldapsearch capabilities and returns the data.
 
-import aquilon.worker.depends
 
 import functools
 import logging
@@ -37,6 +36,10 @@ def check_ldapgroup(server, group):
     # start-up will continue without using this method.
     try:
         from ms.directory import LDAPConnection
+    except ModuleNotFoundError as e:
+        return None
+
+    try:
         conn = LDAPConnection(host=server, kerberos=True)
         group_members = conn.getGroup(group).members
         skip_members = []

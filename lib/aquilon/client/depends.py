@@ -33,6 +33,8 @@ ms.version.addpkg("requests", "2.31.0")
 ms.version.addpkg("ms.netkrb", "2.1a")
 ms.version.addpkg("kerberos", "1.3.1-1.16")
 ms.version.addpkg("setuptools", "46.1.3")
+ms.version.addpkg("ldap3", "2.9.1")
+ms.version.addpkg("pyasn1", "0.5.0")
 
 if sys.platform == "sunos5":
     ms.version.addpkg('lxml', '4.6.3-S')
