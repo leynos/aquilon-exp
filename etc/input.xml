@@ -793,10 +793,10 @@
     <command name="show_network">
         Shows the configuration for a network, or for networks selected by location.
         <p/>
-        Supported options for --format: raw, csv, proto.
+        Supported options for --format: raw, csv, json, proto.
         <p/>
         The 'csv' format contains the following fields, in this order:
-        Network name, IP, Netmask, Sysloc, Country code, Side, Type, Comments.
+        Network name, IP, Netmask, Sysloc, Country code, Side, Type, Comments, Network tags.
         <optgroup mandatory="True" fields="one">
             <option name="network" type="string">Network name</option>
             <option name="ip" type="ip">IP address</option>
@@ -821,10 +821,10 @@
         building will include all racks, rooms, etc. inside the building.  The
         --exact_location option can be used to override this behavior.
         <p/>
-        Supported options for --format: raw, csv, proto.
+        Supported options for --format: raw, csv, json, proto.
         <p/>
         The 'csv' format contains the following fields, in this order:
-        Network name, IP, Netmask, Sysloc, Country code, Side, Type, Comments.
+        Network name, IP, Netmask, Sysloc, Country code, Side, Type, Comments, Network tags.
         <optgroup mandatory="True">
             <option name="network" type="string">Network name</option>
             <option name="network_environment" type="string">Network environment (default: internal)</option>
@@ -1618,6 +1618,7 @@
             <option name="comments" type="string">Comments</option>
             <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
             <option name="reason" type="string">Human readable description of why the operation was performed</option>
+            <option name="network_tag" type="dict">Key/value metadata for network.  Multiple --network_tag arguments are required if any are specified</option>
         </optgroup>
         <transport method="put" path="network/%(ip)s"/>
     </command>
@@ -1655,6 +1656,7 @@
             <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
             <option name="reason" type="string">Human readable description of why the operation was performed</option>
             <option name="cm_check" type="flag">Do a dry-run, and report the objects in-scope for change-management.</option>
+            <option name="network_tag" type="dict">Key/value metadata for network.  Only tags to be changed need to be specified.  Specify a key with no value to delete an optional tag, or all existing keys, with no value, to delete all tags.</option>
         </optgroup>
         <optgroup fields="one">
             <option name="organization" type="string">Organization</option>

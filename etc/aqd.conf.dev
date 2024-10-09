@@ -49,3 +49,6 @@ obo_service_ids =
 
 [site]
 ipfromtype = True
+
+[netseg]
+enable = True

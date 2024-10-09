@@ -72,6 +72,7 @@ from .test_add_netdev import TestAddNetworkDevice
 from .test_add_network import TestAddNetwork
 from .test_add_network_compartment import TestAddNetworkCompartment
 from .test_add_network_environment import TestAddNetworkEnvironment
+from .test_network_tags import TestNetworkTags
 from .test_add_ns_record import TestAddNSRecord
 from .test_add_os import TestAddOS
 from .test_add_parameter import TestAddParameter
@@ -455,6 +456,7 @@ class BrokerIntegrationTestSuite(BrokerTestSuite):
                  TestAddVendor, TestAddCpu, TestAddModel,
                  TestAddNetworkCompartment,
                  TestAddNetworkEnvironment, TestAddNetwork,
+                 TestNetworkTags,
                  TestAddNSRecord,
                  TestAddVlan,
                  TestAddVirtualSwitch,
