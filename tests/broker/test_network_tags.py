@@ -45,12 +45,17 @@ class TestNetworkTags(TestBrokerCommand):
     network2["ip"] = "1.2.2.0";
     network2["add_tags"] = True;
     tags = {
-        "dc_network_type": "clinfra", 
-        "is_dc_hosted_desktop": "0", 
-        "is_infra_services": "0", 
-        "plant_type": "lab", 
-        "stance": "amber", 
-        "standard_network_environment": "nonprod", 
+        "is_advertised_externally": "0",
+        "is_advertised_to_internet": "0",
+        "is_dc_hosted_desktop": "0",
+        "is_gels": "0",
+        "is_infra_services": "1",
+        "is_network_infra": "1",
+        "plant": "voice",
+        "plant_type": "lab",
+        "stance": "amber",
+        "standard_network_environment": "nonprod",
+        "virtual_ip": "none",
     }
 
     @classmethod
@@ -111,11 +116,12 @@ class TestNetworkTags(TestBrokerCommand):
         command = [
             f"update_network",
             f"--network={network['name']}",
-            f"--network_tag=network_area=user_network_type",
+            f"--network_tag=version=2",
         ]
         self.noouttest(command)
         expected_tags = self.tags.copy()
-        expected_tags["network_area"] = "user_network_type"
+
+        expected_tags["version"] = "2"
         self.validate_network_data(network, expected_tags)
 
     def test_122_update_network(self):
@@ -124,11 +130,11 @@ class TestNetworkTags(TestBrokerCommand):
         command = [
             f"update_network",
             f"--network={network['name']}",
-            f"--network_tag=network_area=dc_network_type",
+            f"--network_tag=version=1",
         ]
         self.noouttest(command)
         expected_tags = self.tags.copy()
-        expected_tags["network_area"] = "dc_network_type"
+        expected_tags["version"] = "1"
         self.validate_network_data(network, expected_tags)
 
     def test_124_update_network(self):
@@ -137,7 +143,7 @@ class TestNetworkTags(TestBrokerCommand):
         command = [
             f"update_network",
             f"--network={network['name']}",
-            f"--network_tag=network_area=",
+            f"--network_tag=version=",
         ]
         self.noouttest(command)
         self.validate_network_data(network)
@@ -195,7 +201,7 @@ class TestNetworkTags(TestBrokerCommand):
             f"--network_tag=plant_type=asdf",
         ]
         out = self.badrequesttest(command)
-        self.matchoutput(out, "Network tag 'plant_type' value 'asdf' doesn't match validation regex '^(?:internet|marketdata|wan|electronic_trading|low_trust|cloud|gad|iot|lab|datacenter|management|user|multimedia)$'.", command)
+        self.matchoutput(out, "Network tag 'plant_type' value 'asdf' doesn't match validation regex '(?:internet|marketdata|wan|electronic_trading|low_trust|cloud|gad|iot|lab|datacenter|management|user|multimedia)'.", command)
 
     def test_200_show_network_raw(self):
         network = self.network2
@@ -217,12 +223,18 @@ class TestNetworkTags(TestBrokerCommand):
   Side: a
   Network Type: unknown
   Network Tags:
-    dc_network_type: clinfra
+    is_advertised_externally: 0
+    is_advertised_to_internet: 0
     is_dc_hosted_desktop: 0
-    is_infra_services: 0
+    is_gels: 0
+    is_infra_services: 1
+    is_network_infra: 1
+    plant: voice
     plant_type: lab
     stance: amber
-    standard_network_environment: nonprod"""
+    standard_network_environment: nonprod
+    virtual_ip: none"""
+
         self.matchoutput(output, expected, command)
 
     def test_210_show_network_csv(self):
@@ -233,7 +245,7 @@ class TestNetworkTags(TestBrokerCommand):
             f"--format=csv",
         ]
         output = self.commandtest(command)
-        expected = 'test_net2,1.2.2.0,255.255.255.0,,us,a,unknown,,"dc_network_type=clinfra,is_dc_hosted_desktop=0,is_infra_services=0,plant_type=lab,stance=amber,standard_network_environment=nonprod"'
+        expected = 'test_net2,1.2.2.0,255.255.255.0,,us,a,unknown,,"is_advertised_externally=0,is_advertised_to_internet=0,is_dc_hosted_desktop=0,is_gels=0,is_infra_services=1,is_network_infra=1,plant=voice,plant_type=lab,stance=amber,standard_network_environment=nonprod,virtual_ip=none"'
 
         self.matchoutput(output, expected, command)
 
@@ -278,7 +290,7 @@ class TestNetworkTags(TestBrokerCommand):
         return decoded
 
     def validate_network_data(self, network, expected_tags=None):
-        decoded = self.get_network_data(network['name'])
+        actual = self.get_network_data(network['name'])
 
         expected = {
             "name": network["name"],
@@ -292,7 +304,7 @@ class TestNetworkTags(TestBrokerCommand):
         elif network.get("add_tags"):
             expected["network_tags"] = self.tags
 
-        self.assertLessEqual(expected.items(), decoded[0].items())
+        self.assertLessEqual(expected.items(), actual[0].items())
 
     def default_add_network_command(self, network):
         command = [
