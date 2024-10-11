@@ -99,7 +99,7 @@ class TestNetworkTags(TestBrokerCommand):
         tags["stance"] = "qwerty"
         command.extend(f"--network_tag={k}={tags[k]}" for k in tags)
         out = self.badrequesttest(command)
-        self.matchoutput(out, "Network tag 'stance' value 'qwerty' doesn't match validation regex '^(?:ring0|ring1|interior|amber|perimeter|lab)$'.", command)
+        self.matchoutput(out, "Network tag 'stance' value 'qwerty' doesn't match validation regex '(?:ring0|ring1|interior|amber|perimeter|lab)'.", command)
 
     def test_110_add_network(self):
         """Add 2 networks, one without tags and one with"""
