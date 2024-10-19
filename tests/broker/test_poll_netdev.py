@@ -21,13 +21,16 @@ import json
 import os
 import re
 import socket
+import subprocess
+import time
+import unittest
 from collections import defaultdict
 from time import sleep
-import subprocess
-import unittest
+from unittest.mock import patch
 
 if __name__ == "__main__":
     from . import utils
+
     utils.import_depends()
 
 from .brokertest import TestBrokerCommand
@@ -35,19 +38,20 @@ from .brokertest import TestBrokerCommand
 
 class TestPollNetworkDevice(TestBrokerCommand):
     def inject_vlan_data(self, network_device):
-        full_network_device = "{}.aqd-unittest.ms.com".format(network_device)
-        toBind = { 701: self.net["vm_storage_net"].ip,
-                   702: self.net["vmotion_net"].ip,
-                   710: self.net['{}_v710'.format(network_device)].ip,
-                   711: self.net['{}_v711'.format(network_device)].ip,
-                   712: self.net['{}_v712'.format(network_device)].ip,
-                   713: self.net['{}_v713'.format(network_device)].ip }
+        full_network_device = f"{network_device}.aqd-unittest.ms.com"
+        toBind = {
+            701: self.net["vm_storage_net"].ip,
+            702: self.net["vmotion_net"].ip,
+            710: self.net[f'{network_device}_v710'].ip,
+            711: self.net[f'{network_device}_v711'].ip,
+            712: self.net[f'{network_device}_v712'].ip,
+            713: self.net[f'{network_device}_v713'].ip,
+        }
 
         testenv = os.environ.copy()
         testenv['AQDCONF'] = self.config.baseconfig
         testdir_broker = os.path.dirname(os.path.realpath(__file__))
-        data_injection = (os.path.join(testdir_broker, "..", "aqdb",
-                          "inject_network_device_vlan.py"))
+        data_injection = os.path.join(testdir_broker, "..", "aqdb", "inject_network_device_vlan.py")
         command = [data_injection, '--network_device', full_network_device]
         for k, v in toBind.items():
             command.extend(['--vlan', str(k), str(v)])
@@ -55,29 +59,31 @@ class TestPollNetworkDevice(TestBrokerCommand):
 
     def getmacdata(self, switchfile):
         dir = os.path.dirname(os.path.realpath(__file__))
-        with open(os.path.join(dir, "..", "fakebin", "macdata.d",
-                               switchfile), 'r') as f:
+        with open(os.path.join(dir, "..", "fakebin", "macdata.d", switchfile)) as f:
             out = f.read()
         return re.sub(r"\s+", " ", "".join(out))
 
     # test_prebind_server runs too late...
     def test_100_bind_poll_helper(self):
         service = self.config.get("broker", "poll_helper_service")
-        self.noouttest(["bind", "server", "--service", service,
-                        "--instance", "unittest",
-                        "--hostname", "nyaqd1.ms.com"] + self.valid_just_tcm)
+        self.noouttest(
+            ["bind", "server", "--service", service, "--instance", "unittest", "--hostname", "nyaqd1.ms.com"]
+            + self.valid_just_tcm
+        )
 
     # test_map_service runs too late...
     def test_110_map_poll_helper(self):
         service = self.config.get("broker", "poll_helper_service")
-        self.noouttest(["map", "service", "--service", service,
-                        "--instance", "unittest", "--building", "ut"] + self.valid_just_tcm)
+        self.noouttest(
+            ["map", "service", "--service", service, "--instance", "unittest", "--building", "ut"] + self.valid_just_tcm
+        )
 
     def test_200_poll_np06bals03(self):
         command = ["poll", "network_device", "--network_device", "np06bals03.ms.com"]
         err = self.statustest(command)
-        self.matchoutput(err, "No jump host for np06bals03.ms.com, running "
-                         "discovery from %s." % socket.gethostname(), command)
+        self.matchoutput(
+            err, "No jump host for np06bals03.ms.com, running " "discovery from %s." % socket.gethostname(), command
+        )
 
     # Tests re-polling np06bals03 and polls np06fals01
     def test_201_poll_np7(self):
@@ -90,8 +96,7 @@ class TestPollNetworkDevice(TestBrokerCommand):
         # Forcing there to "normally" be a difference in last_seen and
         # creation_date to test that clear is working...
         sleep(2)
-        self.successtest(["poll_network_device", "--network_device=np06fals01.ms.com",
-                          "--clear"])
+        self.successtest(["poll_network_device", "--network_device=np06fals01.ms.com", "--clear"])
 
     # FIXME: Verify the poll and that last_seen != creation_date
     def test_205_verify_np06bals03(self):
@@ -99,10 +104,11 @@ class TestPollNetworkDevice(TestBrokerCommand):
         out = self.commandtest(command.split(" "))
         r = re.compile(r'created:\s*(.*?),\s*last seen:\s*(.*?)\s*$', re.M)
         m = self.searchoutput(out, r, command)
-        self.assertFalse(m.group(1) == m.group(2),
-                         "Expected creation date '%s' to be different from "
-                         "last seen '%s' in output:\n%s" %
-                         (m.group(1), m.group(2), out))
+        self.assertFalse(
+            m.group(1) == m.group(2),
+            "Expected creation date '%s' to be different from "
+            "last seen '%s' in output:\n%s" % (m.group(1), m.group(2), out),
+        )
 
         colon_re = re.compile(r"([0-9a-f]{2})(?=.)")
 
@@ -113,8 +119,7 @@ class TestPollNetworkDevice(TestBrokerCommand):
 
         for port, addrs in list(port_to_mac.items()):
             pattern = r"Port: %s\n" % port
-            pattern = pattern + "".join(r"\s+MAC: %s,.*\n" % mac
-                                        for mac in sorted(addrs))
+            pattern = pattern + "".join(r"\s+MAC: %s,.*\n" % mac for mac in sorted(addrs))
             self.searchoutput(out, pattern, command)
 
         for port in range(1, 50):
@@ -127,91 +132,71 @@ class TestPollNetworkDevice(TestBrokerCommand):
         self.searchoutput(out, r"Port: 49$\s+MAC: 00:15:2c:1f:40:00", command)
         r = re.compile(r'created:\s*(.*?),\s*last seen:\s*(.*?)\s*$', re.M)
         m = self.searchoutput(out, r, command)
-        self.assertFalse(m.group(1) != m.group(2),
-                         "Expected creation date '%s' to be the same as "
-                         "last seen '%s' in output:\n%s" %
-                         (m.group(1), m.group(2), out))
+        self.assertFalse(
+            m.group(1) != m.group(2),
+            "Expected creation date '%s' to be the same as "
+            "last seen '%s' in output:\n%s" % (m.group(1), m.group(2), out),
+        )
 
     def test_210_poll_ut01ga2s01(self):
-        command = ["poll", "network_device", "--network_device",
-                   "ut01ga2s01.aqd-unittest.ms.com"]
+        command = ["poll", "network_device", "--network_device", "ut01ga2s01.aqd-unittest.ms.com"]
         err = self.statustest(command)
         service = self.config.get("broker", "poll_helper_service")
-        self.matchoutput(err,
-                         "Using jump host nyaqd1.ms.com from service instance "
-                         "%s/unittest to run discovery "
-                         "for switch ut01ga2s01.aqd-unittest.ms.com." %
-                         (service),
-                         command)
+        self.matchoutput(
+            err,
+            "Using jump host nyaqd1.ms.com from service instance "
+            "%s/unittest to run discovery "
+            "for switch ut01ga2s01.aqd-unittest.ms.com." % (service),
+            command,
+        )
 
     def test_210_poll_ut01ga2s01_inject_vlan(self):
-        self.successtest(["poll_network_device", "--network_device",
-                          "ut01ga2s01.aqd-unittest.ms.com"])
+        self.successtest(["poll_network_device", "--network_device", "ut01ga2s01.aqd-unittest.ms.com"])
         self.inject_vlan_data("ut01ga2s01")
 
     def test_215_verify_ut01ga2s01(self):
         command = "show network_device --network_device ut01ga2s01.aqd-unittest.ms.com"
         out = self.commandtest(command.split(" "))
         for i in range(1, 13):
-            self.searchoutput(out,
-                              r"Port: %d\s+MAC: %s" %
-                              (i, self.net["vmotion_net"].usable[i + 1].mac),
-                              command)
-        self.matchoutput(out, "VLAN 701: %s" % self.net["vm_storage_net"].ip,
-                         command)
+            self.searchoutput(out, r"Port: %d\s+MAC: %s" % (i, self.net["vmotion_net"].usable[i + 1].mac), command)
+        self.matchoutput(out, "VLAN 701: %s" % self.net["vm_storage_net"].ip, command)
         # I was lazy... really this should be some separate non-routeable
         # subnet and not the tor_net2...
-        self.matchoutput(out, "VLAN 702: %s" % self.net["vmotion_net"].ip,
-                         command)
+        self.matchoutput(out, "VLAN 702: %s" % self.net["vmotion_net"].ip, command)
         self.matchoutput(out, "VLAN 710: %s" % self.net["ut01ga2s01_v710"].ip, command)
         self.matchoutput(out, "VLAN 711: %s" % self.net["ut01ga2s01_v711"].ip, command)
         self.matchoutput(out, "VLAN 712: %s" % self.net["ut01ga2s01_v712"].ip, command)
         self.matchoutput(out, "VLAN 713: %s" % self.net["ut01ga2s01_v713"].ip, command)
         self.matchclean(out, "VLAN 714", command)
 
-
     def test_220_poll_ut01ga2s02_inject_vlan(self):
-        self.successtest(["poll", "network_device",
-                          "--network_device", "ut01ga2s02.aqd-unittest.ms.com"])
+        self.successtest(["poll", "network_device", "--network_device", "ut01ga2s02.aqd-unittest.ms.com"])
         self.inject_vlan_data("ut01ga2s02")
 
     def test_225_verify_ut01ga2s02(self):
         command = "show network_device --network_device ut01ga2s02.aqd-unittest.ms.com"
         out = self.commandtest(command.split(" "))
         for i in range(13, 25):
-            self.searchoutput(out,
-                              r"Port: %d\s+MAC: %s" %
-                              (i - 12, self.net["vmotion_net"].usable[i + 1].mac),
-                              command)
-        self.matchoutput(out, "VLAN 701: %s" % self.net["vm_storage_net"].ip,
-                         command)
+            self.searchoutput(out, r"Port: %d\s+MAC: %s" % (i - 12, self.net["vmotion_net"].usable[i + 1].mac), command)
+        self.matchoutput(out, "VLAN 701: %s" % self.net["vm_storage_net"].ip, command)
         # I was lazy... really this should be some separate non-routeable
         # subnet and not the tor_net2...
-        self.matchoutput(out, "VLAN 702: %s" % self.net["vmotion_net"].ip,
-                         command)
+        self.matchoutput(out, "VLAN 702: %s" % self.net["vmotion_net"].ip, command)
         self.matchoutput(out, "VLAN 710: %s" % self.net["ut01ga2s02_v710"].ip, command)
         self.matchoutput(out, "VLAN 711: %s" % self.net["ut01ga2s02_v711"].ip, command)
         self.matchoutput(out, "VLAN 712: %s" % self.net["ut01ga2s02_v712"].ip, command)
         self.matchoutput(out, "VLAN 713: %s" % self.net["ut01ga2s02_v713"].ip, command)
 
     def test_226_poll_ut01ga2s02_vlan(self):
-        command = ["poll_network_device", "--vlan",
-                   "--network_device", "ut01ga2s02.aqd-unittest.ms.com"]
+        command = ["poll_network_device", "--vlan", "--network_device", "ut01ga2s02.aqd-unittest.ms.com"]
         err = self.unimplementederrortest(command)
-        self.matchoutput(
-            err, "Not Implemented: vlan argument is no longer available",
-            command)
+        self.matchoutput(err, "Not Implemented: vlan argument is no longer available", command)
 
     def test_230_poll_ut01ga2s03_inject_vlan(self):
-        self.successtest(["poll", "network_device",
-                          "--network_device",
-                          "ut01ga2s03.aqd-unittest.ms.com"])
-
+        self.successtest(["poll", "network_device", "--network_device", "ut01ga2s03.aqd-unittest.ms.com"])
 
     def test_240_poll_ut01ga2s04(self):
-        self.successtest(["poll", "network_device",
-                          "--network_device",
-                          "ut01ga2s04.aqd-unittest.ms.com"])
+        self.successtest(["poll", "network_device", "--network_device", "ut01ga2s04.aqd-unittest.ms.com"])
 
     def test_305_poll_type(self):
         # We make use of poll_switch reporting the (lack of the) jump host for
@@ -226,27 +211,91 @@ class TestPollNetworkDevice(TestBrokerCommand):
         self.matchclean(err, "ut3gd1r06.aqd-unittest.ms.com", command)
 
     def test_310_type_mismatch(self):
-        command = ["poll", "network_device", "--type", "tor",
-                   "--network_device", "ut3gd1r01.aqd-unittest.ms.com"]
+        command = ["poll", "network_device", "--type", "tor", "--network_device", "ut3gd1r01.aqd-unittest.ms.com"]
         out = self.badrequesttest(command)
-        self.matchoutput(out,
-                         "Switch ut3gd1r01.aqd-unittest.ms.com is not "
-                         "a tor switch.",
-                         command)
+        self.matchoutput(out, "Switch ut3gd1r01.aqd-unittest.ms.com is not " "a tor switch.", command)
 
     def test_310_bad_type(self):
-        command = ["poll", "network_device", "--type", "no-such-type",
-                   "--network_device", "ut3gd1r01.aqd-unittest.ms.com"]
+        command = [
+            "poll",
+            "network_device",
+            "--type",
+            "no-such-type",
+            "--network_device",
+            "ut3gd1r01.aqd-unittest.ms.com",
+        ]
         out = self.badrequesttest(command)
         self.matchoutput(out, "Unknown switch type 'no-such-type'.", command)
 
     def test_311_rack_and_vlan_option(self):
-        command = ["poll", "network_device", "--rack", "ut3", "--type",
-                   "bor","--vlan"]
+        command = ["poll", "network_device", "--rack", "ut3", "--type", "bor", "--vlan"]
         err = self.unimplementederrortest(command)
-        self.matchoutput(
-            err, "Not Implemented: vlan argument is no longer available",
-            command)
+        self.matchoutput(err, "Not Implemented: vlan argument is no longer available", command)
+
+    @patch('aquilon.worker.commands.poll_network_device.Config')
+    def test_acquire_lock_file_exists_not_expired(self, MockConfig):
+        # Create a temporary lock directory
+        lock_dir = "/tmp/test_lock_dir"
+        os.makedirs(lock_dir, exist_ok=True)
+
+        # Create a lock file and set its modification time to be recent
+        lock_file = os.path.join(lock_dir, "ut3gd1r01.aqd-unittest.ms.com")
+        with open(lock_file, 'w') as f:
+            f.write('')
+        os.utime(lock_file, (time.time(), time.time()))
+
+        # Mock the configuration to use the temporary lock directory
+        mock_config = MockConfig.return_value
+        mock_config.get.return_value = lock_dir
+
+        # Call the command and verify the output
+        command = ["poll", "network_device", "--network_device", "ut3gd1r01.aqd-unittest.ms.com"]
+        out = self.badrequesttest(command)
+        self.matchoutput(out, "Lock file exists and is not expired.", command)
+
+        # Clean up
+        os.remove(lock_file)
+        os.rmdir(lock_dir)
+
+
+@patch('aquilon.worker.commands.poll_network_device.Config')
+def test_maximum_number_of_switches(self, MockConfig):
+    # Create a temporary lock directory
+    lock_dir = "/tmp/test_lock_dir"
+    os.makedirs(lock_dir, exist_ok=True)
+
+    # Mock the configuration to use the temporary lock directory and set max_switches
+    mock_config = MockConfig.return_value
+    mock_config.get.side_effect = lambda section, option: {
+        ("broker", "poll_switch_lock_dir"): lock_dir,
+        ("broker", "max_switches"): "2",  # Set max_switches to 2 for testing
+        ("broker", "lock_expiration_minutes"): "10",
+    }[section, option]
+
+    # Create two lock files to simulate two active locks
+    lock_file1 = os.path.join(lock_dir, "ut3gd1r01.aqd-unittest.ms.com")
+    lock_file2 = os.path.join(lock_dir, "ut3gd1r02.aqd-unittest.ms.com")
+    with open(lock_file1, 'w') as f:
+        f.write('')
+    with open(lock_file2, 'w') as f:
+        f.write('')
+    os.utime(lock_file1, (time.time(), time.time()))
+    os.utime(lock_file2, (time.time(), time.time()))
+
+    # Call the command and verify the output
+    command = ["poll", "network_device", "--network_device", "ut3gd1r01.aqd-unittest.ms.com"]
+    out = self.badrequesttest(command)
+    self.matchoutput(
+        out,
+        "Maximum number of switches 2 which can be polled at the same time has reached. Please retry later",
+        command,
+    )
+
+    # Clean up
+    os.remove(lock_file1)
+    os.remove(lock_file2)
+    os.rmdir(lock_dir)
+
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestPollNetworkDevice)
