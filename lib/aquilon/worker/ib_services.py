@@ -599,11 +599,12 @@ class IBServices:
             return r
 
     @with_timer
-    def add_dynamic_range(self, name, start_address, end_address):
+    def add_dynamic_range(self, name, start_address, end_address, domain):
         payload = {
             "name":          name,
             "start_address": str(start_address),
             "end_address":   str(end_address),
+            "domain":        domain,
         }
         if self.justification is not None:
             payload["cm_token"] = self.justification
