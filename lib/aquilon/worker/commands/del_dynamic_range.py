@@ -99,14 +99,15 @@ class CommandDelDynamicRange(BrokerCommand):
         prefix = str(dbstubs[0]).split("-", 1)
         startip = str(dbstubs[0].ip)
         endip = str(dbstubs[-1].ip)
+        domain = dbstubs[0].fqdn.dns_domain.name
 
         if range_class == "infoblox_managed":
             ib_services.group.add_action(
                 lambda startip=startip, endip=endip:
                     ib_services.delete_dynamic_range(startip, endip),
-                lambda prefix=prefix, startip=startip, endip=endip:
+                lambda prefix=prefix, startip=startip, endip=endip, domain=domain:
                     ib_services.add_dynamic_range(
-                        "{}-{}-{}".format(prefix, startip, endip), startip, endip
+                        "{}-{}-{}".format(prefix, startip, endip), startip, endip, domain
                     )
             )
 

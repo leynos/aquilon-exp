@@ -75,7 +75,7 @@ class TestUpdateDynamicRange(TestBrokerCommand):
         range_class = "infoblox_managed"
 
         # We add the range to Infoblox whenever the range class is changed to infoblox_managed.
-        ib_expect_add_range("dynamic-{}-{}".format(startip, endip), startip, endip,
+        ib_expect_add_range("dynamic-{}-{}".format(startip, endip), startip, endip, "aqd-unittest.ms.com",
                             justification=self.valid_justification)
 
         command = ["update_dynamic_range",
@@ -141,7 +141,7 @@ class TestUpdateDynamicRange(TestBrokerCommand):
         endip = str(self.net["dyndhcp9"].usable[-3])
         range_class = "infoblox_managed"
 
-        ib_expect_add_range("dynamic-{}-{}".format(startip, endip), startip, endip,
+        ib_expect_add_range("dynamic-{}-{}".format(startip, endip), startip, endip, "aqd-unittest.ms.com",
                             justification=self.valid_justification)
 
         # Pick an IP in the middle of the range to test against this time

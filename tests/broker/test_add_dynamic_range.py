@@ -47,7 +47,7 @@ class TestAddDynamicRange(TestBrokerCommand):
     def test_100_add_range(self):
         startip = str(self.net["dyndhcp0"].usable[2])
         endip = str(self.net["dyndhcp0"].usable[-3])
-        ib_expect_add_range("dynamic-{}-{}".format(startip, endip), startip, endip,
+        ib_expect_add_range("dynamic-{}-{}".format(startip, endip), startip, endip, "aqd-unittest.ms.com",
                             justification=self.valid_justification)
 
         messages = []
@@ -218,7 +218,7 @@ class TestAddDynamicRange(TestBrokerCommand):
         # Set up a network that has its final IP address taken.
         ip = self.net["dyndhcp1"].usable[-1]
         ip_s = str(ip)
-        ib_expect_add_range("dynamic-{}-{}".format(ip_s, ip_s), ip_s, ip_s, justification=self.valid_justification)
+        ib_expect_add_range("dynamic-{}-{}".format(ip_s, ip_s), ip_s, ip_s, "aqd-unittest.ms.com", justification=self.valid_justification)
         hostname = self.dynname(ip)
         self.dsdb_expect_add(hostname, ip)
         command = ["add_dynamic_range", "--startip", ip, "--endip", ip,

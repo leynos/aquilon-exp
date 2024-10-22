@@ -643,11 +643,11 @@ def ib_expect_del_alias(fqdn, response_code=204, response_body="", justification
     http_monitor.expect(test_case)
 
 
-def ib_expect_add_range(name, start_address, end_address, response_code=201, response_body="", justification=None,
+def ib_expect_add_range(name, start_address, end_address, domain, response_code=201, response_body="", justification=None,
                         fail=False):
     if fail:
         response_code = 400
-    payload = {"name": name, "start_address": start_address, "end_address": end_address}
+    payload = {"name": name, "start_address": start_address, "end_address": end_address, "domain": domain}
     if justification is not None:
         payload["cm_token"] = justification
     test_case = ib_test_case("POST", "/ranges", payload, response_code, response_body)

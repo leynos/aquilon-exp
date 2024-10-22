@@ -94,6 +94,7 @@ class CommandUpdateDynamicRange(BrokerCommand):
         prefix = str(dbstubs[0]).split("-", 1)[0]
         startip = str(dbstubs[0].ip)
         endip = str(dbstubs[-1].ip)
+        domain = dbstubs[0].fqdn.dns_domain.name
 
         with session.no_autoflush:
             for stub in dbstubs:
@@ -108,4 +109,4 @@ class CommandUpdateDynamicRange(BrokerCommand):
 
             # Add the range to IB as we now want it to be managed there
             elif range_class == "infoblox_managed":
-                ib_services.add_dynamic_range("{}-{}-{}".format(prefix, startip, endip), startip, endip)
+                ib_services.add_dynamic_range("{}-{}-{}".format(prefix, startip, endip), startip, endip, domain)

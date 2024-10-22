@@ -98,8 +98,8 @@ class CommandAddDynamicRange(BrokerCommand):
 
         if range_class == "infoblox_managed":
             ib_services.group.add_action(
-                lambda prefix=prefix, startip=str(startip), endip=str(endip): ib_services.add_dynamic_range(
-                    "{}-{}-{}".format(prefix, startip, endip), startip, endip
+                lambda prefix=prefix, startip=str(startip), endip=str(endip), domain=dbdns_domain.name: ib_services.add_dynamic_range(
+                    "{}-{}-{}".format(prefix, startip, endip), startip, endip, domain
                 ),
                 lambda startip=str(startip), endip=str(endip):
                     ib_services.delete_dynamic_range(startip, endip)
