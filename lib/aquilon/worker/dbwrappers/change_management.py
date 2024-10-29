@@ -224,7 +224,7 @@ class ChangeManagement:
             # If user role is not permitted, quit
             return False
         # should look like: txid:uuidformat obo:username
-        reason_pat = re.compile(r"^txid:([a-zA-Z0-9\-]+)\sobo:([a-zA-Z0-9]+)$")
+        reason_pat = re.compile(r"^txid:([a-zA-Z0-9\-]+)\sobo:(\w+)$")
 
         if self.command == "add_reboot_intervention" and self.comments and reason_pat.match(self.comments):
             # For reboot_intervention, AQ Selfservice uses "comment" field for obo instead of reason.
