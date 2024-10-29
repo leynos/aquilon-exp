@@ -403,7 +403,7 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
             "alias",
             "--fqdn",
             "alias11.aqd-unittest.ms.com",
-            "--reason=txid:aa1a76e6-b0b5-11ee-85b8-00505601c002 obo:anotheruser",
+            "--reason=txid:aa1a76e6-b0b5-11ee-85b8-00505601c002 obo:another_user",
         ]
         out = self.commandtest(command)
         self.ib_verify()
@@ -411,7 +411,7 @@ class TestAddAlias(EventsTestMixin, TestBrokerCommand):
         cmlogfile = self.config.get("broker", "cmlogfile")
         last_entry = json.loads(self.tail_file(cmlogfile))
         # Non-prod change, EDM will not be called
-        self.assertIsNot(last_entry["reason"], "txid:aa1a76e6-b0b5-11ee-85b8-00505601c002 obo:anotheruser")
+        self.assertIsNot(last_entry["reason"], "txid:aa1a76e6-b0b5-11ee-85b8-00505601c002 obo:another_user")
 
         ib_expect_del_alias('alias1.aqd-unittest.ms.com')
         command = ["del", "alias", "--fqdn", "alias1.aqd-unittest.ms.com"]
