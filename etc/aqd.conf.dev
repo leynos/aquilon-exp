@@ -32,6 +32,7 @@ mean = %(srcdir)s/tests/fakebin/fake_mean
 [dsdb]
 dsdb_use_testdb = True
 enable = True
+network_enable = True
 
 [ib-services]
 enable = True

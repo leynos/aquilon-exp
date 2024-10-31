@@ -346,6 +346,8 @@ from .test_vulcan_localdisk import TestVulcanLocalDisk
 
 from .test_ib_end_to_end import TestIBEndToEnd
 
+from .test_dsdb_integration import TestDSDBIntegration
+
 class BrokerTestSuite(unittest.TestSuite):
     """Set up the broker's unit tests in an order that allows full coverage.
 
@@ -626,3 +628,8 @@ class InfobloxIntegrationTestSuite(BrokerTestSuite):
     test_start = [TestBrokerStart]
     test_restart = [TestBrokerReStart]
     test_list = [TestIBEndToEnd]
+
+class DSDBIntegrationTestSuite(BrokerTestSuite):
+    test_start = [TestBrokerStart]
+    test_restart = [TestBrokerReStart]
+    test_list = [TestDSDBIntegration]

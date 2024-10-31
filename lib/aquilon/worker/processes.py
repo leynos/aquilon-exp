@@ -22,11 +22,14 @@ the chain.
 
 """
 from functools import wraps
+import inspect
 import os
 import re
 import logging
 from contextlib import contextmanager
+import socket
 from subprocess import Popen, PIPE
+import sys
 from tempfile import mkdtemp
 from threading import Thread, Lock
 import types
@@ -62,7 +65,9 @@ if DSDB_ENABLED:
         ms.version.addpkg("cryptography", "39.0.0")
         ms.version.addpkg("enum34", "1.1.10")
         ms.version.addpkg("dnspython", "2.3.0")
-        ms.version.addpkg('ms.dsdb', '6.0.39')
+#        ms.version.addpkg('ms.dsdb', '6.1.7')
+#        ms.version.addpkg('ms.dsdb', '6.0.39')
+    import ms.dsdb.depends
     import ms.dsdb.client
 
 # subprocess.Popen is not thread-safe in Python, so we need locking
@@ -434,17 +439,19 @@ class DSDBEnabledMeta(type):
         # create a new instance for this class
         # add in `dsdbclient` attribute
         instance = super().__call__(*args, **kwargs)
+        print(f"__call__ instance = {instance}, type(instance) = {type(instance)}")
         if DSDB_ENABLED:
-            if instance.dsdb_use_testdb:
-                os.environ['DSDB_USE_TESTDB'] = "1"
-                os.environ["DSDB_BROKER_URL"] = "http://dsdb.webfarm-qa.ms.com"
+            if instance.dsdb_use_testdb is not None:
+                os.environ['DSDB_USE_TESTDB'] = instance.dsdb_use_testdb
+                os.environ["DSDB_BROKER_URL"] = instance.dsdb_broker_url
 
             # a timeout of zero in the broker config means "no timeout";  for ms.dsdb,
             # zero means immediate timeout (i.e. non-blocking operation).
             use_timeout = config.lookup_tool_timeout('dsdb') or None
 
-            instance.dsdbclient = ms.dsdb.client.DSDB(plant="prod",
-                                                      timeout=use_timeout)
+            instance.dsdbclient = ms.dsdb.client.DSDB(timeout=use_timeout)
+            print(f"DSDBEnabledMeta.__call__: instance.dsdbclient = {instance.dsdbclient}")
+            print(f"DSDBEnabledMeta.__call__: dir(instance.dsdbclient) = {dir(instance.dsdbclient)}")
         return instance
 
 
@@ -453,7 +460,22 @@ class DSDBRunner(metaclass=DSDBEnabledMeta):
 
     def __init__(self, logger=LOGGER):
         self.logger = logger
-        self.dsdb_use_testdb = config.getboolean("dsdb", "dsdb_use_testdb")
+        self.dsdb_use_testdb = config.get("dsdb", "dsdb_use_testdb")
+
+        if self.dsdb_use_testdb is not None:
+            self.dsdb_broker_url = config.get("dsdb", "dsdb_broker_url")
+
+            if self.dsdb_broker_url is None:
+                self.dsdb_broker_url = "http://dsdb.webfarm-qa.ms.com"
+            elif re.search("localhost", self.dsdb_broker_url):
+                # This is a combination of 2 hacks.  First, we can't actually use localhost
+                # as a hostname for the ms.dsdb lib (Kerberos doesn't work), so we need an actual
+                # hostname.  We can't hardcode the current hostname in our config though, so we
+                # assume a DSDB broker is running on our current host on port 8088, the dev
+                # default.  This is only ever needed in dev.
+                hostname = socket.getfqdn()
+                self.dsdb_broker_url = f"http://{hostname}:8088"
+
         self.actions = []
         self.rollback_list = []
         self.manager_grn = config.get('broker', 'manager_grn')
@@ -555,8 +577,9 @@ class DSDBRunner(metaclass=DSDBEnabledMeta):
                              ignore_msg))
 
     def getenv(self):
-        if self.dsdb_use_testdb:
-            return {"DSDB_USE_TESTDB": "true"}
+        if self.dsdb_use_testdb is not None:
+            return {"DSDB_USE_TESTDB": self.dsdb_use_testdb, "DSDB_BROKER_URL": self.dsdb_broker_url}
+
         return None
 
     def add_campus(self, campus, comments):
@@ -1132,6 +1155,146 @@ class DSDBRunner(metaclass=DSDBEnabledMeta):
         if comments != old_comments:
             command.extend(["-new_comments", comments or ""])
             rollback.extend(["-new_comments", old_comments or ""])
+        self.add_action(command, rollback)
+
+    def add_network(self, network, location, voicevlan):
+        sysloc = location.sysloc()
+
+        if sysloc is None:
+            raise ArgumentError("The location must be a building or enable the building to be identified")
+
+        bucket = None
+        if location.location_type == "bunker":
+            bunker = location.name
+            bucket, _ = bunker.split(".", 1)
+
+        command = [
+            "add_network",
+            "--network_name", network.name,
+            "--network_ip_address", str(network.ip),
+            "--netmask", str(network.netmask),
+            "--top_level", 0,
+            "--side", network.side,
+            "--location", network.location.sysloc(),
+            "--type", network.network_type,
+        ]
+
+        if network.comments:
+            command.extend(("--comments", network.comments))
+
+        if bucket:
+            command.extend(("--bucket", bucket))
+
+        if voicevlan:
+            command.extend(("--voicevlan", voicevlan))
+
+        if network.network_tags:
+            command.extend((f"--network_tag={tag.tag_name}={tag.tag_value}" for tag in network.network_tags))
+
+        rollback = [
+            "delete_network",
+            "--network_ip_address", str(network.ip),
+        ]
+
+        print(f"Running dsdb {command}")
+        self.add_action(command, rollback)
+
+    def update_network(self, old, new):
+        command = [
+            "update_network",
+            "--network_ip_address", str(new["ip"]),
+        ]
+        if new["name"] != old["name"]:
+            command.extend(("--new_network_name", new["name"]))
+        if new["type"] != old["type"]:
+            command.extend(("--type", new["type"]))
+        if new["side"] != old["side"]:
+            command.extend(("--side", new["side"]))
+        if new["comments"] != old["comments"]:
+            new["comments"] = new["comments"] if new["comments"] is not None else ""
+            command.extend(("--comments", new["comments"]))
+        if new["network_tags"] != old["network_tags"]:
+            command.extend((f"--network_tag={tag.tag_name}={tag.tag_value}" for tag in new["network_tags"]))
+
+            to_delete = []
+            for old_tag in old["network_tags"]:
+                if old_tag.tag_name not in (new.tag_name for new in new["network_tags"]):
+                    command.append((f"--network_tag={old_tag.tag_name}="))
+                
+        if new["sysloc"] != old["sysloc"]:
+            if new["sysloc"] is None:
+                raise ArgumentError("The location must be a building or enable the building to be identified")
+
+            command.extend(("--location", new["sysloc"]))
+        if new["bucket"] != old["bucket"]:
+            new_bucket = new["bucket"] if new["bucket"] is not None else ""
+            command.extend(("--bucket", new_bucket))
+
+        old["voicevlan"] = self.get_voicevlan(old["ip"])
+        if new["voicevlan"] != old["voicevlan"]:
+            new_voicevlan = new["voicevlan"] if new["voicevlan"] is not None else "NONE"
+            command.extend(("--voicevlan", new_voicevlan))
+
+        rollback = [
+            "update_network",
+#            "--new_network_name", old_network.name,
+#            "--type", old_network.network_type,
+#            "--side", old_network.side,
+#            "--comments", old_comments if old_comments is not None else "",
+#            "--location", old_location["sysloc"],
+#            #TODO deal with bucket, voicevlan.  For latter, call DSDB to get value before original change?
+#            #TODO tags
+        ]
+
+#        # FIXME, need tag_name, tag_value
+#        if old_network.network_tags:
+#            rollback.extend(("--network_tag={tag}={old_network.network_tags[tag]}" for tag in old_network.network_tags))
+
+        print(f"Running dsdb {command}")
+        self.add_action(command, rollback)
+
+
+    def show_network(self, ip):
+        dsdb_network = self.dsdbclient.show_network(ip_address=ip).results()
+        return dsdb_network 
+
+
+    def get_voicevlan(self, ip):
+        print(f"get_voicevlan: dir(self.dsdbclient) = {dir(self.dsdbclient)}")
+        dsdb_network = None
+        try:
+            dsdb_network = self.dsdbclient.show_network(ip_address=ip).results()
+        except AttributeError as e:
+            print(f"Got error '{e}'")
+        print(f"Got dsdb_network {dsdb_network}")
+        if dsdb_network:
+            return dsdb_network.get("voice_vlan") #FIXME
+        else:
+            return 42
+
+
+    def delete_network(self, network):
+        command = [
+            "delete_network",
+            "--network_ip_address", str(network.ip),
+        ]
+
+        rollback = [
+            "add_network",
+            "--network_name", network.name,
+            "--network_ip_address", str(network.ip),
+            "--netmask", str(network.netmask),
+            "--top_level", 0,
+            "--side", network.side,
+            "--location", network.location.sysloc(),
+            "--comments", network.comments,
+            "--type", network.network_type,
+        ]
+
+        if network.network_tags:
+            rollback.extend((f"--network_tag={tag.tag_name}={tag.tag_value}" for tag in network.network_tags))
+
+        print(f"Running dsdb {command}")
         self.add_action(command, rollback)
 
 
