@@ -23,7 +23,7 @@ from aquilon.aqdb.model import (
     ServiceAddress,
     SharedServiceName,
 )
-from aquilon.exceptions_ import ArgumentError, ProcessException
+from aquilon.exceptions_ import ArgumentError, InfobloxException
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.dbwrappers.dns import delete_dns_record
@@ -110,6 +110,6 @@ class CommandDelServiceAddress(BrokerCommand):
             if ib_services.feature_enabled("service_address") and dbdns_rec.fqdn.dns_environment.is_default:
                 try:
                     ib_services.group.commit_or_rollback()
-                except ProcessException as e:
+                except InfobloxException as e:
                     dsdb_runner.rollback()
                     raise e

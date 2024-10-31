@@ -16,7 +16,7 @@
 # limitations under the License.
 """Contains the logic for `aq del address alias`."""
 
-from aquilon.exceptions_ import NotFoundException, ProcessException
+from aquilon.exceptions_ import NotFoundException, InfobloxException
 from aquilon.aqdb.model import Fqdn, AddressAlias
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import delete_dns_record
@@ -77,7 +77,7 @@ class CommandDelAddressAlias(BrokerCommand):
                             ib_services.assert_dns_environment(dns_rec.target.dns_environment.name):
                         ib_services.del_a_ptr(dns_rec)
                         ib_services.group.commit_or_rollback()
-            except ProcessException as e:
+            except InfobloxException as e:
                 raise e
 
         session.flush()

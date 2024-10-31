@@ -16,7 +16,7 @@
 # limitations under the License.
 """Contains the logic for `aq add alias`."""
 
-from aquilon.exceptions_ import ArgumentError, ProcessException
+from aquilon.exceptions_ import ArgumentError, InfobloxException
 from aquilon.aqdb.model import DnsRecord, Alias, Fqdn, DnsEnvironment
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import create_target_if_needed
@@ -92,7 +92,7 @@ class CommandAddAlias(BrokerCommand):
                         ib_services.assert_dns_environment(db_record.target.dns_environment.name):
                     ib_services.add_dns_alias(db_record)
                     ib_services.group.commit_or_rollback()
-            except ProcessException as e:
+            except InfobloxException as e:
                 if dsdb_runner:
                     dsdb_runner.rollback()
                 raise e

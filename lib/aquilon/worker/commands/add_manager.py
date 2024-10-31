@@ -16,7 +16,7 @@
 # limitations under the License.
 """Contains the logic for `aq add manager`."""
 
-from aquilon.exceptions_ import ArgumentError, ProcessException
+from aquilon.exceptions_ import ArgumentError, InfobloxException
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.host import hostname_to_host
 from aquilon.worker.dbwrappers.dns import grab_address
@@ -84,7 +84,7 @@ class CommandAddManager(BrokerCommand):
             if ib_services.feature_enabled("manager"):
                 try:
                     ib_services.group.commit_or_rollback()
-                except ProcessException as e:
+                except InfobloxException as e:
                     dsdb_runner.rollback()
                     raise e
 

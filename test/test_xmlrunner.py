@@ -24,7 +24,7 @@ BASEDIR = os.path.realpath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(BASEDIR)
 
 
-from commands import test_compile, test_compile_hostname, test_del_host, test_search_audit
+from commands import test_compile, test_compile_hostname, test_del_host, test_search_audit, test_audit
 from dbwrappers import test_change_management, test_location
 from formats import test_location
 from templates import test_domain
@@ -37,7 +37,8 @@ modules_to_test = [
     test_location,
     test_change_management,
     test_location,
-    test_domain
+    test_domain,
+    test_audit
 ]
 
 loader = unittest.TestLoader()

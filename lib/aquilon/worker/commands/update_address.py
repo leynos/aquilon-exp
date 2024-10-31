@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from aquilon.exceptions_ import ArgumentError, ProcessException
+from aquilon.exceptions_ import ArgumentError, InfobloxException
 from aquilon.aqdb.model import ARecord
 from aquilon.aqdb.model.network import get_net_id_from_ip
 from aquilon.aqdb.model.network_environment import get_net_dns_env
@@ -103,7 +103,7 @@ class CommandUpdateAddress(BrokerCommand):
         if ib_services.feature_enabled("address"):
             try:
                 ib_services.group.commit_or_rollback()
-            except ProcessException as e:
+            except InfobloxException as e:
                 if dsdb_runner:
                     dsdb_runner.rollback()
                 raise e

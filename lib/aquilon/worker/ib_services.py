@@ -2,12 +2,13 @@ import re
 from ipaddress import IPv4Address
 from urllib.parse import quote, urlencode, urlparse, urlunparse
 
-from requests import Session, Timeout
+import requests
+import requests_cache
 from requests_kerberos import DISABLED, HTTPKerberosAuth
 
 from aquilon.aqdb.model import Alias, ARecord, DnsRecord, Fqdn, HardwareEntity, SrvRecord
 from aquilon.config import Config
-from aquilon.exceptions_ import ArgumentError, ProcessException
+from aquilon.exceptions_ import ArgumentError, InfobloxException, InternalError
 from aquilon.utils import with_timer
 import json
 
@@ -29,11 +30,11 @@ class IBServiceGroup:
         try:
             # Iterate through the functions, pull off any rollbacks.
             for (action, rollback) in self.functions:
-                action()
-                if rollback:
+                action_result = action()
+                if rollback and action_result is not None:
                     rollbacks.append(rollback)
             self.functions = []
-        except ProcessException as e:
+        except InfobloxException as e:
             # Reverse the rollbacks to start from the last, and run them.
             rollbacks.reverse()
             for rollback in rollbacks:
@@ -51,6 +52,8 @@ class IBServices:
     urls = re.split(r"\s*,\s*", config.get("ib-services", "urls"))
     timeout = float(config.get("ib-services", "timeout"))
     ca_chain = config.get("ib-services", "ca_chain")
+    cache_location = config.get("ib-services", "cache_location", fallback=None)
+    cache_timeout = config.getint("ib-services", "cache_timeout", fallback=3600)
 
     transaction_id_header = "X-MS-Unique-ID"
 
@@ -64,7 +67,20 @@ class IBServices:
         else:
             self.justification = justification
 
-        self.session = Session()
+        if self.cache_location is not None:
+            urls_expire_after = {
+                '*/dns/zones/type': self.cache_timeout,
+                '*': requests_cache.DO_NOT_CACHE,
+            }
+            self.session = requests_cache.CachedSession(
+                self.cache_location,
+                backend="sqlite",
+                urls_expire_after=urls_expire_after,
+                expire_after=self.cache_timeout,
+                allowable_methods=["GET", "HEAD"],
+                allowable_codes=[200,404])
+        else:
+            self.session = requests.Session()
         if self.ca_chain:
             self.session.auth = HTTPKerberosAuth(mutual_authentication=DISABLED, force_preemptive=True)
             self.session.verify = self.ca_chain
@@ -123,7 +139,7 @@ class IBServices:
         _to = dbdns_rec.get_dns_args()
 
         if _from["name"] != _to["name"]:
-            raise ProcessException("Updating name of a-record not implemented")
+            raise InternalError("Updating name of a-record not implemented")
 
         if _from["ip"] != _to["ip"] or _from["ttl"] != _to["ttl"]:
             if self._assert_dns_environment(_from["name"]):
@@ -214,7 +230,7 @@ class IBServices:
                 self.del_a_ptr(rec)
 
     @with_timer
-    def _add_ptr(self, name, ip, ttl=None):
+    def _add_ptr(self, name, ip, ttl=None, update_if_exists=True):
         assert(isinstance(name, str))
         assert(isinstance(ip, str))
         if ttl is not None:
@@ -228,13 +244,13 @@ class IBServices:
             payload['ttl'] = ttl
         if (self.justification is not None):
             payload["cm_token"] = self.justification
-        r = self._http_request("POST", "/dns/a_ptr/ptr", payload, ignore_statuses=[409])
-        if r is not None and r.status_code == 409:
-            return self._update_ptr(ip, new_name=name, new_ttl=ttl)
+        r = self._http_request("POST", "/dns/a_ptr/ptr", payload, ignore_statuses=[409] if update_if_exists else [])
+        if update_if_exists and r is not None and r.status_code == 409:
+            return self._update_ptr(ip, new_name=name, new_ttl=ttl, create_if_missing=False)
         return r
 
     @with_timer
-    def _update_ptr(self, ip, new_name, new_ttl=None):
+    def _update_ptr(self, ip, new_name, new_ttl=None, create_if_missing=True):
         assert(isinstance(ip, str))
         if new_name is None:
             raise ArgumentError("new_name parameter is required")
@@ -255,8 +271,8 @@ class IBServices:
             payload['ttl'] = new_ttl
 
         url = "/dns/a_ptr/ptr/{}".format(ip)
-        r = self._http_request("PATCH", url, payload, ignore_statuses=[404])
-        if r is not None and r.status_code == 404:
+        r = self._http_request("PATCH", url, payload, ignore_statuses=[404] if create_if_missing else [])
+        if create_if_missing and r is not None and r.status_code == 404:
             if new_name is None:
                 raise ArgumentError("Required argument 'new_name is missing")
             payload['name'] = new_name
@@ -282,7 +298,7 @@ class IBServices:
         return self._http_request("DELETE", url, ignore_statuses=[404])
 
     @with_timer
-    def _add_a(self, name, ip, ttl=None):
+    def _add_a(self, name, ip, ttl=None, update_if_exists=True):
         assert(isinstance(name, str))
         assert(isinstance(ip, str))
         if ttl is not None:
@@ -297,13 +313,13 @@ class IBServices:
             payload['ttl'] = ttl
         if (self.justification is not None):
             payload["cm_token"] = self.justification
-        r = self._http_request("POST", "/dns/a_ptr/a", payload, ignore_statuses=[409])
-        if r is not None and r.status_code == 409:
-            r = self._update_a(name, ip, new_ip=ip, new_ttl=ttl)
+        r = self._http_request("POST", "/dns/a_ptr/a", payload, ignore_statuses=[409] if update_if_exists else [])
+        if update_if_exists and r is not None and r.status_code == 409:
+            r = self._update_a(name, ip, new_ip=ip, new_ttl=ttl, create_if_missing=False)
         return r
 
     @with_timer
-    def _update_a(self, name, ip, new_ip, new_ttl=None):
+    def _update_a(self, name, ip, new_ip, new_ttl=None, create_if_missing=True):
         assert(isinstance(name, str))
         assert(isinstance(ip, str))
         if new_ip is None:
@@ -327,8 +343,8 @@ class IBServices:
             payload['ttl'] = new_ttl
 
         url = "/dns/a_ptr/a/{}/{}".format(name, ip)
-        r = self._http_request("PATCH", url, payload, ignore_statuses=[404])
-        if r is not None and r.status_code == 404:
+        r = self._http_request("PATCH", url, payload, ignore_statuses=[404] if create_if_missing else [])
+        if create_if_missing and r is not None and r.status_code == 404:
             if new_ip is None:
                 raise ArgumentError(f"Required argument '{new_ip}' is missing")
             payload['name'] = name
@@ -524,7 +540,7 @@ class IBServices:
 
 
     @with_timer
-    def _add_dns_alias(self, name, target, ttl=None):
+    def _add_dns_alias(self, name, target, ttl=None, update_if_exists=True):
         assert(isinstance(name, str))
         assert(isinstance(target, str))
         if ttl is not None:
@@ -536,9 +552,9 @@ class IBServices:
             payload["cm_token"] = self.justification
         url = f"/dns/aliases/"
 
-        r = self._http_request("POST", url, payload, ignore_statuses=[409])
-        if r is not None and r.status_code == 409:
-            return self._update_dns_alias(name, new_target=target, ttl=ttl)
+        r = self._http_request("POST", url, payload, ignore_statuses=[409] if update_if_exists else [])
+        if update_if_exists and r is not None and r.status_code == 409:
+            return self._update_dns_alias(name, new_target=target, ttl=ttl, create_if_missing=False)
         else:
             return r
 
@@ -554,7 +570,7 @@ class IBServices:
         return self._http_request("DELETE", url, ignore_statuses=[404])
 
     @with_timer
-    def _update_dns_alias(self, name, new_target=None, ttl=None):
+    def _update_dns_alias(self, name, new_target=None, ttl=None, create_if_missing=True):
         assert(isinstance(name, str))
         if new_target is not None:
             assert(isinstance(new_target, str))
@@ -569,8 +585,8 @@ class IBServices:
             payload["cm_token"] = self.justification
         url = "/dns/aliases/{}".format(name)
 
-        r = self._http_request("PATCH", url, payload, ignore_statuses=[404])
-        if r is not None and r.status_code == 404:
+        r = self._http_request("PATCH", url, payload, ignore_statuses=[404] if create_if_missing else [])
+        if create_if_missing and r is not None and r.status_code == 404:
             if new_target is None:
                 raise ArgumentError("Required argument 'new_target' is missing")
             payload['name'] = name
@@ -583,11 +599,12 @@ class IBServices:
             return r
 
     @with_timer
-    def add_dynamic_range(self, name, start_address, end_address):
+    def add_dynamic_range(self, name, start_address, end_address, domain):
         payload = {
             "name":          name,
             "start_address": str(start_address),
             "end_address":   str(end_address),
+            "domain":        domain,
         }
         if self.justification is not None:
             payload["cm_token"] = self.justification
@@ -789,7 +806,7 @@ class IBServices:
         elif re.search("delegated", response_text):
             return False
 
-        raise ProcessException(f"Unexpected result '{response_text}' when retrieving zone type for {fqdn}")
+        raise InternalError(f"Unexpected result '{response_text}' when retrieving zone type for {fqdn}")
 
     def _http_request(self, http_cmd, url, data=None, ignore_statuses=[]):
         if not self.enabled:
@@ -816,7 +833,8 @@ class IBServices:
 
                     response = self.session.request(http_cmd, full_url, json=data, timeout=self.timeout,
                                                     headers=headers)
-                except Timeout:
+
+                except requests.Timeout:
                     self.log.warning(f"Infoblox timeout error: request to {full_url} timed out after {self.timeout}s.")
 
                 # There are several possible other exception types.  Not all possibilities are known.
@@ -838,12 +856,12 @@ class IBServices:
                         error_msg = response.json().get("message")
                     except ValueError:
                         # Probably a JSON decode error.  Fall back to showing whole body of response.
-                        error_msg = response.text
+                        error_msg = response.reason + ' ' + response.text
 
-                    msg = self._log_ib_result(f"Infoblox error: '{error_msg}'", http_cmd, full_url, data, response)
-                    raise ProcessException(msg)
+                    self._log_ib_result(f"Infoblox error: {error_msg}", http_cmd, full_url, data, response)
+                    raise InfobloxException(f"Infoblox response error: '{error_msg}'")
             else:
-                raise ProcessException("Infoblox returned errors or no Infoblox servers could be reached, aborting change")
+                raise InfobloxException("Infoblox returned errors or no Infoblox servers could be reached, aborting change")
 
         except Exception as e:
             if self.transactional:
@@ -860,12 +878,11 @@ class IBServices:
                     'request_data': request_data,
                     'response_body': response.text,
                     'aqd_request_id': str(self.requestid) if self.requestid else None,
-                    'ib_request_id': response.headers.get(self.transaction_id_header) }
+                    'ib_request_id': response.headers.get(self.transaction_id_header),
+                    'from_cache': response.from_cache if hasattr(response, 'from_cache') else None,}
 
-
-        msg = json.dumps(ib_log, sort_keys=True)
-        self.log.info(msg)
-        return msg
+        #  This is logged as info level because the aq client will display messages of level warning or higher
+        self.log.info(json.dumps(ib_log, sort_keys=True))
 
     def feature_enabled(self, name):
         enabled = False

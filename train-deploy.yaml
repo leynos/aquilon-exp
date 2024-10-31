@@ -115,7 +115,7 @@ dev:
 prod:
   - name: ring1-prod.execute
     notification-policy: "strict"
-    notify-email: aqd-eng
+    notify-email: aqd-eng, auroraturn
     autodeployuser: aqdautodeploy
     stages:
       - stage:
@@ -130,7 +130,7 @@ prod:
         on_failure: "continue"
   - name: ring1-prod.verify
     notification-policy: "strict"
-    notify-email: aqd-eng
+    notify-email: aqd-eng, auroraturn
     stages:
       - stage:
         name: Verify releaselink
@@ -143,7 +143,7 @@ prod:
         on_failure: "continue"
 
   - name: prod.execute
-    notify-email: aqd-eng
+    notify-email: aqd-eng, auroraturn
     notification-policy: "strict"
     autodeployuser: aqdautodeploy
     stages:
@@ -164,7 +164,7 @@ prod:
         on_failure: "continue"
   - name: prod.verify
     notification-policy: "strict"
-    notify-email: aqd-eng
+    notify-email: aqd-eng, auroraturn
     stages:
       - stage:
         name: Verify releaselink

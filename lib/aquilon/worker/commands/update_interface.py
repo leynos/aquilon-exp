@@ -16,7 +16,7 @@
 # limitations under the License.
 """Contains the logic for `aq update interface` for simple devices."""
 
-from aquilon.exceptions_ import ArgumentError, ProcessException, UnimplementedError
+from aquilon.exceptions_ import ArgumentError, InfobloxException, UnimplementedError
 from aquilon.aqdb.types import NicType
 from aquilon.aqdb.model import Interface, Model
 from aquilon.worker.broker import BrokerCommand
@@ -95,7 +95,7 @@ class CommandUpdateInterface(BrokerCommand):
 
                     try:
                         ib_services.group.commit_or_rollback()
-                    except ProcessException as e:
+                    except InfobloxException as e:
                         if dsdb_runner:
                             dsdb_runner.rollback()
                         raise e

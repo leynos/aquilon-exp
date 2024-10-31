@@ -43,7 +43,6 @@ class PersonalityFormatter(ObjectFormatter):
             "archetype": personality.archetype.name,
             "environment": personality.host_environment.name,
             "owner_eonid": personality.owner_eon_id or None,
-            "config_override": personality.config_override,
             "cluster_required": personality.cluster_required,
             "comments": personality.comments,
         }
@@ -160,6 +159,7 @@ class PersonalityStageFormatter(PersonalityFormatter):
             "environment": persst.personality.host_environment.name,
             "owner_grn": persst.personality.owner_grn.grn,
             "owner_eonid": persst.owner_eon_id or None,
+            "staged": persst.staged,
             "grns": [],
         }
         if persst.staged:

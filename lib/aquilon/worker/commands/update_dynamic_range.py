@@ -18,7 +18,7 @@
 from ipaddress import ip_address, IPv4Network
 from sqlalchemy.orm import joinedload
 
-from aquilon.exceptions_ import ArgumentError, NotFoundException, ProcessException, UnimplementedError
+from aquilon.exceptions_ import ArgumentError, NotFoundException, InfobloxException, UnimplementedError
 from aquilon.aqdb.model import DynamicStub, DnsEnvironment
 from aquilon.aqdb.model.network_environment import get_net_dns_env
 from aquilon.aqdb.model.network import get_net_id_from_ip
@@ -83,7 +83,7 @@ class CommandUpdateDynamicRange(BrokerCommand):
         response = None
         try:
             response = ib_services.show_dynamic_range(startip, endip)
-        except ProcessException as e:
+        except InfobloxException as e:
             if response and response.status_code == 404:
                 raise ArgumentException("Dynamic range {} to {} was not found in Infoblox, cannot update"
                                         .format(startip, endip))
@@ -94,6 +94,7 @@ class CommandUpdateDynamicRange(BrokerCommand):
         prefix = str(dbstubs[0]).split("-", 1)[0]
         startip = str(dbstubs[0].ip)
         endip = str(dbstubs[-1].ip)
+        domain = dbstubs[0].fqdn.dns_domain.name
 
         with session.no_autoflush:
             for stub in dbstubs:
@@ -108,4 +109,4 @@ class CommandUpdateDynamicRange(BrokerCommand):
 
             # Add the range to IB as we now want it to be managed there
             elif range_class == "infoblox_managed":
-                ib_services.add_dynamic_range("{}-{}-{}".format(prefix, startip, endip), startip, endip)
+                ib_services.add_dynamic_range("{}-{}-{}".format(prefix, startip, endip), startip, endip, domain)

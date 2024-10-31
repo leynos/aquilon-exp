@@ -173,6 +173,10 @@ poll_helper_service = poll_helper
 poll_ssh_options = -o StrictHostKeyChecking=no -o BatchMode=yes
 grn_to_eonid_map_location = /ms/dist/appmw/PROJ/eon-data/prod/common
 run_aqnotifyd = True
+# The wait time to run the build_index on aq_notifyd process. Lower
+# wait times runs build_index very often causing the Resource
+# temporarily unavailable error
+aq_notityd_wait = 120.0
 user_list_location = /ms/dist/aurora/PROJ/dsdbfiles/incr/passwd.byname
 
 # Limit of hostlists

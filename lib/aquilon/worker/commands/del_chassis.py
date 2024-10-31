@@ -16,7 +16,7 @@
 # limitations under the License.
 """Contains the logic for `aq del chassis`."""
 
-from aquilon.exceptions_ import ArgumentError, ProcessException
+from aquilon.exceptions_ import ArgumentError, InfobloxException
 from aquilon.worker.broker import BrokerCommand
 from aquilon.aqdb.model import Chassis, ARecord
 from aquilon.worker.dbwrappers.dns import delete_dns_record
@@ -59,6 +59,6 @@ class CommandDelChassis(BrokerCommand):
         if ib_services.feature_enabled("chassis"):
             try:
                 ib_services.group.commit_or_rollback()
-            except ProcessException as e:
+            except InfobloxException as e:
                 dsdb_runner.rollback()
                 raise e

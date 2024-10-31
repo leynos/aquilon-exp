@@ -25,7 +25,7 @@ import shlex
 from datetime import datetime
 from functools import total_ordering
 
-from sqlalchemy.orm import aliased, contains_eager, load_only
+from sqlalchemy.orm import aliased, contains_eager
 from sqlalchemy.orm.query import Query
 from sqlalchemy.orm.session import object_session
 
@@ -210,7 +210,7 @@ class ChangeManagement:
         else:
             env_calculate_method(self, obj)
 
-    def _from_obo_service_id(self):
+    def _from_obo_service_id(self) -> bool:
         """
         Check if commmand was run using AQ Selfservice API.
 
@@ -222,16 +222,16 @@ class ChangeManagement:
 
         if not permitted_ids or self.username not in permitted_ids.lower().replace(" ", "").split(","):
             # If user role is not permitted, quit
-            return
+            return False
         # should look like: txid:uuidformat obo:username
-        reason_pat = re.compile(r"^txid:([a-zA-Z0-9\-]+)\sobo:([a-zA-Z0-9]+)$")
+        reason_pat = re.compile(r"^txid:([a-zA-Z0-9\-]+)\sobo:(\w+)$")
 
         if self.command == "add_reboot_intervention" and self.comments and reason_pat.match(self.comments):
             # For reboot_intervention, AQ Selfservice uses "comment" field for obo instead of reason.
             self.reason = self.comments
         if not self.reason or not reason_pat.match(self.reason):
             # If reason is empty, no need to continue
-            return
+            return False
 
         # Assign the impacted eonid to the eonid in the EDM request.
         if len(self.impacted_eonids) == 1:
@@ -240,6 +240,15 @@ class ChangeManagement:
         match = reason_pat.match(self.reason)
         txid, self.username = match.groups()
         self.logger.info(f"Running {self.command} using Selfservice as {self.username} with transaction id {txid}.")
+        return True
+
+    def _is_nonprod(self) -> bool:
+        """Check that the command is a non-prod operation."""
+        if not self.dict_of_impacted_envs.get("prod") and (
+            self.dict_of_impacted_envs.get("dev") or self.dict_of_impacted_envs.get("qa")
+        ):
+            return True
+        return False
 
     def validate(self):
         """Perform change management validation, or return in-scope objects.
@@ -279,7 +288,13 @@ class ChangeManagement:
                 raise AuthorizationException("User role is not allowed to execute Emergency changes.")
 
         # Check if command is running using AQ Selfservice API
-        self._from_obo_service_id()
+        if self._from_obo_service_id() and self._is_nonprod():
+            self.logger.debug(
+                f'"Status": "Approved", '
+                f'"Reason": AQ Selfservice is exempted from change management controls '
+                f'for non-prod {self.command}.'
+            )
+            return
 
         # Clean final impacted env list
         self.logger.debug("Prepare impacted envs to call EDM")

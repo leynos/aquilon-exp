@@ -210,6 +210,7 @@ class BrokerCommand:
                       logger=None, **kwargs):
         raising_exception = None
         rollback_failed = False
+        start_rec = False
         dbuser = None
         session = None
         exporter = None
@@ -269,6 +270,7 @@ class BrokerCommand:
                               isinstance(status.user, bytes) else status.user,
                               status.command, self.requires_readonly,
                               kwargs, _IGNORED_AUDIT_ARGS)
+                    start_rec = True
 
                 dbuser = get_or_create_user_principal(session, user,
                                                       commitoncreate=True,
@@ -309,6 +311,7 @@ class BrokerCommand:
                         session.rollback()
                     except:  # pragma: no cover
                         rollback_failed = True
+                        start_rec = False
                         raise
                 session.close()
             raise
@@ -321,7 +324,7 @@ class BrokerCommand:
 
                 try:
                     if self.requires_audit:
-                        if not rollback_failed:
+                        if not rollback_failed and start_rec:
                             # If session.rollback() failed for whatever
                             # reason, our best bet is to avoid touching
                             # the session

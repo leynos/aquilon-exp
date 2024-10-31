@@ -17,7 +17,7 @@
 """Contains the logic for `aq del alias`."""
 
 from aquilon.aqdb.model import DnsEnvironment, Alias
-from aquilon.exceptions_ import ArgumentError, ProcessException
+from aquilon.exceptions_ import ArgumentError, InfobloxException
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.dbwrappers.dns import delete_dns_record
@@ -69,7 +69,7 @@ class CommandDelAlias(BrokerCommand):
             ib_services.del_dns_alias(dbdns_rec)
             try:
                 ib_services.group.commit_or_rollback()
-            except ProcessException as e:
+            except InfobloxException as e:
                 if dsdb_runner:
                     dsdb_runner.rollback()
                 raise e

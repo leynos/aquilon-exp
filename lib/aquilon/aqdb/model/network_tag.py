@@ -91,95 +91,88 @@ def validate_network_tags(network_tags):
 def valid_network_tags():
     # Keys are known (therefore valid) tags.
     # Values are dicts which indicate whether the tag is required and a validation regex.
+
+    # The spec shows boolean values as being represented by "0" or "1".
     boolean = re.compile(r'^(?:0|1)$')
 
     return {
-        "cloud_network_type": {
-            "required": 0,
-            "regex": r'^(?:none|vnet_vpc|vpn)$',
-        },
-        "dc_network_type": {
-            "required": 1,
-            "regex": r'^(?:none|mainframe|clinfra|ddi-net1)$',
-        },
-        "electronic_trading_network_type": {
-            "required": 0,
-            "regex": r'^(?:none|service|trade|msmd|rawmd|externa|management|heartbeat)$',
-        },
-        "ens_zone": {
-            "required": 0,
-            "regex": r'^[\-\w]+$', # TODO better validation once valid values determined
-        },
-        "fw_domain": {
-            "required": 0,
-            "regex": r'^[\-\w]+$', # TODO better validation once valid values determined
+        "custom_types": {
+            "required": False,
+
+            # The specification just says "type: list".  Of strings, one assumes.  We may consider
+            # requiring some delimiter (";" perhaps?), but that hasn't been confirmed, so allow
+            # anything for the time being.  We don't have support for a true list at this point.
+            "regex": r".+",
         },
         "is_advertised_externally": {
-            "required": 0,
+            "required": True,
+            "regex": boolean,
+        },
+        "is_advertised_to_internet": {
+            "required": True,
             "regex": boolean,
         },
         "is_dc_hosted_desktop": {
-            "required": 1,
+            "required": True,
             "regex": boolean,
         },
         "is_gels": {
-            "required": 0,
+            "required": True,
             "regex": boolean,
         },
         "is_infra_services": {
-            "required": 1,
+            "required": True,
             "regex": boolean,
         },
         "is_network_infra": {
-            "required": 0,
+            "required": True,
             "regex": boolean,
         },
-        "lab_network_type": {
-            "required": 0,
-            "regex": r'^[\-\w]+$', # TODO better validation once valid values determined
+        "network_domain": {
+            # The spec says this tag is "mandatory for FW-d zone only".  What that means, is not explained.
+            # As we don't have conditional logic (if one tag has a certain value, other things are
+            # allowed or not allowed) we need to make this optional for now.
+            "required": False,
+
+            # This regex includes mixed cases.  As AQD lower cases the value in the DB, allow any case.
+            "regex": r"(?i)(?:NSO3-zone)",
         },
-        "network_area": {
-            "required": 0,
-            "regex": r'^(?:user_network_type|dc_network_type|cloud_network_type|perimeter_network_type|electronic_trading_network_type|wan_network_type|lab_network_type|shared_network_type|none)$',
-        },
-        "perimeter_network_type": {
-            "required": 0,
-            "regex": r'^[\-\w]+$', # TODO better validation once valid values determined
+        "network_zone": {
+            # The spec says this tag is "mandatory for FW-d zone only".  What that means, is not explained.
+            # As we don't have conditional logic (if one tag has a certain value, other things are
+            # allowed or not allowed) we need to make this optional for now.
+            "required": False,
+
+            # This regex includes mixed cases.  As AQD lower cases the value in the DB, allow any case.
+            "regex": r"(?i)(?:NSO3-zone)",
         },
         "plant": {
-            "required": 0,
-            "regex": r'^(?:mssip|mssig|mdex|wan20|speedway|seti_inband_oob|seti_outofband_oob|proxima|velocity|amm|low_trust_access|low_trust_dmz|mcdmz|csdmz|azure|aws|gcp|gad|iot_access|iot_dmz|seti_lab|wm_lab|ec_lab|ens_lab|backup|voice|enclave|pod|vela|refinitive|dev|admin_domain|mssip_oob|mdex_oob|genpop_oob|btgn|admin_oob|csdmz_oob|mcdmz_oob|user_oob|ring1_oob|ring0_oob|amber_dmz|gels_dmz|wm_dmz|user|multimedia|multimedia_dmz|et_vela|et_enterprise|et_dr|et_admin_domain|et_refinitive|et_dev|et_voice|et_prod|et_old_wan_dci|et_oob|et_internet_plant_prod|et_interent_plant_enterprise|et_aws|et_vendor_environment|et_lab|mssc|msimc|msms|msfc|msbic|core|serverfarm|wan|internal_oob|cod_oob|branch_oob|infradev)$',
+            "required": True,
+
+            # This regex includes mixed cases.  As AQD lower cases the value in the DB, allow any case.
+            "regex": r"(?i)(?:NSO3-Plant|wan20|backup|voice|pod|vela|refinitive|dev|admin_domain|user_oob|user|et_vela|et_enterprise|et_dr|et_admin_domain|et_refinitive|et_voice|et_dev|et_old_wan_dci|core|serverfarm|wan)",
         },
         "plant_type": {
-            "required": 1,
-            "regex": r'^(?:internet|marketdata|wan|electronic_trading|low_trust|cloud|gad|iot|lab|datacenter|management|user|multimedia)$',
-        },
-        "shared_network_type": {
-            "required": 0,
-            "regex": r'^(?:none|tor_net|tor_net2|tor_net4|vm_storage_net|netbackup|oob_server|oob_fw|oob_ens)$',
+            "required": True,
+            "regex": r"(?:internet|marketdata|wan|electronic_trading|low_trust|cloud|gad|iot|lab|datacenter|management|user|multimedia)",
         },
         "stance": {
-            "required": 1,
-            "regex": r'^(?:ring0|ring1|interior|amber|perimeter|lab)$',
+            "required": True,
+            "regex": r"(?:ring0|ring1|interior|amber|perimeter|lab)",
         },
         "standard_network_environment": {
-            "required": 1,
-            "regex": r'^(?:prod|nonprod)$',
-        },
-        "user_network_type": {
-            "required": 0,
-            "regex": r'^(?:none|trusted_endpoint|untrusted_endpoint|lowtrusted_endpoint)$',
+            "required": True,
+            "regex": r"(?:prod|nonprod)",
         },
         "version": {
-            "required": 0,
-            "regex": r'^(?:1|2)$',
+            # The spec says this is mandatory, but if any tag is specified at all, that means version
+            # 2 to us.  So we allow version to be specified, but ignore it.
+            "required": False,
+            "regex": r"(?:[\d\.]+)",
         },
         "virtual_ip": {
-            "required": 0,
-            "regex": r'^(?:overlay_vip|vip|local_vip|proxy_vip|vpn_pool|loadbalancer_vip|nat|anycast|none)$',
+            "required": True,
+            "regex": r"(?:proxy_vip|vpn_pool|mainframe|vnet_vpc|private_cloud_vpn_infra|none)",
         },
-        "wan_network_type": {
-            "required": 0,
-            "regex": r'^(?:none|amber|corporate|[\-\w]+)$', # Spec says "etc.etc." for valid values!
-        },
-    };
+    }
+

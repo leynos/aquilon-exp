@@ -17,7 +17,7 @@
 """Contains the logic for `aq add chassis`."""
 
 from aquilon.aqdb.model.network import get_net_id_from_ip
-from aquilon.exceptions_ import ProcessException
+from aquilon.exceptions_ import InfobloxException
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import grab_address
 from aquilon.worker.dbwrappers.interface import (get_or_create_interface,
@@ -70,6 +70,6 @@ class CommandAddChassis(BrokerCommand):
         if ib_services.feature_enabled("chassis"):
             try:
                 ib_services.group.commit_or_rollback()
-            except ProcessException as e:
+            except InfobloxException as e:
                 dsdb_runner.rollback()
                 raise e

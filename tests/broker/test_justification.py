@@ -17,6 +17,7 @@
 # limitations under the License.
 """Module for testing the make command."""
 
+import json
 import unittest
 
 from mock_ib_services import ib_expect_add_alias, ib_expect_del_alias
@@ -655,15 +656,30 @@ class TestJustification(PersonalityTestMixin, TestBrokerCommand):
 
     def test_905_justification_required(self):
         ib_expect_del_alias("aliasjustreq2.aqd-unittest.ms.com")
-        command = ["del", "alias",
-                   "--fqdn", "aliasjustreq2.aqd-unittest.ms.com"]
+        command = [
+            "del",
+            "alias",
+            "--fqdn",
+            "aliasjustreq2.aqd-unittest.ms.com",
+            "--reason=txid:aa1a76e6-b0b5-11ee-85b8-00505601c001 obo:anotheruser",
+        ]
         self.justificationmissingtest_warn(command)
         self.ib_verify()
         ib_expect_del_alias("aliasjustreq.aqd-unittest.ms.com", justification=self.valid_justification)
-        command = ["del", "alias",
-                   "--fqdn", "aliasjustreq.aqd-unittest.ms.com"] + self.valid_just_tcm
+        command = [
+            "del",
+            "alias",
+            "--fqdn",
+            "aliasjustreq.aqd-unittest.ms.com",
+            "--reason=txid:aa1a76e6-b0b5-11ee-85b8-00505601c000 obo:anotheruser",
+        ] + self.valid_just_tcm
         self.successtest(command)
         self.ib_verify()
+        cmlogfile = self.config.get("broker", "cmlogfile")
+        last_entry = json.loads(self.tail_file(cmlogfile))
+        # Prod change, EDM will run even with AQ SS obo reason
+        self.assertEqual(last_entry["requestor"], "anotheruser")
+        self.assertEqual(last_entry["reason"], "txid:aa1a76e6-b0b5-11ee-85b8-00505601c000 obo:anotheruser")
         cmd = "show address --fqdn aquilon91.aqd-unittest.ms.com"
         out = self.commandtest(cmd.split(" "))
         self.matchclean(out, "Aliases: aliasjustreq.aqd-unittest.ms.com, "

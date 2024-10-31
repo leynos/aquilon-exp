@@ -251,6 +251,7 @@ class NetworkHostListFormatter(ListFormatter):
             nfm = NetworkFormatter()
             details.append(indent + nfm.format_raw(network))
 
+            ips_in_assignments = {}
             for addr in network.assignments:
                 iface = addr.interface
                 hw_ent = iface.hardware_entity
@@ -263,6 +264,22 @@ class NetworkHostListFormatter(ListFormatter):
                     f"interface: {addr.logical_name}, "
                     f"MAC: {iface.mac}, IP: {addr.ip} ({names})"
                 )
+                ips_in_assignments[int(addr.ip)] = None
+
+            svc_address_fqdns = list(map(lambda s: s.dns_record.fqdn.fqdn, network.service_addresses))
+
+            for addr in network.dns_records:
+                if int(addr.ip) in ips_in_assignments:
+                    continue
+                if addr.fqdn.fqdn in svc_address_fqdns:
+                    continue
+                dns_record = indent + f"  {addr._get_class_label()}: {addr.fqdn.fqdn}, IP: {addr.ip}"
+                if addr.reverse_ptr is not None:
+                    dns_record += f", ReversePTR: {addr.reverse_ptr.fqdn}"
+                if addr.ttl is not None:
+                    dns_record += f", TTL: {addr.ttl}"
+                details.append(dns_record)
+
         return "\n".join(details)
 
     def format_proto(self, result, container, embedded=True, indirect_attrs=True):

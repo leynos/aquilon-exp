@@ -16,7 +16,7 @@
 # limitations under the License.
 """Contains the logic for `aq update console server`."""
 
-from aquilon.exceptions_ import ProcessException
+from aquilon.exceptions_ import InfobloxException
 from aquilon.aqdb.types import ConsoleServerType
 from aquilon.aqdb.model import ConsoleServer, Model
 from aquilon.worker.broker import BrokerCommand
@@ -72,6 +72,6 @@ class CommandUpdateConsoleServer(BrokerCommand):
             ib_services.update_a_ptr(dbcons.primary_name, rollback_infoblox_args)
             try:
                 ib_services.group.commit_or_rollback()
-            except ProcessException as e:
+            except InfobloxException as e:
                 dsdb_runner.rollback()
                 raise e

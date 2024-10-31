@@ -34,6 +34,7 @@ CCM_NOTIF = 1
 CDB_NOTIF = 2
 
 NOTIFICATION_TYPES = {CCM_NOTIF: "ccm", CDB_NOTIF: "cdb"}
+NOTIFICATION_TO = {CCM_NOTIF: "client", CDB_NOTIF: "server"}
 
 try:
     CDPPORT = socket.getservbyname("cdp")
@@ -50,6 +51,7 @@ def build_index(config, session, logger=LOGGER):
     and send out notifications to "server modules" (as defined
     within the broker configuration).
     '''
+    logger.info("Starting build_index")
     gzip_output = config.getboolean('panc', 'gzip_output')
     transparent_gzip = config.getboolean('panc', 'transparent_gzip')
     gzip_index = gzip_output and transparent_gzip
@@ -106,6 +108,7 @@ def build_index(config, session, logger=LOGGER):
         finally:
             if source:
                 source.close()
+    logger.info("Fetched %s objects managed by Broker", len(old_object_index))
 
     # modified_index stores the subset of namespaced names that
     # have changed since the last index. The values are unused.
@@ -139,7 +142,7 @@ def build_index(config, session, logger=LOGGER):
                 # that the file has been removed since calling os.walk().
                 # If that's the case, no need to add it to the modified_index.
                 try:
-                    mtime = os.path.getmtime(os.path.join(root, profile))
+                    mtime = int(os.path.getmtime(os.path.join(root, profile)))
                 except OSError as e:
                     continue
 
@@ -239,6 +242,7 @@ def send_notification(ntype, modified, sock=None, logger=LOGGER):
     Returns the number of notifications that were sent.
     '''
 
+    logger.info("sending %s notifications", NOTIFICATION_TO[ntype])
     success = 0
     for obj in modified:
         # We need to clean the name, since it might
@@ -247,24 +251,29 @@ def send_notification(ntype, modified, sock=None, logger=LOGGER):
         # checks based on the namespace. Not for now.
         (_, _, host) = obj.rpartition('/')
 
-        try:
-            # If you think it would be a good idea to look up the IP address
-            # from the DB directly, then think about the case when the IP
-            # address of a host changes: the DB contains the new address, but
-            # the host still uses the old. Relying on DNS here means that the
-            # notification goes to the right place.
-            ip = socket.gethostbyname(host)
-            packet = NOTIFICATION_TYPES[ntype] + "\0" + str(int(time.time()))
-            sock.sendto(packet.encode("ascii"), (ip, CDPPORT))
-            success = success + 1
+        # Only notify hosts and not the clusters since the domain is
+        # not available in the hostname and throws below exception
+        # [Errno -2] Name or service not known
+        if host.endswith("ms.com"):
+            try:
+                # If you think it would be a good idea to look up the IP address
+                # from the DB directly, then think about the case when the IP
+                # address of a host changes: the DB contains the new address, but
+                # the host still uses the old. Relying on DNS here means that the
+                # notification goes to the right place.
+                ip = socket.gethostbyname(host)
+                packet = NOTIFICATION_TYPES[ntype] + "\0" + str(int(time.time()))
+                sock.sendto(packet.encode("ascii"), (ip, CDPPORT))
+                success = success + 1
 
-        except socket.gaierror:
-            # This hostname is unknown, so we silently
-            # discard the notification.
-            pass
+            except socket.gaierror as err:
+                # This hostname is unknown, so we silently
+                # discard the notification.
+                logger.warning("Unknown Hostname %s, So discarding the notification due to %s", host, err)
+                pass
 
-        except Exception as e:
-            logger.info("Error notifying %s: %s", host, e)
+            except Exception as e:
+                logger.info("Error notifying %s: %s", host, e)
 
     return success
 
