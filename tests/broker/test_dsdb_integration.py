@@ -28,7 +28,7 @@ try:
 except ImportError:
     pass
 else:
-    ms.version.addpkg('ms.dsdb', '6.1.7')
+    ms.version.addpkg('ms.dsdb', '6.1.8')
 
 from copy import copy
 from ipaddress import ip_network, IPv4Network

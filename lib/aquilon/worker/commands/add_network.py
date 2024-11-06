@@ -96,7 +96,7 @@ class CommandAddNetwork(BrokerCommand):
         session.add(net)
         session.flush()
 
-        if net.send_to_dsdb:
+        if net.should_send_to_dsdb:
             dsdb_runner = DSDBRunner(logger=logger)
             dsdb_runner.add_network(net, location, voicevlan)
             dsdb_runner.commit_or_rollback("Could not add network to DSDB")

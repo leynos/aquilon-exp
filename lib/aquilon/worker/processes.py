@@ -27,7 +27,6 @@ import os
 import re
 import logging
 from contextlib import contextmanager
-import socket
 from subprocess import Popen, PIPE
 import sys
 from tempfile import mkdtemp
@@ -65,7 +64,7 @@ if DSDB_ENABLED:
         ms.version.addpkg("cryptography", "39.0.0")
         ms.version.addpkg("enum34", "1.1.10")
         ms.version.addpkg("dnspython", "2.3.0")
-        ms.version.addpkg('ms.dsdb', '6.1.7')
+        ms.version.addpkg('ms.dsdb', '6.1.8')
 
     import ms.dsdb.client
 
@@ -458,20 +457,7 @@ class DSDBRunner(metaclass=DSDBEnabledMeta):
     def __init__(self, logger=LOGGER):
         self.logger = logger
         self.dsdb_use_testdb = config.get("dsdb", "dsdb_use_testdb")
-
-        if self.dsdb_use_testdb is not None:
-            self.dsdb_broker_url = config.get("dsdb", "dsdb_broker_url")
-
-            if self.dsdb_broker_url is None:
-                self.dsdb_broker_url = "http://dsdb.webfarm-qa.ms.com"
-            elif re.search("localhost", self.dsdb_broker_url):
-                # This is a combination of 2 hacks.  First, we can't actually use localhost
-                # as a hostname for the ms.dsdb lib (Kerberos doesn't work), so we need an actual
-                # hostname.  We can't hardcode the current hostname in our config though, so we
-                # assume a DSDB broker is running on our current host on port 8088, the dev
-                # default.  This is only ever needed in dev.
-                hostname = socket.getfqdn()
-                self.dsdb_broker_url = f"http://{hostname}:8088"
+        self.dsdb_broker_url = config.get("dsdb", "dsdb_broker_url")
 
         self.actions = []
         self.rollback_list = []

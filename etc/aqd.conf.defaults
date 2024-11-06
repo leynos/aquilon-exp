@@ -207,7 +207,8 @@ manager_grn = grn:/ms/ei/aquilon/aqd
 
 [dsdb]
 enable = True
-dsdb_use_testdb = False
+dsdb_use_testdb =
+dsdb_broker_url =
 network_enable = False
 
 [ib-services]

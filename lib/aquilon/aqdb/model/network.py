@@ -405,8 +405,8 @@ class Network(Base):
         return q.all()
 
     @property
-    def send_to_dsdb(self):
-        """Should the data for this network be synchronised to DSDB?"""
+    def should_send_to_dsdb(self):
+        """Return a boolean value indicating if the data for this network should be synchronised to DSDB"""
 
         config = Config()
 
