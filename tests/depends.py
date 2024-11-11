@@ -33,3 +33,4 @@ else:
     ms.version.addpkg("httplib2", "0.22.0")
     ms.version.addpkg('pyspnego', '0.9.0-ms1')
     ms.version.addpkg("cryptography", "41.0.3")
+    ms.version.addpkg('protobuf', '4.23.1')

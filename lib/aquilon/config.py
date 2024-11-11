@@ -87,7 +87,7 @@ def amend_sys_path(config):
 
 
 # The ldap server and the group details have to be fetched from the 
-# broker config file
+# aq client config file
 def get_group_members():
     config = ConfigParser()
     conf_file = lookup_file_path("aq.conf")
