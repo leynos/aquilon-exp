@@ -1,4 +1,4 @@
-#!/ms/dist/fsf/PROJ/bash/4.3/bin/bash -x
+#!/bin/bash -x
 #
 # Copyright (C) 2018  Contributor
 #
@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o pipefail
+set -euo pipefail
 TESTDIR="$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)"
 BASEDIR="$(dirname "$(dirname "$TESTDIR")")"
 
@@ -46,3 +46,5 @@ if [ $(grep -c '^OK$' $TESTDIR/aqdtests.log 2>/dev/null) -ne 2 ]; then
     echo UNITTEST_FAILURE
     exit 1
 fi
+
+$TESTDIR/check_afs_dependencies.sh
