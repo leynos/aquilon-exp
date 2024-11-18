@@ -205,6 +205,10 @@ default_dynamic_range_class = vm
 # GRN for AQD
 manager_grn = grn:/ms/ei/aquilon/aqd
 
+max_switches = 3
+poll_switch_lock_dir = /var/quattor/poll_switch
+lock_expiration_minutes = 60
+
 [dsdb]
 enable = True
 dsdb_use_testdb =

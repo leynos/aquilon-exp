@@ -17,14 +17,15 @@
 """Contains the logic for `aq poll_switch`."""
 
 
-from aquilon.worker.broker import BrokerCommand  # pylint: disable=W0611
 from aquilon.worker.commands.poll_network_device import CommandPollNetworkDevice
 
 
 class CommandPollSwitch(CommandPollNetworkDevice):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def render(self, **arguments):
-        self.deprecated_command("Command poll_switch is deprecated. "
-                                "Please use poll_network_device instead.",
-                                **arguments)
+        self.deprecated_command(
+            "Command poll_switch is deprecated. " "Please use poll_network_device instead.", **arguments
+        )
         return CommandPollNetworkDevice.render(self, **arguments)

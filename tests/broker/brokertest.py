@@ -24,21 +24,17 @@ import re
 import sys
 import unittest
 from difflib import unified_diff
-from subprocess import Popen, PIPE
+from subprocess import PIPE, Popen
 from textwrap import dedent
 
 from aq_test_client import AqTestClient
+from aqdb.utils import copy_sqldb
 from aquilon.config import Config, lookup_file_path
-from lxml import etree
 from google.protobuf.message import DecodeError
-from aqddnsdomains_pb2 import DNSRecordData
+from lxml import etree
+from mock_ib_services import get_aq_dns_data, get_ib_dns, http_monitor
 
 from .networktest import DummyNetworks
-from mock_ib_services import http_monitor
-from mock_ib_services import get_ib_dns, get_aq_dns_data
-
-from aqdb.utils import copy_sqldb
-
 
 DSDB_EXPECT_SUCCESS_FILE = "expected_dsdb_cmds"
 DSDB_EXPECT_FAILURE_FILE = "fail_expected_dsdb_cmds"
@@ -55,8 +51,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-class TestBrokerCommand(unittest.TestCase):
 
+class TestBrokerCommand(unittest.TestCase):
     aq = None
     config = None
     scratchdir = None
@@ -90,11 +86,11 @@ class TestBrokerCommand(unittest.TestCase):
         cls.net = DummyNetworks(cls.config)
 
         cls.scratchdir = cls.config.get("unittest", "scratchdir")
-        LOGGER.debug("Scratch directory: {}".format(cls.scratchdir))
+        LOGGER.debug(f"Scratch directory: {cls.scratchdir}")
         # Required by external scripts such as fake_dsdb
         os.environ["AQTEST_SCRATCHDIR"] = cls.scratchdir
         cls.dsdb_coverage_dir = os.path.join(cls.scratchdir, "dsdb_coverage")
-        LOGGER.debug("DSDB coverage directory: {}".format(cls.dsdb_coverage_dir))
+        LOGGER.debug(f"DSDB coverage directory: {cls.dsdb_coverage_dir}")
 
         dirs = [cls.scratchdir, cls.dsdb_coverage_dir]
         for dir in dirs:
@@ -105,9 +101,9 @@ class TestBrokerCommand(unittest.TestCase):
         klist = cls.config.lookup_tool('klist')
         p = Popen([klist], stdout=PIPE, stderr=2)
         out, err = p.communicate()
-        m = re.search(r'^\s*(?:Default p|P)rincipal:\s*'
-                      r'(?P<principal>(?P<user>\S.*)@(?P<realm>.*?))$',
-                      out.decode(), re.M)
+        m = re.search(
+            r'^\s*(?:Default p|P)rincipal:\s*' r'(?P<principal>(?P<user>\S.*)@(?P<realm>.*?))$', out.decode(), re.M
+        )
         cls.principal = m.group('principal')
         cls.realm = m.group('realm')
 
@@ -116,8 +112,7 @@ class TestBrokerCommand(unittest.TestCase):
         if not cls.user or not cls.realm:
             raise ValueError("Failed to detect the Kerberos principal.")
 
-        cls.sandboxdir = os.path.join(cls.config.get("broker", "templatesdir"),
-                                      cls.user)
+        cls.sandboxdir = os.path.join(cls.config.get("broker", "templatesdir"), cls.user)
 
         cls.osversion = cls.config.get("archetype_aquilon", "default_osversion")
         cls.template_extension = cls.config.get("panc", "template_extension")
@@ -145,18 +140,29 @@ class TestBrokerCommand(unittest.TestCase):
         if protodir not in sys.path:
             sys.path.append(protodir)
         cls.protocols = {}
-        for m in ['aqdsystems_pb2', 'aqdnetworks_pb2', 'aqdservices_pb2',
-                  'aqddnsdomains_pb2', 'aqdlocations_pb2', 'aqdaudit_pb2',
-                  'aqdparamdefinitions_pb2', 'aqdparameters_pb2',
-                  'aqdentitlements_pb2']:
+        for m in [
+            'aqdsystems_pb2',
+            'aqdnetworks_pb2',
+            'aqdservices_pb2',
+            'aqddnsdomains_pb2',
+            'aqdlocations_pb2',
+            'aqdaudit_pb2',
+            'aqdparamdefinitions_pb2',
+            'aqdparameters_pb2',
+            'aqdentitlements_pb2',
+        ]:
             cls.protocols[m] = __import__(m)
 
     def setUp(self):
-        for name in [DSDB_EXPECT_SUCCESS_FILE, DSDB_EXPECT_FAILURE_FILE,
-                     DSDB_ISSUED_CMDS_FILE, DSDB_EXPECT_FAILURE_ERROR]:
+        for name in [
+            DSDB_EXPECT_SUCCESS_FILE,
+            DSDB_EXPECT_FAILURE_FILE,
+            DSDB_ISSUED_CMDS_FILE,
+            DSDB_EXPECT_FAILURE_ERROR,
+        ]:
             path = os.path.join(self.dsdb_coverage_dir, name)
             try:
-                LOGGER.debug("Deleting path {}".format(path))
+                LOGGER.debug(f"Deleting path {path}")
                 os.remove(path)
             except OSError:
                 pass
@@ -185,8 +191,7 @@ class TestBrokerCommand(unittest.TestCase):
         if args.get("sandbox", None):
             dir = os.path.join(self.sandboxdir, args.get("sandbox"))
         elif args.get("domain", None):
-            dir = os.path.join(self.config.get("broker", "domainsdir"),
-                               args.get("domain"))
+            dir = os.path.join(self.config.get("broker", "domainsdir"), args.get("domain"))
         else:
             self.assertTrue(0, "template_name() called without domain or sandbox")
         return os.path.join(dir, *template) + self.template_extension
@@ -197,17 +202,14 @@ class TestBrokerCommand(unittest.TestCase):
 
     def check_plenary_exists(self, *path):
         plenary = self.plenary_name(*path)
-        self.assertTrue(os.path.exists(plenary),
-                        "Plenary '%s' does not exist." % plenary)
+        self.assertTrue(os.path.exists(plenary), "Plenary '%s' does not exist." % plenary)
 
     def check_plenary_gone(self, *path, **kw):
         plenary = self.plenary_name(*path)
-        self.assertFalse(os.path.exists(plenary),
-                         "Plenary '%s' was not expected to exist." % plenary)
+        self.assertFalse(os.path.exists(plenary), "Plenary '%s' was not expected to exist." % plenary)
         if kw.get("directory_gone", False):
             dir = os.path.dirname(plenary)
-            self.assertFalse(os.path.exists(dir),
-                             "Plenary directory '%s' still exists" % dir)
+            self.assertFalse(os.path.exists(dir), "Plenary directory '%s' still exists" % dir)
 
     def check_plenary_contents(self, *path, **kwargs):
         # Passing lists as a keyword arg triggered a type error
@@ -234,12 +236,11 @@ class TestBrokerCommand(unittest.TestCase):
             self.matchclean(contents, clean, "read %s" % plenary)
 
     def find_template(self, *template, **args):
-        """ Figure out the extension of an existing template """
+        """Figure out the extension of an existing template"""
         if args.get("sandbox", None):
             dir = os.path.join(self.sandboxdir, args.get("sandbox"))
         elif args.get("domain", None):
-            dir = os.path.join(self.config.get("broker", "domainsdir"),
-                               args.get("domain"))
+            dir = os.path.join(self.config.get("broker", "domainsdir"), args.get("domain"))
         else:
             self.assertTrue(0, "find_template() called without domain or sandbox")
 
@@ -251,9 +252,7 @@ class TestBrokerCommand(unittest.TestCase):
         self.assertTrue(0, "template %s does not exist with any extension" % base)
 
     def build_profile_name(self, *template, **args):
-        base = os.path.join(self.config.get("broker", "cfgdir"),
-                            "domains", args.get("domain"),
-                            "profiles", *template)
+        base = os.path.join(self.config.get("broker", "cfgdir"), "domains", args.get("domain"), "profiles", *template)
         return base + self.template_extension
 
     def tail_file(self, file):
@@ -271,11 +270,13 @@ class TestBrokerCommand(unittest.TestCase):
 
     def successtest(self, command, **kwargs):
         (p, out, err) = self.aq.runcommand(command, **kwargs)
-        self.assertEqual(p.returncode, 0,
-                         "Non-zero return code for %s, "
-                         "STDOUT:\n@@@\n'%s'\n@@@\n"
-                         "STDERR:\n@@@\n'%s'\n@@@\n"
-                         % (command, out, err))
+        self.assertEqual(
+            p.returncode,
+            0,
+            "Non-zero return code for %s, "
+            "STDOUT:\n@@@\n'%s'\n@@@\n"
+            "STDERR:\n@@@\n'%s'\n@@@\n" % (command, out, err),
+        )
         return out, err
 
     def statustest(self, command, **kwargs):
@@ -285,17 +286,17 @@ class TestBrokerCommand(unittest.TestCase):
 
     def failuretest(self, command, returncode, **kwargs):
         (p, out, err) = self.aq.runcommand(command, **kwargs)
-        self.assertEqual(p.returncode, returncode,
-                         "Non-%s return code %s for %s, "
-                         "STDOUT:\n@@@\n'%s'\n@@@\n"
-                         "STDERR:\n@@@\n'%s'\n@@@\n"
-                         % (returncode, p.returncode, command, out, err))
+        self.assertEqual(
+            p.returncode,
+            returncode,
+            "Non-%s return code %s for %s, "
+            "STDOUT:\n@@@\n'%s'\n@@@\n"
+            "STDERR:\n@@@\n'%s'\n@@@\n" % (returncode, p.returncode, command, out, err),
+        )
         return (out, err)
 
     def assertEmptyStream(self, name, contents, command):
-        self.assertEqual(contents, "",
-                         "%s for %s was not empty:\n@@@\n'%s'\n@@@\n"
-                         % (name, command, contents))
+        self.assertEqual(contents, "", "%s for %s was not empty:\n@@@\n'%s'\n@@@\n" % (name, command, contents))
 
     def assertEmptyErr(self, contents, command):
         self.assertEmptyStream("STDERR", contents, command)
@@ -308,69 +309,61 @@ class TestBrokerCommand(unittest.TestCase):
         if exclude_err_str:
             err = err.replace(exclude_err_str, '')
         self.assertEmptyErr(err, command)
-        self.assertEqual(p.returncode, 0,
-                         "Non-zero return code for %s, "
-                         "STDOUT:\n@@@\n'%s'\n@@@\n"
-                         % (command, out))
+        self.assertEqual(p.returncode, 0, "Non-zero return code for %s, " "STDOUT:\n@@@\n'%s'\n@@@\n" % (command, out))
         return out
 
     def noouttest(self, command, exclude_err_str=None, **kwargs):
         out = self.commandtest(command, exclude_err_str, **kwargs)
-        self.assertEqual(out, "",
-                         "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n"
-                         % (command, out))
+        self.assertEqual(out, "", "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n" % (command, out))
 
     def ignoreoutputtest(self, command, **kwargs):
         (p, out, err) = self.aq.runcommand(command, **kwargs)
         # Ignore out/err unless we get a non-zero return code, then log it.
-        self.assertEqual(p.returncode, 0,
-                         "Non-zero return code for %s, "
-                         "STDOUT:\n@@@\n'%s'\n@@@\n"
-                         "STDERR:\n@@@\n'%s'\n@@@\n"
-                         % (command, out, err))
-        return
+        self.assertEqual(
+            p.returncode,
+            0,
+            "Non-zero return code for %s, "
+            "STDOUT:\n@@@\n'%s'\n@@@\n"
+            "STDERR:\n@@@\n'%s'\n@@@\n" % (command, out, err),
+        )
 
     # Right now, commands are not implemented consistently.  When that is
     # addressed, this unit test should be updated.
     def notfoundtest(self, command, **kwargs):
         (p, out, err) = self.aq.runcommand(command, **kwargs)
         if p.returncode == 0:
-            self.assertEqual(err, "",
-                             "STDERR for %s was not empty:\n@@@\n'%s'\n@@@\n" %
-                             (command, err))
-            self.assertEqual(out, "",
-                             "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n" %
-                             (command, out))
+            self.assertEqual(err, "", "STDERR for %s was not empty:\n@@@\n'%s'\n@@@\n" % (command, err))
+            self.assertEqual(out, "", "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n" % (command, out))
         else:
-            self.assertEqual(p.returncode, 4,
-                             "Return code for %s was %d instead of %d"
-                             "\nSTDOUT:\n@@@\n'%s'\n@@@"
-                             "\nSTDERR:\n@@@\n'%s'\n@@@" %
-                             (command, p.returncode, 4, out, err))
-            self.assertEqual(out, "",
-                             "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n" %
-                             (command, out))
-            self.assertTrue(err.find("Not Found") >= 0,
-                            "STDERR for %s did not include Not Found:"
-                            "\n@@@\n'%s'\n@@@\n" %
-                            (command, err))
+            self.assertEqual(
+                p.returncode,
+                4,
+                "Return code for %s was %d instead of %d"
+                "\nSTDOUT:\n@@@\n'%s'\n@@@"
+                "\nSTDERR:\n@@@\n'%s'\n@@@" % (command, p.returncode, 4, out, err),
+            )
+            self.assertEqual(out, "", "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n" % (command, out))
+            self.assertTrue(
+                err.find("Not Found") >= 0,
+                "STDERR for %s did not include Not Found:" "\n@@@\n'%s'\n@@@\n" % (command, err),
+            )
         return err
 
     def badrequesttest(self, command, ignoreout=False, expected_code=4, **kwargs):
         (p, out, err) = self.aq.runcommand(command, **kwargs)
-        self.assertEqual(p.returncode, expected_code,
-                         "Return code for %s was %d instead of %d"
-                         "\nSTDOUT:\n@@@\n'%s'\n@@@"
-                         "\nSTDERR:\n@@@\n'%s'\n@@@" %
-                         (command, p.returncode, expected_code, out, err))
-        self.assertTrue(err.find("Bad Request") >= 0,
-                        "STDERR for %s did not include Bad Request:"
-                        "\n@@@\n'%s'\n@@@\n" %
-                        (command, err))
+        self.assertEqual(
+            p.returncode,
+            expected_code,
+            "Return code for %s was %d instead of %d"
+            "\nSTDOUT:\n@@@\n'%s'\n@@@"
+            "\nSTDERR:\n@@@\n'%s'\n@@@" % (command, p.returncode, expected_code, out, err),
+        )
+        self.assertTrue(
+            err.find("Bad Request") >= 0,
+            "STDERR for %s did not include Bad Request:" "\n@@@\n'%s'\n@@@\n" % (command, err),
+        )
         if not ignoreout and "--debug" not in command:
-            self.assertEqual(out, "",
-                             "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n" %
-                             (command, out))
+            self.assertEqual(out, "", "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n" % (command, out))
         return err
 
     def dsdberrortest(self, command, **kwargs):
@@ -383,87 +376,88 @@ class TestBrokerCommand(unittest.TestCase):
 
     def unauthorizedtest(self, command, auth=False, msgcheck=True, **kwargs):
         (p, out, err) = self.aq.runcommand(command, auth=auth, **kwargs)
-        self.assertEqual(p.returncode, 4,
-                         "Return code for %s was %d instead of %d"
-                         "\nSTDOUT:\n@@@\n'%s'\n@@@"
-                         "\nSTDERR:\n@@@\n'%s'\n@@@" %
-                         (command, p.returncode, 4, out, err))
-        self.assertEqual(out, "",
-                         "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n" %
-                         (command, out))
-        self.assertTrue(err.find("Unauthorized:") >= 0,
-                        "STDERR for %s did not include Unauthorized:"
-                        "\n@@@\n'%s'\n@@@\n" %
-                        (command, err))
+        self.assertEqual(
+            p.returncode,
+            4,
+            "Return code for %s was %d instead of %d"
+            "\nSTDOUT:\n@@@\n'%s'\n@@@"
+            "\nSTDERR:\n@@@\n'%s'\n@@@" % (command, p.returncode, 4, out, err),
+        )
+        self.assertEqual(out, "", "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n" % (command, out))
+        self.assertTrue(
+            err.find("Unauthorized:") >= 0,
+            "STDERR for %s did not include Unauthorized:" "\n@@@\n'%s'\n@@@\n" % (command, err),
+        )
         if msgcheck:
-            self.searchoutput(err, r"Unauthorized (anonymous )?access attempt",
-                              command)
+            self.searchoutput(err, r"Unauthorized (anonymous )?access attempt", command)
         return err
 
     def internalerrortest(self, command, **kwargs):
         (p, out, err) = self.aq.runcommand(command, **kwargs)
-        self.assertEqual(p.returncode, 5,
-                         "Return code for %s was %d instead of %d"
-                         "\nSTDOUT:\n@@@\n'%s'\n@@@"
-                         "\nSTDERR:\n@@@\n'%s'\n@@@" %
-                         (command, p.returncode, 5, out, err))
-        self.assertEqual(out, "",
-                         "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n" %
-                         (command, out))
-        self.assertTrue(err.find("Internal Server Error") >= 0,
-                         "STDERR for %s did not start with "
-                         "Internal Server Error:\n@@@\n'%s'\n@@@\n" %
-                         (command, err))
+        self.assertEqual(
+            p.returncode,
+            5,
+            "Return code for %s was %d instead of %d"
+            "\nSTDOUT:\n@@@\n'%s'\n@@@"
+            "\nSTDERR:\n@@@\n'%s'\n@@@" % (command, p.returncode, 5, out, err),
+        )
+        self.assertEqual(out, "", "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n" % (command, out))
+        self.assertTrue(
+            err.find("Internal Server Error") >= 0,
+            "STDERR for %s did not start with " "Internal Server Error:\n@@@\n'%s'\n@@@\n" % (command, err),
+        )
         return err
 
     def unimplementederrortest(self, command, **kwargs):
         (p, out, err) = self.aq.runcommand(command, **kwargs)
-        self.assertEqual(p.returncode, 5,
-                         "Return code for %s was %d instead of %d"
-                         "\nSTDOUT:\n@@@\n'%s'\n@@@"
-                         "\nSTDERR:\n@@@\n'%s'\n@@@" %
-                         (command, p.returncode, 5, out, err))
-        self.assertEqual(out, "",
-                         "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n" %
-                         (command, out))
-        self.assertEqual(err.find("Not Implemented"), 0,
-                         "STDERR for %s did not start with "
-                         "Not Implemented:\n@@@\n'%s'\n@@@\n" %
-                         (command, err))
+        self.assertEqual(
+            p.returncode,
+            5,
+            "Return code for %s was %d instead of %d"
+            "\nSTDOUT:\n@@@\n'%s'\n@@@"
+            "\nSTDERR:\n@@@\n'%s'\n@@@" % (command, p.returncode, 5, out, err),
+        )
+        self.assertEqual(out, "", "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n" % (command, out))
+        self.assertEqual(
+            err.find("Not Implemented"),
+            0,
+            "STDERR for %s did not start with " "Not Implemented:\n@@@\n'%s'\n@@@\n" % (command, err),
+        )
         return err
 
     def deprecatednotimplementederrortest(self, command, **kwargs):
         (p, out, err) = self.aq.runcommand(command, **kwargs)
         err_splited = err.splitlines()
-        self.assertEqual(p.returncode, 5,
-                         "Return code for %s was %d instead of %d"
-                         "\nSTDOUT:\n@@@\n'%s'\n@@@"
-                         "\nSTDERR:\n@@@\n'%s'\n@@@" %
-                         (command, p.returncode, 5, out, err))
-        self.assertEqual(out, "",
-                         "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n" %
-                         (command, out))
+        self.assertEqual(
+            p.returncode,
+            5,
+            "Return code for %s was %d instead of %d"
+            "\nSTDOUT:\n@@@\n'%s'\n@@@"
+            "\nSTDERR:\n@@@\n'%s'\n@@@" % (command, p.returncode, 5, out, err),
+        )
+        self.assertEqual(out, "", "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n" % (command, out))
+
         self.assertTrue(
             f"Command {command[0]} is deprecated" in err_splited[0],
-            "'Command {} is deprecated' not in {}".format(command[0],
-                                                          err_splited[0]))
-        self.assertTrue(err_splited[1].startswith("Not Implemented"),
-                        "STDERR 2nd line for %s did not start with "
-                        "Not Implemented:\n@@@\n'%s'\n@@@\n" %
-                        (command, err))
+            f"'Command {command[0]} is deprecated' not in {err_splited[0]}",
+        )
+        self.assertTrue(
+            err_splited[1].startswith("Not Implemented"),
+            "STDERR 2nd line for %s did not start with " "Not Implemented:\n@@@\n'%s'\n@@@\n" % (command, err),
+        )
         return err
 
     # Test for conflicting or invalid aq client options.
     def badoptiontest(self, command, exit_code=2, **kwargs):
         (p, out, err) = self.aq.runcommand(command, **kwargs)
-        self.assertEqual(p.returncode, exit_code,
-                         "Return code for %s was %d instead of %d"
-                         "\nSTDOUT:\n@@@\n'%s'\n@@@"
-                         "\nSTDERR:\n@@@\n'%s'\n@@@" %
-                         (command, p.returncode, exit_code, out, err))
-        self.assertEqual(out, "",
-                         "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n" %
-                         (command, out))
+        self.assertEqual(
+            p.returncode,
+            exit_code,
+            "Return code for %s was %d instead of %d"
+            "\nSTDOUT:\n@@@\n'%s'\n@@@"
+            "\nSTDERR:\n@@@\n'%s'\n@@@" % (command, p.returncode, exit_code, out, err),
+        )
+        self.assertEqual(out, "", "STDOUT for %s was not empty:\n@@@\n'%s'\n@@@\n" % (command, out))
         return err
 
     def justificationmissingtest(self, command, **kwargs):
@@ -493,33 +487,23 @@ class TestBrokerCommand(unittest.TestCase):
         return self.badoptiontest(command, **kwargs)
 
     def matchoutput(self, out, s, command):
-        self.assertTrue(out.find(s) >= 0,
-                        "output for %s did not include '%s':\n@@@\n'%s'\n@@@\n" %
-                        (command, s, out))
+        self.assertTrue(out.find(s) >= 0, "output for %s did not include '%s':\n@@@\n'%s'\n@@@\n" % (command, s, out))
 
     def matchnooutput(self, out, s, command):
-        self.assertFalse(out.find(s) >= 0,
-                         "output for %s did not include '%s':\n@@@\n'%s'\n@@@\n" %
-                         (command, s, out))
+        self.assertFalse(out.find(s) >= 0, "output for %s did not include '%s':\n@@@\n'%s'\n@@@\n" % (command, s, out))
 
     def matchclean(self, out, s, command):
-        self.assertTrue(out.find(s) < 0,
-                        "output for %s includes '%s':\n@@@\n'%s'\n@@@\n" %
-                        (command, s, out))
+        self.assertTrue(out.find(s) < 0, "output for %s includes '%s':\n@@@\n'%s'\n@@@\n" % (command, s, out))
 
     def matchnoclean(self, out, s, command):
-        self.assertFalse(out.find(s) < 0,
-                         "output for %s includes '%s':\n@@@\n'%s'\n@@@\n" %
-                         (command, s, out))
+        self.assertFalse(out.find(s) < 0, "output for %s includes '%s':\n@@@\n'%s'\n@@@\n" % (command, s, out))
 
     def searchoutput(self, out, r, command):
         if isinstance(r, str):
             m = re.search(r, out, re.MULTILINE)
         else:
             m = re.search(r, out)
-        self.assertTrue(m,
-                        "output for %s did not match '%s':\n@@@\n'%s'\n@@@\n"
-                        % (command, r, out))
+        self.assertTrue(m, "output for %s did not match '%s':\n@@@\n'%s'\n@@@\n" % (command, r, out))
         return m
 
     def searchnooutput(self, out, r, command):
@@ -527,9 +511,7 @@ class TestBrokerCommand(unittest.TestCase):
             m = re.search(r, out, re.MULTILINE)
         else:
             m = re.search(r, out)
-        self.assertFalse(m,
-                         "output for %s did not match '%s':\n@@@\n'%s'\n@@@\n"
-                         % (command, r, out))
+        self.assertFalse(m, "output for %s did not match '%s':\n@@@\n'%s'\n@@@\n" % (command, r, out))
         return m
 
     def searchclean(self, out, r, command):
@@ -537,9 +519,7 @@ class TestBrokerCommand(unittest.TestCase):
             m = re.search(r, out, re.MULTILINE)
         else:
             m = re.search(r, out)
-        self.assertFalse(m,
-                         "output for %s matches '%s':\n@@@\n'%s'\n@@@\n" %
-                         (command, r, out))
+        self.assertFalse(m, "output for %s matches '%s':\n@@@\n'%s'\n@@@\n" % (command, r, out))
 
     def output_equals(self, out, s, command):
         # Check if the output is the string 's'. Leading and trailing
@@ -548,14 +528,10 @@ class TestBrokerCommand(unittest.TestCase):
         s = dedent(s).strip()
         # Calculate the diff only if we have to...
         if out != s:
-            diff = unified_diff(s.splitlines(),
-                                out.splitlines(),
-                                lineterm="",
-                                fromfile="Expected output",
-                                tofile="Command output")
-            self.assertEqual(out, s,
-                             "output for %s differs:\n%s"
-                             % (command, "\n".join(diff)))
+            diff = unified_diff(
+                s.splitlines(), out.splitlines(), lineterm="", fromfile="Expected output", tofile="Command output"
+            )
+            self.assertEqual(out, s, "output for %s differs:\n%s" % (command, "\n".join(diff)))
 
     def output_unordered_equals(self, out, sl, command, match_all=True):
         out = dedent(out).strip()
@@ -567,23 +543,23 @@ class TestBrokerCommand(unittest.TestCase):
             if not m:
                 unmatched.append(s)
             else:
-                out = out[:max(0, m.start() - 1)] + out[m.end():]
+                out = out[: max(0, m.start() - 1)] + out[m.end() :]
 
         # Clean-up leftover output
         out = out.strip()
 
-        self.assertFalse(unmatched,
-                         'Unmatched blocks for {}:\n{}{}'.format(
-                             command, '\n--\n'.join(unmatched),
-                             f'\n>>> Leftover output:\n{out}'
-                             if bool(out) else ''))
+        self.assertFalse(
+            unmatched,
+            'Unmatched blocks for {}:\n{}{}'.format(
+                command, '\n--\n'.join(unmatched), f'\n>>> Leftover output:\n{out}' if bool(out) else ''
+            ),
+        )
 
         if match_all:
             # Check that the output is now empty
-            self.assertFalse(bool(out),
-                             'Output for {} does not perfectly match the '
-                             'expected output; in excess:\n{}'.format(
-                                 command, out))
+            self.assertFalse(
+                bool(out), f'Output for {command} does not perfectly match the ' f'expected output; in excess:\n{out}'
+            )
 
     def output_unordered_clean(self, out, sl, command):
         out = dedent(out).strip()
@@ -593,33 +569,30 @@ class TestBrokerCommand(unittest.TestCase):
             m = re.search(f'^{re.escape(s)}$', out, re.MULTILINE)
             if m:
                 matched.append(s)
-                out = out[:max(0, m.start() - 1)] + out[m.end():]
+                out = out[: max(0, m.start() - 1)] + out[m.end() :]
 
         # Clean-up leftover output
         out = out.strip()
 
-        self.assertFalse(matched,
-                         'Matched blocks for {}:\n{}{}'.format(
-                             command, '\n--\n'.join(matched),
-                             f'\n>>> Leftover output:\n{out}'
-                             if bool(out) else ''))
+        self.assertFalse(
+            matched,
+            'Matched blocks for {}:\n{}{}'.format(
+                command, '\n--\n'.join(matched), f'\n>>> Leftover output:\n{out}' if bool(out) else ''
+            ),
+        )
 
     def parse_proto_msg(self, listclass, attr, msg, expect=None):
         protolist = listclass()
         protolist.ParseFromString(msg)
         received = len(getattr(protolist, attr))
         if expect is None:
-            self.assertTrue(received > 0,
-                            "No %s listed in %s protobuf message\n" %
-                            (attr, listclass))
-        else:
-            if expect >= 0:
-                self.assertEqual(received, expect, "%d %s expected, got %d\n" % (expect, attr, received))
+            self.assertTrue(received > 0, "No %s listed in %s protobuf message\n" % (attr, listclass))
+        elif expect >= 0:
+            self.assertEqual(received, expect, "%d %s expected, got %d\n" % (expect, attr, received))
         return getattr(protolist, attr)
 
     def protobuftest(self, command, expect=None, **kwargs):
-        self.assertTrue(isinstance(command, list),
-                        "protobuftest() needs the command passed as a list")
+        self.assertTrue(isinstance(command, list), "protobuftest() needs the command passed as a list")
 
         # Extract the command name
         cmd_name = command[0]
@@ -628,10 +601,8 @@ class TestBrokerCommand(unittest.TestCase):
                 break
             cmd_name += "_" + part
 
-        nodelist = self.input_xml.xpath("/commandline/command[@name='%s']" %
-                                        cmd_name)
-        self.assertTrue(nodelist and len(nodelist) == 1,
-                        "Command '%s' was not found in input.xml" % cmd_name)
+        nodelist = self.input_xml.xpath("/commandline/command[@name='%s']" % cmd_name)
+        self.assertTrue(nodelist and len(nodelist) == 1, "Command '%s' was not found in input.xml" % cmd_name)
         cmd_node = nodelist[0]
         msg_node = None
         for fmt_node in cmd_node.iter("format"):
@@ -640,8 +611,7 @@ class TestBrokerCommand(unittest.TestCase):
             msg_node = fmt_node.find("message_class")
             break
 
-        self.assertTrue(msg_node is not None,
-                        "Command %s does not have protobuf support" % cmd_name)
+        self.assertTrue(msg_node is not None, "Command %s does not have protobuf support" % cmd_name)
 
         module_name = msg_node.attrib["module"]
         cls_name = msg_node.attrib["name"]
@@ -678,9 +648,7 @@ class TestBrokerCommand(unittest.TestCase):
 
         # The 'aq' command need to run some external tools, so make sure those
         # will be found
-        for exe in [sys.executable,
-                    cls.config.lookup_tool("git"),
-                    cls.config.lookup_tool("knc")]:
+        for exe in [sys.executable, cls.config.lookup_tool("git"), cls.config.lookup_tool("knc")]:
             if exe[0] != "/":
                 continue
 
@@ -705,28 +673,29 @@ class TestBrokerCommand(unittest.TestCase):
         p = self.gitcommand_raw(command, **kwargs)
         # Ignore out/err unless we get a non-zero return code, then log it.
         (out, err) = p.communicate()
-        self.assertEqual(p.returncode, 0,
-                         "Non-zero return code for %s, "
-                         "STDOUT:\n@@@\n'%s'\n@@@\n"
-                         "STDERR:\n@@@\n'%s'\n@@@\n"
-                         % (command, out, err))
+        self.assertEqual(
+            p.returncode,
+            0,
+            "Non-zero return code for %s, "
+            "STDOUT:\n@@@\n'%s'\n@@@\n"
+            "STDERR:\n@@@\n'%s'\n@@@\n" % (command, out, err),
+        )
         return out.decode(), err.decode()
 
     def gitcommand_expectfailure(self, command, **kwargs):
         p = self.gitcommand_raw(command, **kwargs)
         # Ignore out/err unless we get a non-zero return code, then log it.
         (out, err) = p.communicate()
-        self.assertNotEqual(p.returncode, 0,
-                            "Zero return code for %s, "
-                            "STDOUT:\n@@@\n'%s'\n@@@\n"
-                            "STDERR:\n@@@\n'%s'\n@@@\n"
-                            % (command, out, err))
+        self.assertNotEqual(
+            p.returncode,
+            0,
+            "Zero return code for %s, " "STDOUT:\n@@@\n'%s'\n@@@\n" "STDERR:\n@@@\n'%s'\n@@@\n" % (command, out, err),
+        )
         return (out.decode(), err.decode())
 
     def check_git_merge_health(self, repo):
         command = "merge HEAD"
         self.gitcommand(command.split(" "), cwd=repo)
-        return
 
     def grepcommand(self, command, **kwargs):
         if isinstance(command, list):
@@ -741,9 +710,9 @@ class TestBrokerCommand(unittest.TestCase):
             return out.splitlines()
         if p.returncode == 1:
             return []
-        self.fail("Error return code for %s, "
-                  "STDOUT:\n@@@\n'%s'\n@@@\nSTDERR:\n@@@\n'%s'\n@@@\n"
-                  % (command, out, err))
+        self.fail(
+            "Error return code for %s, " "STDOUT:\n@@@\n'%s'\n@@@\nSTDERR:\n@@@\n'%s'\n@@@\n" % (command, out, err)
+        )
 
     def findcommand(self, command, **kwargs):
         if isinstance(command, list):
@@ -756,9 +725,9 @@ class TestBrokerCommand(unittest.TestCase):
         # Ignore out/err unless we get a non-zero return code, then log it.
         if p.returncode == 0:
             return out.splitlines()
-        self.fail("Error return code for %s, "
-                  "STDOUT:\n@@@\n'%s'\n@@@\nSTDERR:\n@@@\n'%s'\n@@@\n"
-                  % (command, out, err))
+        self.fail(
+            "Error return code for %s, " "STDOUT:\n@@@\n'%s'\n@@@\nSTDERR:\n@@@\n'%s'\n@@@\n" % (command, out, err)
+        )
 
     def writescratch(self, filename, contents, raw=False):
         scratchfile = os.path.join(self.scratchdir, filename)
@@ -800,20 +769,16 @@ class TestBrokerCommand(unittest.TestCase):
                 fp.write(errstr)
                 fp.write("\n")
 
-    def dsdb_expect_add(self, hostname, ip, interface=None, mac=None,
-                        primary=None, comments=None, fail=False):
-        command = ["add_host", "-host_name", hostname,
-                   "-ip_address", str(ip), "-status", "aq"]
+    def dsdb_expect_add(self, hostname, ip, interface=None, mac=None, primary=None, comments=None, fail=False):
+        command = ["add_host", "-host_name", hostname, "-ip_address", str(ip), "-status", "aq"]
         if interface:
-            command.extend(["-interface_name",
-                            str(interface).replace('/', '_')])
+            command.extend(["-interface_name", str(interface).replace('/', '_')])
         if mac:
             command.extend(["-ethernet_address", str(mac)])
         if primary:
             command.extend(["-primary_host_name", primary])
         else:
-            command.extend(["-manager_grn",
-                           self.config.get('broker', 'manager_grn')])
+            command.extend(["-manager_grn", self.config.get('broker', 'manager_grn')])
         if comments:
             command.extend(["-comments", comments])
 
@@ -822,8 +787,7 @@ class TestBrokerCommand(unittest.TestCase):
     def dsdb_expect_delete(self, ip, fail=False):
         self.dsdb_expect("delete_host -ip_address %s" % ip, fail=fail)
 
-    def dsdb_expect_update(self, fqdn, iface=None, ip=None, mac=None,
-                           comments=None, fail=False):
+    def dsdb_expect_update(self, fqdn, iface=None, ip=None, mac=None, comments=None, fail=False):
         command = ["update_aqd_host", "-host_name", fqdn]
         if iface:
             command.extend(["-interface_name", iface])
@@ -835,8 +799,7 @@ class TestBrokerCommand(unittest.TestCase):
             command.extend(["-comments", comments])
         self.dsdb_expect(" ".join(command), fail=fail)
 
-    def dsdb_expect_rename(self, fqdn, new_fqdn=None, iface=None,
-                           new_iface=None, fail=False):
+    def dsdb_expect_rename(self, fqdn, new_fqdn=None, iface=None, new_iface=None, fail=False):
         command = ["update_aqd_host", "-host_name", fqdn]
         if new_fqdn:
             command.extend(["-new_host_name", new_fqdn])
@@ -846,8 +809,7 @@ class TestBrokerCommand(unittest.TestCase):
             command.extend(["-new_interface_name", new_iface])
         self.dsdb_expect(" ".join(command), fail=fail)
 
-    def dsdb_expect_add_campus(self, campus, comments=None, fail=False,
-                               errstr=""):
+    def dsdb_expect_add_campus(self, campus, comments=None, fail=False, errstr=""):
         command = ["add_campus_aq", "-campus_name", campus]
         if comments:
             command.extend(["-comments", comments])
@@ -857,16 +819,12 @@ class TestBrokerCommand(unittest.TestCase):
         command = ["delete_campus_aq", "-campus", campus]
         self.dsdb_expect(" ".join(command), fail=fail, errstr=errstr)
 
-    def dsdb_expect_add_campus_building(self, campus, building, fail=False,
-                                        errstr=""):
-        command = ["add_campus_building_aq", "-campus_name", campus,
-                   "-building_name", building]
+    def dsdb_expect_add_campus_building(self, campus, building, fail=False, errstr=""):
+        command = ["add_campus_building_aq", "-campus_name", campus, "-building_name", building]
         self.dsdb_expect(" ".join(command), fail=fail, errstr=errstr)
 
-    def dsdb_expect_del_campus_building(self, campus, building, fail=False,
-                                        errstr=""):
-        command = ["delete_campus_building_aq", "-campus_name", campus,
-                   "-building_name", building]
+    def dsdb_expect_del_campus_building(self, campus, building, fail=False, errstr=""):
+        command = ["delete_campus_building_aq", "-campus_name", campus, "-building_name", building]
         self.dsdb_expect(" ".join(command), fail=fail, errstr=errstr)
 
     def dsdb_verify(self, empty=False):
@@ -885,8 +843,7 @@ class TestBrokerCommand(unittest.TestCase):
 
         # This is likely a logic error in the test
         if not expected and not empty:
-            self.fail("dsdb_verify() called when no DSDB commands were "
-                      "expected?!?")
+            self.fail("dsdb_verify() called when no DSDB commands were " "expected?!?")
 
         issued = {}
         try:
@@ -908,12 +865,9 @@ class TestBrokerCommand(unittest.TestCase):
             os.remove(full_path)
 
         if errors:
-            self.fail("The following expected DSDB commands were not called:"
-                      "\n@@@\n%s\n@@@\n" % "\n".join(errors))
+            self.fail("The following expected DSDB commands were not called:" "\n@@@\n%s\n@@@\n" % "\n".join(errors))
 
-    def verify_buildfiles(self, domain, object,
-                          want_exist=True, command='manage',
-                          xml=None, json=None):
+    def verify_buildfiles(self, domain, object, want_exist=True, command='manage', xml=None, json=None):
         buildfiles = []
         exemptfiles = []
 
@@ -940,22 +894,15 @@ class TestBrokerCommand(unittest.TestCase):
 
         for f in buildfiles:
             if want_exist:
-                self.assertTrue(os.path.exists(f),
-                                "Expecting %s to exist before running %s." %
-                                (f, command))
+                self.assertTrue(os.path.exists(f), "Expecting %s to exist before running %s." % (f, command))
             else:
-                self.assertFalse(os.path.exists(f),
-                                 "Not expecting %s to exist after running %s." %
-                                 (f, command))
+                self.assertFalse(os.path.exists(f), "Not expecting %s to exist after running %s." % (f, command))
 
         for f in exemptfiles:
-            self.assertFalse(os.path.exists(f),
-                             "Not expecting %s to exist after running %s." %
-                             (f, command))
+            self.assertFalse(os.path.exists(f), "Not expecting %s to exist after running %s." % (f, command))
 
     def demote_current_user(self, role="nobody"):
-        command = ["permission", "--role", role,
-                   "--principal", "{}@{}".format(self.user, self.realm)] + self.valid_just_sn
+        command = ["permission", "--role", role, "--principal", f"{self.user}@{self.realm}"] + self.valid_just_sn
         self.noouttest(command)
 
     def promote_current_user(self):
@@ -963,12 +910,9 @@ class TestBrokerCommand(unittest.TestCase):
         set_role = os.path.join(srcdir, "sbin", "aqdb_set_role.py")
         env = os.environ.copy()
         env['AQDCONF'] = self.config.baseconfig
-        p = Popen([set_role, '--role', 'aqd_admin'],
-                  stdout=PIPE, stderr=PIPE, env=env)
+        p = Popen([set_role, '--role', 'aqd_admin'], stdout=PIPE, stderr=PIPE, env=env)
         (out, err) = p.communicate()
-        self.assertEqual(p.returncode, 0,
-                         "Failed to restore admin privs '%s', '%s'." %
-                         (out, err))
+        self.assertEqual(p.returncode, 0, "Failed to restore admin privs '%s', '%s'." % (out, err))
 
     def assertTruedeprecation(self, depr_str, testfunc):
         with open(self.config.get("broker", "logfile")) as logfile:
@@ -986,9 +930,11 @@ class TestBrokerCommand(unittest.TestCase):
         if empty and http_monitor.invoked_without_expected_test:
             self.fail("ib-services invoked when no HTTP requests were expected")
         if http_monitor.expects:
-            self.fail("Expected HTTP requests to ib-services have not been consumed:\n{}".format(
-                "\n".join([str(payload) for payload in http_monitor.expects])
-            ))
+            self.fail(
+                "Expected HTTP requests to ib-services have not been consumed:\n{}".format(
+                    "\n".join([str(payload) for payload in http_monitor.expects])
+                )
+            )
 
     def ib_verify(self, empty=False):
         self.ib_verify_http_monitor(empty)
@@ -1002,14 +948,15 @@ class TestBrokerCommand(unittest.TestCase):
         aq_dns_sorted = sorted(list(aq_dns.records), key=lambda d: d.fqdn)
         ib_dns_sorted = sorted(list(ib_dns.dns_data.records), key=lambda d: d.fqdn)
 
-        if (str(aq_dns_sorted) != str(ib_dns_sorted)):
+        if str(aq_dns_sorted) != str(ib_dns_sorted):
             ib_dns_dump_file = "/tmp/ib_dns.txt"
             aq_dns_dump_file = "/tmp/aq_dns.txt"
-            f=open(ib_dns_dump_file, "w")
+            f = open(ib_dns_dump_file, "w")
             f.write(str(ib_dns_sorted))
             f.close()
-            f=open(aq_dns_dump_file, "w")
+            f = open(aq_dns_dump_file, "w")
             f.write(str(aq_dns_sorted))
             f.close()
-            self.fail("aq dns and ib dns are different.  For detailed differences, run:\n\tdiff -u {} {}\n".format(
-                aq_dns_dump_file, ib_dns_dump_file))
+            self.fail(
+                f"aq dns and ib dns are different.  For detailed differences, run:\n\tdiff -u {aq_dns_dump_file} {ib_dns_dump_file}\n"
+            )
