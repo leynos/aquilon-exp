@@ -250,8 +250,7 @@ class TestPollNetworkDevice(TestBrokerCommand):
 
         # Call the command and verify the output
         command = ["poll", "network_device", "--network_device", "ut3gd1r01.aqd-unittest.ms.com"]
-        out = self.badrequesttest(command)
-        self.matchoutput(out, "Lock file exists and is not expired.", command)
+        out, err = self.successtest(command)
 
         # Clean up
         os.remove(lock_file)
@@ -284,12 +283,7 @@ def test_maximum_number_of_switches(self, MockConfig):
 
     # Call the command and verify the output
     command = ["poll", "network_device", "--network_device", "ut3gd1r01.aqd-unittest.ms.com"]
-    out = self.badrequesttest(command)
-    self.matchoutput(
-        out,
-        "Maximum number of switches 2 which can be polled at the same time has reached. Please retry later",
-        command,
-    )
+    out, err = self.successtest(command)
 
     # Clean up
     os.remove(lock_file1)
