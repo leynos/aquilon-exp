@@ -125,7 +125,7 @@ class NetworkInfo(object):
     """
 
     def __init__(self, name, cidr, nettype, loc_type, loc_name, side="a",
-                 autocreate=False, comments=None, network_tags=None):
+                 autocreate=False, comments=None):
         if isinstance(cidr, (IPv4Network, IPv6Network)):
             self._network = cidr
         else:
@@ -138,7 +138,6 @@ class NetworkInfo(object):
         self.loc_name = loc_name
         self.side = side
         self.comments = comments
-        self.network_tags = network_tags
 
         if isinstance(autocreate, bool):
             self.autocreate = autocreate
