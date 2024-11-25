@@ -22,7 +22,6 @@ from aquilon.aqdb.model.network_tag import validate_network_tags
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.location import get_location
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
-from aquilon.worker.processes import DSDBRunner
 
 
 class CommandUpdateNetwork(BrokerCommand):
@@ -30,7 +29,7 @@ class CommandUpdateNetwork(BrokerCommand):
 
     def render(self, session, plenaries, dbuser, network, ip, network_environment,
                rename_to, type, side, network_compartment, comments, user,
-               justification, reason, logger, network_tag, voicevlan, **arguments):
+               justification, reason, logger, network_tag, **arguments):
 
         dbnet_env = NetworkEnvironment.get_unique_or_default(session,
                                                              network_environment)
@@ -71,11 +70,8 @@ class CommandUpdateNetwork(BrokerCommand):
         cm.validate()
 
         dblocation = get_location(session, **arguments)
-        dsdb_runner = DSDBRunner(logger=logger)
 
         for dbnetwork in q:
-            old_data = get_network_data(dbnetwork)
-
             if rename_to:
                 dbnetwork.name = rename_to
             if type:
@@ -96,52 +92,11 @@ class CommandUpdateNetwork(BrokerCommand):
                     for key in tags
                 ]
                 dbnetwork.network_tags[:] = network_tag_list
-            
-            if dbnetwork.should_send_to_dsdb:
-                new_data = get_network_data(dbnetwork, voicevlan)
-                dsdb_runner.update_network(old_data, new_data)
-
             plenaries.add(dbnetwork)
-
-        dsdb_runner.commit_or_rollback("Could not update network(s) in DSDB")
 
         session.flush()
         plenaries.write()
         return
-
-
-def get_network_data(network, voicevlan=None):
-    """Assemble a dict of the network data we need for a DSDB change.
-    We do this rather than using the dbnetwork object directly, as SQL Alchemy doesn't behave well
-    here, particularly when we are updating certain fields.  For simplicity, just copy every relevant
-    field as strings."""
-    location = network.location
-    sysloc = location.sysloc()
-
-    bucket = None
-    if location.location_type == "bunker":
-        bunker = location.name
-        bucket, _ = bunker.split(".", 1)
-
-    comments = str(network.comments)
-    ip = str(network.ip)
-
-    network_tags = [
-        NetworkTag(tag_name=tag.tag_name, tag_value=tag.tag_value)
-        for tag in network.network_tags
-    ]
-
-    return {
-        "bucket":       bucket,
-        "comments":     comments,
-        "ip":           ip,
-        "name":         network.name,
-        "network_tags": network_tags,
-        "side":         network.side,
-        "sysloc":       sysloc,
-        "type":         network.network_type,
-        "voicevlan":    voicevlan,
-    }
 
 
 def merged_network_tags(old_tag_list, new_tag_dict):
