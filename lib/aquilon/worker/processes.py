@@ -65,8 +65,9 @@ if DSDB_ENABLED:
         ms.version.addpkg("cryptography", "39.0.0")
         ms.version.addpkg("enum34", "1.1.10")
         ms.version.addpkg("dnspython", "2.3.0")
-        ms.version.addpkg('ms.dsdb', '6.1.7')
-
+#        ms.version.addpkg('ms.dsdb', '6.1.7')
+#        ms.version.addpkg('ms.dsdb', '6.0.39')
+    import ms.dsdb.depends
     import ms.dsdb.client
 
 # subprocess.Popen is not thread-safe in Python, so we need locking
@@ -438,7 +439,7 @@ class DSDBEnabledMeta(type):
         # create a new instance for this class
         # add in `dsdbclient` attribute
         instance = super().__call__(*args, **kwargs)
-
+        print(f"__call__ instance = {instance}, type(instance) = {type(instance)}")
         if DSDB_ENABLED:
             if instance.dsdb_use_testdb is not None:
                 os.environ['DSDB_USE_TESTDB'] = instance.dsdb_use_testdb
@@ -449,6 +450,8 @@ class DSDBEnabledMeta(type):
             use_timeout = config.lookup_tool_timeout('dsdb') or None
 
             instance.dsdbclient = ms.dsdb.client.DSDB(timeout=use_timeout)
+            print(f"DSDBEnabledMeta.__call__: instance.dsdbclient = {instance.dsdbclient}")
+            print(f"DSDBEnabledMeta.__call__: dir(instance.dsdbclient) = {dir(instance.dsdbclient)}")
         return instance
 
 
@@ -1210,13 +1213,19 @@ class DSDBRunner(metaclass=DSDBEnabledMeta):
         if new["comments"] != old["comments"]:
             new["comments"] = new["comments"] if new["comments"] is not None else ""
             command.extend(("--comments", new["comments"]))
+        if new["network_tags"] != old["network_tags"]:
+            command.extend((f"--network_tag={tag.tag_name}={tag.tag_value}" for tag in new["network_tags"]))
+
+            to_delete = []
+            for old_tag in old["network_tags"]:
+                if old_tag.tag_name not in (new.tag_name for new in new["network_tags"]):
+                    command.append((f"--network_tag={old_tag.tag_name}="))
                 
         if new["sysloc"] != old["sysloc"]:
             if new["sysloc"] is None:
                 raise ArgumentError("The location must be a building or enable the building to be identified")
 
             command.extend(("--location", new["sysloc"]))
-
         if new["bucket"] != old["bucket"]:
             new_bucket = new["bucket"] if new["bucket"] is not None else ""
             command.extend(("--bucket", new_bucket))
@@ -1226,58 +1235,42 @@ class DSDBRunner(metaclass=DSDBEnabledMeta):
             new_voicevlan = new["voicevlan"] if new["voicevlan"] is not None else "NONE"
             command.extend(("--voicevlan", new_voicevlan))
 
-        if new["network_tags"] != old["network_tags"]:
-            command.extend((f"--network_tag={tag.tag_name}={tag.tag_value}" for tag in new["network_tags"]))
-
-            to_delete = []
-            for old_tag in old["network_tags"]:
-                if old_tag.tag_name not in (new.tag_name for new in new["network_tags"]):
-                    command.append((f"--network_tag={old_tag.tag_name}="))
-
         rollback = [
             "update_network",
-            "--network_ip_address", str(old["ip"]),
+#            "--new_network_name", old_network.name,
+#            "--type", old_network.network_type,
+#            "--side", old_network.side,
+#            "--comments", old_comments if old_comments is not None else "",
+#            "--location", old_location["sysloc"],
+#            #TODO deal with bucket, voicevlan.  For latter, call DSDB to get value before original change?
+#            #TODO tags
         ]
 
-        if new["name"] != old["name"]:
-            rollback.extend(("--new_network_name", old["name"]))
-        if new["type"] != old["type"]:
-            rollback.extend(("--type", old["type"]))
-        if new["side"] != old["side"]:
-            rollback.extend(("--side", old["side"]))
-        if new["comments"] != old["comments"]:
-            old["comments"] = old["comments"] if old["comments"] is not None else ""
-            rollback.extend(("--comments", old["comments"]))
-        if new["sysloc"] != old["sysloc"]:
-            rollback.extend(("--location", old["sysloc"]))
+#        # FIXME, need tag_name, tag_value
+#        if old_network.network_tags:
+#            rollback.extend(("--network_tag={tag}={old_network.network_tags[tag]}" for tag in old_network.network_tags))
 
-        if new["bucket"] != old["bucket"]:
-            bucket = old["bucket"] if old["bucket"] is not None else ""
-            rollback.extend(("--bucket", bucket))
-
-        if new["voicevlan"] != old["voicevlan"]:
-            voicevlan = old["voicevlan"] if old["voicevlan"] is not None else "NONE"
-            rollback.extend(("--voicevlan", voicevlan))
-
-        if new["network_tags"] != old["network_tags"]:
-            rollback.extend((f"--network_tag={tag.tag_name}={tag.tag_value}" for tag in old["network_tags"]))
-
-            to_delete = []
-            for new_tag in new["network_tags"]:
-                if new_tag.tag_name not in (tag.tag_name for tag in old["network_tags"]):
-                    rollback.append((f"--network_tag={new_tag.tag_name}="))
-
-        print(f"Running dsdb {command}, rollback would be {rollback}")
+        print(f"Running dsdb {command}")
         self.add_action(command, rollback)
 
 
-    def get_voicevlan(self, ip):
+    def show_network(self, ip):
         dsdb_network = self.dsdbclient.show_network(ip_address=ip).results()
+        return dsdb_network 
 
-        if dsdb_network and len(dsdb_network) > 0:
-            return dsdb_network[0].get("voice_vlan")
+
+    def get_voicevlan(self, ip):
+        print(f"get_voicevlan: dir(self.dsdbclient) = {dir(self.dsdbclient)}")
+        dsdb_network = None
+        try:
+            dsdb_network = self.dsdbclient.show_network(ip_address=ip).results()
+        except AttributeError as e:
+            print(f"Got error '{e}'")
+        print(f"Got dsdb_network {dsdb_network}")
+        if dsdb_network:
+            return dsdb_network.get("voice_vlan") #FIXME
         else:
-            raise ArgumentError(f"A network with IP {ip} was not found in DSDB")
+            return 42
 
 
     def delete_network(self, network):
