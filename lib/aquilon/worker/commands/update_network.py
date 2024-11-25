@@ -96,7 +96,7 @@ class CommandUpdateNetwork(BrokerCommand):
                 ]
                 dbnetwork.network_tags[:] = network_tag_list
             
-            if dbnetwork.should_send_to_dsdb:
+            if dbnetwork.send_to_dsdb:
                 new_data = get_network_data(dbnetwork, voicevlan)
                 dsdb_runner = DSDBRunner(logger=logger)
                 dsdb_runner.update_network(old_data, new_data)

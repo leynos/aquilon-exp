@@ -61,7 +61,7 @@ class CommandDelNetwork(BrokerCommand):
                                 "cannot be deleted.".format(dbnetwork))
         
         dsdb_runner = None
-        if dbnetwork.should_send_to_dsdb:
+        if dbnetwork.send_to_dsdb:
             dsdb_runner = DSDBRunner(logger=logger)
             dsdb_runner.delete_network(dbnetwork)
             dsdb_runner.commit_or_rollback("Could not delete network in DSDB")
