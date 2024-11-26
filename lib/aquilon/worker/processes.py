@@ -439,8 +439,9 @@ class DSDBEnabledMeta(type):
         instance = super().__call__(*args, **kwargs)
 
         if DSDB_ENABLED:
-            if instance.dsdb_use_testdb is not None:
+            if instance.dsdb_use_testdb:
                 os.environ['DSDB_USE_TESTDB'] = instance.dsdb_use_testdb
+            if instance.dsdb_broker_url:
                 os.environ["DSDB_BROKER_URL"] = instance.dsdb_broker_url
 
             # a timeout of zero in the broker config means "no timeout";  for ms.dsdb,
@@ -456,6 +457,7 @@ class DSDBRunner(metaclass=DSDBEnabledMeta):
 
     def __init__(self, logger=LOGGER):
         self.logger = logger
+
         self.dsdb_use_testdb = config.get("dsdb", "dsdb_use_testdb")
         self.dsdb_broker_url = config.get("dsdb", "dsdb_broker_url")
 
@@ -560,7 +562,7 @@ class DSDBRunner(metaclass=DSDBEnabledMeta):
                              ignore_msg))
 
     def getenv(self):
-        if self.dsdb_use_testdb is not None:
+        if self.dsdb_use_testdb:
             return {"DSDB_USE_TESTDB": self.dsdb_use_testdb, "DSDB_BROKER_URL": self.dsdb_broker_url}
 
         return None
@@ -1149,7 +1151,11 @@ class DSDBRunner(metaclass=DSDBEnabledMeta):
         bucket = None
         if location.location_type == "bunker":
             bunker = location.name
-            bucket, _ = bunker.split(".", 1)
+
+            try:
+                bucket, _ = bunker.split(".", 1)
+            except ValueError as e:
+                raise ArgumentError(f"Bunker '{bunker}' is not in a valid format")
 
         command = [
             "add_network",

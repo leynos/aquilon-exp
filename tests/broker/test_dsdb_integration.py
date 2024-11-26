@@ -38,7 +38,6 @@ import ms.dsdb.client
 import os
 from pathlib import Path
 import pwd
-import socket
 import subprocess
 import sys
 
@@ -56,11 +55,12 @@ class TestDSDBIntegration(TestBrokerCommand):
         cls._checkout_dsdb_code()
         cls._setup_dsdb_broker()
 
-        hostname = socket.getfqdn()
-        os.environ["DSDB_BROKER_URL"] = f"http://{hostname}:8088"
         dsdb_plant = cls.config.get("dsdb", "dsdb_use_testdb")
 
-        cls.dsdb = ms.dsdb.client.DSDB(plant=dsdb_plant)
+        os.environ["DSDB_BROKER_URL"] = f"http://localhost:8088"
+        os.environ["DSDB_USE_TESTDB"] = dsdb_plant
+
+        cls.dsdb = ms.dsdb.client.DSDB()
 
     @classmethod
     def _checkout_dsdb_code(cls):
@@ -76,13 +76,13 @@ class TestDSDBIntegration(TestBrokerCommand):
         # track of where we started.
         cls.orig_pwd = os.getcwd()
 
-        # Do a git clone/fetch depending on whether we already have a local copy of the repo.
+        # Do a git clone/pull depending on whether we already have a local copy of the repo.
         repo = f"http://{cls.user}@stashblue.ms.com/atlassian-stash/scm/aurora_dsdb/dsdb.git"
         git_cmd = cls.config.get("tool_locations", "git")
 
         if path.joinpath("fcgi-bin").exists():
             os.chdir(cls.dsdb_dir)
-            cmd = [git_cmd, "fetch"]
+            cmd = [git_cmd, "pull"]
         else:
             cmd = [git_cmd, "clone", repo, cls.dsdb_dir]
 
@@ -233,7 +233,7 @@ class TestDSDBIntegration(TestBrokerCommand):
 
         success = True
         try:
-            actual = self.dsdb.show_network(ip_address=expected["IP_address"], show_network_tags=1).results()
+            actual = self.dsdb.show_network(ip_address=expected["IP_address"]).results()
             if isinstance(actual, list):
                 actual = actual[0]
             else:
