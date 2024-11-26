@@ -16,7 +16,6 @@
 # limitations under the License.
 """Contains the logic for `aq update network`."""
 
-from copy import copy, deepcopy
 from aquilon.exceptions_ import NotFoundException, ArgumentError
 from aquilon.aqdb.model import Network, NetworkEnvironment, NetworkCompartment, NetworkTag
 from aquilon.aqdb.model.network_tag import validate_network_tags
