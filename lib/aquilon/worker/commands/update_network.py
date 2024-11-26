@@ -71,6 +71,7 @@ class CommandUpdateNetwork(BrokerCommand):
         cm.validate()
 
         dblocation = get_location(session, **arguments)
+        dsdb_runner = DSDBRunner(logger=logger)
 
         for dbnetwork in q:
             old_data = get_network_data(dbnetwork)
@@ -98,7 +99,6 @@ class CommandUpdateNetwork(BrokerCommand):
             
             if dbnetwork.should_send_to_dsdb:
                 new_data = get_network_data(dbnetwork, voicevlan)
-                dsdb_runner = DSDBRunner(logger=logger)
                 dsdb_runner.update_network(old_data, new_data)
 
             plenaries.add(dbnetwork)
