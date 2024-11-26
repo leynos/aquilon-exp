@@ -99,7 +99,11 @@ class TestDSDBIntegration(TestBrokerCommand):
     def _setup_dsdb_broker(cls):
         dsdb_test_dir = Path(cls.dsdb_dir) / "tests"
         os.chdir(dsdb_test_dir)
-        cmd = ["./aq_dsdb_integration_setup", "--norecreate_schema"]
+
+        # Option --norecreate_schema could be used if you're certain the schema for NYT_DSDB_15
+        # is already correct.  That will save 10 minutes or more.
+        cmd = ["./aq_dsdb_integration_setup"]
+
         cls.diag(f"Running {cmd} in dir {dsdb_test_dir}")
         retval = subprocess.run(cmd)
 
@@ -127,16 +131,19 @@ class TestDSDBIntegration(TestBrokerCommand):
                 self.diag(f"dsdb {command['cmd']} {command['args']} threw exception {e}")
 
 
+    def _delete_dsdb_network(self, ip):
+        try:
+            self.dsdb.delete_network(network_ip_address=ip)
+        except Exception as e:
+            self.diag(f"dsdb delete_network --network_ip_address={ip} threw exception {e}")
+
+
     def test_000_initialise_dsdb_data(self):
         """Initialise DSDB location and other data"""
         for network in self.net:
-            #if (network.autocreate and network.is_ipv4) \
-            #    or network.name == "netuc_netmgmt_1a" or network.name == "netuc_netmgmt_1b":
-            if network.name in ("ut10_eth1", "netuc_netmgmt_1a", "netuc_netmgmt_1b"):
-                try:
-                    self.dsdb.delete_network(network_ip_address=network.ip)
-                except Exception as e:
-                    self.diag(f"dsdb delete_network --network_ip_address={network.ip} threw exception {e}")
+            if (network.autocreate and network.is_ipv4) \
+                or network.name == "netuc_netmgmt_1a" or network.name == "netuc_netmgmt_1b":
+                self._delete_dsdb_network(network.ip)
 
         commands = [
             { "cmd": "delete_bucket", "args": { "bucket": "bucket2" }},
@@ -257,8 +264,7 @@ class TestDSDBIntegration(TestBrokerCommand):
 
     def test_100_add_network(self):
         for network in self.net:
-            #if not network.autocreate or not network.is_ipv4:
-            if network.name not in ("ut10_eth1"):
+            if not network.autocreate or not network.is_ipv4:
                 continue
 
             command = [
@@ -272,13 +278,19 @@ class TestDSDBIntegration(TestBrokerCommand):
             ]
             if network.comments:
                 command.extend(["--comments", network.comments])
+
             tags = {
-                "dc_network_type": "clinfra", 
-                "is_dc_hosted_desktop": "0", 
-                "is_infra_services": "0", 
-                "plant_type": "lab", 
-                "stance": "amber", 
-                "standard_network_environment": "nonprod", 
+                "is_advertised_externally": "0",
+                "is_advertised_to_internet": "0",
+                "is_dc_hosted_desktop": "0",
+                "is_gels": "0",
+                "is_infra_services": "1",
+                "is_network_infra": "1",
+                "plant": "voice",
+                "plant_type": "lab",
+                "stance": "amber",
+                "standard_network_environment": "nonprod",
+                "virtual_ip": "none",
             }
             command.extend((f"--network_tag={tag}={tags[tag]}" for tag in tags))
             setattr(network, "network_tags", tags)
@@ -332,12 +344,17 @@ class TestDSDBIntegration(TestBrokerCommand):
         network = self.net["ut10_eth1"]
 
         tags = {
-            "dc_network_type": "clinfra", 
-            "is_dc_hosted_desktop": "0", 
-            "is_infra_services": "0", 
-            "plant_type": "lab", 
-            "stance": "amber", 
-            "standard_network_environment": "nonprod", 
+            "is_advertised_externally": "0",
+            "is_advertised_to_internet": "0",
+            "is_dc_hosted_desktop": "0",
+            "is_gels": "0",
+            "is_infra_services": "1",
+            "is_network_infra": "1",
+            "plant": "voice",
+            "plant_type": "lab",
+            "stance": "amber",
+            "standard_network_environment": "nonprod",
+            "virtual_ip": "none",
         }
         tests = [
             { "rename_to": "ut10_eth1_updated" },
@@ -347,8 +364,8 @@ class TestDSDBIntegration(TestBrokerCommand):
             { "side": "b" },
             { "comments": "Some new comments" },
             { "voicevlan": "0" },
-            { "network_tags": { "plant_type": "management", "virtual_ip": "vip" }},
-            { "network_tags": { "virtual_ip": "" }},
+            { "network_tags": { "plant_type": "management", "version": "2" }},
+            { "network_tags": { "version": "" }},
         ]
         expected = NetworkInfo(
             name=network.name,
@@ -397,11 +414,27 @@ class TestDSDBIntegration(TestBrokerCommand):
 
             self._check_dsdb_network_data(expected)
 
+
+    def test_201_update_network_invalid_voicevlan(self):
+        """Confirm that DSDB issues an error when we use an out of range voicevlan value, causing the aq command to fail"""
+        network = self.net["ut10_eth1"]
+
+        command = [
+            "update_network",
+            "--ip", str(network.ip),
+            "--voicevlan", "4096",
+        ]
+
+        self.diag(f"Running aq command {command}")
+
+        err = self.badrequesttest(command)
+        self.matchoutput(err, r"DSDB update_network Failed (-1): Invalid VOICEVLAN value", command)
+
+
     def test_300_del_network(self):
         for network in self.net:
-            #if (not network.autocreate or not network.is_ipv4) \
-            #    and network.name not in ("netuc_netmgmt_1a", "netuc_netmgmt_1b"):
-            if network.name not in ("ut10_eth1", "netuc_netmgmt_1a", "netuc_netmgmt_1b"):
+            if (not network.autocreate or not network.is_ipv4) \
+                and network.name not in ("netuc_netmgmt_1a", "netuc_netmgmt_1b"):
                 continue
 
             command = ["del_network", f"--ip={network.ip}"]
