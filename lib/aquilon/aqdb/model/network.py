@@ -135,7 +135,7 @@ class Network(Base):
 
     network_compartment = relationship(NetworkCompartment)
 
-    network_tags = relationship("NetworkTag", back_populates="network", cascade="all, delete-orphan")
+    network_tags = relationship("NetworkTag", back_populates="network", cascade="all, delete-orphan", lazy="joined")
 
     location = relationship(Location, innerjoin=True)
 
@@ -403,6 +403,18 @@ class Network(Base):
         q = session.query(ServiceAddress).join(ARecord).join(Network).\
             filter(Network.id == self.id)
         return q.all()
+
+    @property
+    def should_send_to_dsdb(self):
+        """Return a boolean value indicating if the data for this network should be synchronised to DSDB"""
+
+        config = Config()
+
+        dsdb_network_integration_enabled = config.getboolean("dsdb", "network_enable")
+        is_internal = self.network_environment.name == "internal"
+        is_ipv4 = isinstance(self.network, IPv4Network)
+
+        return dsdb_network_integration_enabled and is_internal and is_ipv4
 
 
 def get_net_id_from_ip(session, ip, network_environment=None):

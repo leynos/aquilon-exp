@@ -126,6 +126,8 @@ def get_options(epilog):
                              ' unit, integration)')
     parser.add_argument('-i', '--infoblox-integration', action='store_true', default=False, dest='infoblox_integration',
                         help='Run the infoblox integration tests.')
+    parser.add_argument("-d", "--dsdb-integration", action='store_true', default=False, dest='dsdb_integration',
+                        help='Run the DSDB integration tests')
     options = parser.parse_args()
     if options.resume and not options.start:
         raise argparse.ArgumentError('Option --resume requires --start.')
@@ -161,7 +163,8 @@ if opts.profile:
 
 # Do this import after the Config object has been instantiated, otherwise the test suites may use
 # a default value rather than opt.config.
-from broker.orderedsuite import BrokerIntegrationTestSuite, InfobloxIntegrationTestSuite
+from broker.orderedsuite import BrokerIntegrationTestSuite, InfobloxIntegrationTestSuite, \
+    DSDBIntegrationTestSuite
 
 hostname = config.get("unittest", "hostname")
 if hostname.find(".") < 0:
@@ -282,7 +285,8 @@ for dirname in dirs:
 scratchdir = config.get("unittest", "scratchdir")
 os.environ["AQTEST_SCRATCHDIR"] = scratchdir
 
-if not opts.resume and not opts.single and 'unit' not in opts.exclude and not opts.infoblox_integration:
+if not opts.resume and not opts.single and 'unit' not in opts.exclude and not opts.infoblox_integration and \
+    not opts.dsdb_integration:
     # Real unit tests are fast.  Run them before any other tests.
     if run_unit_tests(opts.interactive) != 0:
         sys.exit('Unit tests fail.  Aborting functional tests.')
@@ -299,6 +303,8 @@ if 'integration' not in opts.exclude:
         suite.addTest(DatabaseTestSuite())
     if opts.infoblox_integration:
         suite.addTest(InfobloxIntegrationTestSuite(opts.start, opts.resume, opts.single))
+    elif opts.dsdb_integration:
+        suite.addTest(DSDBIntegrationTestSuite(opts.start, opts.resume, opts.single))
     else:
         suite.addTest(BrokerIntegrationTestSuite(opts.start, opts.resume, opts.single))
     if opts.failfast:

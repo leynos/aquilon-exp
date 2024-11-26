@@ -23,6 +23,7 @@ from aquilon.aqdb.model.network import get_net_id_from_ip
 from aquilon.aqdb.model.network_tag import validate_network_tags
 from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.location import get_location
+from aquilon.worker.processes import DSDBRunner
 
 class CommandAddNetwork(BrokerCommand):
     requires_plenaries = True
@@ -31,7 +32,7 @@ class CommandAddNetwork(BrokerCommand):
 
     def render(self, session, logger, plenaries, dbuser, network, ip,
                network_environment, type, side, comments, netmask, prefixlen,
-               network_compartment, network_tag, **arguments):
+               network_compartment, network_tag, voicevlan, **arguments):
         if prefixlen:
             netmask = prefixlen
 
@@ -48,7 +49,6 @@ class CommandAddNetwork(BrokerCommand):
         except ValueError as e:
             raise ArgumentError("Failed to parse the network address: %s." % e)
 
-        location = get_location(session, **arguments)
         if not type:
             type = 'unknown'
         if not side:
@@ -57,6 +57,8 @@ class CommandAddNetwork(BrokerCommand):
         dbnet_env = NetworkEnvironment.get_unique_or_default(session,
                                                              network_environment)
         self.az.check_network_environment(dbuser, dbnet_env)
+
+        location = get_location(session, **arguments)
 
         if network_compartment:
             dbcomp = NetworkCompartment.get_unique(session,
@@ -93,6 +95,11 @@ class CommandAddNetwork(BrokerCommand):
 
         session.add(net)
         session.flush()
+
+        if net.should_send_to_dsdb:
+            dsdb_runner = DSDBRunner(logger=logger)
+            dsdb_runner.add_network(net, location, voicevlan)
+            dsdb_runner.commit_or_rollback("Could not add network to DSDB")
 
         plenaries.add(net)
         plenaries.write()
