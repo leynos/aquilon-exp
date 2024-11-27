@@ -458,8 +458,8 @@ class DSDBRunner(metaclass=DSDBEnabledMeta):
     def __init__(self, logger=LOGGER):
         self.logger = logger
 
-        self.dsdb_use_testdb = config.get("dsdb", "dsdb_use_testdb")
-        self.dsdb_broker_url = config.get("dsdb", "dsdb_broker_url")
+        self.dsdb_use_testdb = config.get("dsdb", "dsdb_use_testdb", fallback=None)
+        self.dsdb_broker_url = config.get("dsdb", "dsdb_broker_url", fallback=None)
 
         self.actions = []
         self.rollback_list = []

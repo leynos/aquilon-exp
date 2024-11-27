@@ -102,7 +102,8 @@ class TestDSDBIntegration(TestBrokerCommand):
 
         # Option --norecreate_schema could be used if you're certain the schema for NYT_DSDB_15
         # is already correct.  That will save 10 minutes or more.
-        cmd = ["./aq_dsdb_integration_setup"]
+        #cmd = ["./aq_dsdb_integration_setup"]
+        cmd = ["./aq_dsdb_integration_setup", "--norecreate_schema"]
 
         cls.diag(f"Running {cmd} in dir {dsdb_test_dir}")
         retval = subprocess.run(cmd)
