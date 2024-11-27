@@ -17,6 +17,7 @@
 # limitations under the License.
 """Module for testing the update interface command."""
 
+import re
 import unittest
 
 from mock_ib_services import ib_expect_add_a
@@ -31,6 +32,15 @@ if __name__ == "__main__":
 
 from .brokertest import TestBrokerCommand
 from .eventstest import EventsTestMixin
+
+AUDIT_RAW_RE = re.compile(r'^(?P<datetime>(?P<date>'
+                          r'(?P<year>\d{4,})-(?P<month>\d{2})-(?P<day>\d{2})) '
+                          r'(?P<hour>\d{2}):(?P<minute>\d{2}):'
+                          r'(?P<second>\d{2})(?P<offset>[-\+]\d{4})) '
+                          r'(?P<principal>(?P<user>(?!\b[a-z]\d+)\w+)'
+                          r'(?:@(?P<realm>[\w\.]+))?) '
+                          r'(?P<returncode>\d+|-) '
+                          r'aq (?P<command>\w+)\b(?P<args>.*)$', re.M)
 
 
 class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
@@ -164,9 +174,18 @@ class TestUpdateInterface(EventsTestMixin, TestBrokerCommand):
 
     def test_122_update_ut3c5n10_eth1(self):
         command = ["update", "interface", "--interface", "eth1",
-                   "--hostname", "unittest02.one-nyp.ms.com",
+                   "--hostname", " unittest02.one-nyp.ms.com",
                    "--default_route"]
         self.noouttest(command)
+
+    def test_122_update_ut3c5n10_eth1_audit(self):
+        """ test audit on hostname 'unittest02.one-nyp.ms.com' added with whitespace """
+        command = ["search_audit", "--keyword", "unittest02.one-nyp.ms.com"]
+        out = self.commandtest(command)
+        self.searchoutput(out, self.principal, command)
+        for line in out.splitlines():
+            m = self.searchoutput(line, AUDIT_RAW_RE, command)
+            self.searchoutput(m.group('args'), "--[a-z_]+='unittest02.one-nyp.ms.com'", line)
 
     def test_123_update_ut3c5n10_eth0(self):
         command = ["update", "interface", "--interface", "eth0",
