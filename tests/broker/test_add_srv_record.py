@@ -23,8 +23,12 @@ if __name__ == '__main__':
     from . import utils
     utils.import_depends()
 
+from broker.utils import MockHub
 from .brokertest import TestBrokerCommand
 from mock_ib_services import ib_expect_add_dns_srv_record
+from mock_ib_services import ib_expect_del_dns_srv_record
+from mock_ib_services import ib_expect_show_zonetype
+from mock_ib_services import ib_expect_update_dns_srv_record
 
 
 class TestAddSrvRecord(TestBrokerCommand):
@@ -420,6 +424,98 @@ class TestAddSrvRecord(TestBrokerCommand):
         self.matchoutput(out, "Port: 2364", command)
         self.matchoutput(out, "DNS Environment: internal", command)
 
+    def test_900_ib_srv_address_forward(self):
+        # Validates that when the dns domain of the SRV address is not delegated, the SRV record is synced with ib_services
+        mh = MockHub(self)
+
+        mh.add_dns_domain('test-infoblox.cc', restricted=False)
+        mh.add_network()
+        mh.add_address("address.test-infoblox.cc", "10.25.0.1")
+
+        command = ["add", "srv", "record", "--service", "collab",
+                   "--protocol", "tls", "--dns_domain", "test-infoblox.cc",
+                   "--target", "address.test-infoblox.cc",
+                   "--port", 8080, "--priority", 10, "--weight", 0] + self.valid_just_tcm
+
+        ib_expect_add_dns_srv_record("collab", "tls", "test-infoblox.cc", "address.test-infoblox.cc",
+                                     8080, 10, 0, justification=self.valid_justification)
+        self.noouttest(command)
+        self.ib_verify()
+
+
+        command = ["update", "srv", "record", "--service", "collab",
+                   "--protocol", "tls", "--dns_domain", "test-infoblox.cc",
+                   "--target", "address.test-infoblox.cc",
+                   "--port", 8081, "--priority", 20, "--weight", 10] + self.valid_just_tcm
+
+
+        old = {
+            "service": "collab",
+            "protocol": "tls",
+            "domain": "test-infoblox.cc",
+            "target": "address.test-infoblox.cc",
+            "weight": 0,
+            "priority": 10,
+            "port": 8080,
+        }
+        new = {
+            "service": "collab",
+            "protocol": "tls",
+            "domain": "test-infoblox.cc",
+            "target": "address.test-infoblox.cc",
+            "weight": 10,
+            "priority": 20,
+            "port": 8081,
+        }
+
+        ib_expect_update_dns_srv_record(old, new, justification=self.valid_justification)
+        self.noouttest(command)
+        self.ib_verify()
+
+        command = ["del", "srv", "record", "--service", "collab",
+                   "--protocol", "tls", "--dns_domain", "test-infoblox.cc",
+                   "--target", "address.test-infoblox.cc"] + self.valid_just_tcm
+
+        ib_expect_del_dns_srv_record("collab", "tls", "test-infoblox.cc", "address.test-infoblox.cc", 8081,
+                                     20, 10, justification=self.valid_justification)
+        self.noouttest(command)
+        self.ib_verify()
+
+        mh.delete()
+
+    def test_910_ib_srv_address_delegated(self):
+        # This test checks that when the SRV record domain is delegated, records are not synced to ib_services
+        mh = MockHub(self)
+
+        mh.add_dns_domain('test-infoblox.cc', restricted=False)
+        mh.add_network()
+        mh.add_address("address.test-infoblox.cc", "10.25.0.1")
+
+        command = ["add", "srv", "record", "--service", "collab",
+                   "--protocol", "tls", "--dns_domain", "test-infoblox.cc",
+                   "--target", "address.test-infoblox.cc",
+                   "--port", 8080, "--priority", 10, "--weight", 0] + self.valid_just_tcm
+        ib_expect_show_zonetype(fqdn='test-infoblox.cc', response_body='delegated')
+        self.ib_delegated_warning_test(command)
+        self.ib_verify()
+
+
+        command = ["update", "srv", "record", "--service", "collab",
+                   "--protocol", "tls", "--dns_domain", "test-infoblox.cc",
+                   "--target", "address.test-infoblox.cc",
+                   "--port", 8081, "--priority", 20, "--weight", 10] + self.valid_just_tcm
+        ib_expect_show_zonetype(fqdn='test-infoblox.cc', response_body='delegated')
+        self.ib_delegated_warning_test(command)
+        self.ib_verify()
+
+        command = ["del", "srv", "record", "--service", "collab",
+                   "--protocol", "tls", "--dns_domain", "test-infoblox.cc",
+                   "--target", "address.test-infoblox.cc"] + self.valid_just_tcm
+        ib_expect_show_zonetype(fqdn='test-infoblox.cc', response_body='delegated')
+        self.ib_delegated_warning_test(command)
+        self.ib_verify()
+
+        mh.delete()
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestAddSrvRecord)

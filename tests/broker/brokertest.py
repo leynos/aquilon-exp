@@ -374,6 +374,10 @@ class TestBrokerCommand(unittest.TestCase):
         err = self.internalerrortest(command, **kwargs)
         self.matchoutput(err, "Infoblox response error", command)
 
+    def ib_delegated_warning_test(self, command, **kwargs):
+        err = self.statustest(command, **kwargs)
+        self.matchoutput(err, "is delegated in Infoblox.  This record will not be synced to ib_services.", command)
+
     def unauthorizedtest(self, command, auth=False, msgcheck=True, **kwargs):
         (p, out, err) = self.aq.runcommand(command, auth=auth, **kwargs)
         self.assertEqual(
