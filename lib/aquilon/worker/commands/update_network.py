@@ -23,6 +23,7 @@ from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.location import get_location
 from aquilon.worker.dbwrappers.change_management import ChangeManagement
 from aquilon.worker.processes import DSDBRunner
+from ipaddress import IPv4Network
 
 
 class CommandUpdateNetwork(BrokerCommand):
@@ -97,7 +98,10 @@ class CommandUpdateNetwork(BrokerCommand):
                 ]
                 dbnetwork.network_tags[:] = network_tag_list
             
-            if dbnetwork.should_send_to_dsdb:
+            if self.config.getboolean("dsdb", "network_enable") and \
+                dbnetwork.network_environment.name == "internal" and \
+                isinstance(dbnetwork.network, IPv4Network):
+
                 new_data = get_network_data(dbnetwork, voicevlan)
                 dsdb_runner.update_network(old_data, new_data)
 

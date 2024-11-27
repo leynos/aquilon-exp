@@ -21,6 +21,7 @@ from aquilon.worker.broker import BrokerCommand
 from aquilon.worker.dbwrappers.dns import delete_dns_record
 from aquilon.worker.ib_services import IBServices
 from aquilon.worker.processes import DSDBRunner
+from ipaddress import IPv4Network
 
 
 class CommandDelNetwork(BrokerCommand):
@@ -61,7 +62,10 @@ class CommandDelNetwork(BrokerCommand):
                                 "cannot be deleted.".format(dbnetwork))
         
         dsdb_runner = None
-        if dbnetwork.should_send_to_dsdb:
+        if self.config.getboolean("dsdb", "network_enable") and \
+            dbnetwork.network_environment.name == "internal" and \
+            isinstance(dbnetwork.network, IPv4Network):
+
             dsdb_runner = DSDBRunner(logger=logger)
             dsdb_runner.delete_network(dbnetwork)
             dsdb_runner.commit_or_rollback("Could not delete network in DSDB")

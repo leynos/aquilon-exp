@@ -404,18 +404,6 @@ class Network(Base):
             filter(Network.id == self.id)
         return q.all()
 
-    @property
-    def should_send_to_dsdb(self):
-        """Return a boolean value indicating if the data for this network should be synchronised to DSDB"""
-
-        config = Config()
-
-        dsdb_network_integration_enabled = config.getboolean("dsdb", "network_enable")
-        is_internal = self.network_environment.name == "internal"
-        is_ipv4 = isinstance(self.network, IPv4Network)
-
-        return dsdb_network_integration_enabled and is_internal and is_ipv4
-
 
 def get_net_id_from_ip(session, ip, network_environment=None):
     """Requires a session, and will return the Network for a given ip."""

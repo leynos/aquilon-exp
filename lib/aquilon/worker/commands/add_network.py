@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ipaddress import ip_network
+from ipaddress import ip_network, IPv4Network
 
 from aquilon.exceptions_ import ArgumentError, NotFoundException
 from aquilon.aqdb.model import Network, NetworkEnvironment, NetworkCompartment, NetworkTag
@@ -96,7 +96,10 @@ class CommandAddNetwork(BrokerCommand):
         session.add(net)
         session.flush()
 
-        if net.should_send_to_dsdb:
+        if self.config.getboolean("dsdb", "network_enable") and \
+            net.network_environment.name == "internal" and \
+            isinstance(net.network, IPv4Network):
+
             dsdb_runner = DSDBRunner(logger=logger)
             dsdb_runner.add_network(net, location, voicevlan)
             dsdb_runner.commit_or_rollback("Could not add network to DSDB")
