@@ -211,7 +211,7 @@ lock_expiration_minutes = 60
 
 [dsdb]
 enable = True
-dsdb_use_testdb = False
+network_enable = False
 
 [ib-services]
 ca_chain = /etc/pki/ms/certs/ms-ca-chain.crt

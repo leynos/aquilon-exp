@@ -30,8 +30,9 @@ dsdb = /bin/echo
 mean = %(srcdir)s/tests/fakebin/fake_mean
 
 [dsdb]
-dsdb_use_testdb = True
+dsdb_use_testdb = test
 enable = True
+network_enable = True
 
 [ib-services]
 enable = True

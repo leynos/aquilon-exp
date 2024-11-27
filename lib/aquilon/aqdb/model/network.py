@@ -135,7 +135,7 @@ class Network(Base):
 
     network_compartment = relationship(NetworkCompartment)
 
-    network_tags = relationship("NetworkTag", back_populates="network", cascade="all, delete-orphan")
+    network_tags = relationship("NetworkTag", back_populates="network", cascade="all, delete-orphan", lazy="joined")
 
     location = relationship(Location, innerjoin=True)
 
