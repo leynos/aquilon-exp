@@ -153,8 +153,10 @@ def start_xtn(session, xtn_id, username, command, is_readonly, details, ignore):
     split on newlines.  Typically this is --list and/or --hostlist.
 
     """
-    # TODO: one day we should be able to handle non-ASCII characters..
+
     def sanitized_string(value):
+        if isinstance(value, str):
+            return value.strip()
         return str(value)
 
     # TODO: (maybe) use sql inserts instead of objects to avoid added overhead?
