@@ -98,7 +98,7 @@ class CommandPollNetworkDevice(BrokerCommand):
                 f"which can be polled at the same time "
                 f"has reached. Please retry later"
             )
-        if self.active_locks == 1:
+        if self.active_locks == 1 and os.path.exists(lock_file):
             raise RuntimeError(
                 f"Poll switch for switch {switch_name} is already running, "
                 f"only one poll switch can be run per switch."
@@ -113,8 +113,8 @@ class CommandPollNetworkDevice(BrokerCommand):
     def release_lock(self, fd, lock_name):
         fcntl.flock(fd, fcntl.LOCK_UN)
         os.close(fd)
-        if os.path.exists(self.lock_file):
-            os.remove(self.lock_file)
+        if os.path.exists(os.path.join(self.lock_dir, lock_name)):
+            os.remove(os.path.join(self.lock_dir, lock_name))
         self.active_locks -= 1
         logging.info(f"Lock released: {lock_name}")
 
@@ -136,10 +136,8 @@ class CommandPollNetworkDevice(BrokerCommand):
         try:
             out = run_command(args)
         except ProcessException as err:
-            if os.path.exists(self.lock_file):
-                os.remove(self.lock_file)
             raise ArgumentError(f"Failed to run network device discovery: {err}") from err
-        else:
+        finally:
             self.release_lock(fd, lock_name)
         macports = JSONDecoder().decode(out)
         validate_json(self.config, macports, "discovered_macs", "discovered MACs")
