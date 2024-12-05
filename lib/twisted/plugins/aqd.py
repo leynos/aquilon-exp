@@ -85,6 +85,28 @@ class AQDMaker(object):
     description = "Aquilon Daemon"
     options = Options
 
+
+    def _get_group_members(self, ldap_server, ldap_group):
+        from aquilon.ldap_utils import check_ldapgroup
+        # The group and its members will be loaded in the broker during startup
+        # and will skip actual invocation of edm checks. If the ldap server and
+        # the group details are not availble, skip_checkedm will be set to None,
+        # and edm checks will be not be skipped to ensure no failures.
+
+        # The config file cannot be passed as argument since defaults are
+        # initiated before calling Config class. This method will be used only
+        # for the production broker and not in non-prod.
+
+        try:
+            from ms.directory import LDAPConnection
+        except ModuleNotFoundError as e:
+            return None
+
+        log.msg(f"Retrieving list of users who can skip edm checks from ldap server {ldap_server}, ldap group {ldap_group}")
+        skip_checkedm = check_ldapgroup(ldap_server, ldap_group)
+        log.msg(f"List of users who can skip edm checks: {skip_checkedm}")
+        return skip_checkedm
+
     def makeService(self, options):
         # Start up coverage ASAP.
         coverage_dir = options["coveragedir"]
@@ -152,6 +174,17 @@ class AQDMaker(object):
 
         log.msg("Loading broker in mode %s" % config.get('broker', 'mode'))
         log.msg("Broker pid is %i" % os.getpid())
+
+        ldap_group = config.get("change_management", "ldap_group_skip_edm_check", fallback=None)
+        if ldap_group is not None:
+            ldap_server = config.get("change_management", "ldap_server", fallback=None)
+            if ldap_server is None:
+                raise Exception(f"Unable to retrieve members of ldap group {ldap_group} because no ldap server is configured.")
+            members = self._get_group_members(ldap_server, ldap_group)
+            if members is not None:
+                config.set("change_management", "skip_members", members)
+        else:
+            log.msg("ldap group not configured, list of users who can skip edm checks will not be retrieved")
 
         # Dynamic import means that we can parse config options before
         # importing aqdb.  This is a hack until aqdb can be imported without

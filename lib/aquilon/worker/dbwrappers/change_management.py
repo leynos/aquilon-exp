@@ -149,7 +149,7 @@ class ChangeManagement:
         self.username = dbuser.name
         self.role_name = dbuser.role.name
         # check if user is part of group for which change management can be skipped
-        self.is_user_exempt = self.username in self.config.get("database", "skip_members")
+        self.is_user_exempt = self.username in self.config.get("change_management", "skip_members", fallback="").split(",")
 
     def __eq__(self, other):
         return self.impacted_objects == other.impacted_objects
