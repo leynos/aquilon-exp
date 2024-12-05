@@ -678,7 +678,9 @@ def ib_expect_show_range(start_address, end_address, response_code=200, response
     http_monitor.expect(test_case)
 
 def ib_expect_add_dns_srv_record(service, protocol, dns_domain, target, port, priority, weight, ttl=None,
-                                 response_code=201, response_body="", justification=None, fail=False):
+                                 response_code=201, response_body="", zonetype_response_code=200, zonetype_response_body='"forward"',
+                                 justification=None, fail=False):
+    ib_expect_show_zonetype(fqdn=dns_domain, response_code=zonetype_response_code, response_body=zonetype_response_body)
     if fail:
         response_code = 400
     payload = {
@@ -704,7 +706,9 @@ def _generate_url_from_params(url, params):
     return urlunparse(parse)
 
 
-def ib_expect_update_dns_srv_record(old, new, response_code=204, response_body="", justification=None, fail=False):
+def ib_expect_update_dns_srv_record(old, new, response_code=204, response_body="", zonetype_response_code=200, zonetype_response_body='"forward"',
+                                    justification=None, fail=False):
+    ib_expect_show_zonetype(fqdn=old["domain"], response_code=zonetype_response_code, response_body=zonetype_response_body)
     if fail:
         response_code = 400
 
@@ -734,7 +738,13 @@ def ib_expect_update_dns_srv_record(old, new, response_code=204, response_body="
 
 
 def ib_expect_del_dns_srv_record(service, protocol, dns_domain, target, port=None, priority=None, weight=None,
-                                 response_code=204, response_body="", justification=None, fail=False):
+                                 response_code=204, response_body="", zonetype_response_code=200, zonetype_response_body='"forward"',
+                                 justification=None, fail=False):
+
+    ib_expect_show_zonetype(fqdn=dns_domain, response_code=zonetype_response_code, response_body=zonetype_response_body)
+    if zonetype_response_code > 300 or zonetype_response_body != '"forward"':
+        return
+
     if fail:
         response_code = 400
 

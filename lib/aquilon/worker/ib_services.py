@@ -652,6 +652,10 @@ class IBServices:
         assert(isinstance(weight, int))
         if ttl is not None:
             assert(isinstance(ttl, int))
+
+        if not self._warn_if_not_authoritative(dns_domain):
+            return
+
         url = "/dns/srv"
         payload = {
             "service":  service,
@@ -693,6 +697,10 @@ class IBServices:
         assert(isinstance(port, int))
         assert(isinstance(priority, int))
         assert(isinstance(weight, int))
+
+        if not self._warn_if_not_authoritative(dns_domain):
+            return
+
         options = {
             "service":  service,
             "protocol": protocol,
@@ -741,6 +749,11 @@ class IBServices:
                 raise ArgumentError("Required argument '{}' is missing".format(field))
             payload[field] = new[field] if field in new else old[field]
 
+        # Note that `aq update_dns_srv_record` does not support updating the dns_domain, hence we don't have to support
+        # cases such as the old domain being authoritative and the new one not being authoritative.
+        if not self._warn_if_not_authoritative(old["domain"]):
+            return
+
         if new.get("ttl", None):
             payload["ttl"] = new["ttl"]
         if payload.get("domain", None):
@@ -788,6 +801,14 @@ class IBServices:
         else:
             return fqdn
 
+    def _warn_if_not_authoritative(self, fqdn):
+        return_value = self._is_domain_authoritative(fqdn)
+
+        if not return_value and return_value is not None:
+            self.log.warning(f"DNS Domain {fqdn} is delegated in Infoblox.  This record will not be synced to ib_services.")
+
+        return return_value
+
     def _is_domain_authoritative(self, fqdn):
         domain = self._get_domain_from_fqdn(fqdn)
         response = self._show_zone_type(domain)
@@ -797,7 +818,7 @@ class IBServices:
 
         if response.status_code == 404:
             self.log.warning(f"Domain not found in Infoblox: {domain}")
-            return False
+            return
 
         response_text = response.text
 
