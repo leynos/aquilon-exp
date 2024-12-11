@@ -101,8 +101,53 @@ class TestNetworkTags(TestBrokerCommand):
         out = self.badrequesttest(command)
         self.matchoutput(out, "Network tag 'stance' value 'qwerty' doesn't match validation regex '(?:ring0|ring1|interior|amber|perimeter|lab)'.", command)
 
-    def test_110_add_network(self):
+    def test_105_add_network_duplicate_tag_value(self):
+        """Show that adding a network with a duplicate tag value fails, where the tag type is not 'list'"""
+        network = self.network2
+        command = self.default_add_network_command(network)
+        tags = self.tags.copy()
+        del tags["stance"]
+        command.extend(f"--network_tag={k}={tags[k]}" for k in tags)
+        command.extend(f"--network_tag=stance={val}" for val in ("ring0", "ring1"))
+        out = self.badrequesttest(command)
+        self.matchoutput(out, "Network tag 'stance' only accepts a single value.", command)
+
+    def test_110_add_network_custom_types_one_val(self):
+        """Add network with tags, including a tag of the 'list' type with one value"""
+        network = self.network2
+
+        # Now actually add the network.
+        command = self.default_add_network_command(network)
+        tags = self.tags.copy()
+        tags["custom_types"] = "qwerty"
+        command.extend(f"--network_tag={k}={tags[k]}" for k in tags)
+        self.noouttest(command)
+        self.validate_network_data(network, tags)
+
+    def test_111_add_network_custom_types_two_vals(self):
+        """Add network with tags, including a tag of the 'list' type with two values"""
+        network = self.network2
+
+        # Remove the network in order that we may recreate it with new parameters.
+        self.delete_network(network)
+        self.validate_network_non_existence(network)
+
+        # Now actually add the network.
+        command = self.default_add_network_command(network)
+        tags = self.tags.copy()
+        command.extend(f"--network_tag={k}={tags[k]}" for k in tags)
+        command.extend(f"--network_tag=custom_types={val}" for val in ("asdf", "sausages"))
+        self.noouttest(command)
+
+        tags["custom_types"] = ["asdf", "sausages"]
+        self.validate_network_data(network, tags)
+
+    def test_112_add_network(self):
         """Add 2 networks, one without tags and one with"""
+        # Remove network2 in order that we may recreate it with new parameters.
+        self.delete_network(self.network2)
+        self.validate_network_non_existence(self.network2)
+
         for network in (self.network1, self.network2):
             command = self.default_add_network_command(network)
             if network.get("add_tags"):
@@ -124,7 +169,7 @@ class TestNetworkTags(TestBrokerCommand):
         expected_tags["version"] = "2"
         self.validate_network_data(network, expected_tags)
 
-    def test_122_update_network(self):
+    def test_121_update_network(self):
         """Update a network to update an optional tag"""
         network = self.network2
         command = [
@@ -137,7 +182,7 @@ class TestNetworkTags(TestBrokerCommand):
         expected_tags["version"] = "1"
         self.validate_network_data(network, expected_tags)
 
-    def test_124_update_network(self):
+    def test_122_update_network(self):
         """Update a network to delete an optional tag"""
         network = self.network2
         command = [
@@ -148,7 +193,60 @@ class TestNetworkTags(TestBrokerCommand):
         self.noouttest(command)
         self.validate_network_data(network)
 
-    def test_126_update_network(self):
+    def test_123_update_network_add_list_tag_one_val(self):
+        """Update a network to add a tag of the 'list' type with one value"""
+        network = self.network2
+        command = [
+            f"update_network",
+            f"--network={network['name']}",
+            f"--network_tag=custom_types=42",
+        ]
+        self.noouttest(command)
+        expected_tags = self.tags.copy()
+        expected_tags["custom_types"] = "42"
+        self.validate_network_data(network, expected_tags)
+
+    def test_124_update_network_add_list_tag_two_vals(self):
+        """Update a network to add tags of the 'list' type with two values"""
+        network = self.network2
+        command = [
+            f"update_network",
+            f"--network={network['name']}",
+            f"--network_tag=custom_types=ham",
+            f"--network_tag=custom_types=brie",
+        ]
+        self.noouttest(command)
+        expected_tags = self.tags.copy()
+        expected_tags["custom_types"] = ["ham", "brie"]
+        self.validate_network_data(network, expected_tags)
+
+    def test_125_update_network_remove_list_tag(self):
+        """Update a network to remove a tag of the 'list' type"""
+        network = self.network2
+        command = [
+            f"update_network",
+            f"--network={network['name']}",
+            f"--network_tag=custom_types=",
+        ]
+        self.noouttest(command)
+        expected_tags = self.tags.copy()
+        self.validate_network_data(network, expected_tags)
+
+    def test_126_update_network_add_list_tag_two_vals(self):
+        """Update a network to add tags of the 'list' type with two values again"""
+        network = self.network2
+        command = [
+            f"update_network",
+            f"--network={network['name']}",
+            f"--network_tag=custom_types=chicken",
+            f"--network_tag=custom_types=bacon",
+        ]
+        self.noouttest(command)
+        expected_tags = self.tags.copy()
+        expected_tags["custom_types"] = ["chicken", "bacon"]
+        self.validate_network_data(network, expected_tags)
+
+    def test_127_update_network(self):
         """Update a network without tags to add a full set of required tags"""
         network = self.network1
         command = [
@@ -223,6 +321,8 @@ class TestNetworkTags(TestBrokerCommand):
   Side: a
   Network Type: unknown
   Network Tags:
+    custom_types: chicken
+    custom_types: bacon
     is_advertised_externally: 0
     is_advertised_to_internet: 0
     is_dc_hosted_desktop: 0
@@ -245,7 +345,7 @@ class TestNetworkTags(TestBrokerCommand):
             f"--format=csv",
         ]
         output = self.commandtest(command)
-        expected = 'test_net2,1.2.2.0,255.255.255.0,,us,a,unknown,,"is_advertised_externally=0,is_advertised_to_internet=0,is_dc_hosted_desktop=0,is_gels=0,is_infra_services=1,is_network_infra=1,plant=voice,plant_type=lab,stance=amber,standard_network_environment=nonprod,virtual_ip=none"'
+        expected = 'test_net2,1.2.2.0,255.255.255.0,,us,a,unknown,,"custom_types=chicken,custom_types=bacon,is_advertised_externally=0,is_advertised_to_internet=0,is_dc_hosted_desktop=0,is_gels=0,is_infra_services=1,is_network_infra=1,plant=voice,plant_type=lab,stance=amber,standard_network_environment=nonprod,virtual_ip=none"'
 
         self.matchoutput(output, expected, command)
 
@@ -317,6 +417,21 @@ class TestNetworkTags(TestBrokerCommand):
             f"--side={network['side']}",
         ]
         return command
+
+    def delete_network(self, network):
+        command = [
+            f"del_network",
+            f"--ip={network['ip']}",
+        ]
+        self.noouttest(command)
+
+    def validate_network_non_existence(self, network):
+        command = [
+            f"show_network",
+            f"--network={network['name']}",
+            f"--format=json",
+        ]
+        self.notfoundtest(command)
 
 
 if __name__ == '__main__':

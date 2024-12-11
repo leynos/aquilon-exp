@@ -1618,7 +1618,11 @@
             <option name="comments" type="string">Comments</option>
             <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
             <option name="reason" type="string">Human readable description of why the operation was performed</option>
-            <option name="network_tag" type="dict">Key/value metadata for network.  Multiple --network_tag arguments are required if any are specified</option>
+            <option name="network_tag" type="dict">Key/value metadata for network.  Multiple --network_tag arguments 
+            are required if any are specified.  A "foo" tag with value "bar" should be specified as --network_tag
+            foo=bar.
+            Tag keys should normally be specified no more than once, but certain tags, 
+            currently only the "custom_types" tag, can be specified more than once.</option>
             <option name="voicevlan" type="int">Integer 0 - 4095 used for voice VLANs (stored only in DSDB)</option>
         </optgroup>
         <transport method="put" path="network/%(ip)s"/>
@@ -1657,7 +1661,10 @@
             <option name="justification" type="string">Authorization tokens (e.g. TCM number or "emergency") to validate the request</option>
             <option name="reason" type="string">Human readable description of why the operation was performed</option>
             <option name="cm_check" type="flag">Do a dry-run, and report the objects in-scope for change-management.</option>
-            <option name="network_tag" type="dict">Key/value metadata for network.  Only tags to be changed need to be specified.  Specify a key with no value to delete an optional tag, or all existing keys, with no value, to delete all tags.</option>
+            <option name="network_tag" type="dict">Key/value metadata for network.  Only tags to be changed need to be specified: for example, to change a "foo" tag to have value "baz", specify --network_tag foo=baz.  Specify a key with no value to delete an optional tag, or all existing keys, with no value, to delete all tags.
+            Tag keys should normally be specified no more than once, but certain tags,
+            currently only the "custom_types" tag, can be specified more than once, and for such tags, you
+            must specify all the required values when changing any of them.</option>
             <option name="voicevlan" type="int">Integer 0 - 4095 used for voice VLANs (stored only in DSDB)</option>
         </optgroup>
         <optgroup fields="one">

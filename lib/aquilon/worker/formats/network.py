@@ -172,9 +172,24 @@ class NetworkFormatter(ObjectFormatter):
             "sysloc": network.location.sysloc(),
             "comments": network.comments,
         }
-        tags = network.network_tags
-        if tags:
-            details["network_tags"] = { tag.tag_name: tag.tag_value for tag in tags }
+        tag_list = network.network_tags
+        if tag_list:
+            tags = {}
+            
+            for tag in tag_list:
+                key = tag.tag_name
+                val = tag.tag_value
+
+                if tags.get(key):
+                    if isinstance(tags[key], list):
+                        tags[key].append(val)
+                    else:
+                        tags[key] = [tags[key], val]
+                else:
+                    tags[key] = val
+
+            details["network_tags"] = tags
+
         if indirect_attrs:
             details.update({"location": self.redirect_json(network.location, embedded=embedded, indirect_attrs=False)})
         return details

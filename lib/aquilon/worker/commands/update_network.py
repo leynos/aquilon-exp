@@ -92,10 +92,13 @@ class CommandUpdateNetwork(BrokerCommand):
             if self.config.getboolean("netseg", "enable") and network_tag:
                 tags = merged_network_tags(dbnetwork.network_tags, network_tag)
                 validate_network_tags(tags)
-                network_tag_list = [
-                    NetworkTag(tag_name=key, tag_value=tags[key])
-                    for key in tags
-                ]
+
+                network_tag_list = []
+                for key in sorted(tags):
+                    values = tags[key] if isinstance(tags[key], list) else [tags[key]]
+
+                    for value in values:
+                        network_tag_list.append(NetworkTag(tag_name=key, tag_value=value))
                 dbnetwork.network_tags[:] = network_tag_list
             
             if self.config.getboolean("dsdb", "network_enable") and \
@@ -149,8 +152,23 @@ def get_network_data(network, voicevlan=None):
 
 
 def merged_network_tags(old_tag_list, new_tag_dict):
-    tags = { t.tag_name: t.tag_value for t in old_tag_list } 
+    tags = {}
 
+    # Transform a list of NetworkTag objects into a dict where the keys represent
+    # tag names and values are scalars or lists as appropriate.
+    for tag in old_tag_list:
+        key = tag.tag_name
+        val = tag.tag_value
+
+        if tags.get(key):
+            if isinstance(tags[key], list):
+                tags[key].append(val)
+            else:
+                tags[key] = [tags[key], val]
+        else:
+            tags[key] = val
+    
+    # Now incorporate the changes specified by the user
     for tag in new_tag_dict:
         if new_tag_dict[tag] is not None and new_tag_dict[tag] != "":
             tags[tag] = new_tag_dict[tag]
@@ -158,3 +176,4 @@ def merged_network_tags(old_tag_list, new_tag_dict):
             del tags[tag]
 
     return tags
+        

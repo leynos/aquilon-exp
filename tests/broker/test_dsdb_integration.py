@@ -82,7 +82,7 @@ class TestDSDBIntegration(TestBrokerCommand):
 
         if path.joinpath("fcgi-bin").exists():
             os.chdir(cls.dsdb_dir)
-            cmd = [git_cmd, "pull"]
+            cmd = [git_cmd, "fetch"]
         else:
             cmd = [git_cmd, "clone", repo, cls.dsdb_dir]
 
@@ -102,8 +102,8 @@ class TestDSDBIntegration(TestBrokerCommand):
 
         # Option --norecreate_schema could be used if you're certain the schema for NYT_DSDB_15
         # is already correct.  That will save 10 minutes or more.
-        #cmd = ["./aq_dsdb_integration_setup"]
-        cmd = ["./aq_dsdb_integration_setup", "--norecreate_schema"]
+        #cmd = ["./aq_dsdb_integration_setup", "--norecreate_schema"]
+        cmd = ["./aq_dsdb_integration_setup"]
 
         cls.diag(f"Running {cmd} in dir {dsdb_test_dir}")
         retval = subprocess.run(cmd)
@@ -294,6 +294,8 @@ class TestDSDBIntegration(TestBrokerCommand):
                 "virtual_ip": "none",
             }
             command.extend((f"--network_tag={tag}={tags[tag]}" for tag in tags))
+            command.extend((f"--network_tag=custom_types={val}" for val in ("vanilla", "chocolate")))
+            tags["custom_types"] = ["vanilla", "chocolate"]
             setattr(network, "network_tags", tags)
 
             self.diag(f"Running aq command {command}")
@@ -356,6 +358,7 @@ class TestDSDBIntegration(TestBrokerCommand):
             "stance": "amber",
             "standard_network_environment": "nonprod",
             "virtual_ip": "none",
+            "custom_types": ["vanilla", "chocolate"],
         }
         tests = [
             { "rename_to": "ut10_eth1_updated" },
@@ -367,6 +370,8 @@ class TestDSDBIntegration(TestBrokerCommand):
             { "voicevlan": "0" },
             { "network_tags": { "plant_type": "management", "version": "2" }},
             { "network_tags": { "version": "" }},
+            { "network_tags": { "custom_types": ["chalk", "cheese"] }},
+            { "network_tags": { "custom_types": "" }},
         ]
         expected = NetworkInfo(
             name=network.name,
@@ -386,7 +391,7 @@ class TestDSDBIntegration(TestBrokerCommand):
             "building":  "loc_name",
             "bunker":    "loc_name",
         }
-            
+
         for test in tests:
             command = [
                 "update_network",
@@ -394,7 +399,11 @@ class TestDSDBIntegration(TestBrokerCommand):
             ]
             for arg in test:
                 if arg == "network_tags":
-                    command.extend((f"--network_tag={tag}={test[arg][tag]}" for tag in test[arg]))
+                    for tag in test[arg]:
+                        values = test[arg][tag] if isinstance(test[arg][tag], list) else [test[arg][tag]]
+                        for value in values:
+                            command.append(f"--network_tag={tag}={value}")
+                        
                     for tag in test[arg]:
                         if test[arg][tag] not in ("", None):
                             tags[tag] = test[arg][tag]

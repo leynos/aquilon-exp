@@ -69,7 +69,15 @@ def store_in_dict(option, opt_str, value, parser):
     item = getattr(parser.values, opt)
     if item == None:
         item = {}
-    item[key] = val
+
+    if key in item:
+        if isinstance(item[key], list):
+            item[key].append(val)
+        else:
+            item[key] = [item[key], val]
+    else:
+        item[key] = val
+    
     setattr(parser.values, opt, item)
 
 

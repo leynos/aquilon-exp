@@ -79,9 +79,20 @@ def validate_network_tags(network_tags):
     for tag in sorted(network_tags):
         if (valid_tags.get(tag)):
             regex = valid_tags[tag]["regex"]
-            if not re.fullmatch(regex, network_tags[tag]):
-                errors.append(f"Network tag '{tag}' value '{network_tags[tag]}' doesn't match " +
-                    f"validation regex '{regex}'.")
+            values = []
+            
+            if isinstance(network_tags[tag], list):
+                if valid_tags[tag]["type"] == "list":
+                    values = network_tags[tag]
+                else:
+                    errors.append(f"Network tag '{tag}' only accepts a single value.")
+            else:
+                values = [network_tags[tag]]
+
+            for value in values:
+                if not re.fullmatch(regex, value):
+                    errors.append(f"Network tag '{tag}' value '{value}' doesn't match " +
+                        f"validation regex '{regex}'.")
         else:
             errors.append(f"Network tag '{tag}' is not in the list of supported tags.")
 
@@ -103,30 +114,37 @@ def valid_network_tags():
             # requiring some delimiter (";" perhaps?), but that hasn't been confirmed, so allow
             # anything for the time being.  We don't have support for a true list at this point.
             "regex": r".+",
+            "type": "list",
         },
         "is_advertised_externally": {
             "required": True,
             "regex": boolean,
+            "type": "scalar",
         },
         "is_advertised_to_internet": {
             "required": True,
             "regex": boolean,
+            "type": "scalar",
         },
         "is_dc_hosted_desktop": {
             "required": True,
             "regex": boolean,
+            "type": "scalar",
         },
         "is_gels": {
             "required": True,
             "regex": boolean,
+            "type": "scalar",
         },
         "is_infra_services": {
             "required": True,
             "regex": boolean,
+            "type": "scalar",
         },
         "is_network_infra": {
             "required": True,
             "regex": boolean,
+            "type": "scalar",
         },
         "network_domain": {
             # The spec says this tag is "mandatory for FW-d zone only".  What that means, is not explained.
@@ -136,6 +154,7 @@ def valid_network_tags():
 
             # This regex includes mixed cases.  As AQD lower cases the value in the DB, allow any case.
             "regex": r"(?i)(?:NSO3-zone)",
+            "type": "scalar",
         },
         "network_zone": {
             # The spec says this tag is "mandatory for FW-d zone only".  What that means, is not explained.
@@ -145,34 +164,41 @@ def valid_network_tags():
 
             # This regex includes mixed cases.  As AQD lower cases the value in the DB, allow any case.
             "regex": r"(?i)(?:NSO3-zone)",
+            "type": "scalar",
         },
         "plant": {
             "required": True,
 
             # This regex includes mixed cases.  As AQD lower cases the value in the DB, allow any case.
             "regex": r"(?i)(?:NSO3-Plant|wan20|backup|voice|pod|vela|refinitive|dev|admin_domain|user_oob|user|et_vela|et_enterprise|et_dr|et_admin_domain|et_refinitive|et_voice|et_dev|et_old_wan_dci|core|serverfarm|wan)",
+            "type": "scalar",
         },
         "plant_type": {
             "required": True,
             "regex": r"(?:internet|marketdata|wan|electronic_trading|low_trust|cloud|gad|iot|lab|datacenter|management|user|multimedia)",
+            "type": "scalar",
         },
         "stance": {
             "required": True,
             "regex": r"(?:ring0|ring1|interior|amber|perimeter|lab)",
+            "type": "scalar",
         },
         "standard_network_environment": {
             "required": True,
             "regex": r"(?:prod|nonprod)",
+            "type": "scalar",
         },
         "version": {
             # The spec says this is mandatory, but if any tag is specified at all, that means version
             # 2 to us.  So we allow version to be specified, but ignore it.
             "required": False,
             "regex": r"(?:[\d\.]+)",
+            "type": "scalar",
         },
         "virtual_ip": {
             "required": True,
             "regex": r"(?:proxy_vip|vpn_pool|mainframe|vnet_vpc|private_cloud_vpn_infra|none)",
+            "type": "scalar",
         },
     }
 
