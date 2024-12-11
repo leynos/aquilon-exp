@@ -133,6 +133,16 @@ class TestMapGrn(VerifyGrnsMixin, PersonalityTestMixin, TestBrokerCommand):
               Used by GRN: grn:/ms/ei/aquilon/unittest [target: esp, inherited]
             """ % ip, command)
 
+    def test_135_show_unitesst00_grns_json(self):
+        ip = self.net["unknown0"].usable[2]
+        command = ["show_host", "--hostname", "unittest00.one-nyp.ms.com", "--grns", "--format", "json"]
+        out = self.commandtest(command)
+        results = json.loads(out)[0]
+        self.assertIsInstance(results, dict)
+        self.matchoutput(results["name"], "unittest00.one-nyp.ms.com", command)
+        self.matchoutput(results["effective_owner_grn"], "grn:/ms/ei/aquilon/unittest", command)
+        self.assertTrue(results["inherited"])
+
     def test_140_search(self):
         command = ["search", "host", "--grn", "grn:/ms/ei/aquilon/aqd"]
         out = self.commandtest(command)

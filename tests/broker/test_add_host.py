@@ -24,11 +24,9 @@ if __name__ == "__main__":
     from broker import utils
     utils.import_depends()
 
+from mock_ib_services import ib_expect_add_a, ib_expect_add_ptr, ib_expect_del_a, ib_expect_del_ptr
+
 from broker.brokertest import TestBrokerCommand
-from mock_ib_services import ib_expect_add_a
-from mock_ib_services import ib_expect_add_ptr
-from mock_ib_services import ib_expect_del_a
-from mock_ib_services import ib_expect_del_ptr
 
 from .machinetest import MachineTestMixin
 from .networktest import DummyIP
@@ -175,6 +173,7 @@ class TestAddHost(MachineTestMixin, TestBrokerCommand):
         results = json.loads(out)[0]
         self.assertIsInstance(results, dict)
         self.matchoutput(results["effective_owner_grn"], "grn:/ms/ei/aquilon/unittest", command)
+        self.assertTrue(results["inherited"])
         self.matchoutput(results["grns"][0]["grn"], "grn:/ms/ei/aquilon/unittest", command)
         self.matchoutput(results["grns"][0]["target"], "esp", command)
 
