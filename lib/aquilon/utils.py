@@ -229,15 +229,22 @@ def force_uuid(label, value):
 def force_dict(label, value):
     """Deserialise a dict type represented as 'key1=val1,key2=val2,...'"""
     items = value.split(",")
-    value = {}
+    data = {}
 
     for item in items:
         result = item.split("=", 1)
         k, v = result if len(result) == 2 else (result, None)
 
-        value[k] = v
+        if k in data:
+            if isinstance(data[k], list):
+                data[k].append(v)
+            else:
+                data[k] = [data[k], v]
+        else:
+            data[k] = v
 
-    return value
+    return data
+
 
 def first_of(iterable, function):
     """

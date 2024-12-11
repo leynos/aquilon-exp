@@ -39,10 +39,13 @@ class CommandAddNetwork(BrokerCommand):
         network_tag_list = []
         if self.config.getboolean("netseg", "enable") and network_tag:
             validate_network_tags(network_tag)
-            network_tag_list = [
-                NetworkTag(tag_name=key, tag_value=network_tag[key])
-                for key in network_tag
-            ]
+
+            network_tag_list = []
+            for key in sorted(network_tag):
+                values = network_tag[key] if isinstance(network_tag[key], list) else [network_tag[key]]
+
+                for value in values:
+                    network_tag_list.append(NetworkTag(tag_name=key, tag_value=value))
 
         try:
             address = ip_network("%s/%s" % (ip, netmask))

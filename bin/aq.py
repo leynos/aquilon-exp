@@ -388,8 +388,11 @@ if __name__ == "__main__":
             for i in v:
                 if isinstance(i, str) and not i.isascii():
                     not_ascii(k)
-                if isinstance(v.get(i), str) and not v.get(i).isascii():
-                    not_ascii(k)
+
+                values = v.get(i) if isinstance(v.get(i), list) else [v.get(i)]
+                for value in values:
+                    if isinstance(value, str) and not value.isascii():
+                        not_ascii(value)
 
     # if a client config file is specified on command line
     # that should overide  env or default options.
@@ -458,7 +461,13 @@ if __name__ == "__main__":
     for k, v in commandOptions.items():
         # Serialise values which are dicts
         if isinstance(v, dict):
-            newOptions[str(k)] = ",".join([f"{key}={val}" for key, val in v.items()])
+            keyval_args = []
+            for key, val in v.items():
+                if isinstance(val, list):
+                    keyval_args.extend([f"{key}={i}" for i in val])
+                else:
+                    keyval_args.append(f"{key}={val}")
+            newOptions[str(k)] = ",".join(keyval_args)
         else:
             newOptions[str(k)] = str(v)
     commandOptions = newOptions
