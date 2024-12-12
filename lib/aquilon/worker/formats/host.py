@@ -151,6 +151,9 @@ class HostFormatter(CompileableFormatter):
         details["build_status"] = host.status.name
         details["owner_eonid"] = host.effective_owner_grn.eon_id
         details["owner_grn"] = host.owner_grn.grn if host.owner_grn else None
+        details["effective_owner_grn"] = {"effective_owner_grn": host.effective_owner_grn.grn, "inherited": False}
+        if not host.owner_grn:
+            details["effective_owner_grn"]["inherited"] = True
         details["grns"] = []
         for grn_rec in host.grns:
             if grn_rec.grn.grn not in [x["grn"] for x in details["grns"]]:
@@ -242,7 +245,10 @@ class GrnHostListFormatter(ListFormatter):
             sub = {
                 "name": str(host.hardware_entity.primary_name),
                 "effective_owner_grn": host.effective_owner_grn.grn,
+                "inherited": False,
             }
+            if not host.owner_grn:
+                sub["inherited"] = True
             grns = []
             for grn_rec in host.personality_stage.grns:
                 grns.append({"grn": grn_rec.grn.grn, "target": grn_rec.target})
