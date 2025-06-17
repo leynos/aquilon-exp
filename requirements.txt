@@ -9,3 +9,5 @@ SQLAlchemy>=0.9.7
 Twisted>=12.2.0
 zope.interface
 PyYAML
+jsonschema
+pre-commit
