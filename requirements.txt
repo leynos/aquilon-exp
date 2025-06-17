@@ -1,0 +1,11 @@
+coverage
+python-dateutil
+ipaddress
+lxml
+Mako
+psycopg2-binary>=2.8.3
+six>=1.7.3
+SQLAlchemy>=0.9.7
+Twisted>=12.2.0
+zope.interface
+PyYAML
