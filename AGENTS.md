@@ -8,6 +8,7 @@
 - Use `uv pip install --system -e .` to install dependencies defined in
   `setup.py`
 - Tool configurations live in `pyproject.toml`
+- Requires **Python 3.10** or **3.11** (``>=3.10,<3.12``)
 
 ## Protocol buffer modules
 Aquilon's Python bindings for protocol messages live in the
