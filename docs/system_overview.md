@@ -25,6 +25,9 @@ all data centers while a single database and broker operate centrally.
   in Git sandboxes.
 - Notification services are implemented with a separate daemon
   (`aq_notifyd.py`).
+- Protocol buffer message definitions live in the
+  [aquilon-protocols](https://github.com/quattor/aquilon-protocols)
+  repository.
 
 ## Domain Concepts
 
