@@ -5,8 +5,9 @@
 - DocBook-based manuals are in `doc/`
 
 ## Package management
-- Use `uv pip install --system -e .` to install dependencies defined in
-  `setup.py`
+- Install core dependencies from `requirements.txt` using
+  `uv pip install --system -r requirements.txt`
+- Then install the project itself with `uv pip install --system -e .`
 - Tool configurations live in `pyproject.toml`
 - Requires **Python 3.10** or **3.11** (``>=3.10,<3.12``)
 

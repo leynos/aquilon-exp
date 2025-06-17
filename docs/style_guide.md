@@ -4,7 +4,8 @@ This guide summarizes conventions for Python code in this repository.
 
 ## Supported Python Versions
 
-- Python 3.10 is the primary target. New code should be compatible with Python 3.10.
+- Python 3.10 and 3.11 are supported. New code should remain compatible with Python 3.10 while
+  testing under Python 3.11 as well.
 
 ## Tooling
 
