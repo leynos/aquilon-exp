@@ -12,3 +12,5 @@ PyYAML
 jsonschema
 pre-commit
 google
+coloredlogs
+protobuf
