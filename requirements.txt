@@ -1,7 +1,7 @@
 coverage
 python-dateutil
 ipaddress
-lxml>=4.9.2
+lxml>=4.9.2,<5.0.0
 Mako
 psycopg2-binary>=2.8.3
 six>=1.7.3
