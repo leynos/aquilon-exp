@@ -12,8 +12,7 @@ Ensure the machine's fully qualified hostname resolves locally before running
 the command:
 
 ```bash
-grep -q $(hostname) /etc/hosts || \
-    echo "127.0.0.1 $(hostname).local" >> /etc/hosts
-```
+grep -qE "$(hostname)(\.local)?$" /etc/hosts || \
+    echo "127.0.0.1 $(hostname) $(hostname).local" >> /etc/hosts
 
 The HTML and XML reports will be written under `logs/coverage` by default.
