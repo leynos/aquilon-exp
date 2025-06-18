@@ -8,11 +8,19 @@ Run the tests with coverage enabled:
 python tests/runtests.py --config=tests/unittest.conf --no-interactive --coverage
 ```
 
+If the broker should use a specific local hostname, pass it on the command line:
+
+```bash
+python tests/runtests.py --config=tests/unittest.conf --no-interactive \
+    --coverage --local-hostname $(hostname).local
+```
+
 Ensure the machine's fully qualified hostname resolves locally before running
 the command:
 
 ```bash
 grep -qE "$(hostname)(\.local)?$" /etc/hosts || \
     echo "127.0.0.1 $(hostname) $(hostname).local" >> /etc/hosts
+```
 
 The HTML and XML reports will be written under `logs/coverage` by default.
