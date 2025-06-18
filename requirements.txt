@@ -1,7 +1,7 @@
 coverage
 python-dateutil
 ipaddress
-lxml
+lxml>=4.9.2
 Mako
 psycopg2-binary>=2.8.3
 six>=1.7.3
@@ -16,3 +16,4 @@ coloredlogs
 protobuf
 requests
 requests_cache
+orjson
