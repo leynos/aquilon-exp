@@ -39,9 +39,9 @@ from verbose_text_test import VerboseTextTestRunner
 
 default_configfile = os.path.join(BINDIR, "unittest.conf")
 
-epilog = """
+epilog = f"""
     Note that:
-    %s
+    {default_configfile}
     will be used by default, and setting the AQDCONF environment variable
     will *not* work to pass in a config.
 
@@ -49,7 +49,7 @@ epilog = """
     without breaking the in-progress tests.  It copies all the source
     code into the directory given in the mirrordir option of the unittest
     section of the config and then re-launches the tests from there.
-    """ % default_configfile
+    """
 
 
 def setup_logger(level = logging.INFO):
@@ -78,55 +78,91 @@ def run_unit_tests(interactive):
 
 
 def get_options(epilog):
-    parser = argparse.ArgumentParser(description='Run the broker test suite.',
-                                     epilog=epilog)
-    parser.add_argument('-v', '--verbose', action='count', dest='verbose',
-                        default=1,
-                        help='list each test name as it runs')
-    parser.add_argument('-q', '--quiet', dest='verbose', action='store_const',
-                        const=0,
-                        help='do not print the module names during tests')
-    parser.add_argument('-c', '--config', dest='config',
-                        default=default_configfile,
-                        help='supply an alternate config file')
-    parser.add_argument('--no-interactive', dest='interactive',
-                        action='store_false', default=True,
-                        help='automatically send yes to queries')
-    parser.add_argument('--coverage', action='store_true',
-                        help='generate code coverage metrics for the'
-                             ' broker in logs/coverage')
-    parser.add_argument('--profile', action='store_true',
-                        help='generate profiling information for the broker '
-                             'in logs/aqd.profile (currently broken)')
-    parser.add_argument('--local-hostname', dest='local_hostname',
-                        help='override hostname used for tests without '
-                             'editing unittest.conf')
-    parser.add_argument('-m', '--mirror', action='store_true',
-                        help='copy source to an alternate location and '
-                             're-exec')
-    parser.add_argument('-s', '--start', action='store',
-                        help='Pass TestCase.testmethod to select the test '
-                             'which should be run first. If this option is '
-                             'not used, the first test will be used by '
-                             'default.')
-    parser.add_argument('-1', '--single', action='store_true',
-                        help='Execute a single test (either the first '
-                             'one or the one given with --start).')
-    parser.add_argument('-r', '--resume', action='store_true',
-                        help='Resume tests from the one given with '
-                             '--start, and using the state preserved with '
-                             '--failfast.')
-    parser.add_argument('-f', '--failfast', action='store_true',
-                        help='Abort functional tests on first failure.')
-    parser.add_argument('-x', '--exclude', action='append',
-                        choices=('unit', 'integration'),
-                        type=str.lower, default=[],
-                        help='Do not run any tests of the given type (choices:'
-                             ' unit, integration)')
-    parser.add_argument('-i', '--infoblox-integration', action='store_true', default=False, dest='infoblox_integration',
-                        help='Run the infoblox integration tests.')
-    parser.add_argument("-d", "--dsdb-integration", action='store_true', default=False, dest='dsdb_integration',
-                        help='Run the DSDB integration tests')
+    parser = argparse.ArgumentParser(description='Run the broker test suite.', epilog=epilog)
+    parser.add_argument(
+        '-v', '--verbose', action='count', dest='verbose', default=1, help='list each test name as it runs'
+    )
+    parser.add_argument(
+        '-q',
+        '--quiet',
+        dest='verbose',
+        action='store_const',
+        const=0,
+        help='do not print the module names during tests',
+    )
+    parser.add_argument(
+        '-c', '--config', dest='config', default=default_configfile, help='supply an alternate config file'
+    )
+    parser.add_argument(
+        '--no-interactive',
+        dest='interactive',
+        action='store_false',
+        default=True,
+        help='automatically send yes to queries',
+    )
+    parser.add_argument(
+        '--coverage', action='store_true', help='generate code coverage metrics for the' ' broker in logs/coverage'
+    )
+    parser.add_argument(
+        '--profile',
+        action='store_true',
+        help='generate profiling information for the broker ' 'in logs/aqd.profile (currently broken)',
+    )
+    parser.add_argument(
+        '--local-hostname',
+        dest='local_hostname',
+        help='override hostname used for tests without ' 'editing unittest.conf',
+    )
+    parser.add_argument(
+        '-m', '--mirror', action='store_true', help='copy source to an alternate location and ' 're-exec'
+    )
+    parser.add_argument(
+        '-s',
+        '--start',
+        action='store',
+        help='Pass TestCase.testmethod to select the test '
+        'which should be run first. If this option is '
+        'not used, the first test will be used by '
+        'default.',
+    )
+    parser.add_argument(
+        '-1',
+        '--single',
+        action='store_true',
+        help='Execute a single test (either the first ' 'one or the one given with --start).',
+    )
+    parser.add_argument(
+        '-r',
+        '--resume',
+        action='store_true',
+        help='Resume tests from the one given with ' '--start, and using the state preserved with ' '--failfast.',
+    )
+    parser.add_argument('-f', '--failfast', action='store_true', help='Abort functional tests on first failure.')
+    parser.add_argument(
+        '-x',
+        '--exclude',
+        action='append',
+        choices=('unit', 'integration'),
+        type=str.lower,
+        default=[],
+        help='Do not run any tests of the given type (choices:' ' unit, integration)',
+    )
+    parser.add_argument(
+        '-i',
+        '--infoblox-integration',
+        action='store_true',
+        default=False,
+        dest='infoblox_integration',
+        help='Run the infoblox integration tests.',
+    )
+    parser.add_argument(
+        "-d",
+        "--dsdb-integration",
+        action='store_true',
+        default=False,
+        dest='dsdb_integration',
+        help='Run the DSDB integration tests',
+    )
     options = parser.parse_args()
     if options.resume and not options.start:
         raise argparse.ArgumentError('Option --resume requires --start.')
@@ -138,17 +174,19 @@ setup_logger(logging.DEBUG if "-v" in opts else logging.INFO)
 logging.getLogger().warning(str(opts))
 
 if not os.path.exists(opts.config):
-    print("configfile %s does not exist" % opts.config, file=sys.stderr)
+    print(f"configfile {opts.config} does not exist", file=sys.stderr)
     sys.exit(1)
 
 if os.environ.get("AQDCONF") and \
         os.path.realpath(opts.config) != os.path.realpath(os.environ["AQDCONF"]):
     if opts.interactive:
-        force_yes("""Will ignore AQDCONF variable value:
-    %s
+        force_yes(
+            f"""Will ignore AQDCONF variable value:
+    {os.environ['AQDCONF']}
     and use
-    %s
-    instead.""" % (os.environ["AQDCONF"], opts.config))
+    {opts.config}
+    instead."""
+        )
 
 config = Config(configfile=opts.config)
 if not config.has_section("unittest"):
@@ -169,11 +207,14 @@ from broker.orderedsuite import BrokerIntegrationTestSuite, DSDBIntegrationTestS
 
 hostname = config.get("unittest", "hostname")
 if hostname.find(".") < 0:
-    print("""
+    print(
+        f"""
 Some regression tests depend on the config value for hostname to be
 fully qualified.  Please set the config value manually since the default
-on this system (%s) is a short name.
-""" % hostname, file=sys.stderr)
+on this system ({hostname}) is a short name.
+""",
+        file=sys.stderr,
+    )
     sys.exit(1)
 
 if opts.mirror:
@@ -206,9 +247,10 @@ database_type = config.get('database', 'database_section')
 if opts.resume:
     dumfile = config.get('unittest', 'last_success_db_snapshot')
     if not os.path.isfile(dumfile) and database_type == 'database_sqlite':
-        print(f"Tests cannot be started from the test {opts.start}. "
-              f"Database dumpfile - {dumfile} does not exist.",
-              file=sys.stderr)
+        print(
+            f"Tests cannot be started from the test {opts.start}. " f"Database dumpfile - {dumfile} does not exist.",
+            file=sys.stderr,
+        )
         sys.exit(1)
     if database_type == 'database_sqlite':
         print(f"Will be using database dump {dumfile} to create DB. Tests will start from {opts.start}.")
@@ -218,8 +260,7 @@ if opts.failfast:
     os.environ["AQD_UNITTEST_FAILFAST"] = "1"
 
 if opts.single:
-    test_to_run = (f'test {opts.start}' if opts.start
-                   else 'the first test')
+    test_to_run = f'test {opts.start}' if opts.start else 'the first test'
     print(f'Only {test_to_run} will be run.')
 
 makefile = os.path.join(SRCDIR, "Makefile")
@@ -237,7 +278,7 @@ with open(makefile) as f:
 if prod_python and sys.executable.find(prod_python) < 0:
     print("\n")
     if opts.interactive:
-        force_yes("Running with %s but prod is %s" % (sys.executable, prod_python))
+        force_yes(f"Running with {sys.executable} but prod is {prod_python}")
 
 # Execute this every run... the man page says that it should do the right
 # thing in terms of not contacting the kdc very often. Don't abort the tests if
@@ -266,12 +307,11 @@ existing_dirs = [d for d in dirs if os.path.exists(d)]
 
 if existing_dirs:
     if opts.interactive:
-        force_yes("About to remove the following directories:\n%s\n" %
-                  "\n\t".join(existing_dirs))
+        force_yes("About to remove the following directories:\n{}\n".format("\n\t".join(existing_dirs)))
 
 for dirname in existing_dirs:
     if os.path.exists(dirname):
-        print("Removing %s" % dirname)
+        print(f"Removing {dirname}")
         rmtree(dirname, ignore_errors=True)
 
 for dirname in dirs:
@@ -279,7 +319,7 @@ for dirname in dirs:
         if not os.path.exists(dirname):
             os.makedirs(dirname)
     except OSError as e:
-        print("Could not create %s: %s" % (dirname, e), file=sys.stderr)
+        print(f"Could not create {dirname}: {e}", file=sys.stderr)
 
 # Set up an environment variable to propagate the location of the scratch
 # directory to tools started by the broker
