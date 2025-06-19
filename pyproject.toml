@@ -10,7 +10,7 @@ src = [
     "sbin",
     "tests"
 ]
-revision = "master"
+revision = "HEAD"
 diff = false
 check = false
 isort = false

@@ -35,6 +35,11 @@ from aqdb.orderedsuite import DatabaseTestSuite
 from aqdb.utils import copy_sqldb
 from aquilon.config import Config
 from aquilon.utils import kill_from_pid_file
+from broker.orderedsuite import (
+    BrokerIntegrationTestSuite,
+    DSDBIntegrationTestSuite,
+    InfobloxIntegrationTestSuite,
+)
 from verbose_text_test import VerboseTextTestRunner
 
 default_configfile = os.path.join(BINDIR, "unittest.conf")
@@ -177,16 +182,18 @@ if not os.path.exists(opts.config):
     print(f"configfile {opts.config} does not exist", file=sys.stderr)
     sys.exit(1)
 
-if os.environ.get("AQDCONF") and \
-        os.path.realpath(opts.config) != os.path.realpath(os.environ["AQDCONF"]):
-    if opts.interactive:
-        force_yes(
-            f"""Will ignore AQDCONF variable value:
+if (
+    os.environ.get("AQDCONF")
+    and os.path.realpath(opts.config) != os.path.realpath(os.environ["AQDCONF"])
+    and opts.interactive
+):
+    force_yes(
+        f"""Will ignore AQDCONF variable value:
     {os.environ['AQDCONF']}
     and use
     {opts.config}
     instead."""
-        )
+    )
 
 config = Config(configfile=opts.config)
 if not config.has_section("unittest"):
@@ -201,9 +208,6 @@ if opts.local_hostname:
     config.set("DEFAULT", "hostname", opts.local_hostname)
     config.set("unittest", "hostname", opts.local_hostname)
 
-# Do this import after the Config object has been instantiated, otherwise the test suites may use
-# a default value rather than opt.config.
-from broker.orderedsuite import BrokerIntegrationTestSuite, DSDBIntegrationTestSuite, InfobloxIntegrationTestSuite
 
 hostname = config.get("unittest", "hostname")
 if hostname.find(".") < 0:
@@ -305,9 +309,9 @@ if not opts.resume:
 
 existing_dirs = [d for d in dirs if os.path.exists(d)]
 
-if existing_dirs:
-    if opts.interactive:
-        force_yes("About to remove the following directories:\n{}\n".format("\n\t".join(existing_dirs)))
+if existing_dirs and opts.interactive:
+    dirs_formatted = "\n\t".join(existing_dirs)
+    force_yes(f"About to remove the following directories:\n{dirs_formatted}\n")
 
 for dirname in existing_dirs:
     if os.path.exists(dirname):
