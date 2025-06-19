@@ -17,3 +17,4 @@ protobuf
 requests
 requests_cache
 orjson
+requests_kerberos
